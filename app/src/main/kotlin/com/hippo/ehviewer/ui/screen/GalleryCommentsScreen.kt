@@ -188,7 +188,7 @@ fun resolveGalleryCommentsState(
     if (cachedDetail != null) {
         return GalleryCommentsState.Ready(cachedDetail)
     }
-    if (token != null) {
+    if (!token.isNullOrBlank()) {
         return GalleryCommentsState.NeedsFetch(gid, token)
     }
     return GalleryCommentsState.MissingDetail

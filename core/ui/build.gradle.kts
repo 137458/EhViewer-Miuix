@@ -21,6 +21,11 @@ kotlin {
                 implementation(libs.compose.ui.tooling.preview)
             }
         }
+        commonTest {
+            dependencies {
+                implementation(kotlin("test"))
+            }
+        }
 
         androidMain {
             dependencies {

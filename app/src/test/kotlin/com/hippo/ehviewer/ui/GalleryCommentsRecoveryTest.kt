@@ -50,4 +50,15 @@ class GalleryCommentsRecoveryTest {
 
         assertIs<GalleryCommentsState.MissingDetail>(state)
     }
+
+    @Test
+    fun `when detail cache misses and token is blank, state is MissingDetail safely`() {
+        val state = resolveGalleryCommentsState(
+            gid = 12345L,
+            token = "  ",
+            cachedDetail = null,
+        )
+
+        assertIs<GalleryCommentsState.MissingDetail>(state)
+    }
 }

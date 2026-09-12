@@ -2,8 +2,6 @@ package com.ehviewer.core.ui.util
 
 import androidx.collection.MutableScatterMap
 import androidx.collection.mutableScatterMapOf
-import androidx.compose.material3.Icon
-import androidx.compose.material3.LocalContentColor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Stable
@@ -14,6 +12,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.VectorPainter
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.theme.LocalContentColor as MiuixLocalContentColor
 
 @Stable
 @Composable
@@ -27,7 +27,7 @@ fun IconCached(
     imageVector: ImageVector,
     contentDescription: String?,
     modifier: Modifier = Modifier,
-    tint: Color = LocalContentColor.current,
+    tint: Color = MiuixLocalContentColor.current,
 ) {
     Icon(
         painter = rememberCachedVectorPainter(imageVector),

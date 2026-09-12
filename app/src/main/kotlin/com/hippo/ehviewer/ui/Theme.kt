@@ -36,10 +36,6 @@ inline fun ComponentActivity.setMiuixContent(crossinline content: @Composable Di
     }
 }
 
-@Deprecated("Use setMiuixContent instead", ReplaceWith("setMiuixContent(content)"))
-inline fun ComponentActivity.setMD3Content(crossinline content: @Composable DialogState.() -> Unit) = setMiuixContent(content)
-
-
 private typealias Ty = AnimatedContentTransitionScope<NavBackStackEntry>
 
 @Composable

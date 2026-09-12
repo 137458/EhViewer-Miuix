@@ -402,13 +402,10 @@ class MainActivity : AppCompatActivity() {
                 )
             }
             val isPrimaryDestination = navItems.any { it.first === currentDestination }
-            val rawPrimaryIndex = primaryNavItems.indexOfFirst { it.first === currentDestination }
-            val primaryIndex = when {
-                rawPrimaryIndex >= 0 -> rawPrimaryIndex
-                currentDestination === ToplistScreenDestination -> primaryNavItems.indexOfFirst { it.first === WhatshotScreenDestination }
-                currentDestination === HistoryScreenDestination -> primaryNavItems.indexOfFirst { it.first === DownloadsScreenDestination }
-                else -> -1
-            }
+            val primaryIndex = MainNavPolicy.getPrimaryBottomIndex(
+                currentDestination,
+                primaryNavItems.map { it.first },
+            )
             fun navigateToTab(direction: Direction) {
                 navigator.navigate(direction) {
                     popUpTo(NavGraphs.root.startRoute) {

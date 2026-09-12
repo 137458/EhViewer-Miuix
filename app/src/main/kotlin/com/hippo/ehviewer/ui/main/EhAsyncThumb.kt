@@ -4,8 +4,6 @@ import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.Card
-import androidx.compose.material3.ShapeDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.NonRestartableComposable
 import androidx.compose.runtime.collectAsState
@@ -16,15 +14,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
 import com.ehviewer.core.model.GalleryInfo
+import com.ehviewer.core.ui.component.SquircleShape
 import com.ehviewer.core.ui.util.SETNodeGenerator
 import com.ehviewer.core.ui.util.SharedElementBox
 import com.ehviewer.core.ui.util.TransitionsVisibilityScope
 import com.ehviewer.core.ui.util.thenIf
 import com.hippo.ehviewer.ktbuilder.imageRequest
 import com.hippo.ehviewer.ui.tools.shouldCrop
+import top.yukonga.miuix.kmp.basic.Card
 
 @Composable
 @NonRestartableComposable
@@ -37,7 +38,7 @@ context(_: SharedTransitionScope, _: TransitionsVisibilityScope, _: SETNodeGener
 fun EhAsyncCropThumb(
     key: GalleryInfo,
     modifier: Modifier = Modifier,
-) = SharedElementBox(key = "${key.gid}", shape = ShapeDefaults.Medium) {
+) = SharedElementBox(key = "${key.gid}", shape = SquircleShape(12.dp)) {
     var contentScale by remember(key) { mutableStateOf(ContentScale.Fit) }
     val request = requestOf(key)
     Image(
@@ -62,7 +63,7 @@ fun EhThumbCard(
     key: GalleryInfo,
     modifier: Modifier = Modifier,
 ) = Card(modifier = modifier) {
-    SharedElementBox(key = "${key.gid}", shape = ShapeDefaults.Medium) {
+    SharedElementBox(key = "${key.gid}", shape = SquircleShape(12.dp)) {
         var contentScale by remember(key) { mutableStateOf(ContentScale.Fit) }
         val request = requestOf(key)
         val painter = rememberAsyncImagePainter(

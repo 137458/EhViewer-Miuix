@@ -1,5 +1,14 @@
 package com.hippo.ehviewer.ui
 
+import com.hippo.ehviewer.ui.destinations.DownloadsScreenDestination
+import com.hippo.ehviewer.ui.destinations.FavouritesScreenDestination
+import com.hippo.ehviewer.ui.destinations.GalleryCommentsScreenDestination
+import com.hippo.ehviewer.ui.destinations.HistoryScreenDestination
+import com.hippo.ehviewer.ui.destinations.HomePageScreenDestination
+import com.hippo.ehviewer.ui.destinations.SettingsScreenDestination
+import com.hippo.ehviewer.ui.destinations.SubscriptionScreenDestination
+import com.hippo.ehviewer.ui.destinations.ToplistScreenDestination
+import com.hippo.ehviewer.ui.destinations.WhatshotScreenDestination
 import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -8,28 +17,55 @@ import kotlin.test.assertTrue
 class NavigationRoutingTest {
 
     @Test
-    fun `navItems has 8 destinations including Toplist and History`() {
-        assertEquals(8, MainNavPolicy.ALL_TOP_DESTINATIONS.size)
-        assertTrue(MainNavPolicy.ALL_TOP_DESTINATIONS.contains("ToplistScreenDestination"))
-        assertTrue(MainNavPolicy.ALL_TOP_DESTINATIONS.contains("HistoryScreenDestination"))
+    fun `all main destinations remain available as top-level navigation`() {
+        val expectedDestinations = setOf(
+            HomePageScreenDestination,
+            SubscriptionScreenDestination,
+            WhatshotScreenDestination,
+            ToplistScreenDestination,
+            FavouritesScreenDestination,
+            HistoryScreenDestination,
+            DownloadsScreenDestination,
+            SettingsScreenDestination,
+        )
+
+        assertTrue(expectedDestinations.all(MainNavPolicy::isTopLevelDestination))
+        assertFalse(MainNavPolicy.isTopLevelDestination(GalleryCommentsScreenDestination(1L)))
     }
 
     @Test
-    fun `primary bottom bar has 6 destinations for mobile layout`() {
-        assertEquals(6, MainNavPolicy.PRIMARY_BOTTOM_DESTINATIONS.size)
+    fun `secondary destinations select their related primary tab in the active layout`() {
+        val activeBottomDestinations = listOf(
+            HomePageScreenDestination,
+            SubscriptionScreenDestination,
+            WhatshotScreenDestination,
+            FavouritesScreenDestination,
+            DownloadsScreenDestination,
+            SettingsScreenDestination,
+        )
+
+        assertEquals(2, MainNavPolicy.getPrimaryBottomIndex(ToplistScreenDestination, activeBottomDestinations))
+        assertEquals(4, MainNavPolicy.getPrimaryBottomIndex(HistoryScreenDestination, activeBottomDestinations))
     }
 
     @Test
-    fun `when destination is Toplist or History, it is recognized as a valid top destination`() {
-        // Ensuring user is not stranded without top-level navigation
-        assertTrue(MainNavPolicy.isTopLevelDestination("ToplistScreenDestination"))
-        assertTrue(MainNavPolicy.isTopLevelDestination("HistoryScreenDestination"))
-        assertFalse(MainNavPolicy.isTopLevelDestination("GalleryCommentsScreenDestination"))
+    fun `secondary mapping follows the supplied layout order`() {
+        val activeBottomDestinations = listOf(
+            SettingsScreenDestination,
+            DownloadsScreenDestination,
+            WhatshotScreenDestination,
+            HomePageScreenDestination,
+        )
+
+        assertEquals(2, MainNavPolicy.getPrimaryBottomIndex(ToplistScreenDestination, activeBottomDestinations))
+        assertEquals(1, MainNavPolicy.getPrimaryBottomIndex(HistoryScreenDestination, activeBottomDestinations))
     }
 
     @Test
-    fun `when destination is not in primary bottom items, bottom bar index evaluates safely to negative 1 without crashing`() {
-        val index = MainNavPolicy.getPrimaryBottomIndex("ToplistScreenDestination")
-        assertEquals(-1, index)
+    fun `unknown and missing destinations are rejected without a bottom bar selection`() {
+        assertFalse(MainNavPolicy.isTopLevelDestination(null))
+        assertFalse(MainNavPolicy.isTopLevelDestination(GalleryCommentsScreenDestination(1L)))
+        assertEquals(-1, MainNavPolicy.getPrimaryBottomIndex(null))
+        assertEquals(-1, MainNavPolicy.getPrimaryBottomIndex(GalleryCommentsScreenDestination(1L)))
     }
 }

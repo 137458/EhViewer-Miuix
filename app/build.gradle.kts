@@ -124,7 +124,6 @@ android {
     androidResources {
         ignoreAssetsPatterns += listOf(
             "!PublicSuffixDatabase.list", // OkHttp
-            "!composepreference.preference.generated.resources",
         )
         generateLocaleConfig = true
         localeFilters += listOf(

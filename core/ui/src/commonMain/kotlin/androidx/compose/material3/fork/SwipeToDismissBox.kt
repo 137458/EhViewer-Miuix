@@ -16,6 +16,8 @@
 
 package androidx.compose.material3.fork
 
+// Compatibility exception: Miuix has no equivalent anchored swipe-to-dismiss component, while the
+// app relies on this fork's custom dismiss states and callbacks.
 import androidx.annotation.FloatRange
 import androidx.compose.foundation.gestures.AnchoredDraggableDefaults
 import androidx.compose.foundation.gestures.AnchoredDraggableState

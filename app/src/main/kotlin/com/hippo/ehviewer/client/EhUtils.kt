@@ -21,8 +21,6 @@ import android.content.Context
 import android.content.Intent
 import android.os.Environment
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material3.LocalContentColor
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.Stable
@@ -45,6 +43,8 @@ import com.materialkolor.ktx.from
 import com.materialkolor.ktx.toColor
 import com.materialkolor.utils.ColorUtils.lstarFromArgb
 import splitties.systemservices.downloadManager
+import top.yukonga.miuix.kmp.theme.LocalContentColor as MiuixLocalContentColor
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 object EhUtils {
     const val NONE = -1 // Use it for homepage
@@ -149,7 +149,7 @@ object EhUtils {
             }.toInt(),
         )
         return if (Settings.harmonizeCategoryColor.value) {
-            val primaryContainer = MaterialTheme.colorScheme.primaryContainer
+            val primaryContainer = MiuixTheme.colorScheme.primaryContainer
             mergeColor(primaryContainer, primary)
         } else {
             primary
@@ -159,9 +159,9 @@ object EhUtils {
     @ReadOnlyComposable
     @Composable
     fun getCategoryTextColor(color: Color) = if (isSystemInDarkTheme() == lstarFromArgb(color.toArgb()) > 70) {
-        MaterialTheme.colorScheme.surface
+        MiuixTheme.colorScheme.surface
     } else {
-        LocalContentColor.current
+        MiuixLocalContentColor.current
     }
 
     val favoriteIconColor = Color(0xffff3040)
