@@ -1,10 +1,10 @@
 <p align="right">
   <a href="/README.md">
-  English
+  简体中文
   </a>
   <span> | </span>
-  <a href="/docs/README/zh-cn.md">
-  简体中文
+  <a href="/docs/README/en.md">
+  English
   </a>
   <span> | </span>
   <a href="/docs/README/zh-tw.md">
@@ -12,7 +12,6 @@
   </a>
   <span> | </span>
   <strong>日本語</strong>
-  </a>
 </p>
 
 <h1 align="center">
