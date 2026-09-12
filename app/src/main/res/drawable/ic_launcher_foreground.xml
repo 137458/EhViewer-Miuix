@@ -29,40 +29,40 @@
             android:fillColor="#00000000"
             android:pathData="M11,9H34"
             android:strokeWidth="8"
-            android:strokeColor="#FBBD06"
+            android:strokeColor="#409EFF"
             android:strokeLineCap="round" />
         <path
             android:fillColor="#00000000"
             android:pathData="M11,54H23"
             android:strokeWidth="8"
-            android:strokeColor="#FBBD06"
+            android:strokeColor="#409EFF"
             android:strokeLineCap="round" />
         <path
             android:fillColor="#00000000"
             android:pathData="M11,9L11,54"
             android:strokeWidth="8"
-            android:strokeColor="#35AA53"
+            android:strokeColor="#007DFF"
             android:strokeLineCap="round" />
         <path
             android:fillColor="#00000000"
             android:pathData="M11,31L52,31"
             android:strokeWidth="8"
-            android:strokeColor="#FBBD06"
+            android:strokeColor="#409EFF"
             android:strokeLineCap="round" />
         <path
             android:fillColor="#00000000"
             android:pathData="M52,31L52,54"
             android:strokeWidth="8"
-            android:strokeColor="#4586F3"
+            android:strokeColor="#007DFF"
             android:strokeLineCap="round" />
         <path
             android:fillColor="#00000000"
             android:pathData="M34,21L34,54"
             android:strokeWidth="8"
-            android:strokeColor="#EB4334"
+            android:strokeColor="#007DFF"
             android:strokeLineCap="round" />
         <path
-            android:fillColor="#FBBD06"
+            android:fillColor="#409EFF"
             android:fillType="evenOdd"
             android:pathData="M15,35H11C8.791,35 7,33.209 7,31C7,28.791 8.791,27 11,27H15V35Z" />
     </group>
