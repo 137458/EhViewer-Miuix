@@ -3,8 +3,8 @@ package eu.kanade.tachiyomi.ui.reader
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -26,7 +26,7 @@ fun PageIndicatorText(
 
     val style = TextStyle(
         color = Color(235, 235, 235),
-        fontSize = MaterialTheme.typography.bodySmall.fontSize,
+        fontSize = MiuixTheme.textStyles.footnote1.fontSize,
         fontWeight = FontWeight.Bold,
         letterSpacing = 1.sp,
     )

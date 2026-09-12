@@ -2,7 +2,6 @@ package com.hippo.ehviewer.ui.reader
 
 import android.content.Context
 import androidx.compose.animation.AnimatedVisibilityScope
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -21,17 +20,12 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.layout.LazyLayoutCacheWindow
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.material3.BottomSheetDefaults
-import androidx.compose.material3.CircularWavyProgressIndicator
-import androidx.compose.material3.LocalTextStyle
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.SheetValue
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
-import androidx.compose.material3.rememberBottomSheetState
+import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.window.WindowBottomSheet
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
@@ -152,7 +146,7 @@ fun AnimatedVisibilityScope.ReaderScreen(args: ReaderScreenArgs, navigator: Dest
         },
         placeholder = {
             Background(bgColor) {
-                CircularWavyProgressIndicator()
+                InfiniteProgressIndicator()
             }
         },
     ) { result ->
@@ -160,8 +154,8 @@ fun AnimatedVisibilityScope.ReaderScreen(args: ReaderScreenArgs, navigator: Dest
             is Either.Left -> Background(bgColor) {
                 Text(
                     text = result.value.displayString(),
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.titleLarge,
+                    color = MiuixTheme.colorScheme.error,
+                    style = MiuixTheme.textStyles.title2,
                 )
             }
             is Either.Right -> {
@@ -252,12 +246,9 @@ fun ReaderScreen(pageLoader: PageLoader, info: BaseGalleryInfo?) {
                     val blocked = page.status is PageStatus.Blocked
                     dialog { cont ->
                         fun dispose() = cont.resume(Unit)
-                        val state = rememberBottomSheetState(SheetValue.Hidden)
-                        ModalBottomSheet(
+                        WindowBottomSheet(
+                            show = true,
                             onDismissRequest = { dispose() },
-                            modifier = Modifier.windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top)),
-                            sheetState = state,
-                            contentWindowInsets = { WindowInsets() },
                         ) {
                             ReaderPageSheetMeta(
                                 retry = { pageLoader.retryPage(page.index) },
@@ -267,7 +258,7 @@ fun ReaderScreen(pageLoader: PageLoader, info: BaseGalleryInfo?) {
                                 save = { launchIO { with(pageLoader) { save(page) } } },
                                 saveTo = { launchIO { with(pageLoader) { saveTo(page) } } },
                                 showAds = { page.unblock() }.takeIf { blocked },
-                                dismiss = { launch { state.hide().also { dispose() } } },
+                                dismiss = { dispose() },
                             )
                         }
                     }
@@ -331,13 +322,11 @@ fun ReaderScreen(pageLoader: PageLoader, info: BaseGalleryInfo?) {
         }
         val showPageNumber by Settings.showPageNumber.collectAsState()
         if (showPageNumber && !appbarVisible) {
-            CompositionLocalProvider(LocalTextStyle provides MaterialTheme.typography.bodySmall) {
-                PageIndicatorText(
-                    currentPage = syncState.sliderValue,
-                    totalPages = pageLoader.size,
-                    modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding(),
-                )
-            }
+            PageIndicatorText(
+                currentPage = syncState.sliderValue,
+                totalPages = pageLoader.size,
+                modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding(),
+            )
         }
         ReaderAppBars(
             visible = appbarVisible,
@@ -352,17 +341,10 @@ fun ReaderScreen(pageLoader: PageLoader, info: BaseGalleryInfo?) {
                     dialog { cont ->
                         fun dispose() = cont.resume(Unit)
                         var isColorFilter by remember { mutableStateOf(false) }
-                        val scrim by animateColorAsState(
-                            targetValue = if (isColorFilter) Color.Transparent else BottomSheetDefaults.ScrimColor,
-                            label = "ScrimColor",
-                        )
-                        ModalBottomSheet(
+                        WindowBottomSheet(
+                            show = true,
                             onDismissRequest = { dispose() },
-                            modifier = Modifier.windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top)),
-                            // Yeah, I know color state should not be read here, but we have to do it...
-                            scrimColor = scrim,
-                            dragHandle = null,
-                            contentWindowInsets = { WindowInsets() },
+                            enableWindowDim = !isColorFilter,
                         ) {
                             SettingsPager(isWebtoon = isWebtoon, modifier = Modifier.fillMaxSize()) { page ->
                                 isColorFilter = page == 2

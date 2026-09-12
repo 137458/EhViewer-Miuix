@@ -16,16 +16,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DownloadDone
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material3.Card
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
-import androidx.compose.material3.LinearWavyProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ProvideTextStyle
-import androidx.compose.material3.ShapeDefaults
-import androidx.compose.material3.Text
-import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -50,6 +40,13 @@ import com.hippo.ehviewer.EhDB
 import com.hippo.ehviewer.client.EhUtils
 import com.hippo.ehviewer.download.DownloadManager
 import com.hippo.ehviewer.util.FileUtils
+import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.LinearProgressIndicator
+import top.yukonga.miuix.kmp.basic.Text
+import com.ehviewer.core.ui.component.SquircleShape
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 context(_: SharedTransitionScope, _: TransitionsVisibilityScope)
@@ -93,7 +90,7 @@ fun DownloadCard(
                 text = EhUtils.getSuitableTitle(info),
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
-                style = MaterialTheme.typography.titleSmall,
+                style = MiuixTheme.textStyles.title4,
             )
             Spacer(modifier = Modifier.weight(1f))
             if (downloadState != DownloadInfo.STATE_DOWNLOAD) {
@@ -111,18 +108,20 @@ fun DownloadCard(
                     }
                     else -> null // The item has been removed and this will be disposed soon
                 }
-                ProvideTextStyle(MaterialTheme.typography.labelLarge) {
-                    Row {
-                        Text(
-                            text = info.uploader.orEmpty(),
-                            modifier = Modifier.alignByBaseline().alpha(if (info.disowned) 0.5f else 1f),
-                        )
-                        Spacer(modifier = Modifier.weight(1f))
-                        Text(
-                            text = stateText.orEmpty(),
-                            modifier = Modifier.alignByBaseline(),
-                        )
-                    }
+                Row {
+                    Text(
+                        text = info.uploader.orEmpty(),
+                        modifier = Modifier.alignByBaseline().alpha(if (info.disowned) 0.5f else 1f),
+                        style = MiuixTheme.textStyles.body2,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    )
+                    Spacer(modifier = Modifier.weight(1f))
+                    Text(
+                        text = stateText.orEmpty(),
+                        modifier = Modifier.alignByBaseline(),
+                        style = MiuixTheme.textStyles.body2,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    )
                 }
             } else {
                 var total by remember { mutableIntStateOf(info.total) }
@@ -133,20 +132,18 @@ fun DownloadCard(
                     finished = this.finished
                     speed = this.speed
                 }
-                ProvideTextStyle(MaterialTheme.typography.labelMedium) {
-                    if (total <= 0 || finished < 0) {
-                        LinearWavyProgressIndicator(modifier = Modifier.fillMaxWidth())
-                    } else {
-                        Row {
-                            Text(text = "$finished/$total")
-                            Spacer(modifier = Modifier.weight(1f))
-                            Text(text = FileUtils.humanReadableByteCount(speed.coerceAtLeast(0)) + "/S")
-                        }
-                        LinearWavyProgressIndicator(
-                            progress = { finished.toFloat() / total.toFloat() },
-                            modifier = Modifier.fillMaxWidth(),
-                        )
+                if (total <= 0 || finished < 0) {
+                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                } else {
+                    Row {
+                        Text(text = "$finished/$total", style = MiuixTheme.textStyles.footnote1)
+                        Spacer(modifier = Modifier.weight(1f))
+                        Text(text = FileUtils.humanReadableByteCount(speed.coerceAtLeast(0)) + "/S", style = MiuixTheme.textStyles.footnote1)
                     }
+                    LinearProgressIndicator(
+                        progress = finished.toFloat() / total.toFloat(),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
                 }
             }
             Row {
@@ -157,9 +154,9 @@ fun DownloadCard(
                     val categoryText = EhUtils.getCategory(info.category).uppercase()
                     Text(
                         text = categoryText,
-                        modifier = Modifier.clip(ShapeDefaults.Small).background(categoryColor).padding(vertical = 2.dp, horizontal = 8.dp),
+                        modifier = Modifier.clip(SquircleShape(4.dp)).background(categoryColor).padding(vertical = 2.dp, horizontal = 8.dp),
                         color = EhUtils.getCategoryTextColor(categoryColor),
-                        style = MaterialTheme.typography.labelLarge,
+                        style = MiuixTheme.textStyles.body2,
                     )
                 }
                 Spacer(modifier = Modifier.weight(1f))
@@ -170,11 +167,11 @@ fun DownloadCard(
                     else -> Icons.Default.PlayArrow
                 }
                 if (selectMode) {
-                    Box(modifier = Modifier.offset(4.dp).minimumInteractiveComponentSize()) {
+                    Box(modifier = Modifier.offset(4.dp).padding(12.dp)) {
                         Icon(imageVector = icon, contentDescription = null)
                     }
                 } else {
-                    IconButton(onClick = if (running) onStop else onStart, shapes = IconButtonDefaults.shapes(), modifier = Modifier.offset(4.dp)) {
+                    IconButton(onClick = if (running) onStop else onStart, modifier = Modifier.offset(4.dp)) {
                         Icon(imageVector = icon, contentDescription = null)
                     }
                 }

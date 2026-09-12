@@ -14,9 +14,6 @@ import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ProvideTextStyle
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -34,6 +31,8 @@ import com.hippo.ehviewer.client.thumbUrl
 import com.hippo.ehviewer.ui.screen.navWithUrl
 import com.hippo.ehviewer.util.addTextToClipboard
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 private const val INDEX_URL = 2
 private const val INDEX_PARENT = 9
@@ -68,31 +67,40 @@ fun GalleryInfoBottomSheet(detail: GalleryDetail) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
             text = stringResource(id = R.string.gallery_info),
-            modifier = Modifier.align(Alignment.CenterHorizontally),
-            style = MaterialTheme.typography.titleLarge,
+            modifier = Modifier.align(Alignment.CenterHorizontally).padding(vertical = 12.dp),
+            style = MiuixTheme.textStyles.title3,
+            color = MiuixTheme.colorScheme.onSurface,
         )
         val data = remember(detail) { detail.content() }
-        ProvideTextStyle(MaterialTheme.typography.labelLarge) {
-            LazyColumn(contentPadding = WindowInsets.systemBars.only(WindowInsetsSides.Bottom).asPaddingValues()) {
-                itemsIndexed(data) { index, (key, content) ->
-                    Row(
-                        modifier = Modifier.padding(horizontal = dimensionResource(id = com.hippo.ehviewer.R.dimen.keyline_margin)).clickable {
-                            if (index == INDEX_PARENT) {
-                                if (content != null) {
-                                    navWithUrl(content)
-                                }
-                            } else {
-                                addTextToClipboard(content, true)
-                                if (index == INDEX_URL) {
-                                    // Save it to avoid detect the gallery
-                                    Settings.clipboardTextHashCode = data[index].hashCode()
-                                }
+        LazyColumn(contentPadding = WindowInsets.systemBars.only(WindowInsetsSides.Bottom).asPaddingValues()) {
+            itemsIndexed(data) { index, (key, content) ->
+                Row(
+                    modifier = Modifier.padding(horizontal = dimensionResource(id = com.hippo.ehviewer.R.dimen.keyline_margin)).clickable {
+                        if (index == INDEX_PARENT) {
+                            if (content != null) {
+                                navWithUrl(content)
                             }
-                        }.fillMaxWidth(),
-                    ) {
-                        Text(stringResource(id = key), modifier = Modifier.width(90.dp).padding(8.dp))
-                        Text(content.orEmpty(), modifier = Modifier.padding(8.dp))
-                    }
+                        } else {
+                            addTextToClipboard(content, true)
+                            if (index == INDEX_URL) {
+                                // Save it to avoid detect the gallery
+                                Settings.clipboardTextHashCode = data[index].hashCode()
+                            }
+                        }
+                    }.fillMaxWidth(),
+                ) {
+                    Text(
+                        stringResource(id = key),
+                        modifier = Modifier.width(90.dp).padding(8.dp),
+                        style = MiuixTheme.textStyles.body2,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    )
+                    Text(
+                        content.orEmpty(),
+                        modifier = Modifier.padding(8.dp),
+                        style = MiuixTheme.textStyles.body1,
+                        color = MiuixTheme.colorScheme.onSurface,
+                    )
                 }
             }
         }

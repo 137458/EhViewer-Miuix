@@ -10,16 +10,14 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.NewLabel
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material3.AppBarRow
-import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
-import androidx.compose.material3.MediumFlexibleTopAppBar
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarResult
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarDefaults
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
+import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
+import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -67,6 +65,7 @@ import com.hippo.ehviewer.ui.main.NavigationIcon
 import com.hippo.ehviewer.ui.navToReader
 import com.hippo.ehviewer.ui.openBrowser
 import com.hippo.ehviewer.ui.tools.awaitConfirmationOrCancel
+import com.hippo.ehviewer.ui.tools.awaitSelectAction
 import com.hippo.ehviewer.ui.tools.awaitSelectTags
 import com.hippo.ehviewer.util.AppHelper
 import com.hippo.ehviewer.util.awaitActivityResult
@@ -117,7 +116,7 @@ fun AnimatedVisibilityScope.GalleryDetailScreen(args: GalleryDetailScreenArgs, n
     }
 
     var getDetailError by rememberSaveable { mutableStateOf("") }
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    val scrollBehavior = MiuixScrollBehavior()
 
     (galleryInfo as? GalleryDetail)?.apply {
         rememberInVM(this) {
@@ -170,43 +169,28 @@ fun AnimatedVisibilityScope.GalleryDetailScreen(args: GalleryDetailScreenArgs, n
     val exportSuccess = stringResource(id = R.string.export_as_archive_success)
     val exportFailed = stringResource(id = R.string.export_as_archive_failed)
     val windowSizeClass = LocalWindowSizeClass.current
+    val title = galleryInfo?.let { EhUtils.getSuitableTitle(it) }.orEmpty()
     Scaffold(
         topBar = {
-            MediumFlexibleTopAppBar(
-                title = {
-                    galleryInfo?.let {
-                        Text(
-                            text = EhUtils.getSuitableTitle(it),
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
-                },
+            TopAppBar(
+                title = title,
+                largeTitle = title,
                 navigationIcon = { NavigationIcon() },
                 scrollBehavior = scrollBehavior,
                 actions = {
-                    AppBarRow(
-                        overflowIndicator = {
-                            IconButton(onClick = { it.show() }, shapes = IconButtonDefaults.shapes()) {
-                                Icon(imageVector = Icons.Default.MoreVert, contentDescription = null)
-                            }
+                    IconButton(
+                        onClick = {
+                            AppHelper.share(contextOf<MainActivity>(), galleryDetailUrl)
+                            // In case the link is copied to the clipboard
+                            Settings.clipboardTextHashCode = galleryDetailUrl.hashCode()
                         },
-                        maxItemCount = if (windowSizeClass.isExpanded) 4 else 2,
                     ) {
-                        clickableItem(
+                        Icon(imageVector = Icons.Default.Share, contentDescription = null)
+                    }
+                    if (windowSizeClass.isExpanded) {
+                        IconButton(
                             onClick = {
-                                AppHelper.share(contextOf<MainActivity>(), galleryDetailUrl)
-                                // In case the link is copied to the clipboard
-                                Settings.clipboardTextHashCode = galleryDetailUrl.hashCode()
-                            },
-                            icon = {
-                                Icon(imageVector = Icons.Default.Share, contentDescription = null)
-                            },
-                            label = "",
-                        )
-                        clickableItem(
-                            onClick = {
-                                val detail = galleryInfo as? GalleryDetail ?: return@clickableItem
+                                val detail = galleryInfo as? GalleryDetail ?: return@IconButton
                                 launchIO {
                                     if (detail.apiUid < 0) {
                                         snackbar(signInFirst)
@@ -219,12 +203,10 @@ fun AnimatedVisibilityScope.GalleryDetailScreen(args: GalleryDetailScreenArgs, n
                                     }
                                 }
                             },
-                            icon = {
-                                Icon(imageVector = Icons.Default.NewLabel, contentDescription = null)
-                            },
-                            label = addTag,
-                        )
-                        clickableItem(
+                        ) {
+                            Icon(imageVector = Icons.Default.NewLabel, contentDescription = null)
+                        }
+                        IconButton(
                             onClick = {
                                 // Invalidate cache
                                 detailCache.remove(gid)
@@ -233,74 +215,85 @@ fun AnimatedVisibilityScope.GalleryDetailScreen(args: GalleryDetailScreenArgs, n
                                 galleryInfo = galleryInfo?.findBaseInfo()
                                 getDetailError = ""
                             },
-                            icon = {
-                                Icon(imageVector = Icons.Default.Refresh, contentDescription = null)
-                            },
-                            label = refresh,
-                        )
-                        clickableItem(
-                            onClick = {
-                                val gd = galleryInfo as? GalleryDetail ?: return@clickableItem
-                                launchIO {
-                                    awaitConfirmationOrCancel(
-                                        confirmText = R.string.clear_all,
-                                        title = R.string.clear_image_cache,
-                                    ) {
-                                        Text(text = stringResource(id = R.string.clear_image_cache_confirm))
-                                    }
-                                    SpiderDen(gd).clearCache()
-                                    snackbar(cacheCleared)
-                                }
-                            },
-                            icon = {},
-                            label = clearCache,
-                        )
-                        clickableItem(
-                            onClick = {
-                                openBrowser(galleryDetailUrl)
-                            },
-                            icon = {},
-                            label = openInBrowser,
-                        )
-                        clickableItem(
-                            onClick = {
-                                launchIO {
-                                    val downloadInfo = DownloadManager.getDownloadInfo(gid)
-                                    val canExport = downloadInfo?.state == DownloadInfo.STATE_FINISH
-                                    if (!canExport) {
-                                        awaitConfirmationOrCancel(
-                                            showCancelButton = false,
-                                            text = { Text(text = stringResource(id = R.string.download_gallery_first)) },
-                                        )
-                                    } else {
-                                        val info = galleryInfo!!
-                                        val uri = awaitActivityResult(
-                                            CreateDocument("application/vnd.comicbook+zip"),
-                                            EhUtils.getSuitableTitle(info) + ".cbz",
-                                        )
-                                        val dirname = downloadInfo.dirname
-                                        if (uri != null && dirname != null) {
-                                            val file = uri.toOkioPath()
-                                            val msg = runCatching {
-                                                bgWork {
-                                                    withIOContext {
-                                                        SpiderDen(info, dirname).exportAsCbz(file)
-                                                    }
+                        ) {
+                            Icon(imageVector = Icons.Default.Refresh, contentDescription = null)
+                        }
+                    }
+                    IconButton(
+                        onClick = {
+                            launchIO {
+                                awaitSelectAction {
+                                    if (!windowSizeClass.isExpanded) {
+                                        onSelect(addTag) {
+                                            val detail = galleryInfo as? GalleryDetail ?: return@onSelect
+                                            if (detail.apiUid < 0) {
+                                                snackbar(signInFirst)
+                                            } else {
+                                                val tags = awaitSelectTags()
+                                                if (tags.isNotEmpty()) {
+                                                    val text = tags.fastJoinToString(",")
+                                                    detail.voteTag(text, 1)
                                                 }
-                                                exportSuccess
-                                            }.getOrElse {
-                                                logcat(it)
-                                                file.delete()
-                                                exportFailed
                                             }
-                                            snackbar(message = msg)
+                                        }
+                                        onSelect(refresh) {
+                                            detailCache.remove(gid)
+                                            galleryInfo = galleryInfo?.findBaseInfo()
+                                            getDetailError = ""
                                         }
                                     }
-                                }
-                            },
-                            icon = {},
-                            label = exportArchive,
-                        )
+                                    onSelect(clearCache) {
+                                        val gd = galleryInfo as? GalleryDetail ?: return@onSelect
+                                        awaitConfirmationOrCancel(
+                                            confirmText = R.string.clear_all,
+                                            title = R.string.clear_image_cache,
+                                        ) {
+                                            Text(text = stringResource(id = R.string.clear_image_cache_confirm))
+                                        }
+                                        SpiderDen(gd).clearCache()
+                                        snackbar(cacheCleared)
+                                    }
+                                    onSelect(openInBrowser) {
+                                        openBrowser(galleryDetailUrl)
+                                    }
+                                    onSelect(exportArchive) {
+                                        val downloadInfo = DownloadManager.getDownloadInfo(gid)
+                                        val canExport = downloadInfo?.state == DownloadInfo.STATE_FINISH
+                                        if (!canExport) {
+                                            awaitConfirmationOrCancel(
+                                                showCancelButton = false,
+                                                text = { Text(text = stringResource(id = R.string.download_gallery_first)) },
+                                            )
+                                        } else {
+                                            val info = galleryInfo ?: return@onSelect
+                                            val uri = awaitActivityResult(
+                                                CreateDocument("application/vnd.comicbook+zip"),
+                                                EhUtils.getSuitableTitle(info) + ".cbz",
+                                            )
+                                            val dirname = downloadInfo.dirname
+                                            if (uri != null && dirname != null) {
+                                                val file = uri.toOkioPath()
+                                                val msg = runCatching {
+                                                    bgWork {
+                                                        withIOContext {
+                                                            SpiderDen(info, dirname).exportAsCbz(file)
+                                                        }
+                                                    }
+                                                    exportSuccess
+                                                }.getOrElse {
+                                                    logcat(it)
+                                                    file.delete()
+                                                    exportFailed
+                                                }
+                                                snackbar(message = msg)
+                                            }
+                                        }
+                                    }
+                                }()
+                            }
+                        },
+                    ) {
+                        Icon(imageVector = Icons.Default.MoreVert, contentDescription = null)
                     }
                 },
             )

@@ -5,6 +5,7 @@ import androidx.annotation.StringRes
 import androidx.compose.foundation.MutatorMutex
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -32,6 +34,17 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.NewLabel
+import top.yukonga.miuix.kmp.basic.ButtonDefaults as MiuixButtonDefaults
+import top.yukonga.miuix.kmp.basic.Checkbox as MiuixCheckbox
+import top.yukonga.miuix.kmp.basic.Icon as MiuixIcon
+import top.yukonga.miuix.kmp.basic.RadioButton as MiuixRadioButton
+import top.yukonga.miuix.kmp.basic.Text as MiuixText
+import top.yukonga.miuix.kmp.basic.TextButton as MiuixTextButton
+import top.yukonga.miuix.kmp.basic.TextField as MiuixTextField
+import top.yukonga.miuix.kmp.layout.DialogDefaults as MiuixDialogDefaults
+import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.window.WindowDialog
+import com.ehviewer.core.ui.component.SquircleShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AlertDialogDefaults
 import androidx.compose.material3.BasicAlertDialog
@@ -161,28 +174,37 @@ suspend fun <R> awaitResult(
             }
         }
     }
-    AlertDialog(
+    WindowDialog(
+        show = true,
         onDismissRequest = { cont.cancel() },
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    if (invalidator == null || errorMsg == null) {
-                        cont.resume(state.value)
-                    }
-                },
-                shapes = ButtonDefaults.shapes(),
+        title = title?.let { stringResource(id = it) },
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            block(impl, errorMsg)
+            Spacer(Modifier.height(16.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
             ) {
-                Text(text = stringResource(id = android.R.string.ok))
+                MiuixTextButton(
+                    text = stringResource(id = android.R.string.cancel),
+                    onClick = { cont.cancel() },
+                    modifier = Modifier.weight(1f),
+                )
+                Spacer(Modifier.width(16.dp))
+                MiuixTextButton(
+                    text = stringResource(id = android.R.string.ok),
+                    onClick = {
+                        if (invalidator == null || errorMsg == null) {
+                            cont.resume(state.value)
+                        }
+                    },
+                    modifier = Modifier.weight(1f),
+                    colors = MiuixButtonDefaults.textButtonColorsPrimary(),
+                )
             }
-        },
-        dismissButton = {
-            TextButton(onClick = { cont.cancel() }, shapes = ButtonDefaults.shapes()) {
-                Text(text = stringResource(id = android.R.string.cancel))
-            }
-        },
-        title = title.ifNotNullThen { Text(text = stringResource(id = title!!)) },
-        text = { block(impl, errorMsg) },
-    )
+        }
+    }
 }
 
 context(_: Context, _: DialogState)
@@ -325,50 +347,72 @@ suspend fun awaitInputText(
     invalidator: (suspend Raise<String>.(String) -> Unit)? = null,
 ) = dialog { cont ->
     val coroutineScope = rememberCoroutineScope()
-    val state = rememberTextFieldState(initial)
+    var text by remember(cont) { mutableStateOf(initial) }
     var error by remember(cont) { mutableStateOf<String?>(null) }
-    AlertDialog(
+    WindowDialog(
+        show = true,
         onDismissRequest = {
             cont.cancel()
             onUserDismiss?.invoke()
         },
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    val text = state.text.toString()
-                    if (invalidator == null) {
-                        cont.resume(text)
-                    } else {
-                        coroutineScope.launch {
-                            error = either { invalidator(text) }.leftOrNull()
-                            error ?: cont.resume(text)
-                        }
-                    }
-                },
-                shapes = ButtonDefaults.shapes(),
-            ) {
-                Text(text = stringResource(id = confirmText))
-            }
-        },
-        title = title.ifNotNullThen { Text(text = title!!) },
-        text = {
-            OutlinedTextField(
-                state = state,
-                label = hint?.let { { Text(text = it) } },
-                trailingIcon = error.ifNotNullThen {
-                    Icon(
-                        imageVector = Icons.Filled.Info,
-                        contentDescription = null,
+        title = title,
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Column {
+                MiuixTextField(
+                    value = text,
+                    onValueChange = {
+                        text = it
+                        error = null
+                    },
+                    label = hint.orEmpty(),
+                    singleLine = true,
+                    keyboardOptions = if (isNumber) KeyboardOptions(keyboardType = KeyboardType.Number) else KeyboardOptions.Default,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                if (error != null) {
+                    MiuixText(
+                        text = error!!,
+                        color = MiuixTheme.colorScheme.error,
+                        style = MiuixTheme.textStyles.body2,
+                        modifier = Modifier.padding(start = 16.dp, top = 4.dp),
                     )
-                },
-                supportingText = error.ifNotNullThen {
-                    Text(text = error!!)
-                },
-                isError = error != null,
-                keyboardOptions = if (isNumber) KeyboardOptions(keyboardType = KeyboardType.Number) else KeyboardOptions.Default,
-            )
-        },
-    )
+                }
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                MiuixTextButton(
+                    text = stringResource(id = android.R.string.cancel),
+                    onClick = {
+                        cont.cancel()
+                        onUserDismiss?.invoke()
+                    },
+                    modifier = Modifier.weight(1f),
+                )
+                Spacer(Modifier.width(16.dp))
+                MiuixTextButton(
+                    text = stringResource(id = confirmText),
+                    onClick = {
+                        if (invalidator == null) {
+                            cont.resume(text)
+                        } else {
+                            coroutineScope.launch {
+                                error = either { invalidator(text) }.leftOrNull()
+                                if (error == null) cont.resume(text)
+                            }
+                        }
+                    },
+                    modifier = Modifier.weight(1f),
+                    colors = MiuixButtonDefaults.textButtonColorsPrimary(),
+                )
+            }
+        }
+    }
 }
 
 context(_: DialogState)
@@ -382,60 +426,73 @@ suspend fun awaitInputTextWithCheckBox(
     invalidator: (suspend Raise<String>.(String, Boolean) -> Unit)? = null,
 ): Pair<String, Boolean> = dialog { cont ->
     val coroutineScope = rememberCoroutineScope()
-    val state = rememberTextFieldState(initial)
+    var text by remember(cont) { mutableStateOf(initial) }
     var error by remember(cont) { mutableStateOf<String?>(null) }
     var checkedState by remember { mutableStateOf(checked) }
-    AlertDialog(
+    WindowDialog(
+        show = true,
         onDismissRequest = { cont.cancel() },
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    val text = state.text.toString()
-                    if (invalidator == null) {
-                        cont.resume(text to checkedState)
-                    } else {
-                        coroutineScope.launch {
-                            error = either { invalidator(text, checkedState) }.leftOrNull()
-                            error ?: cont.resume(text to checkedState)
-                        }
-                    }
-                },
-                shapes = ButtonDefaults.shapes(),
-            ) {
-                Text(text = stringResource(id = android.R.string.ok))
-            }
-        },
-        title = title.ifNotNullThen { Text(text = stringResource(id = title!!)) },
-        text = {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                OutlinedTextField(
-                    state = state,
-                    label = hint?.let {
-                        { Text(text = stringResource(id = it)) }
+        title = title?.let { stringResource(id = it) },
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Column {
+                MiuixTextField(
+                    value = text,
+                    onValueChange = {
+                        text = it
+                        error = null
                     },
-                    trailingIcon = error.ifNotNullThen {
-                        Icon(
-                            imageVector = Icons.Filled.Info,
-                            contentDescription = null,
-                        )
-                    },
-                    supportingText = error.ifNotNullThen {
-                        Text(text = error!!)
-                    },
-                    isError = error != null,
+                    label = hint?.let { stringResource(id = it) }.orEmpty(),
+                    singleLine = true,
                     keyboardOptions = if (isNumber) KeyboardOptions(keyboardType = KeyboardType.Number) else KeyboardOptions.Default,
-                )
-                LabeledCheckbox(
                     modifier = Modifier.fillMaxWidth(),
-                    checked = checkedState,
-                    onCheckedChange = { checkedState = !checkedState },
-                    label = stringResource(checkBoxText),
+                )
+                if (error != null) {
+                    MiuixText(
+                        text = error!!,
+                        color = MiuixTheme.colorScheme.error,
+                        style = MiuixTheme.textStyles.body2,
+                        modifier = Modifier.padding(start = 16.dp, top = 4.dp),
+                    )
+                }
+            }
+            LabeledCheckbox(
+                modifier = Modifier.fillMaxWidth(),
+                checked = checkedState,
+                onCheckedChange = { checkedState = !checkedState },
+                label = stringResource(checkBoxText),
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                MiuixTextButton(
+                    text = stringResource(id = android.R.string.cancel),
+                    onClick = { cont.cancel() },
+                    modifier = Modifier.weight(1f),
+                )
+                Spacer(Modifier.width(16.dp))
+                MiuixTextButton(
+                    text = stringResource(id = android.R.string.ok),
+                    onClick = {
+                        if (invalidator == null) {
+                            cont.resume(text to checkedState)
+                        } else {
+                            coroutineScope.launch {
+                                error = either { invalidator(text, checkedState) }.leftOrNull()
+                                if (error == null) cont.resume(text to checkedState)
+                            }
+                        }
+                    },
+                    modifier = Modifier.weight(1f),
+                    colors = MiuixButtonDefaults.textButtonColorsPrimary(),
                 )
             }
-        },
-    )
+        }
+    }
 }
 
 context(_: DialogState)
@@ -448,35 +505,46 @@ suspend fun awaitConfirmationOrCancel(
     onCancelButtonClick: () -> Unit = {},
     secure: Boolean = false,
     text: @Composable (() -> Unit)? = null,
-) = dialog { cont ->
-    AlertDialog(
+) = dialog<Unit> { cont ->
+    WindowDialog(
+        show = true,
         onDismissRequest = { cont.cancel() },
-        confirmButton = {
-            if (showConfirmButton) {
-                TextButton(onClick = { cont.resume(Unit) }, shapes = ButtonDefaults.shapes()) {
-                    Text(text = stringResource(id = confirmText))
+        title = title?.let { stringResource(id = it) },
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            if (text != null) {
+                Box(modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)) {
+                    text()
                 }
             }
-        },
-        dismissButton = showCancelButton.ifTrueThen {
-            TextButton(
-                onClick = {
-                    onCancelButtonClick()
-                    cont.cancel()
-                },
-                shapes = ButtonDefaults.shapes(),
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
             ) {
-                Text(text = stringResource(id = dismissText))
+                if (showCancelButton) {
+                    MiuixTextButton(
+                        text = stringResource(id = dismissText),
+                        onClick = {
+                            onCancelButtonClick()
+                            cont.cancel()
+                        },
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+                if (showCancelButton && showConfirmButton) {
+                    Spacer(Modifier.width(16.dp))
+                }
+                if (showConfirmButton) {
+                    MiuixTextButton(
+                        text = stringResource(id = confirmText),
+                        onClick = { cont.resume(Unit) },
+                        modifier = Modifier.weight(1f),
+                        colors = MiuixButtonDefaults.textButtonColorsPrimary(),
+                    )
+                }
             }
-        },
-        title = title.ifNotNullThen { Text(text = stringResource(id = title!!)) },
-        text = text,
-        properties = if (secure) {
-            DialogProperties(securePolicy = SecureFlagPolicy.SecureOn)
-        } else {
-            DialogProperties()
-        },
-    )
+        }
+    }
 }
 
 context(_: DialogState)
@@ -524,19 +592,13 @@ suspend fun awaitSelectDate(
 
 context(_: DialogState)
 suspend fun <R> showNoButton(respectDefaultWidth: Boolean = true, block: @Composable Continuation<R>.() -> Unit): R = dialog { cont ->
-    BasicAlertDialog(
+    WindowDialog(
+        show = true,
         onDismissRequest = { cont.cancel() },
-        properties = DialogProperties(usePlatformDefaultWidth = respectDefaultWidth),
-        content = {
-            Surface(
-                modifier = with(Modifier) { if (!respectDefaultWidth) defaultMinSize(280.dp) else width(280.dp) },
-                shape = AlertDialogDefaults.shape,
-                color = AlertDialogDefaults.containerColor,
-                tonalElevation = AlertDialogDefaults.TonalElevation,
-                content = { block(cont) },
-            )
-        },
-    )
+        maxWidth = if (!respectDefaultWidth) 560.dp else MiuixDialogDefaults.MaxWidth,
+    ) {
+        block(cont)
+    }
 }
 
 context(_: DialogState)
@@ -577,19 +639,24 @@ suspend fun awaitSingleChoice(
 ): Int = showNoButton {
     Column(modifier = Modifier.verticalScroll(rememberScrollState()).padding(vertical = 8.dp)) {
         title?.let {
-            Text(
+            MiuixText(
                 text = stringResource(id = it),
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
-                style = MaterialTheme.typography.headlineSmall,
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
+                style = MiuixTheme.textStyles.title4,
             )
         }
         items.forEachIndexed { index, text ->
             Row(
-                modifier = Modifier.clickable { resume(index) }.fillMaxWidth().padding(horizontal = 8.dp),
+                modifier = Modifier
+                    .clip(SquircleShape(8.dp))
+                    .clickable { resume(index) }
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                RadioButton(selected = index == selected, onClick = { resume(index) })
-                Text(text = text)
+                MiuixRadioButton(selected = index == selected, onClick = { resume(index) })
+                Spacer(Modifier.width(12.dp))
+                MiuixText(text = text, style = MiuixTheme.textStyles.body1)
             }
         }
     }
@@ -612,10 +679,10 @@ suspend fun awaitSelectItem(
 ): Int = showNoButton(respectDefaultWidth) {
     Column(modifier = Modifier.padding(vertical = 8.dp)) {
         if (title != null) {
-            Text(
+            MiuixText(
                 text = title.fold({ it }, { stringResource(id = it) }),
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
-                style = MaterialTheme.typography.headlineSmall,
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
+                style = MiuixTheme.textStyles.title4,
             )
         }
         FastScrollLazyColumn {
@@ -623,7 +690,7 @@ suspend fun awaitSelectItem(
                 CheckableItem(
                     text = text,
                     checked = index == selected,
-                    modifier = Modifier.fillMaxWidth().clickable { resume(index) }.padding(horizontal = 8.dp),
+                    modifier = Modifier.fillMaxWidth().clickable { resume(index) },
                 )
             }
         }
@@ -651,22 +718,23 @@ suspend fun awaitSelectItemWithCheckBox(
 ): Pair<Int, Boolean> = showNoButton {
     var checked by remember { mutableStateOf(initialChecked) }
     Column(modifier = Modifier.padding(vertical = 8.dp)) {
-        Text(
+        MiuixText(
             text = stringResource(id = title),
-            modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
-            style = MaterialTheme.typography.headlineSmall,
+            modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
+            style = MiuixTheme.textStyles.title4,
         )
         FastScrollLazyColumn {
             itemsIndexed(items) { index, text ->
                 CheckableItem(
                     text = text,
                     checked = index == selected,
-                    modifier = Modifier.fillMaxWidth().clickable { resume(index to checked) }.padding(horizontal = 8.dp),
+                    modifier = Modifier.fillMaxWidth().clickable { resume(index to checked) },
                 )
             }
         }
+        Spacer(Modifier.height(8.dp))
         LabeledCheckbox(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
             checked = checked,
             onCheckedChange = { checked = !checked },
             label = stringResource(checkBoxText),
@@ -681,15 +749,32 @@ suspend fun awaitSelectItemWithIcon(
 ): Int = showNoButton {
     LazyColumn {
         stickyHeader {
-            Text(text = title, modifier = Modifier.padding(horizontal = 16.dp).padding(top = 16.dp), style = MaterialTheme.typography.titleMedium)
+            MiuixText(
+                text = title,
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
+                style = MiuixTheme.textStyles.title4,
+            )
         }
         itemsIndexed(items) { index, (icon, text) ->
-            ListItem(
-                modifier = Modifier.clickable { resume(index) }.padding(horizontal = 8.dp),
-                leadingContent = { Icon(imageVector = icon, contentDescription = null, tint = AlertDialogDefaults.iconContentColor) },
-                colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                content = { Text(text = stringResource(id = text), style = MaterialTheme.typography.titleMedium) },
-            )
+            Row(
+                modifier = Modifier
+                    .clip(SquircleShape(8.dp))
+                    .clickable { resume(index) }
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                MiuixIcon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = MiuixTheme.colorScheme.onSurface,
+                )
+                Spacer(Modifier.width(16.dp))
+                MiuixText(
+                    text = stringResource(id = text),
+                    style = MiuixTheme.textStyles.body1,
+                )
+            }
         }
     }
 }
@@ -754,21 +839,27 @@ suspend fun awaitSelectItemWithIconAndTextField(
 
 @Composable
 private fun CheckableItem(text: String, checked: Boolean, modifier: Modifier = Modifier) {
-    val textStyle = MaterialTheme.typography.titleMedium
-    val checkedColor = MaterialTheme.colorScheme.primary
-    ListItem(
-        modifier = modifier,
-        trailingContent = checked.ifTrueThen {
-            Icon(imageVector = Icons.Default.Check, contentDescription = null, tint = checkedColor)
-        },
-        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-        content = {
-            Text(
-                text = text,
-                style = if (checked) textStyle.copy(color = checkedColor) else textStyle,
+    val textStyle = MiuixTheme.textStyles.body1
+    val checkedColor = MiuixTheme.colorScheme.primary
+    Row(
+        modifier = modifier
+            .clip(SquircleShape(8.dp))
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        MiuixText(
+            text = text,
+            style = if (checked) textStyle.copy(color = checkedColor) else textStyle,
+            modifier = Modifier.weight(1f),
+        )
+        if (checked) {
+            MiuixIcon(
+                imageVector = Icons.Default.Check,
+                contentDescription = null,
+                tint = checkedColor,
             )
-        },
-    )
+        }
+    }
 }
 
 private val IconWithTextCorner = RoundedCornerShape(8.dp)

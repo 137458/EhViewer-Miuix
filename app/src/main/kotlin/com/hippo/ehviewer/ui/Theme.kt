@@ -25,7 +25,7 @@ import soup.compose.material.motion.animation.materialSharedAxisXIn
 import soup.compose.material.motion.animation.materialSharedAxisXOut
 import soup.compose.material.motion.animation.rememberSlideDistance
 
-inline fun ComponentActivity.setMD3Content(crossinline content: @Composable DialogState.() -> Unit) = setContent {
+inline fun ComponentActivity.setMiuixContent(crossinline content: @Composable DialogState.() -> Unit) = setContent {
     EhTheme(useDarkTheme = isSystemInDarkTheme()) {
         val theme = preferenceTheme(
             iconColor = MaterialTheme.colorScheme.primary,
@@ -44,6 +44,10 @@ inline fun ComponentActivity.setMD3Content(crossinline content: @Composable Dial
         }
     }
 }
+
+@Deprecated("Use setMiuixContent instead", ReplaceWith("setMiuixContent(content)"))
+inline fun ComponentActivity.setMD3Content(crossinline content: @Composable DialogState.() -> Unit) = setMiuixContent(content)
+
 
 private typealias Ty = AnimatedContentTransitionScope<NavBackStackEntry>
 

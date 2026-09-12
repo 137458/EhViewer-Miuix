@@ -29,15 +29,19 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Reorder
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.outlined.Bookmarks
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
-import androidx.compose.material3.ListItem
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.SwipeToDismissBoxDefaults
 import androidx.compose.material3.SwipeToDismissBoxValue
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import com.ehviewer.core.ui.component.SquircleShape
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.SmallTopAppBar
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 import androidx.compose.material3.fork.SwipeToDismissBox
 import androidx.compose.material3.fork.SwipeToDismissBoxState
 import androidx.compose.runtime.Composable
@@ -212,23 +216,37 @@ fun AnimatedVisibilityScope.GalleryListScreen(
 
     if (isTopList) {
         ProvideSideSheetContent { sheetState ->
-            TopAppBar(
-                title = { Text(text = stringResource(id = R.string.toplist)) },
-                windowInsets = WindowInsets(),
-                colors = topBarOnDrawerColor(),
+            SmallTopAppBar(
+                title = stringResource(id = R.string.toplist),
+                color = MiuixTheme.colorScheme.surface,
+                defaultWindowInsetsPadding = false,
             )
             toplists.forEach { (name, keyword) ->
-                ListItem(
-                    modifier = Modifier.padding(horizontal = 4.dp).clip(CardDefaults.shape).clickable {
-                        Settings.recentToplist = keyword
-                        urlBuilder = ListUrlBuilder(MODE_TOPLIST, keyword = keyword)
-                        data.refresh()
-                        fabHidden = false
-                        launch { sheetState.close() }
-                    },
-                    colors = listItemOnDrawerColor(urlBuilder.keyword == keyword),
-                    content = { Text(text = name) },
-                )
+                val isSelected = urlBuilder.keyword == keyword
+                val bgColor = if (isSelected) MiuixTheme.colorScheme.primary.copy(alpha = 0.12f) else Color.Transparent
+                val textColor = if (isSelected) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurface
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 2.dp)
+                        .clip(SquircleShape(12.dp))
+                        .background(bgColor)
+                        .clickable {
+                            Settings.recentToplist = keyword
+                            urlBuilder = ListUrlBuilder(MODE_TOPLIST, keyword = keyword)
+                            data.refresh()
+                            fabHidden = false
+                            launch { sheetState.close() }
+                        }
+                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = name,
+                        color = textColor,
+                        fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                    )
+                }
             }
         }
     } else {
@@ -238,9 +256,10 @@ fun AnimatedVisibilityScope.GalleryListScreen(
                 val list = EhDB.getAllQuickSearch()
                 quickSearchList.addAll(list)
             }
-            TopAppBar(
-                title = { Text(text = stringResource(id = R.string.quick_search)) },
-                colors = topBarOnDrawerColor(),
+            SmallTopAppBar(
+                title = stringResource(id = R.string.quick_search),
+                color = MiuixTheme.colorScheme.surface,
+                defaultWindowInsetsPadding = false,
                 actions = {
                     IconButton(
                         onClick = {
@@ -250,7 +269,6 @@ fun AnimatedVisibilityScope.GalleryListScreen(
                                 }
                             }
                         },
-                        shapes = IconButtonDefaults.shapes(),
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Default.Help,
@@ -299,7 +317,6 @@ fun AnimatedVisibilityScope.GalleryListScreen(
                                 }
                             }
                         },
-                        shapes = IconButtonDefaults.shapes(),
                         enabled = data.loadState.isIdle,
                     ) {
                         Icon(
@@ -308,7 +325,6 @@ fun AnimatedVisibilityScope.GalleryListScreen(
                         )
                     }
                 },
-                windowInsets = WindowInsets(),
             )
             Box(modifier = Modifier.fillMaxSize()) {
                 val dialogState by rememberUpdatedState(contextOf<DialogState>())
@@ -356,62 +372,68 @@ fun AnimatedVisibilityScope.GalleryListScreen(
                                     }
                                 },
                             ) {
-                                val elevation by animateDpAsState(
-                                    if (isDragging) {
-                                        8.dp // md.sys.elevation.level4
-                                    } else {
-                                        1.dp // md.sys.elevation.level1
-                                    },
-                                    label = "elevation",
-                                )
-                                ListItem(
-                                    modifier = Modifier.clip(CardDefaults.shape).clickable {
-                                        if (urlBuilder.mode == MODE_WHATS_HOT) {
-                                            val builder = ListUrlBuilder(item).apply {
-                                                language = languageFilter
+                                val itemBg = if (isDragging) {
+                                    MiuixTheme.colorScheme.surfaceContainerHigh
+                                } else {
+                                    MiuixTheme.colorScheme.surfaceContainer
+                                }
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 4.dp, vertical = 2.dp)
+                                        .clip(SquircleShape(12.dp))
+                                        .background(itemBg)
+                                        .clickable {
+                                            if (urlBuilder.mode == MODE_WHATS_HOT) {
+                                                val builder = ListUrlBuilder(item).apply {
+                                                    language = languageFilter
+                                                }
+                                                navigate(builder.asDst())
+                                            } else {
+                                                urlBuilder = ListUrlBuilder(item).apply {
+                                                    language = languageFilter
+                                                }
+                                                data.refresh()
+                                                fabHidden = false
                                             }
-                                            navigate(builder.asDst())
-                                        } else {
-                                            urlBuilder = ListUrlBuilder(item).apply {
-                                                language = languageFilter
-                                            }
-                                            data.refresh()
-                                            fabHidden = false
+                                            launch { sheetState.close() }
                                         }
-                                        launch { sheetState.close() }
-                                    },
-                                    shadowElevation = elevation,
-                                    headlineContent = {
-                                        Text(text = item.name)
-                                    },
-                                    trailingContent = {
-                                        IconButton(
-                                            onClick = {},
-                                            shapes = IconButtonDefaults.shapes(),
-                                            modifier = Modifier.draggableHandle(
-                                                onDragStarted = {
-                                                    hapticFeedback.performHapticFeedback(HapticFeedbackType.START)
-                                                    fromIndex = index
-                                                },
-                                                onDragStopped = {
-                                                    hapticFeedback.performHapticFeedback(HapticFeedbackType.END)
-                                                    if (fromIndex != -1) {
-                                                        if (fromIndex != index) {
-                                                            val range = if (fromIndex < index) fromIndex..index else index..fromIndex
-                                                            val toUpdate = quickSearchList.slice(range)
-                                                            toUpdate.zip(range).forEach { it.first.position = it.second }
-                                                            launchIO { EhDB.updateQuickSearch(toUpdate) }
-                                                        }
-                                                        fromIndex = -1
+                                        .padding(start = 16.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Text(
+                                        text = item.name,
+                                        color = MiuixTheme.colorScheme.onSurface,
+                                        modifier = Modifier.weight(1f),
+                                    )
+                                    IconButton(
+                                        onClick = {},
+                                        modifier = Modifier.draggableHandle(
+                                            onDragStarted = {
+                                                hapticFeedback.performHapticFeedback(HapticFeedbackType.START)
+                                                fromIndex = index
+                                            },
+                                            onDragStopped = {
+                                                hapticFeedback.performHapticFeedback(HapticFeedbackType.END)
+                                                if (fromIndex != -1) {
+                                                    if (fromIndex != index) {
+                                                        val range = if (fromIndex < index) fromIndex..index else index..fromIndex
+                                                        val toUpdate = quickSearchList.slice(range)
+                                                        toUpdate.zip(range).forEach { it.first.position = it.second }
+                                                        launchIO { EhDB.updateQuickSearch(toUpdate) }
                                                     }
-                                                },
-                                            ),
-                                        ) {
-                                            Icon(imageVector = Icons.Default.Reorder, contentDescription = null)
-                                        }
-                                    },
-                                    colors = listItemOnDrawerColor(false),
-                                )
+                                                    fromIndex = -1
+                                                }
+                                            },
+                                        ),
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Reorder,
+                                            contentDescription = null,
+                                            tint = MiuixTheme.colorScheme.onSurfaceVariantActions,
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
@@ -491,7 +513,7 @@ fun AnimatedVisibilityScope.GalleryListScreen(
         searchBarOffsetY = { searchBarOffsetY },
         trailingIcon = {
             val sheetState = LocalSideSheetState.current
-            IconButton(onClick = { launch { sheetState.open() } }, shapes = IconButtonDefaults.shapes()) {
+            IconButton(onClick = { launch { sheetState.open() } }) {
                 Icon(imageVector = Icons.Outlined.Bookmarks, contentDescription = stringResource(id = R.string.quick_search))
             }
             AvatarIcon()

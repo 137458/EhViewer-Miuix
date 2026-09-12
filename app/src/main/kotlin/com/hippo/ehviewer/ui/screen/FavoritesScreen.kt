@@ -23,14 +23,18 @@ import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.outlined.FolderSpecial
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import com.ehviewer.core.ui.component.SquircleShape
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.SmallTopAppBar
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -132,10 +136,10 @@ fun AnimatedVisibilityScope.FavouritesScreen(navigator: DestinationsNavigator, v
 
     ProvideSideSheetContent { sheetState ->
         val localFavCount by viewModel.localFavCount.collectAsState(0)
-        TopAppBar(
-            title = { Text(text = stringResource(id = R.string.collections)) },
-            windowInsets = WindowInsets(),
-            colors = topBarOnDrawerColor(),
+        SmallTopAppBar(
+            title = stringResource(id = R.string.collections),
+            color = MiuixTheme.colorScheme.surface,
+            defaultWindowInsetsPadding = false,
         )
         val scope = currentRecomposeScope
         LaunchedEffect(Unit) {
@@ -158,18 +162,37 @@ fun AnimatedVisibilityScope.FavouritesScreen(navigator: DestinationsNavigator, v
                 .windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Bottom)),
         ) {
             faves.forEachIndexed { index, (name, count) ->
-                ListItem(
-                    trailingContent = { Text(text = count.toString(), style = MaterialTheme.typography.bodyLarge) },
-                    modifier = Modifier.clip(CardDefaults.shape).clickable {
-                        val newCat = index - 2
-                        refresh(FavListUrlBuilder(newCat))
-                        Settings.recentFavCat = newCat
-                        fabHidden = false
-                        launch { sheetState.close() }
-                    },
-                    colors = listItemOnDrawerColor(urlBuilder.favCat == index - 2),
-                    content = { Text(text = name) },
-                )
+                val isSelected = urlBuilder.favCat == index - 2
+                val bgColor = if (isSelected) MiuixTheme.colorScheme.primary.copy(alpha = 0.12f) else Color.Transparent
+                val textColor = if (isSelected) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurface
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 4.dp, vertical = 2.dp)
+                        .clip(SquircleShape(12.dp))
+                        .background(bgColor)
+                        .clickable {
+                            val newCat = index - 2
+                            refresh(FavListUrlBuilder(newCat))
+                            Settings.recentFavCat = newCat
+                            fabHidden = false
+                            launch { sheetState.close() }
+                        }
+                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = name,
+                        color = textColor,
+                        fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Text(
+                        text = count.toString(),
+                        color = if (isSelected) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        style = MiuixTheme.textStyles.body2,
+                    )
+                }
             }
         }
     }
@@ -192,7 +215,7 @@ fun AnimatedVisibilityScope.FavouritesScreen(navigator: DestinationsNavigator, v
         searchBarOffsetY = { searchBarOffsetY },
         trailingIcon = {
             val sheetState = LocalSideSheetState.current
-            IconButton(onClick = { launch { sheetState.open() } }, shapes = IconButtonDefaults.shapes()) {
+            IconButton(onClick = { launch { sheetState.open() } }) {
                 Icon(imageVector = Icons.Outlined.FolderSpecial, contentDescription = null)
             }
             AvatarIcon()

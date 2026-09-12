@@ -10,11 +10,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ClearAll
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 import androidx.compose.material3.fork.SwipeToDismissBox
 import androidx.compose.material3.fork.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
@@ -117,7 +116,6 @@ fun AnimatedVisibilityScope.HistoryScreen(navigator: DestinationsNavigator) = Sc
                         EhDB.clearHistoryInfo()
                     }
                 },
-                shapes = IconButtonDefaults.shapes(),
             ) {
                 Icon(imageVector = Icons.Default.ClearAll, contentDescription = null)
             }
@@ -182,7 +180,7 @@ fun AnimatedVisibilityScope.HistoryScreen(navigator: DestinationsNavigator) = Sc
                         imageVector = EhIcons.Big.Default.History,
                         contentDescription = null,
                         modifier = Modifier.padding(16.dp),
-                        tint = MaterialTheme.colorScheme.primary,
+                        tint = MiuixTheme.colorScheme.primary,
                     )
                     val emptyHint = if (keyword.isEmpty()) {
                         stringResource(id = R.string.no_history)
@@ -191,7 +189,7 @@ fun AnimatedVisibilityScope.HistoryScreen(navigator: DestinationsNavigator) = Sc
                     }
                     Text(
                         text = emptyHint,
-                        style = MaterialTheme.typography.headlineMedium,
+                        style = MiuixTheme.textStyles.title2,
                     )
                 }
             }

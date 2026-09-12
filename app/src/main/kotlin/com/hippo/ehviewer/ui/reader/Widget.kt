@@ -12,10 +12,10 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.MaterialTheme
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
@@ -36,7 +36,7 @@ fun SpinnerChoice(title: String, entries: Array<String>, values: List<Int>, fiel
         modifier = Modifier.fillMaxWidth().height(48.dp).clickable { dropdown = true }.padding(horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(text = title, modifier = Modifier.weight(0.5f), color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(text = title, modifier = Modifier.weight(0.5f), color = MiuixTheme.colorScheme.onSurfaceVariantSummary)
         Row(modifier = Modifier.weight(0.5f)) {
             Text(text = data.firstNotNullOf { (k, v) -> k.takeIf { v == value } }, modifier = Modifier.weight(1f))
             Icon(
@@ -72,7 +72,7 @@ fun SwitchChoice(title: String, field: MutableState<Boolean>) {
         modifier = Modifier.fillMaxWidth().height(48.dp).clickable { value = !value }.padding(horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(text = title, modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(text = title, modifier = Modifier.weight(1f), color = MiuixTheme.colorScheme.onSurfaceVariantSummary)
         Switch(
             checked = value,
             onCheckedChange = { value = !value },

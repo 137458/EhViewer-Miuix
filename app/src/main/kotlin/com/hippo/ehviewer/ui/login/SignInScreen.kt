@@ -16,26 +16,14 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.input.OutputTransformation
 import androidx.compose.foundation.text.input.TextFieldLineLimits
-import androidx.compose.foundation.text.input.TextObfuscationMode
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularWavyProgressIndicator
-import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedSecureTextField
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -51,18 +39,12 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentType
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import com.ehviewer.core.i18n.R
 import com.ehviewer.core.ui.util.LocalWindowSizeClass
-import com.ehviewer.core.ui.util.ifTrueThen
 import com.ehviewer.core.ui.util.isExpanded
-import com.ehviewer.core.ui.util.thenIf
 import com.ehviewer.core.util.launchIO
 import com.ehviewer.core.util.withUIContext
 import com.hippo.ehviewer.Settings
@@ -79,6 +61,15 @@ import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.Job
 import moe.tarsin.navigate
+import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TextButton
+import top.yukonga.miuix.kmp.basic.TextField
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Destination<RootGraph>(start = true)
 @Composable
@@ -140,40 +131,57 @@ fun AnimatedVisibilityScope.SignInScreen(navigator: DestinationsNavigator) = Scr
 
     @Composable
     fun UsernameAndPasswordTextField() {
-        OutlinedTextField(
+        TextField(
             state = username,
             modifier = Modifier.width(dimensionResource(id = com.hippo.ehviewer.R.dimen.single_max_width))
-                .semantics { contentType = ContentType.Username }
-                .thenIf(!showUsernameError) { padding(bottom = 16.dp) },
-            label = { Text(stringResource(R.string.username)) },
-            supportingText = showUsernameError.ifTrueThen { Text(stringResource(R.string.error_username_cannot_empty)) },
-            trailingIcon = showUsernameError.ifTrueThen { Icon(imageVector = Icons.Filled.Info, contentDescription = null) },
+                .semantics { contentType = ContentType.Username },
+            label = stringResource(R.string.username),
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
             lineLimits = TextFieldLineLimits.SingleLine,
-            isError = showUsernameError,
+            trailingIcon = if (showUsernameError) {
+                { Icon(imageVector = Icons.Filled.Info, contentDescription = null, tint = MiuixTheme.colorScheme.error) }
+            } else null,
         )
-        OutlinedSecureTextField(
+        if (showUsernameError) {
+            Text(
+                text = stringResource(R.string.error_username_cannot_empty),
+                color = MiuixTheme.colorScheme.error,
+                style = MiuixTheme.textStyles.body2,
+                modifier = Modifier.width(dimensionResource(id = com.hippo.ehviewer.R.dimen.single_max_width)).padding(start = 16.dp, top = 4.dp, bottom = 8.dp),
+            )
+        } else {
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+        TextField(
             state = password,
             modifier = Modifier.width(dimensionResource(id = com.hippo.ehviewer.R.dimen.single_max_width))
-                .semantics { contentType = ContentType.Password }
-                .thenIf(!showPasswordError) { padding(bottom = 16.dp) },
-            label = { Text(stringResource(R.string.password)) },
-            supportingText = showPasswordError.ifTrueThen { Text(stringResource(R.string.error_password_cannot_empty)) },
+                .semantics { contentType = ContentType.Password },
+            label = stringResource(R.string.password),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
             onKeyboardAction = { signIn() },
+            lineLimits = TextFieldLineLimits.SingleLine,
+            outputTransformation = if (passwordHidden) OutputTransformation { replace(0, length, "\u2022".repeat(length)) } else null,
             trailingIcon = {
                 if (showPasswordError) {
-                    Icon(imageVector = Icons.Filled.Info, contentDescription = null)
+                    Icon(imageVector = Icons.Filled.Info, contentDescription = null, tint = MiuixTheme.colorScheme.error)
                 } else {
-                    IconButton(onClick = { passwordHidden = !passwordHidden }, shapes = IconButtonDefaults.shapes()) {
+                    IconButton(onClick = { passwordHidden = !passwordHidden }) {
                         val visibilityIcon = if (passwordHidden) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
                         Icon(imageVector = visibilityIcon, contentDescription = null)
                     }
                 }
             },
-            isError = showPasswordError,
-            textObfuscationMode = if (passwordHidden) TextObfuscationMode.RevealLastTyped else TextObfuscationMode.Visible,
         )
+        if (showPasswordError) {
+            Text(
+                text = stringResource(R.string.error_password_cannot_empty),
+                color = MiuixTheme.colorScheme.error,
+                style = MiuixTheme.textStyles.body2,
+                modifier = Modifier.width(dimensionResource(id = com.hippo.ehviewer.R.dimen.single_max_width)).padding(start = 16.dp, top = 4.dp, bottom = 8.dp),
+            )
+        } else {
+            Spacer(modifier = Modifier.height(16.dp))
+        }
     }
 
     Box(contentAlignment = Alignment.Center) {
@@ -192,25 +200,25 @@ fun AnimatedVisibilityScope.SignInScreen(navigator: DestinationsNavigator) = Scr
                     Text(
                         text = stringResource(id = R.string.app_waring),
                         modifier = Modifier.widthIn(max = dimensionResource(id = com.hippo.ehviewer.R.dimen.single_max_width)).padding(top = 24.dp),
-                        style = MaterialTheme.typography.titleMedium,
+                        style = MiuixTheme.textStyles.title3,
                     )
                     Text(
                         text = stringResource(id = R.string.app_waring_2),
                         modifier = Modifier.widthIn(max = dimensionResource(id = com.hippo.ehviewer.R.dimen.single_max_width)).padding(top = 12.dp),
-                        style = MaterialTheme.typography.titleLarge,
+                        style = MiuixTheme.textStyles.title2,
                     )
                     Spacer(modifier = Modifier.height(dimensionResource(id = com.hippo.ehviewer.R.dimen.keyline_margin)))
                     Row(modifier = Modifier.padding(top = dimensionResource(com.hippo.ehviewer.R.dimen.keyline_margin))) {
-                        FilledTonalButton(
+                        Button(
                             onClick = { openBrowser(EhUrl.URL_REGISTER) },
-                            shapes = ButtonDefaults.shapes(),
+                            colors = ButtonDefaults.buttonColors(),
                             modifier = Modifier.weight(1f).padding(horizontal = 4.dp),
                         ) {
                             Text(text = stringResource(id = R.string.register))
                         }
                         Button(
                             onClick = ::signIn,
-                            shapes = ButtonDefaults.shapes(),
+                            colors = ButtonDefaults.buttonColorsPrimary(),
                             modifier = Modifier.weight(1f).padding(horizontal = 4.dp),
                         ) {
                             Text(text = stringResource(id = R.string.sign_in))
@@ -218,38 +226,18 @@ fun AnimatedVisibilityScope.SignInScreen(navigator: DestinationsNavigator) = Scr
                     }
                     Row(modifier = Modifier.padding(horizontal = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         TextButton(
+                            text = stringResource(id = R.string.sign_in_via_webview),
                             onClick = { navigate(WebViewSignInScreenDestination) },
-                            shapes = ButtonDefaults.shapes(),
                             modifier = Modifier.weight(1f),
-                        ) {
-                            Text(
-                                text = buildAnnotatedString {
-                                    withStyle(
-                                        style = SpanStyle(textDecoration = TextDecoration.Underline),
-                                    ) {
-                                        append(stringResource(id = R.string.sign_in_via_webview))
-                                    }
-                                },
-                            )
-                        }
+                        )
                         TextButton(
+                            text = stringResource(id = R.string.guest_mode),
                             onClick = {
                                 Settings.gallerySite.value = EhUrl.SITE_E
                                 Settings.needSignIn.value = false
                             },
-                            shapes = ButtonDefaults.shapes(),
                             modifier = Modifier.weight(1f),
-                        ) {
-                            Text(
-                                text = buildAnnotatedString {
-                                    withStyle(
-                                        style = SpanStyle(textDecoration = TextDecoration.Underline),
-                                    ) {
-                                        append(stringResource(id = R.string.guest_mode))
-                                    }
-                                },
-                            )
-                        }
+                        )
                     }
                 }
             }
@@ -271,12 +259,12 @@ fun AnimatedVisibilityScope.SignInScreen(navigator: DestinationsNavigator) = Scr
                         Text(
                             text = stringResource(id = R.string.app_waring),
                             modifier = Modifier.widthIn(max = 360.dp),
-                            style = MaterialTheme.typography.titleMedium,
+                            style = MiuixTheme.textStyles.title3,
                         )
                         Text(
                             text = stringResource(id = R.string.app_waring_2),
                             modifier = Modifier.widthIn(max = 360.dp),
-                            style = MaterialTheme.typography.titleLarge,
+                            style = MiuixTheme.textStyles.title2,
                         )
                     }
                     Column(
@@ -288,14 +276,14 @@ fun AnimatedVisibilityScope.SignInScreen(navigator: DestinationsNavigator) = Scr
                         Row(horizontalArrangement = Arrangement.Center) {
                             Button(
                                 onClick = ::signIn,
-                                shapes = ButtonDefaults.shapes(),
+                                colors = ButtonDefaults.buttonColorsPrimary(),
                                 modifier = Modifier.padding(horizontal = 4.dp).width(128.dp),
                             ) {
                                 Text(text = stringResource(id = R.string.sign_in))
                             }
-                            FilledTonalButton(
+                            Button(
                                 onClick = { openBrowser(EhUrl.URL_REGISTER) },
-                                shapes = ButtonDefaults.shapes(),
+                                colors = ButtonDefaults.buttonColors(),
                                 modifier = Modifier.padding(horizontal = 4.dp).width(128.dp),
                             ) {
                                 Text(text = stringResource(id = R.string.register))
@@ -304,45 +292,25 @@ fun AnimatedVisibilityScope.SignInScreen(navigator: DestinationsNavigator) = Scr
                         Spacer(modifier = Modifier.height(8.dp))
                         Row(horizontalArrangement = Arrangement.Center) {
                             TextButton(
+                                text = stringResource(id = R.string.sign_in_via_webview),
                                 onClick = { navigate(WebViewSignInScreenDestination) },
-                                shapes = ButtonDefaults.shapes(),
                                 modifier = Modifier.padding(horizontal = 4.dp).width(128.dp),
-                            ) {
-                                Text(
-                                    text = buildAnnotatedString {
-                                        withStyle(
-                                            style = SpanStyle(textDecoration = TextDecoration.Underline),
-                                        ) {
-                                            append(stringResource(id = R.string.sign_in_via_webview))
-                                        }
-                                    },
-                                )
-                            }
+                            )
                             TextButton(
+                                text = stringResource(id = R.string.guest_mode),
                                 onClick = {
                                     Settings.gallerySite.value = EhUrl.SITE_E
                                     Settings.needSignIn.value = false
                                 },
-                                shapes = ButtonDefaults.shapes(),
                                 modifier = Modifier.padding(horizontal = 4.dp).width(128.dp),
-                            ) {
-                                Text(
-                                    text = buildAnnotatedString {
-                                        withStyle(
-                                            style = SpanStyle(textDecoration = TextDecoration.Underline),
-                                        ) {
-                                            append(stringResource(id = R.string.guest_mode))
-                                        }
-                                    },
-                                )
-                            }
+                            )
                         }
                     }
                 }
             }
         }
         if (isProgressIndicatorVisible) {
-            CircularWavyProgressIndicator()
+            InfiniteProgressIndicator()
         }
     }
 }

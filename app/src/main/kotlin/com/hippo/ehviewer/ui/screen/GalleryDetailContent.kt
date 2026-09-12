@@ -29,15 +29,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FolderZip
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
-import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
+import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.window.WindowBottomSheet
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -222,9 +221,9 @@ fun GalleryDetailContent(
         galleryDetail ?: return
         launch {
             dialog { cont ->
-                ModalBottomSheet(
+                WindowBottomSheet(
+                    show = true,
                     onDismissRequest = { cont.cancel() },
-                    contentWindowInsets = { WindowInsets() },
                 ) {
                     GalleryInfoBottomSheet(galleryDetail)
                 }
@@ -287,16 +286,16 @@ fun GalleryDetailContent(
                 LocalPinnableContainer.current!!.run { remember { pin() } }
                 Column {
                     Row {
-                        FilledTonalButton(
+                        Button(
                             onClick = ::onDownloadButtonClick,
-                            shapes = ButtonDefaults.shapes(),
+                            colors = ButtonDefaults.buttonColors(),
                             modifier = Modifier.padding(horizontal = 4.dp).weight(1F),
                         ) {
                             Text(text = downloadButtonText, overflow = TextOverflow.Ellipsis, maxLines = 1)
                         }
                         Button(
                             onClick = ::onReadButtonClick,
-                            shapes = ButtonDefaults.shapes(),
+                            colors = ButtonDefaults.buttonColorsPrimary(),
                             modifier = Modifier.padding(horizontal = 4.dp).weight(1F),
                         ) {
                             Text(text = readButtonText, overflow = TextOverflow.Ellipsis, maxLines = 1)
@@ -348,15 +347,15 @@ fun GalleryDetailContent(
                         Spacer(modifier = modifier.height(16.dp))
                         Button(
                             onClick = ::onReadButtonClick,
-                            shapes = ButtonDefaults.shapes(),
+                            colors = ButtonDefaults.buttonColorsPrimary(),
                             modifier = Modifier.height(56.dp).padding(horizontal = 16.dp).width(192.dp),
                         ) {
                             Text(text = readButtonText, overflow = TextOverflow.Ellipsis, maxLines = 1)
                         }
                         Spacer(modifier = modifier.height(24.dp))
-                        FilledTonalButton(
+                        Button(
                             onClick = ::onDownloadButtonClick,
-                            shapes = ButtonDefaults.shapes(),
+                            colors = ButtonDefaults.buttonColors(),
                             modifier = Modifier.height(56.dp).padding(horizontal = 16.dp).width(192.dp),
                         ) {
                             Text(text = downloadButtonText, overflow = TextOverflow.Ellipsis, maxLines = 1)
@@ -667,7 +666,7 @@ fun BelowHeader(galleryDetail: GalleryDetail, voteTag: VoteTag) {
             val pendingRating = awaitResult(galleryDetail.rating.coerceAtLeast(.5f), title = R.string.rate) {
                 Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
                     var text by remember { mutableIntStateOf(getRatingText(expectedValue)) }
-                    Text(text = stringResource(id = text), style = MaterialTheme.typography.bodyLarge)
+                    Text(text = stringResource(id = text), style = MiuixTheme.textStyles.body1)
                     Spacer(modifier = Modifier.size(keylineMargin))
                     GalleryRatingBar(
                         rating = expectedValue,

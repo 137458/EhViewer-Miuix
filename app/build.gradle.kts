@@ -14,7 +14,7 @@ plugins {
     alias(libs.plugins.baselineprofile)
 }
 
-val supportedAbis = arrayOf("arm64-v8a", "x86_64", "armeabi-v7a")
+val supportedAbis = arrayOf("arm64-v8a")
 
 android {
     splits {
@@ -80,6 +80,8 @@ android {
     productFlavors {
         create("default") {
             minSdk = 26
+            applicationIdSuffix = ".miuix"
+            versionNameSuffix = "-miuix"
         }
         create("marshmallow") {
             applicationIdSuffix = ".m"
@@ -87,9 +89,11 @@ android {
         }
     }
 
-    externalNativeBuild {
-        cmake {
-            path = File("src/main/cpp/CMakeLists.txt")
+    if (project.hasProperty("buildNative")) {
+        externalNativeBuild {
+            cmake {
+                path = File("src/main/cpp/CMakeLists.txt")
+            }
         }
     }
 

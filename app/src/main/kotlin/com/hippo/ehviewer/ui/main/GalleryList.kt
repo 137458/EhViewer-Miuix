@@ -22,15 +22,14 @@ import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
 import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
-import androidx.compose.material3.CircularWavyProgressIndicator
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ShapeDefaults
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
-import androidx.compose.material3.pulltorefresh.pullToRefresh
-import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+import com.ehviewer.core.ui.component.SquircleShape
+import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.PullToRefresh
+import top.yukonga.miuix.kmp.basic.Surface
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.rememberPullToRefreshState
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -90,12 +89,9 @@ fun GalleryList(
 
     var isRefreshing by remember { mutableStateOf(false) }
     val refreshState = rememberPullToRefreshState()
-    Box(
-        modifier = modifier.pullToRefresh(
-            isRefreshing = isRefreshing,
-            state = refreshState,
-            enabled = data.loadState.refresh is LoadState.NotLoading,
-        ) {
+    PullToRefresh(
+        isRefreshing = isRefreshing,
+        onRefresh = {
             isRefreshing = true
             launch {
                 if (data.loadState.prepend.endOfPaginationReached) {
@@ -109,7 +105,11 @@ fun GalleryList(
                 isRefreshing = false
             }
         },
+        pullToRefreshState = refreshState,
+        modifier = modifier,
+        contentPadding = contentPadding,
     ) {
+        Box(modifier = Modifier.fillMaxSize()) {
         val showLoadStateIndicator = when (val state = data.loadState.append) {
             LoadState.Loading -> true
             is LoadState.Error -> state.error !is NoHitsFoundException
@@ -193,14 +193,14 @@ fun GalleryList(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center,
                     ) {
-                        CircularWavyProgressIndicator()
+                        CircularProgressIndicator()
                     }
                 }
             }
             is LoadState.Error -> {
                 Surface {
                     ErrorTip(
-                        modifier = Modifier.widthIn(max = 228.dp).clip(ShapeDefaults.Small).clickable { data.retry() },
+                        modifier = Modifier.widthIn(max = 228.dp).clip(SquircleShape(8.dp)).clickable { data.retry() },
                         text = state.error.displayString(),
                     )
                 }
@@ -210,13 +210,7 @@ fun GalleryList(
                 ErrorTip(modifier = Modifier.widthIn(max = 228.dp), text = stringResource(id = R.string.gallery_list_empty_hit))
             }
         }
-
-        PullToRefreshDefaults.LoadingIndicator(
-            state = refreshState,
-            isRefreshing = isRefreshing,
-            modifier = Modifier.align(Alignment.TopCenter).padding(top = contentPadding.calculateTopPadding())
-                .offset { IntOffset(0, searchBarOffsetY()) },
-        )
+    }
     }
 }
 
@@ -234,11 +228,11 @@ fun ErrorTip(modifier: Modifier = Modifier, text: String) {
                 imageVector = EhIcons.Big.Default.SadAndroid,
                 contentDescription = null,
                 modifier = Modifier.padding(16.dp).size(120.dp),
-                tint = MaterialTheme.colorScheme.tertiary,
+                tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
             )
             Text(
                 text = text,
-                style = MaterialTheme.typography.bodyLarge,
+                style = MiuixTheme.textStyles.body1,
                 textAlign = TextAlign.Center,
             )
         }

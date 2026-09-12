@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
@@ -45,21 +46,20 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Reorder
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Shuffle
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SwipeToDismissBoxDefaults
 import androidx.compose.material3.SwipeToDismissBoxValue
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.fork.SwipeToDismissBox
-import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
 import androidx.compose.material3.fork.SwipeToDismissBoxState
+import com.ehviewer.core.ui.component.SquircleShape
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
+import top.yukonga.miuix.kmp.basic.SmallTopAppBar
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.theme.MiuixTheme
+import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -239,10 +239,10 @@ fun AnimatedVisibilityScope.DownloadsScreen(navigator: DestinationsNavigator) = 
 
     ProvideSideSheetContent { drawerState ->
         fun closeSheet() = launch { drawerState.close() }
-        TopAppBar(
-            title = { Text(text = labelsStr) },
-            windowInsets = WindowInsets(),
-            colors = topBarOnDrawerColor(),
+        SmallTopAppBar(
+            title = labelsStr,
+            color = Color.Transparent,
+            defaultWindowInsetsPadding = false,
             actions = {
                 if (DownloadsFilterMode.CUSTOM == filterMode) {
                     IconButton(
@@ -258,7 +258,6 @@ fun AnimatedVisibilityScope.DownloadsScreen(navigator: DestinationsNavigator) = 
                                 DownloadManager.addLabel(text)
                             }
                         },
-                        shapes = IconButtonDefaults.shapes(),
                     ) {
                         Icon(imageVector = Icons.Default.NewLabel, contentDescription = null)
                     }
@@ -288,7 +287,6 @@ fun AnimatedVisibilityScope.DownloadsScreen(navigator: DestinationsNavigator) = 
                                 }()
                             }
                         },
-                        shapes = IconButtonDefaults.shapes(),
                     ) {
                         Icon(imageVector = Icons.Default.Download, contentDescription = null)
                     }
@@ -309,7 +307,6 @@ fun AnimatedVisibilityScope.DownloadsScreen(navigator: DestinationsNavigator) = 
                             }()
                         }
                     },
-                    shapes = IconButtonDefaults.shapes(),
                 ) {
                     Icon(imageVector = Icons.Default.Settings, contentDescription = null)
                 }
@@ -333,30 +330,54 @@ fun AnimatedVisibilityScope.DownloadsScreen(navigator: DestinationsNavigator) = 
             contentPadding = WindowInsets.systemBars.only(WindowInsetsSides.Bottom).asPaddingValues(),
         ) {
             item {
-                ListItem(
-                    modifier = Modifier.clip(CardDefaults.shape).clickable {
-                        switchLabel("")
-                        closeSheet()
-                    },
-                    shadowElevation = 1.dp,
-                    headlineContent = {
-                        Text("$allName [$totalCount]")
-                    },
-                    colors = listItemOnDrawerColor(filterState.label == ""),
-                )
+                val selected = filterState.label == ""
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 4.dp, vertical = 2.dp)
+                        .clip(SquircleShape(8.dp))
+                        .background(
+                            if (selected) MiuixTheme.colorScheme.primary.copy(alpha = 0.15f)
+                            else Color.Transparent,
+                        )
+                        .clickable {
+                            switchLabel("")
+                            closeSheet()
+                        }
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = "$allName [$totalCount]",
+                        color = if (selected) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurface,
+                        style = MiuixTheme.textStyles.body1,
+                    )
+                }
             }
             item {
-                ListItem(
-                    modifier = Modifier.clip(CardDefaults.shape).clickable {
-                        switchLabel(null)
-                        closeSheet()
-                    },
-                    shadowElevation = 1.dp,
-                    headlineContent = {
-                        Text("$emptyLabelName [${downloadsCount.getOrDefault(null, 0)}]")
-                    },
-                    colors = listItemOnDrawerColor(filterState.label == null),
-                )
+                val selected = filterState.label == null
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 4.dp, vertical = 2.dp)
+                        .clip(SquircleShape(8.dp))
+                        .background(
+                            if (selected) MiuixTheme.colorScheme.primary.copy(alpha = 0.15f)
+                            else Color.Transparent,
+                        )
+                        .clickable {
+                            switchLabel(null)
+                            closeSheet()
+                        }
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = "$emptyLabelName [${downloadsCount.getOrDefault(null, 0)}]",
+                        color = if (selected) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurface,
+                        style = MiuixTheme.textStyles.body1,
+                    )
+                }
             }
 
             itemsIndexed(groupList, key = { _, (id) -> id }) { itemIndex, (id, label) ->
@@ -392,74 +413,76 @@ fun AnimatedVisibilityScope.DownloadsScreen(navigator: DestinationsNavigator) = 
                             }
                         },
                     ) {
-                        val elevation by animateDpAsState(
-                            if (isDragging) {
-                                8.dp // md.sys.elevation.level4
-                            } else {
-                                1.dp // md.sys.elevation.level1
-                            },
-                            label = "elevation",
-                        )
-                        ListItem(
-                            modifier = Modifier.clip(CardDefaults.shape).clickable {
-                                switchLabel(item)
-                                closeSheet()
-                            },
-                            shadowElevation = elevation,
-                            headlineContent = {
-                                val name = if (filterMode == DownloadsFilterMode.ARTIST) getTranslation(label) else label
-                                Text("$name [${downloadsCount.getOrDefault(item, 0)}]")
-                            },
-                            trailingContent = editEnable.ifTrueThen {
-                                Row {
-                                    IconButton(
-                                        onClick = {
-                                            launch {
-                                                val new = awaitInputText(initial = item, title = renameLabel, hint = labelsStr) { text ->
-                                                    when {
-                                                        text.isBlank() -> raise(labelEmpty)
-                                                        text == defaultName -> raise(defaultInvalid)
-                                                        DownloadManager.containLabel(text) -> raise(labelExists)
-                                                    }
-                                                }
-                                                DownloadManager.renameLabel(item, new)
-                                                if (filterState.label == item) {
-                                                    switchLabel(new)
+                        val selected = filterState.label == item
+                        val name = if (filterMode == DownloadsFilterMode.ARTIST) getTranslation(label) else label
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 4.dp, vertical = 2.dp)
+                                .clip(SquircleShape(8.dp))
+                                .background(
+                                    if (selected) MiuixTheme.colorScheme.primary.copy(alpha = 0.15f)
+                                    else if (isDragging) MiuixTheme.colorScheme.surfaceContainer
+                                    else Color.Transparent,
+                                )
+                                .clickable {
+                                    switchLabel(item)
+                                    closeSheet()
+                                }
+                                .padding(start = 16.dp, end = 8.dp, top = 6.dp, bottom = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                text = "$name [${downloadsCount.getOrDefault(item, 0)}]",
+                                color = if (selected) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurface,
+                                style = MiuixTheme.textStyles.body1,
+                                modifier = Modifier.weight(1f),
+                            )
+                            if (editEnable) {
+                                IconButton(
+                                    onClick = {
+                                        launch {
+                                            val new = awaitInputText(initial = item, title = renameLabel, hint = labelsStr) { text ->
+                                                when {
+                                                    text.isBlank() -> raise(labelEmpty)
+                                                    text == defaultName -> raise(defaultInvalid)
+                                                    DownloadManager.containLabel(text) -> raise(labelExists)
                                                 }
                                             }
-                                        },
-                                        shapes = IconButtonDefaults.shapes(),
-                                    ) {
-                                        Icon(imageVector = Icons.Default.Edit, contentDescription = null)
-                                    }
-                                    IconButton(
-                                        onClick = {},
-                                        shapes = IconButtonDefaults.shapes(),
-                                        modifier = Modifier.draggableHandle(
-                                            onDragStarted = {
-                                                hapticFeedback.performHapticFeedback(HapticFeedbackType.START)
-                                                fromIndex = index
-                                            },
-                                            onDragStopped = {
-                                                hapticFeedback.performHapticFeedback(HapticFeedbackType.END)
-                                                if (fromIndex != -1) {
-                                                    if (fromIndex != index) {
-                                                        val range = if (fromIndex < index) fromIndex..index else index..fromIndex
-                                                        val toUpdate = DownloadManager.labelList.slice(range)
-                                                        toUpdate.zip(range).forEach { it.first.position = it.second }
-                                                        launchIO { EhDB.updateDownloadLabel(toUpdate) }
-                                                    }
-                                                    fromIndex = -1
-                                                }
-                                            },
-                                        ),
-                                    ) {
-                                        Icon(imageVector = Icons.Default.Reorder, contentDescription = null)
-                                    }
+                                            DownloadManager.renameLabel(item, new)
+                                            if (filterState.label == item) {
+                                                switchLabel(new)
+                                            }
+                                        }
+                                    },
+                                ) {
+                                    Icon(imageVector = Icons.Default.Edit, contentDescription = null)
                                 }
-                            },
-                            colors = listItemOnDrawerColor(filterState.label == item),
-                        )
+                                IconButton(
+                                    onClick = {},
+                                    modifier = Modifier.draggableHandle(
+                                        onDragStarted = {
+                                            hapticFeedback.performHapticFeedback(HapticFeedbackType.START)
+                                            fromIndex = index
+                                        },
+                                        onDragStopped = {
+                                            hapticFeedback.performHapticFeedback(HapticFeedbackType.END)
+                                            if (fromIndex != -1) {
+                                                if (fromIndex != index) {
+                                                    val range = if (fromIndex < index) fromIndex..index else index..fromIndex
+                                                    val toUpdate = DownloadManager.labelList.slice(range)
+                                                    toUpdate.zip(range).forEach { it.first.position = it.second }
+                                                    launchIO { EhDB.updateDownloadLabel(toUpdate) }
+                                                }
+                                                fromIndex = -1
+                                            }
+                                        },
+                                    ),
+                                ) {
+                                    Icon(imageVector = Icons.Default.Reorder, contentDescription = null)
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -498,11 +521,11 @@ fun AnimatedVisibilityScope.DownloadsScreen(navigator: DestinationsNavigator) = 
         trailingIcon = {
             var expanded by remember { mutableStateOf(false) }
             val sideSheetState = LocalSideSheetState.current
-            IconButton(onClick = { gridView = !gridView }, shapes = IconButtonDefaults.shapes()) {
+            IconButton(onClick = { gridView = !gridView }) {
                 val icon = if (gridView) Icons.AutoMirrored.Default.ViewList else Icons.Default.GridView
                 Icon(imageVector = icon, contentDescription = null)
             }
-            IconButton(onClick = { expanded = !expanded }, shapes = IconButtonDefaults.shapes()) {
+            IconButton(onClick = { expanded = !expanded }) {
                 Icon(imageVector = Icons.Default.MoreVert, contentDescription = null)
             }
             DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
@@ -648,7 +671,7 @@ fun AnimatedVisibilityScope.DownloadsScreen(navigator: DestinationsNavigator) = 
         }
 
         if (isLoading) {
-            Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface), contentAlignment = Alignment.Center) {
+            Box(modifier = Modifier.fillMaxSize().background(MiuixTheme.colorScheme.surface), contentAlignment = Alignment.Center) {
                 InfiniteProgressIndicator()
             }
         } else if (list.isEmpty()) {
@@ -661,11 +684,11 @@ fun AnimatedVisibilityScope.DownloadsScreen(navigator: DestinationsNavigator) = 
                     imageVector = EhIcons.Big.Default.Download,
                     contentDescription = null,
                     modifier = Modifier.padding(16.dp),
-                    tint = MaterialTheme.colorScheme.primary,
+                    tint = MiuixTheme.colorScheme.primary,
                 )
                 Text(
                     text = stringResource(id = R.string.no_download_info),
-                    style = MaterialTheme.typography.headlineMedium,
+                    style = MiuixTheme.textStyles.title2,
                 )
             }
         }

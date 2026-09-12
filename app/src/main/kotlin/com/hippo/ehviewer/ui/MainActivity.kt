@@ -88,7 +88,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.NavigationDrawerItem
-import androidx.compose.material3.Scaffold
+import top.yukonga.miuix.kmp.basic.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
@@ -245,7 +245,7 @@ class MainActivity : AppCompatActivity() {
                 systemUiVisibility = systemUiVisibility and View.SYSTEM_UI_FLAG_LAYOUT_STABLE.inv()
             }
         }
-        setMD3Content {
+        setMiuixContent {
             val configuration = LocalConfiguration.current
             val navDrawerState = rememberDrawerState(DrawerValue.Closed)
             val sideSheetState = rememberDrawerState2(DrawerValue.Closed)
@@ -447,7 +447,7 @@ class MainActivity : AppCompatActivity() {
                             },
                         )
                     },
-                ) {
+                ) { _ ->
                     var minOffset by remember {
                         mutableFloatStateOf(-with(density) { DrawerDefaults.MaximumDrawerWidth.toPx() })
                     }

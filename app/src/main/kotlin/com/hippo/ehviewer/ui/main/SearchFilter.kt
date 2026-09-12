@@ -12,22 +12,20 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.Icon
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.ListItemDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TextField
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
@@ -168,43 +166,51 @@ fun SearchFilter(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.SpaceEvenly,
                             ) {
-                                OutlinedTextField(
+                                TextField(
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                     value = expectedValue.first.takeIf { it > 0 }?.toString().orEmpty(),
                                     onValueChange = {
                                         expectedValue = expectedValue.copy(first = it.toIntOrDefault(0).coerceIn(0, 1000))
                                     },
-                                    modifier = Modifier.width(112.dp).padding(16.dp),
+                                    modifier = Modifier.width(100.dp).padding(8.dp),
                                     singleLine = true,
-                                    isError = error != null,
                                 )
-                                Text(text = stringResource(id = R.string.search_sp_to))
-                                OutlinedTextField(
+                                Text(
+                                    text = stringResource(id = R.string.search_sp_to),
+                                    color = MiuixTheme.colorScheme.onSurface,
+                                )
+                                TextField(
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                     value = expectedValue.second.takeIf { it > 0 }?.toString().orEmpty(),
                                     onValueChange = {
                                         expectedValue = expectedValue.copy(second = it.toIntOrDefault(0).coerceIn(0, 2000))
                                     },
-                                    modifier = Modifier.width(112.dp).padding(16.dp),
+                                    modifier = Modifier.width(100.dp).padding(8.dp),
                                     singleLine = true,
-                                    isError = error != null,
                                 )
-                                Text(text = stringResource(id = R.string.search_sp_suffix))
+                                Text(
+                                    text = stringResource(id = R.string.search_sp_suffix),
+                                    color = MiuixTheme.colorScheme.onSurface,
+                                )
                             }
                             if (error != null) {
-                                ListItem(
-                                    leadingContent = {
-                                        Icon(imageVector = Icons.Default.Info, contentDescription = null)
-                                    },
-                                    colors = ListItemDefaults.colors(
-                                        containerColor = Color.Transparent,
-                                        headlineColor = MaterialTheme.colorScheme.error,
-                                        leadingIconColor = MaterialTheme.colorScheme.error,
-                                    ),
-                                    content = {
-                                        Text(text = error, style = MaterialTheme.typography.bodySmall)
-                                    },
-                                )
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Info,
+                                        contentDescription = null,
+                                        tint = MiuixTheme.colorScheme.error,
+                                        modifier = Modifier.size(16.dp),
+                                    )
+                                    Text(
+                                        text = error,
+                                        color = MiuixTheme.colorScheme.error,
+                                        style = MiuixTheme.textStyles.body2,
+                                    )
+                                }
                             }
                         }
                     }

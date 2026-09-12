@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
@@ -37,17 +38,14 @@ import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ImageSearch
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.ListItemDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SearchBar
-import androidx.compose.material3.SearchBarDefaults
-import androidx.compose.material3.SearchBarDefaults.InputField
-import androidx.compose.material3.Text
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.InputField
+import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.SearchBar
+import top.yukonga.miuix.kmp.basic.SearchBarDefaults
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -58,6 +56,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import com.ehviewer.core.ui.component.SquircleShape
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import androidx.compose.ui.graphics.Color
@@ -218,11 +217,11 @@ fun SearchBarScreen(
         Scaffold(
             topBar = {
                 Column {
-                    val scrim = MaterialTheme.colorScheme.background.scrim()
+                    val scrim = MiuixTheme.colorScheme.background.scrim()
                     Box(Modifier.windowInsetsTopHeight(WindowInsets.statusBars).fillMaxWidth().background(scrim))
 
                     // Placeholder, fill immutable SearchBar padding
-                    Spacer(modifier = Modifier.height(SearchBarDefaults.InputFieldHeight + 16.dp))
+                    Spacer(modifier = Modifier.height(SearchBarDefaults.InputFieldMinHeight + 16.dp))
                 }
             },
             floatingActionButton = floatingActionButton,
@@ -232,12 +231,19 @@ fun SearchBarScreen(
         // Workaround for can't exit SearchBar due to refocus in non-touch mode
         Box(Modifier.size(1.dp).focusable())
         val activeState = rememberCompositionActiveState()
+        val query = searchFieldState.text.toString()
+        val contentActive by activeState.state
+        val placeholder = title.takeUnless { expanded || contentActive } ?: searchFieldHint
+        val searchBg = MiuixTheme.colorScheme.background
         SearchBar(
-            modifier = Modifier.align(Alignment.TopCenter).thenIf(!expanded) { offset { IntOffset(0, searchBarOffsetY()) } }
+            modifier = Modifier.align(Alignment.TopCenter)
+                .thenIf(!expanded) { offset { IntOffset(0, searchBarOffsetY()) } }
+                .thenIf(expanded) { fillMaxSize().background(searchBg) }
                 .windowInsetsPadding(WindowInsets.navigationBars.only(WindowInsetsSides.Horizontal)),
             inputField = {
                 InputField(
-                    state = searchFieldState,
+                    query = query,
+                    onQueryChange = { searchFieldState.setTextAndPlaceCursorAtEnd(it) },
                     onSearch = {
                         hideSearchView()
                         onApplySearch()
@@ -245,32 +251,29 @@ fun SearchBarScreen(
                     expanded = expanded,
                     onExpandedChange = onExpandedChange,
                     modifier = Modifier.widthIn(max = (maxWidth - SearchBarHorizontalPadding * 2).coerceAtMost(M3SearchBarMaxWidth)).fillMaxWidth(),
-                    placeholder = {
-                        val contentActive by activeState.state
-                        val text = title.takeUnless { expanded || contentActive } ?: searchFieldHint
-                        Text(text, overflow = TextOverflow.Ellipsis, maxLines = 1)
-                    },
+                    label = placeholder,
+                    color = if (expanded) MiuixTheme.colorScheme.surfaceContainer else MiuixTheme.colorScheme.surfaceContainerHigh,
                     leadingIcon = {
                         if (expanded) {
-                            IconButton(onClick = { hideSearchView() }, shapes = IconButtonDefaults.shapes()) {
+                            IconButton(onClick = { hideSearchView() }) {
                                 Icon(Icons.AutoMirrored.Default.ArrowBack, contentDescription = null)
                             }
                         } else {
                             val drawerState = LocalNavDrawerState.current
-                            IconButton(onClick = { scope.launch { drawerState.open() } }, shapes = IconButtonDefaults.shapes()) {
+                            IconButton(onClick = { scope.launch { drawerState.open() } }) {
                                 Icon(Icons.Default.Menu, contentDescription = null)
                             }
                         }
                     },
                     trailingIcon = {
                         if (expanded) {
-                            AnimatedContent(targetState = searchFieldState.text.isNotEmpty()) { hasText ->
+                            AnimatedContent(targetState = query.isNotEmpty()) { hasText ->
                                 if (hasText) {
-                                    IconButton(onClick = { searchFieldState.clearText() }, shapes = IconButtonDefaults.shapes()) {
+                                    IconButton(onClick = { searchFieldState.clearText() }) {
                                         Icon(Icons.Default.Close, contentDescription = null)
                                     }
                                 } else {
-                                    IconButton(onClick = { navigate(ImageSearchScreenDestination) }, shapes = IconButtonDefaults.shapes()) {
+                                    IconButton(onClick = { navigate(ImageSearchScreenDestination) }) {
                                         Icon(Icons.Default.ImageSearch, contentDescription = null)
                                     }
                                 }
@@ -285,10 +288,13 @@ fun SearchBarScreen(
             },
             expanded = expanded,
             onExpandedChange = onExpandedChange,
-            shape = SquircleShape(if (expanded) 0.dp else 24.dp),
-            colors = SearchBarDefaults.colors(
-                containerColor = if (expanded) MiuixTheme.colorScheme.background else MiuixTheme.colorScheme.surfaceContainer,
-            ),
+            outsideEndAction = {
+                TextButton(
+                    text = stringResource(id = android.R.string.cancel),
+                    onClick = { hideSearchView() },
+                    modifier = Modifier.padding(end = 12.dp),
+                )
+            },
         ) {
             activeState.Anchor()
             filter?.invoke()
@@ -296,29 +302,51 @@ fun SearchBarScreen(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom).asPaddingValues(),
             ) {
-                // Workaround for prepending before the first item
                 item {}
                 items(mSuggestionList, key = { it.keyword.hashCode() * 31 + it.canDelete.hashCode() }) {
-                    ListItem(
-                        supportingContent = it.hint.ifNotNullThen { Text(text = it.hint!!) },
-                        leadingContent = it.canOpenDirectly.ifTrueThen {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 2.dp)
+                            .clip(SquircleShape(12.dp))
+                            .clickable { it.onClick() }
+                            .thenIf(animateItems) { animateItem() }
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        if (it.canOpenDirectly) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Default.MenuBook,
                                 contentDescription = null,
+                                modifier = Modifier.padding(end = 12.dp).size(20.dp),
+                                tint = MiuixTheme.colorScheme.primary,
                             )
-                        },
-                        trailingContent = it.canDelete.ifTrueThen {
-                            IconButton(onClick = { deleteKeyword(it.keyword) }, shapes = IconButtonDefaults.shapes()) {
+                        }
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = it.keyword,
+                                color = MiuixTheme.colorScheme.onSurface,
+                                style = MiuixTheme.textStyles.body1,
+                            )
+                            if (it.hint != null) {
+                                Text(
+                                    text = it.hint!!,
+                                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                    style = MiuixTheme.textStyles.body2,
+                                )
+                            }
+                        }
+                        if (it.canDelete) {
+                            IconButton(onClick = { deleteKeyword(it.keyword) }) {
                                 Icon(
                                     imageVector = Icons.Default.Close,
                                     contentDescription = null,
+                                    tint = MiuixTheme.colorScheme.onSurfaceVariantActions,
+                                    modifier = Modifier.size(20.dp),
                                 )
                             }
-                        },
-                        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                        modifier = Modifier.clickable { it.onClick() }.thenIf(animateItems) { animateItem() },
-                        content = { Text(text = it.keyword) },
-                    )
+                        }
+                    }
                 }
             }
         }

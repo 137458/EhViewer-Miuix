@@ -8,9 +8,14 @@ import androidx.compose.foundation.gestures.draggable2D
 import androidx.compose.foundation.gestures.rememberDraggable2DState
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeContent
-import androidx.compose.material3.AlertDialog
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.unit.dp
+import top.yukonga.miuix.kmp.window.WindowDialog
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
@@ -64,14 +69,25 @@ fun BoxScope.PausableAlertDialog(
     val scope = rememberCoroutineScope()
     val mutex = remember { MutatorMutex() }
     var showDialog by remember { mutableStateOf(true) }
-    if (showDialog) {
-        AlertDialog(
-            onDismissRequest = { showDialog = false },
-            confirmButton = confirmButton,
-            dismissButton = dismissButton,
-            title = title,
-            text = text,
-        )
+    WindowDialog(
+        show = showDialog,
+        onDismissRequest = { showDialog = false },
+    ) {
+        androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth()) {
+            androidx.compose.foundation.layout.Box(modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)) {
+                title()
+            }
+            text()
+            androidx.compose.foundation.layout.Spacer(Modifier.height(16.dp))
+            androidx.compose.foundation.layout.Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween,
+            ) {
+                androidx.compose.foundation.layout.Box(modifier = Modifier.weight(1f)) { dismissButton() }
+                androidx.compose.foundation.layout.Spacer(Modifier.width(16.dp))
+                androidx.compose.foundation.layout.Box(modifier = Modifier.weight(1f)) { confirmButton() }
+            }
+        }
     }
     val fraction by animateFloatAsState(if (showDialog) 0f else 1f)
     val (viewportW, viewportH) = LocalWindowInfo.current.containerSize.toSize()

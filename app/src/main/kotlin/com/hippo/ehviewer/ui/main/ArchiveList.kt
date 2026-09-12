@@ -10,11 +10,6 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -25,6 +20,11 @@ import androidx.compose.ui.unit.dp
 import com.ehviewer.core.i18n.R
 import com.hippo.ehviewer.client.parser.Archive
 import com.hippo.ehviewer.client.parser.Funds
+import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import top.yukonga.miuix.kmp.basic.HorizontalDivider
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 fun ArchiveList(
@@ -37,7 +37,7 @@ fun ArchiveList(
     val archiveFree = stringResource(R.string.archive_free)
     val archiveOriginal = stringResource(R.string.archive_original)
     val archiveResample = stringResource(R.string.archive_resample)
-    val fundsStyle = MaterialTheme.typography.labelLarge
+    val fundsStyle = MiuixTheme.textStyles.body2
     val (hath, nonHath) = remember(items) { items.partition { it.isHath } }
     LazyVerticalGrid(
         columns = GridCells.Fixed(2),
@@ -97,13 +97,17 @@ private fun ArchiveItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val labelStyle = MaterialTheme.typography.labelMedium
+    val labelStyle = MiuixTheme.textStyles.footnote1
     Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
             text = cost,
             style = labelStyle,
         )
-        Button(onClick = onClick, shapes = ButtonDefaults.shapes(), modifier = Modifier.width(100.dp)) {
+        Button(
+            onClick = onClick,
+            colors = ButtonDefaults.buttonColorsPrimary(),
+            modifier = Modifier.width(100.dp),
+        ) {
             Text(text = name)
         }
         Text(

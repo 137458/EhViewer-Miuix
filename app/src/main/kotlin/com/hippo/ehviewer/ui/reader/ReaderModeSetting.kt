@@ -9,8 +9,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.integerArrayResource
@@ -52,7 +52,8 @@ private fun PagerSetting() = Column {
     Text(
         text = stringResource(id = R.string.pager_viewer),
         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+        style = MiuixTheme.textStyles.body2,
     )
     val pagerNav = Settings.readerPagerNav.asMutableState()
     SpinnerChoice(
@@ -105,7 +106,8 @@ private fun WebtoonSetting() = Column {
     Text(
         text = stringResource(id = R.string.webtoon_viewer),
         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+        style = MiuixTheme.textStyles.body2,
     )
     val webtoonNav = Settings.readerWebtoonNav.asMutableState()
     SpinnerChoice(
