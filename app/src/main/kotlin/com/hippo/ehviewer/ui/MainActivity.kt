@@ -544,12 +544,12 @@ class MainActivity : AppCompatActivity() {
                                         .clip(SquircleShape(12.dp)),
                                     contentAlignment = Alignment.Center,
                                 ) {
-                                    Image(
-                                        painter = painterResource(id = com.hippo.ehviewer.R.drawable.sadpanda_low_poly),
-                                        contentDescription = null,
-                                        contentScale = ContentScale.Crop,
-                                        modifier = Modifier.fillMaxSize(),
-                                    )
+                                     Image(
+                                         painter = painterResource(id = com.hippo.ehviewer.R.mipmap.ic_launcher),
+                                         contentDescription = null,
+                                         contentScale = ContentScale.Fit,
+                                         modifier = Modifier.fillMaxSize(),
+                                     )
                                 }
                                 Spacer(modifier = Modifier.height(16.dp))
                                 navItems.forEach { (direction, stringId, icon) ->
@@ -595,12 +595,12 @@ class MainActivity : AppCompatActivity() {
                                                 .padding(16.dp)
                                                 .clip(SquircleShape(16.dp)),
                                         ) {
-                                            Image(
-                                                painter = painterResource(id = com.hippo.ehviewer.R.drawable.sadpanda_low_poly),
-                                                contentDescription = null,
-                                                modifier = Modifier.fillMaxWidth(),
-                                                contentScale = ContentScale.FillWidth,
-                                            )
+                                             Image(
+                                                 painter = painterResource(id = com.hippo.ehviewer.R.mipmap.ic_leanback_banner),
+                                                 contentDescription = null,
+                                                 modifier = Modifier.fillMaxWidth(),
+                                                 contentScale = ContentScale.FillWidth,
+                                             )
                                         }
                                         navItems.forEach { (direction, stringId, icon) ->
                                             val isSelected = currentDestination === direction
