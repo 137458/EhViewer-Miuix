@@ -393,10 +393,12 @@
     <string name="settings_advanced_backup_favorite_success">Backup favorite list success</string>
     <string name="settings_advanced_backup_favorite_failed">Backup favorite list failed</string>
     <string name="settings_about">About</string>
-    <string name="settings_about_declaration" translatable="false">EhViewer</string>
-    <string name="settings_about_declaration_summary">EhViewer is not affiliated with E-Hentai.org in any way</string>
+    <string name="settings_about_declaration" translatable="false">EhViewer MIUIX</string>
+    <string name="settings_about_declaration_summary">EhViewer MIUIX is not affiliated with E-Hentai.org in any way</string>
+    <string name="settings_about_disclaimer">Disclaimer</string>
+    <string name="settings_about_disclaimer_content">1. Academic Research: This project is a non-commercial open-source exploration for studying modern Android UI architectures and graphic rendering paradigms.\n2. Client-Only: The application is purely a client tool and does not host, provide, or distribute copyrighted media resources.\n3. No Affiliation: This project is not affiliated with, authorized, or sponsored by E-Hentai.org or ExHentai.org.\n4. User Responsibility: Users must strictly comply with local laws and regulations. Any legal consequences arising from the use of this software are solely the user\'s responsibility.\n5. AS-IS: In accordance with GPLv3, this software is provided on an "AS-IS" basis without warranties of any kind.</string>
     <string name="settings_about_author">Author</string>
-    <string name="settings_about_author_summary" translatable="false">&lt;del&gt;Hippo &amp;lt;ehviewersu$gmail.com&amp;gt;&lt;/del&gt;&lt;br&gt;&lt;del&gt;NekoInverter&lt;/del&gt;&lt;br&gt;&lt;del&gt;飛鳥澪&lt;/del&gt;&lt;br&gt;Foolbar</string>
+    <string name="settings_about_author_summary" translatable="false">&lt;del&gt;Hippo &amp;lt;ehviewersu$gmail.com&amp;gt;&lt;/del&gt;&lt;br&gt;&lt;del&gt;NekoInverter&lt;/del&gt;&lt;br&gt;&lt;del&gt;飛鳥澪&lt;/del&gt;&lt;br&gt;&lt;del&gt;Foolbar&lt;/del&gt;&lt;br&gt;137458</string>
     <string name="settings_about_latest_release">Latest release</string>
     <string name="settings_about_source">Source</string>
     <string name="settings_about_version">Build version</string>

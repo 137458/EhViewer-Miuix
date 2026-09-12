@@ -22,9 +22,9 @@
 </h1>
 
 <p align="center">
-  <a href="https://github.com/137458/ehviewer-miuix/releases"><img src="https://img.shields.io/github/v/release/137458/ehviewer-miuix" alt="Release"></a>
+  <a href="https://github.com/137458/EhViewer-Miuix/releases"><img src="https://img.shields.io/github/v/release/137458/EhViewer-Miuix" alt="Release"></a>
   <a href="/LICENSE"><img src="https://img.shields.io/badge/License-GPLv3-blue.svg" alt="LICENSE"></a>
-  <a href="https://github.com/137458/ehviewer-miuix/issues"><img src="https://img.shields.io/github/issues/137458/ehviewer-miuix" alt="Issues"></a>
+  <a href="https://github.com/137458/EhViewer-Miuix/issues"><img src="https://img.shields.io/github/issues/137458/EhViewer-Miuix" alt="Issues"></a>
   <img src="https://img.shields.io/badge/Platform-Android%208.0%2B-green.svg" alt="Android">
   <img src="https://img.shields.io/badge/Design-MIUIX%20%2F%20HyperOS-FF6900.svg" alt="Design">
   <img src="https://img.shields.io/badge/Language-Kotlin%202.4-7F52FF.svg" alt="Kotlin">
@@ -97,7 +97,7 @@
 
 ## 下载与安装
 
-请前往 [GitHub Releases](https://github.com/137458/ehviewer-miuix/releases) 页面下载最新构建安装包：
+请前往 [GitHub Releases](https://github.com/137458/EhViewer-Miuix/releases) 页面下载最新构建安装包：
 
 | 变种版本 (Flavor) | 最低 Android 版本 | 架构说明 | 特性支持 |
 |:---|:---|:---|:---|
@@ -176,24 +176,35 @@ EhViewer 的发展凝结了开源社区众多先驱与贡献者的心血，特�
 
 ## 免责声明
 
-1. 本项目仅供移动端技术交流、Jetpack Compose 声明式 UI 开发规范以及物理着色器动效技术的学习研究之用，不得用于任何商业营利目的。
-2. 软件本身为开源网络客户端工具，不内置、不提供、不分发任何受版权保护的媒体内容或商业数据；客户端的一切网络请求均由终端用户自主触发并发起至第三方公开网络接口。
-3. 请使用者严格遵守当地法律法规。因用户使用本软件所产生的任何直接或间接后果，由使用者自行承担。
+1. **技术交流与非商业性质**：本项目属于个人非盈利性开源技术探索项目，仅供 Android Jetpack Compose 现代化组件化架构、MIUIX 界面系统规范及底层渲染动效技术的学习与研究之用，严禁将本项目及其衍生构建版本用于任何商业牟利或非法经营行为。
+2. **纯客户端定位与无内容托管**：本软件仅作为通用的网络数据解析与展示客户端工具，项目本身及其维护者不拥有、不运营任何内容服务器，亦不内置、不提供、不分发、不上载任何受版权保护的媒体资源或第三方商业数据。软件运行过程中产生的所有数据检索、内容解析与文件下载，均由终端使用者在本地设备自主配置并直连第三方公开网络服务发起。
+3. **无官方关联声明**：本项目与 E-Hentai.org、ExHentai.org 及其运营团队不存在任何官方合作、授权认可、商业推广或从属关联。
+4. **法律合规与使用者完全责任自负**：使用者在下载、安装及使用本软件时，必须严格遵守所在国家与地区的现行法律法规与公序良俗。因使用者自行检索、浏览、下载、传播违规或敏感内容，或以任何不符合当地法律法规的方式使用本软件而导致的一切法律责任、行政处罚、民事纠纷或财产损失，均由使用者本人完全自行承担。本项目开发者与开源贡献者概不承担任何直接、间接、附带、特殊、衍生或连带法律责任。
+5. **按“现状”提供与无明示/默示担保（AS-IS）**：根据 GNU General Public License v3.0 协议规定，本软件按“现状”（AS-IS）分发，不提供任何明示或暗示的担保（包括但不限于对适销性、特定用途适用性、系统兼容性及无侵权之担保）。开发者不对软件运行的持续性、稳定性、数据完整性及第三方接口的可用性作任何承诺。
+6. **知识产权与商标**：项目中涉及或引用的第三方名称、商标、服务标记及接口规范，其权利均归属于各自合法的权利人所有。
 
 ---
 
 ## 许可证
 
-本项目遵循 **GNU General Public License v3.0 (GPLv3)** 开源许可证分发：
+本项目基于 GPLv3 许可证衍生开发，遵循 **GNU General Public License v3.0 (GPLv3)** 开源许可证分发：
 
 ```text
-EhViewer is free software: you can redistribute it and/or modify it under the terms of 
-the GNU General Public License as published by the Free Software Foundation, 
-either version 3 of the License, or (at your option) any later version.
+EhViewer MIUIX - Modern EhViewer client rebuilt with MIUIX and Jetpack Compose.
+Copyright (C) 2024-2026 137458, EhViewer MIUIX contributors
+Based on EhViewer:
+Copyright (C) 2014-2023 Hippo, EhViewer contributors
+Copyright (C) 2023-2024 FooIbar
 
-EhViewer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
-without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
-See the GNU General Public License for more details.
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 ```
 
 完整协议内容请参阅仓库根目录下的 [LICENSE](LICENSE) 文件。
@@ -214,8 +225,8 @@ See the GNU General Public License for more details.
 
 ```bash
 # 1. 克隆代码仓库
-git clone https://github.com/137458/ehviewer-miuix.git
-cd ehviewer-miuix
+git clone https://github.com/137458/EhViewer-Miuix.git
+cd EhViewer-Miuix
 
 # 2. 编译 Default Release 生产包
 ./gradlew assembleDefaultRelease

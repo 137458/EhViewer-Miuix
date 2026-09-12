@@ -20,9 +20,9 @@
 </h1>
 
 <p align="center">
-  <a href="https://github.com/137458/ehviewer-miuix/releases"><img src="https://img.shields.io/github/v/release/137458/ehviewer-miuix" alt="Release"></a>
+  <a href="https://github.com/137458/EhViewer-Miuix/releases"><img src="https://img.shields.io/github/v/release/137458/EhViewer-Miuix" alt="Release"></a>
   <a href="/LICENSE"><img src="https://img.shields.io/badge/License-GPLv3-blue.svg" alt="LICENSE"></a>
-  <a href="https://github.com/137458/ehviewer-miuix/issues"><img src="https://img.shields.io/github/issues/137458/ehviewer-miuix" alt="Issues"></a>
+  <a href="https://github.com/137458/EhViewer-Miuix/issues"><img src="https://img.shields.io/github/issues/137458/EhViewer-Miuix" alt="Issues"></a>
   <img src="https://img.shields.io/badge/Platform-Android%208.0%2B-green.svg" alt="Android">
   <img src="https://img.shields.io/badge/Design-MIUIX%20%2F%20HyperOS-FF6900.svg" alt="Design">
   <img src="https://img.shields.io/badge/Language-Kotlin%202.4-7F52FF.svg" alt="Kotlin">
@@ -95,7 +95,7 @@ Powered by Kotlin Multiplatform and Jetpack Compose, the application integrates 
 
 ## Download & Installation
 
-Download the latest APK package from the [GitHub Releases](https://github.com/137458/ehviewer-miuix/releases) page:
+Download the latest distribution package from [GitHub Releases](https://github.com/137458/EhViewer-Miuix/releases) page:
 
 | Flavor | Minimum Android Version | Target Architecture | Description |
 |:---|:---|:---|:---|
@@ -174,24 +174,35 @@ The evolution of EhViewer reflects the dedication of many open-source contributo
 
 ## Disclaimer
 
-1. This project is developed strictly for mobile UI/UX exploration, Jetpack Compose declarative paradigms, and physical shader rendering research. It must not be used for any commercial purposes.
-2. The application functions as an open-source network client tool and does not bundle, host, or distribute copyrighted media or commercial data. All network interactions are initiated directly by the end user to third-party public network endpoints.
-3. Users are responsible for complying with applicable local laws and regulations.
+1. **Academic Research & Non-Commercial Purpose**: This project is a non-commercial, open-source technical exploration intended solely for researching Android Jetpack Compose modern declarative architecture, MIUIX interface standards, and physical shader graphics. It must not be used for commercial profit or unauthorized monetization.
+2. **Client-Only Architecture & No Content Hosted**: This software operates strictly as a universal third-party network parser and viewing client. The project and its maintainers do not own, operate, or maintain any content servers, nor do they host, bundle, distribute, or upload copyrighted media resources or third-party commercial data. All data queries, content parsing, and downloads are initiated directly by the end-user on their local device to third-party public network endpoints.
+3. **No Official Affiliation**: This project has no official cooperation, authorization, sponsorship, or affiliation with E-Hentai.org, ExHentai.org, or their respective operating entities.
+4. **Legal Compliance & Full User Responsibility**: Users must strictly comply with applicable laws, regulations, and public policies in their respective jurisdictions. Any legal liability, administrative penalties, civil disputes, or damages arising from searching, browsing, downloading, or distributing illicit content, or utilizing this software in violation of local laws, shall be borne entirely and exclusively by the user. The project developers and open-source contributors assume no direct, indirect, incidental, special, consequential, or joint liability.
+5. **AS-IS Distribution & Disclaimer of Warranties**: In accordance with the GNU General Public License v3.0, this software is provided on an "AS-IS" basis without warranty of any kind, either express or implied, including but not limited to the implied warranties of merchantability, fitness for a particular purpose, and non-infringement. Developers make no commitments regarding software continuity, stability, data integrity, or third-party API availability.
+6. **Intellectual Property & Trademarks**: All third-party names, trademarks, service marks, and interface specifications referenced in this repository belong to their respective rightful owners.
 
 ---
 
 ## License
 
-This software is distributed under the **GNU General Public License v3.0 (GPLv3)**:
+This project is derivatively developed under and distributed pursuant to the **GNU General Public License v3.0 (GPLv3)**:
 
 ```text
-EhViewer is free software: you can redistribute it and/or modify it under the terms of 
-the GNU General Public License as published by the Free Software Foundation, 
-either version 3 of the License, or (at your option) any later version.
+EhViewer MIUIX - Modern EhViewer client rebuilt with MIUIX and Jetpack Compose.
+Copyright (C) 2024-2026 137458, EhViewer MIUIX contributors
+Based on EhViewer:
+Copyright (C) 2014-2023 Hippo, EhViewer contributors
+Copyright (C) 2023-2024 FooIbar
 
-EhViewer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
-without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
-See the GNU General Public License for more details.
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 ```
 
 For the complete license text, refer to the [LICENSE](LICENSE) file in the repository root.
@@ -212,8 +223,8 @@ To compile the application from source, prepare your development environment as 
 
 ```bash
 # 1. Clone repository
-git clone https://github.com/137458/ehviewer-miuix.git
-cd ehviewer-miuix
+git clone https://github.com/137458/EhViewer-Miuix.git
+cd EhViewer-Miuix
 
 # 2. Assemble Default Release APK
 ./gradlew assembleDefaultRelease

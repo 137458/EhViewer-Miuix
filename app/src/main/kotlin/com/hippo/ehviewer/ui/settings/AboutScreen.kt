@@ -77,6 +77,20 @@ fun AnimatedVisibilityScope.AboutScreen(navigator: DestinationsNavigator) = Scre
     val scrollBehavior = MiuixScrollBehavior()
     val colorScheme = MiuixTheme.colorScheme
     fun launchSnackbar(message: String) = launch { snackbar(message) }
+    fun showDisclaimer() = launch {
+        awaitConfirmationOrCancel(
+            title = R.string.settings_about_disclaimer,
+            showCancelButton = false,
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+            ) {
+                Text(text = stringResource(id = R.string.settings_about_disclaimer_content))
+            }
+        }
+    }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -118,6 +132,11 @@ fun AnimatedVisibilityScope.AboutScreen(navigator: DestinationsNavigator) = Scre
                     Preference(
                         title = stringResource(id = R.string.settings_about_declaration),
                         summary = stringResource(id = R.string.settings_about_declaration_summary),
+                        onClick = ::showDisclaimer,
+                    )
+                    Preference(
+                        title = stringResource(id = R.string.settings_about_disclaimer),
+                        onClick = ::showDisclaimer,
                     )
                     HtmlPreference(
                         title = stringResource(id = R.string.settings_about_author),

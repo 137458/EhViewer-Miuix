@@ -364,7 +364,9 @@
     <string name="settings_advanced_backup_favorite_success">備份收藏列表成功</string>
     <string name="settings_advanced_backup_favorite_failed">備份收藏列表失敗</string>
     <string name="settings_about">關於</string>
-    <string name="settings_about_declaration_summary">EhViewer 與 E-Hentai.org 無任何關聯</string>
+    <string name="settings_about_declaration_summary">EhViewer MIUIX 與 E-Hentai.org 無任何關聯</string>
+    <string name="settings_about_disclaimer">免責聲明</string>
+    <string name="settings_about_disclaimer_content">1. 技術研究性質：本專案屬於個人非營利性開源技術探索專案，僅供 Android 現代化介面架構與底層渲染動效技術的研究之用，嚴禁用於任何商業牟利行為。\n2. 純客戶端定位：本軟體僅作為網路數據解析與展示客戶端工具，不擁有、不營運內容伺服器，不內建、不提供、不分發任何受版權保護的媒體資源。\n3. 無官方關聯：本專案與 E-Hentai.org、ExHentai.org 及其營運團隊無任何官方合作、授權或從屬關聯。\n4. 使用者責任自負：使用者必須嚴格遵守當地法律法規。因使用本軟體所產生的一切法律責任及後果，均由使用者本人完全自行承擔。\n5. 無擔保分發：遵循 GPLv3 協議，本軟體按「現狀」提供，開發者不對軟體的可用性及第三方介面的穩定性作任何承諾。</string>
     <string name="settings_about_author">作者</string>
     <string name="settings_about_latest_release">最新版本</string>
     <string name="settings_about_source">原始碼</string>
