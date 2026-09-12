@@ -32,13 +32,26 @@ import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-private const val APPLY_JS = "javascript:(function(){var apply = document.getElementById(\"apply\").children[0];apply.click();})();"
+import androidx.compose.foundation.layout.size
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.unit.dp
+import com.google.accompanist.web.LoadingState
+import com.hippo.ehviewer.util.WebInjectionHelper
+import kotlinx.coroutines.delay
+import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
 
 @Destination<RootGraph>
 @Composable
 fun AnimatedVisibilityScope.UConfigScreen(navigator: DestinationsNavigator) = Screen(navigator) {
     val url = EhUrl.getUConfigUrl()
     val wvNavigator = rememberWebViewNavigator()
+    var isApplying by rememberSaveable { mutableStateOf(false) }
+
     Scaffold(
         topBar = {
             BlurredBar {
@@ -46,13 +59,24 @@ fun AnimatedVisibilityScope.UConfigScreen(navigator: DestinationsNavigator) = Sc
                     title = stringResource(id = R.string.u_config),
                     navigationIcon = { NavigationIcon() },
                     actions = {
-                        IconButton(
-                            onClick = {
-                                wvNavigator.loadUrl(APPLY_JS)
-                                navigator.popBackStack()
-                            },
-                        ) {
-                            Icon(imageVector = Icons.Default.Check, contentDescription = null)
+                        if (isApplying) {
+                            InfiniteProgressIndicator(
+                                modifier = Modifier
+                                    .padding(end = 16.dp)
+                                    .size(24.dp),
+                            )
+                        } else {
+                            IconButton(
+                                onClick = {
+                                    isApplying = true
+                                    wvNavigator.loadUrl(WebInjectionHelper.APPLY_JS)
+                                },
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Check,
+                                    contentDescription = stringResource(id = android.R.string.ok),
+                                )
+                            }
                         }
                     },
                 )
@@ -65,6 +89,21 @@ fun AnimatedVisibilityScope.UConfigScreen(navigator: DestinationsNavigator) = Sc
                 .background(MiuixTheme.colorScheme.background),
         ) {
             val state = rememberWebViewState(url = url)
+            LaunchedEffect(state.loadingState) {
+                if (state.loadingState is LoadingState.Finished) {
+                    wvNavigator.loadUrl(WebInjectionHelper.buildViewportScript())
+                    wvNavigator.loadUrl(WebInjectionHelper.buildResponsiveCssScript())
+                    if (isApplying) {
+                        navigator.popBackStack()
+                    }
+                }
+            }
+            LaunchedEffect(isApplying) {
+                if (isApplying) {
+                    delay(3000)
+                    navigator.popBackStack()
+                }
+            }
             WebView(
                 state = state,
                 modifier = Modifier

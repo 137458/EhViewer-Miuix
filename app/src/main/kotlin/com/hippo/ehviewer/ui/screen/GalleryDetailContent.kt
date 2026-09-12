@@ -418,7 +418,7 @@ fun BelowHeader(galleryDetail: GalleryDetail, voteTag: VoteTag) {
             else -> stringResource(R.string.more_comment)
         }
         fun navigateToCommentScreen() {
-            navigate(GalleryCommentsScreenDestination(galleryDetail.gid))
+            navigate(GalleryCommentsScreenDestination(galleryDetail.gid, galleryDetail.token))
         }
         CrystalCard {
             commentsList.take(maxShowCount).forEach { item ->

@@ -422,8 +422,23 @@ class MainActivity : AppCompatActivity() {
                     Triple(SettingsScreenDestination, R.string.settings, Icons.Default.Settings),
                 )
             }
-            val primaryIndex = primaryNavItems.indexOfFirst { it.first === currentDestination }
-            val isPrimaryDestination = primaryIndex >= 0
+            val isPrimaryDestination = navItems.any { it.first === currentDestination }
+            val rawPrimaryIndex = primaryNavItems.indexOfFirst { it.first === currentDestination }
+            val primaryIndex = when {
+                rawPrimaryIndex >= 0 -> rawPrimaryIndex
+                currentDestination === ToplistScreenDestination -> primaryNavItems.indexOfFirst { it.first === WhatshotScreenDestination }
+                currentDestination === HistoryScreenDestination -> primaryNavItems.indexOfFirst { it.first === DownloadsScreenDestination }
+                else -> -1
+            }
+            fun navigateToTab(direction: Direction) {
+                navigator.navigate(direction) {
+                    popUpTo(NavGraphs.root.startRoute) {
+                        saveState = true
+                    }
+                    launchSingleTop = true
+                    restoreState = true
+                }
+            }
             val contentBackdrop = rememberLayerBackdrop()
             val bottomBarPadding = if (isPrimaryDestination && !isWideScreen) 80.dp else 0.dp
             val effectiveFabPadding = snackbarFabPadding.coerceAtLeast(bottomBarPadding)
@@ -440,11 +455,13 @@ class MainActivity : AppCompatActivity() {
                     snackbarHost = {
                         SnackbarHost(
                             hostState = snackbarState,
-                            modifier = Modifier.onGloballyPositioned {
-                                with(density) {
-                                    snackbarFabPadding = it.size.height.toDp()
-                                }
-                            },
+                            modifier = Modifier
+                                .padding(bottom = bottomBarPadding)
+                                .onGloballyPositioned {
+                                    with(density) {
+                                        snackbarFabPadding = it.size.height.toDp()
+                                    }
+                                },
                         )
                     },
                 ) { _ ->
@@ -488,14 +505,14 @@ class MainActivity : AppCompatActivity() {
                                     FloatingBottomBar(
                                         selectedIndex = { primaryIndex.coerceAtLeast(0) },
                                         onSelected = { index ->
-                                            navigator.navigate(primaryNavItems[index].first)
+                                            navigateToTab(primaryNavItems[index].first)
                                         },
                                         backdrop = contentBackdrop,
                                         tabsCount = primaryNavItems.size,
                                     ) {
                                         primaryNavItems.forEachIndexed { index, (_, stringId, icon) ->
                                             FloatingBottomBarItem(
-                                                onClick = { navigator.navigate(primaryNavItems[index].first) },
+                                                onClick = { navigateToTab(primaryNavItems[index].first) },
                                             ) {
                                                 Icon(
                                                     imageVector = icon,
@@ -538,7 +555,7 @@ class MainActivity : AppCompatActivity() {
                                 navItems.forEach { (direction, stringId, icon) ->
                                     NavigationRailItem(
                                         selected = currentDestination === direction,
-                                        onClick = { navigator.navigate(direction) },
+                                        onClick = { navigateToTab(direction) },
                                         icon = icon,
                                         label = stringResource(id = stringId),
                                     )
@@ -596,7 +613,7 @@ class MainActivity : AppCompatActivity() {
                                                     .clip(SquircleShape(12.dp))
                                                     .background(itemBg)
                                                     .clickable {
-                                                        navigator.navigate(direction)
+                                                        navigateToTab(direction)
                                                         closeDrawer()
                                                     }
                                                     .padding(horizontal = 16.dp, vertical = 12.dp),

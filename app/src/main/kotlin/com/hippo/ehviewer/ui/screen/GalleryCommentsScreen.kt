@@ -1,5 +1,6 @@
 package com.hippo.ehviewer.ui.screen
 
+import com.ehviewer.core.model.GalleryDetail
 import android.graphics.Typeface
 import android.text.Html
 import android.text.Spannable
@@ -30,28 +31,27 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Reply
 import androidx.compose.material.icons.automirrored.filled.Send
-import androidx.compose.material3.ButtonDefaults
+import top.yukonga.miuix.kmp.basic.FloatingActionButton
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
-import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
+import top.yukonga.miuix.kmp.basic.PullToRefresh
+import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.Surface
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TextButton
+import top.yukonga.miuix.kmp.basic.TopAppBar
+import top.yukonga.miuix.kmp.basic.rememberPullToRefreshState
+import top.yukonga.miuix.kmp.theme.MiuixTheme
+import com.ehviewer.core.ui.component.BlurredBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -151,7 +151,7 @@ fun processComment(
                 setSpan(URLSpan(result.groupValues[0]), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
             }
         }
-        val color = MaterialTheme.colorScheme.onSurfaceVariant.toArgb()
+        val color = MiuixTheme.colorScheme.onSurfaceVariantSummary.toArgb()
         if (comment.id != 0L && comment.score != 0) {
             val score = comment.score
             val scoreString = if (score > 0) "+$score" else score.toString()
@@ -174,21 +174,92 @@ fun processComment(
     }
 }
 
+sealed interface GalleryCommentsState {
+    data class Ready(val galleryDetail: GalleryDetail) : GalleryCommentsState
+    data class NeedsFetch(val gid: Long, val token: String) : GalleryCommentsState
+    data object MissingDetail : GalleryCommentsState
+}
+
+fun resolveGalleryCommentsState(
+    gid: Long,
+    token: String?,
+    cachedDetail: GalleryDetail?,
+): GalleryCommentsState {
+    if (cachedDetail != null) {
+        return GalleryCommentsState.Ready(cachedDetail)
+    }
+    if (token != null) {
+        return GalleryCommentsState.NeedsFetch(gid, token)
+    }
+    return GalleryCommentsState.MissingDetail
+}
+
 private val MinimumContentPaddingEditText = 88.dp
 
 @Destination<RootGraph>
 @Composable
-fun AnimatedVisibilityScope.GalleryCommentsScreen(gid: Long, navigator: DestinationsNavigator) = Screen(navigator) {
-    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
-    var commenting by rememberSaveable { mutableStateOf(false) }
+fun AnimatedVisibilityScope.GalleryCommentsScreen(
+    gid: Long,
+    detailToken: String? = null,
+    navigator: DestinationsNavigator,
+) = Screen(navigator) {
+    val scrollBehavior = MiuixScrollBehavior()
+    val commentingState = rememberSaveable { mutableStateOf(false) }
+    var commenting by commentingState
     val animationProgress by animateFloatMergePredictiveBackAsState(enable = commenting) { commenting = false }
     val animateItems by Settings.animateItems.collectAsState()
 
-    val galleryDetail = remember { detailCache[gid]!! }
-    val userCommentBackField = remember { mutableStateOf(TextFieldValue()) }
-    var userComment by userCommentBackField
-    var commentId by remember { mutableLongStateOf(-1) }
-    var comments by remember(galleryDetail) { mutableStateOf(galleryDetail.comments) }
+    var recoveredDetail by remember { mutableStateOf<GalleryDetail?>(null) }
+    val rawCachedDetail = detailCache[gid] ?: recoveredDetail
+    val commentsState = remember(gid, detailToken, rawCachedDetail) {
+        resolveGalleryCommentsState(gid, detailToken, rawCachedDetail)
+    }
+
+    LaunchedEffect(commentsState) {
+        if (commentsState is GalleryCommentsState.NeedsFetch) {
+            runCatching {
+                val url = EhUrl.getGalleryDetailUrl(commentsState.gid, commentsState.token)
+                val fetched = EhEngine.getGalleryDetail(url)
+                detailCache.put(fetched.gid, fetched)
+                recoveredDetail = fetched
+            }
+        }
+    }
+
+    val galleryDetail = (commentsState as? GalleryCommentsState.Ready)?.galleryDetail ?: recoveredDetail
+
+    if (galleryDetail == null) {
+        Scaffold(
+            topBar = {
+                BlurredBar {
+                    TopAppBar(
+                        title = stringResource(id = R.string.gallery_comments),
+                        navigationIcon = { NavigationIcon() },
+                    )
+                }
+            },
+        ) { paddingValues ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
+                contentAlignment = Alignment.Center,
+            ) {
+                if (commentsState is GalleryCommentsState.NeedsFetch) {
+                    InfiniteProgressIndicator()
+                } else {
+                    Text(
+                        text = stringResource(id = R.string.error_something_wrong_happened),
+                        style = MiuixTheme.textStyles.body1,
+                    )
+                }
+            }
+        }
+    } else {
+        val userCommentBackField = remember { mutableStateOf(TextFieldValue()) }
+        var userComment by userCommentBackField
+        var commentId by remember { mutableLongStateOf(-1) }
+        var comments by remember(galleryDetail) { mutableStateOf(galleryDetail.comments) }
     LaunchedEffect(comments) {
         galleryDetail.comments = comments
     }
@@ -257,12 +328,33 @@ fun AnimatedVisibilityScope.GalleryCommentsScreen(gid: Long, navigator: Destinat
         }
         // Wait cancellation
         showNoButton<Unit> {
-            Column {
+            Column(
+                modifier = Modifier
+                    .verticalScroll(rememberScrollState())
+                    .padding(vertical = 12.dp),
+            ) {
                 data.forEach { (name, vote) ->
-                    ListItem(
-                        trailingContent = { Text(text = vote) },
-                        content = { Text(text = name) },
-                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 24.dp, vertical = 12.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = name,
+                            style = MiuixTheme.textStyles.body1,
+                            color = MiuixTheme.colorScheme.onSurface,
+                            modifier = Modifier.weight(1f, fill = false),
+                        )
+                        if (vote.isNotEmpty()) {
+                            Text(
+                                text = vote,
+                                style = MiuixTheme.textStyles.body2,
+                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -271,11 +363,16 @@ fun AnimatedVisibilityScope.GalleryCommentsScreen(gid: Long, navigator: Destinat
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            TopAppBar(
-                title = { Text(text = stringResource(id = R.string.gallery_comments)) },
-                navigationIcon = { NavigationIcon() },
+            BlurredBar(
+                backdrop = null,
                 scrollBehavior = scrollBehavior,
-            )
+            ) {
+                TopAppBar(
+                    title = stringResource(id = R.string.gallery_comments),
+                    navigationIcon = { NavigationIcon() },
+                    scrollBehavior = scrollBehavior,
+                )
+            }
         },
         floatingActionButton = {
             if (hasSignedIn && !commenting) {
@@ -298,7 +395,7 @@ fun AnimatedVisibilityScope.GalleryCommentsScreen(gid: Long, navigator: Destinat
         var editTextMeasured by remember { mutableStateOf(MinimumContentPaddingEditText) }
         var isRefreshing by remember { mutableStateOf(false) }
         val refreshState = rememberPullToRefreshState()
-        PullToRefreshBox(
+        PullToRefresh(
             isRefreshing = isRefreshing,
             onRefresh = {
                 isRefreshing = true
@@ -309,199 +406,192 @@ fun AnimatedVisibilityScope.GalleryCommentsScreen(gid: Long, navigator: Destinat
                     isRefreshing = false
                 }
             },
+            pullToRefreshState = refreshState,
             modifier = Modifier.imePadding().padding(top = paddingValues.calculateTopPadding()),
-            state = refreshState,
-            indicator = {
-                PullToRefreshDefaults.LoadingIndicator(
-                    modifier = Modifier.align(Alignment.TopCenter),
-                    isRefreshing = isRefreshing,
-                    state = refreshState,
-                )
-            },
         ) {
-            val additionalPadding = if (commenting) {
-                editTextMeasured
-            } else {
-                if (!comments.hasMore) {
-                    MinimumContentPaddingEditText
+            Box(modifier = Modifier.fillMaxSize()) {
+                val additionalPadding = if (commenting) {
+                    editTextMeasured
                 } else {
-                    0.dp
-                }
-            }
-            val voteUpSucceed = stringResource(R.string.vote_up_successfully)
-            val cancelVoteUpSucceed = stringResource(R.string.cancel_vote_up_successfully)
-            val voteDownSucceed = stringResource(R.string.vote_down_successfully)
-            val cancelVoteDownSucceed = stringResource(R.string.cancel_vote_down_successfully)
-            val voteFailed = stringResource(R.string.vote_failed)
-            val layoutDirection = LocalLayoutDirection.current
-            val lazyListState = rememberLazyListState()
-            LazyColumn(
-                modifier = Modifier.fillMaxSize().padding(horizontal = keylineMargin),
-                state = lazyListState,
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(
-                    start = paddingValues.calculateStartPadding(layoutDirection),
-                    end = paddingValues.calculateEndPadding(layoutDirection),
-                    bottom = paddingValues.calculateBottomPadding() + additionalPadding,
-                ),
-            ) {
-                items(
-                    items = comments.comments,
-                    key = { it.id },
-                ) { item ->
-                    suspend fun voteComment(comment: GalleryComment, isUp: Boolean) {
-                        galleryDetail.runSuspendCatching {
-                            EhEngine.voteComment(apiUid, apiKey, gid, token, comment.id, if (isUp) 1 else -1).also {
-                                refreshComment(true)
-                            }
-                        }.onSuccess { result ->
-                            snackbar(
-                                if (isUp) {
-                                    if (0 != result.vote) voteUpSucceed else cancelVoteUpSucceed
-                                } else {
-                                    if (0 != result.vote) voteDownSucceed else cancelVoteDownSucceed
-                                },
-                            )
-                        }.onFailure {
-                            snackbar(voteFailed)
-                        }
-                    }
-
-                    suspend fun doCommentAction(comment: GalleryComment) = awaitSelectAction {
-                        onSelect(copyComment) {
-                            addTextToClipboard(comment.comment.parseAsHtml())
-                        }
-                        if (!comment.uploader && !comment.editable) {
-                            onSelect(blockCommenter) { showFilterCommenter(comment) }
-                        }
-                        if (comment.editable) {
-                            onSelect(editComment) {
-                                userComment = TextFieldValue(AnnotatedString.fromHtml(comment.comment))
-                                commentId = comment.id
-                                commenting = true
-                            }
-                        }
-                        if (comment.voteUpAble) {
-                            onSelect(if (comment.voteUpEd) cancelVoteUp else voteUp) {
-                                voteComment(comment, true)
-                            }
-                        }
-                        if (comment.voteDownAble) {
-                            onSelect(if (comment.voteDownEd) cancelVoteDown else voteDown) {
-                                voteComment(comment, false)
-                            }
-                        }
-                        if (!comment.voteState.isNullOrEmpty()) {
-                            onSelect(checkVoteStatus) {
-                                showCommentVoteStatus(comment.voteState!!)
-                            }
-                        }
-                    }()
-
-                    GalleryCommentCard(
-                        modifier = Modifier.thenIf(animateItems) { animateItem() },
-                        comment = item,
-                        onUserClick = {
-                            navigate(
-                                ListUrlBuilder(
-                                    mode = ListUrlBuilder.MODE_UPLOADER,
-                                    keyword = item.user,
-                                ).asDst(),
-                            )
-                        },
-                        onCardClick = { launch { doCommentAction(item) } },
-                        onUrlClick = {
-                            if (it.startsWith("#c")) {
-                                it.substring(2).toLongOrNull()?.let { id ->
-                                    val index = comments.comments.indexOfFirst { c -> c.id == id }
-                                    if (index != -1) {
-                                        launch { lazyListState.animateScrollToItem(index) }
-                                    }
-                                }
-                            } else {
-                                if (!jumpToReaderByPage(it, galleryDetail)) if (!navWithUrl(it)) openBrowser(it)
-                            }
-                        },
-                        processComment = { c, ig -> processComment(c, ig) },
-                    )
-                }
-                if (comments.hasMore) {
-                    item {
-                        Crossfade(targetState = refreshing, modifier = Modifier.padding(keylineMargin), label = "refreshing") {
-                            Box(
-                                modifier = Modifier.fillMaxWidth().height(40.dp),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                if (it) {
-                                    InfiniteProgressIndicator()
-                                } else {
-                                    TextButton(
-                                        onClick = {
-                                            launchIO {
-                                                refreshing = true
-                                                runSuspendCatching { refreshComment(true) }
-                                                refreshing = false
-                                            }
-                                        },
-                                        shapes = ButtonDefaults.shapes(),
-                                        modifier = Modifier.fillMaxWidth(),
-                                    ) {
-                                        Text(text = stringResource(id = R.string.click_more_comments))
-                                    }
-                                }
-                            }
-                        }
+                    if (!comments.hasMore) {
+                        MinimumContentPaddingEditText
+                    } else {
+                        0.dp
                     }
                 }
-            }
-            if (!isAtLeastP) {
-                // Workaround for crash when 0-sized TextField is focused
-                // https://issuetracker.google.com/440964236
-                Box(Modifier.size(1.dp).focusable())
-            }
-            Surface(
-                modifier = Modifier.align(Alignment.BottomCenter).layout { measurable, constraints ->
-                    val origin = measurable.measure(constraints)
-                    val width = lerp(origin.width, 0, animationProgress)
-                    val height = lerp(origin.height, 0, animationProgress)
-                    val placeable = measurable.measure(Constraints.fixed(width, height))
-                    layout(width, height) {
-                        placeable.placeRelative(0, 0)
-                    }
-                }.graphicsLayer {
-                    shape = RoundedCornerShape((animationProgress * 100).roundToInt())
-                    clip = true
-                }.height(IntrinsicSize.Min),
-                color = MaterialTheme.colorScheme.primaryContainer,
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().navigationBarsPadding().onGloballyPositioned { coordinates ->
-                        editTextMeasured = max(with(density) { coordinates.size.height.toDp() }, MinimumContentPaddingEditText)
-                    },
+                val voteUpSucceed = stringResource(R.string.vote_up_successfully)
+                val cancelVoteUpSucceed = stringResource(R.string.cancel_vote_up_successfully)
+                val voteDownSucceed = stringResource(R.string.vote_down_successfully)
+                val cancelVoteDownSucceed = stringResource(R.string.cancel_vote_down_successfully)
+                val voteFailed = stringResource(R.string.vote_failed)
+                val layoutDirection = LocalLayoutDirection.current
+                val lazyListState = rememberLazyListState()
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize().padding(horizontal = keylineMargin),
+                    state = lazyListState,
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(
+                        start = paddingValues.calculateStartPadding(layoutDirection),
+                        end = paddingValues.calculateEndPadding(layoutDirection),
+                        bottom = paddingValues.calculateBottomPadding() + additionalPadding,
+                    ),
                 ) {
-                    val color = MaterialTheme.colorScheme.onPrimaryContainer
-                    BasicTextField(
-                        value = userComment,
-                        onValueChange = { textFieldValue ->
-                            userComment = textFieldValue.updateSpan(userComment)
-                        },
-                        modifier = Modifier.weight(1f).padding(keylineMargin).addBBCodeTextContextMenuItems(userCommentBackField),
-                        textStyle = MaterialTheme.typography.bodyLarge.merge(color = color),
-                        cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-                    )
-                    IconButton(
-                        onClick = { launchIO { sendComment() } },
-                        shapes = IconButtonDefaults.shapes(),
-                        modifier = Modifier.align(Alignment.CenterVertically).padding(16.dp),
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Default.Send,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                    items(
+                        items = comments.comments,
+                        key = { it.id },
+                    ) { item ->
+                        suspend fun voteComment(comment: GalleryComment, isUp: Boolean) {
+                            galleryDetail.runSuspendCatching {
+                                EhEngine.voteComment(apiUid, apiKey, gid, token, comment.id, if (isUp) 1 else -1).also {
+                                    refreshComment(true)
+                                }
+                            }.onSuccess { result ->
+                                snackbar(
+                                    if (isUp) {
+                                        if (0 != result.vote) voteUpSucceed else cancelVoteUpSucceed
+                                    } else {
+                                        if (0 != result.vote) voteDownSucceed else cancelVoteDownSucceed
+                                    },
+                                )
+                            }.onFailure {
+                                snackbar(voteFailed)
+                            }
+                        }
+
+                        suspend fun doCommentAction(comment: GalleryComment) = awaitSelectAction {
+                            onSelect(copyComment) {
+                                addTextToClipboard(comment.comment.parseAsHtml())
+                            }
+                            if (!comment.uploader && !comment.editable) {
+                                onSelect(blockCommenter) { showFilterCommenter(comment) }
+                            }
+                            if (comment.editable) {
+                                onSelect(editComment) {
+                                    userComment = TextFieldValue(AnnotatedString.fromHtml(comment.comment))
+                                    commentId = comment.id
+                                    commenting = true
+                                }
+                            }
+                            if (comment.voteUpAble) {
+                                onSelect(if (comment.voteUpEd) cancelVoteUp else voteUp) {
+                                    voteComment(comment, true)
+                                }
+                            }
+                            if (comment.voteDownAble) {
+                                onSelect(if (comment.voteDownEd) cancelVoteDown else voteDown) {
+                                    voteComment(comment, false)
+                                }
+                            }
+                            if (!comment.voteState.isNullOrEmpty()) {
+                                onSelect(checkVoteStatus) {
+                                    showCommentVoteStatus(comment.voteState!!)
+                                }
+                            }
+                        }()
+
+                        GalleryCommentCard(
+                            modifier = Modifier.thenIf(animateItems) { animateItem() },
+                            comment = item,
+                            onUserClick = {
+                                navigate(
+                                    ListUrlBuilder(
+                                        mode = ListUrlBuilder.MODE_UPLOADER,
+                                        keyword = item.user,
+                                    ).asDst(),
+                                )
+                            },
+                            onCardClick = { launch { doCommentAction(item) } },
+                            onUrlClick = {
+                                if (it.startsWith("#c")) {
+                                    it.substring(2).toLongOrNull()?.let { id ->
+                                        val index = comments.comments.indexOfFirst { c -> c.id == id }
+                                        if (index != -1) {
+                                            launch { lazyListState.animateScrollToItem(index) }
+                                        }
+                                    }
+                                } else {
+                                    if (!jumpToReaderByPage(it, galleryDetail)) if (!navWithUrl(it)) openBrowser(it)
+                                }
+                            },
+                            processComment = { c, ig -> processComment(c, ig) },
                         )
+                    }
+                    if (comments.hasMore) {
+                        item {
+                            Crossfade(targetState = refreshing, modifier = Modifier.padding(keylineMargin), label = "refreshing") {
+                                Box(
+                                    modifier = Modifier.fillMaxWidth().height(40.dp),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    if (it) {
+                                        InfiniteProgressIndicator()
+                                    } else {
+                                        TextButton(
+                                            text = stringResource(id = R.string.click_more_comments),
+                                            onClick = {
+                                                launchIO {
+                                                    refreshing = true
+                                                    runSuspendCatching { refreshComment(true) }
+                                                    refreshing = false
+                                                }
+                                            },
+                                            modifier = Modifier.fillMaxWidth(),
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                if (!isAtLeastP) {
+                    // Workaround for crash when 0-sized TextField is focused
+                    // https://issuetracker.google.com/440964236
+                    Box(Modifier.size(1.dp).focusable())
+                }
+                Surface(
+                    modifier = Modifier.align(Alignment.BottomCenter).layout { measurable, constraints ->
+                        val origin = measurable.measure(constraints)
+                        val width = lerp(origin.width, 0, animationProgress)
+                        val height = lerp(origin.height, 0, animationProgress)
+                        val placeable = measurable.measure(Constraints.fixed(width, height))
+                        layout(width, height) {
+                            placeable.placeRelative(0, 0)
+                        }
+                    }.graphicsLayer {
+                        shape = RoundedCornerShape((animationProgress * 100).roundToInt())
+                        clip = true
+                    }.height(IntrinsicSize.Min),
+                    color = MiuixTheme.colorScheme.primaryContainer,
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().navigationBarsPadding().onGloballyPositioned { coordinates ->
+                            editTextMeasured = max(with(density) { coordinates.size.height.toDp() }, MinimumContentPaddingEditText)
+                        },
+                    ) {
+                        val color = MiuixTheme.colorScheme.onPrimaryContainer
+                        BasicTextField(
+                            value = userComment,
+                            onValueChange = { textFieldValue ->
+                                userComment = textFieldValue.updateSpan(userComment)
+                            },
+                            modifier = Modifier.weight(1f).padding(keylineMargin).addBBCodeTextContextMenuItems(userCommentBackField),
+                            textStyle = MiuixTheme.textStyles.body1.merge(color = color),
+                            cursorBrush = SolidColor(MiuixTheme.colorScheme.primary),
+                        )
+                        IconButton(
+                            onClick = { launchIO { sendComment() } },
+                            modifier = Modifier.align(Alignment.CenterVertically).padding(16.dp),
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Default.Send,
+                                contentDescription = null,
+                                tint = MiuixTheme.colorScheme.onPrimaryContainer,
+                            )
+                        }
                     }
                 }
             }
         }
     }
+}
 }

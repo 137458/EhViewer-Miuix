@@ -27,9 +27,13 @@ import com.hippo.ehviewer.collectAsState
 import com.materialkolor.dynamicColorScheme
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.theme.TextStyles
 import top.yukonga.miuix.kmp.theme.ThemeController
 import top.yukonga.miuix.kmp.theme.darkColorScheme as miuixDarkColorScheme
 import top.yukonga.miuix.kmp.theme.lightColorScheme as miuixLightColorScheme
+
+val TextStyles.titleLarge get() = title3
+val TextStyles.bodyMedium get() = body2
 
 fun ColorScheme.amoled(amoled: Boolean) = if (amoled) {
     copy(

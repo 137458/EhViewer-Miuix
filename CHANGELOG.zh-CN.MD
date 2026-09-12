@@ -2,6 +2,20 @@
 
 ## [未发布]
 
+### 修复
+
+* 修复画廊评论页在进程恢复后因缓存失效导致的空指针异常，增加详情自动异步恢复与降级机制
+* 修复启动目的地设置为排行榜或历史记录时主底部导航栏隐藏且无法切换的问题
+* 修复悬浮底部导航栏遮挡 Snackbar 提示的问题
+* 修复网页设置页（UConfig）保存操作的异步时序竞态
+
+### 重构
+
+* 完成画廊评论页（GalleryCommentsScreen）全面迁移至原生 Miuix 规范（Scaffold、TopAppBar、BlurredBar、PullToRefresh）
+* 迁移进度页（ProgressScreen）与开源许可页（LicenseScreen）至 Miuix 卡片与原生排版组件
+* 现代化全应用网页界面（WebViewSignInScreen、MyTagsScreen、UConfigScreen），支持视口自适应与响应式排版样式注入
+* 重构阅读器微件与偏好设置下拉菜单组件至原生 Miuix 菜单规范
+
 ### 文档
 
 * 重写项目 README 说明文档，全面对齐 MIUIX 设计系统特性，补全防伪声明、FAQ 与致谢名单

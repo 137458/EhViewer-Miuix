@@ -22,19 +22,22 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLayoutDirection
+import top.yukonga.miuix.kmp.basic.DropdownDefaults
+import top.yukonga.miuix.kmp.basic.DropdownEntry
+import top.yukonga.miuix.kmp.basic.DropdownItem
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.popup.WindowDropdownPopup
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 fun <T> DropdownListPreference(
@@ -71,7 +74,7 @@ fun <T> DropdownListPreference(
     summary: @Composable (() -> Unit)? = null,
 ) {
     var openSelector by rememberSaveable { mutableStateOf(false) }
-    // Put DropdownMenu before Preference so that it can anchor to the right position.
+    // Put Dropdown popup before Preference so that it can anchor to the right position.
     if (openSelector) {
         val theme = LocalPreferenceTheme.current
         val padding = with(theme.padding) {
@@ -79,27 +82,28 @@ fun <T> DropdownListPreference(
             PaddingValues(start = calculateStartPadding(direction), end = calculateStartPadding(direction))
         }
         Box(modifier = Modifier.fillMaxWidth().padding(padding)) {
-            DropdownMenu(
-                expanded = openSelector,
-                onDismissRequest = { openSelector = false },
-            ) {
-                items.forEach {
-                    DropdownMenuItem(
-                        text = { Text(text = it.value) },
-                        onClick = {
-                            onValueChange(it.key)
-                            openSelector = false
-                        },
-                        modifier = Modifier.background(
-                            if (it.key == value) {
-                                MaterialTheme.colorScheme.secondaryContainer
-                            } else {
-                                Color.Transparent
+            val entry = remember(items, value) {
+                DropdownEntry(
+                    items = items.map { (key, text) ->
+                        DropdownItem(
+                            text = text,
+                            selected = key == value,
+                            onClick = {
+                                onValueChange(key)
+                                openSelector = false
                             },
-                        ),
-                    )
-                }
+                        )
+                    },
+                )
             }
+            WindowDropdownPopup(
+                entry = entry,
+                show = openSelector,
+                onDismiss = { openSelector = false },
+                onDismissFinished = {},
+                maxHeight = null,
+                dropdownColors = DropdownDefaults.dropdownColors(),
+            )
         }
     }
     Preference(
