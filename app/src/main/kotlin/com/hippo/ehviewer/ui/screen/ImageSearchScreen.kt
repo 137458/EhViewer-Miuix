@@ -3,21 +3,18 @@ package com.hippo.ehviewer.ui.screen
 import android.net.Uri
 import androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.ImageOnly
 import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.plus
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.ElevatedCard
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -28,8 +25,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import com.ehviewer.core.files.toOkioPath
 import com.ehviewer.core.i18n.R
+import com.ehviewer.core.ui.component.BlurredBar
 import com.ehviewer.core.ui.util.snackBarPadding
 import com.ehviewer.core.util.launch
 import com.ehviewer.core.util.launchUI
@@ -38,6 +37,7 @@ import com.hippo.ehviewer.client.data.ListUrlBuilder
 import com.hippo.ehviewer.client.data.ListUrlBuilder.Companion.MODE_IMAGE_SEARCH
 import com.hippo.ehviewer.ui.Screen
 import com.hippo.ehviewer.ui.main.ImageSearch
+import com.hippo.ehviewer.ui.main.NavigationIcon
 import com.hippo.ehviewer.util.pickVisualMedia
 import com.hippo.ehviewer.util.sha1
 import com.ramcosta.composedestinations.annotation.Destination
@@ -45,6 +45,13 @@ import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import moe.tarsin.navigate
 import moe.tarsin.snackbar
+import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.FloatingActionButton
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TopAppBar
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Destination<RootGraph>
 @Composable
@@ -56,9 +63,12 @@ fun AnimatedVisibilityScope.ImageSearchScreen(navigator: DestinationsNavigator) 
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(text = stringResource(id = R.string.image_search)) },
-            )
+            BlurredBar {
+                TopAppBar(
+                    title = stringResource(id = R.string.image_search),
+                    navigationIcon = { NavigationIcon() },
+                )
+            }
         },
         floatingActionButton = {
             FloatingActionButton(
@@ -83,32 +93,40 @@ fun AnimatedVisibilityScope.ImageSearchScreen(navigator: DestinationsNavigator) 
             }
         },
     ) { contentPadding ->
-        ElevatedCard(
-            modifier = Modifier.padding(
-                paddingValues = contentPadding + PaddingValues(marginH, marginV),
-            ).padding(
-                vertical = dimensionResource(id = com.hippo.ehviewer.R.dimen.search_layout_margin_v),
-            ),
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MiuixTheme.colorScheme.background),
+            contentAlignment = Alignment.TopCenter,
         ) {
-            Column(
-                modifier = Modifier.padding(
-                    horizontal = dimensionResource(id = com.hippo.ehviewer.R.dimen.search_category_padding_h),
-                    vertical = dimensionResource(id = com.hippo.ehviewer.R.dimen.search_category_padding_v),
-                ).fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally,
+            Card(
+                modifier = Modifier
+                    .widthIn(max = 760.dp)
+                    .padding(
+                        paddingValues = contentPadding + PaddingValues(marginH, marginV),
+                    ).padding(
+                        vertical = dimensionResource(id = com.hippo.ehviewer.R.dimen.search_layout_margin_v),
+                    ),
             ) {
-                Text(
-                    text = stringResource(id = R.string.search_image),
-                    modifier = Modifier.height(dimensionResource(id = com.hippo.ehviewer.R.dimen.search_category_title_height)),
-                    fontWeight = FontWeight.Bold,
-                    style = MaterialTheme.typography.titleMedium,
-                )
-                ImageSearch(
-                    image = imageUri,
-                    onSelectImage = {
-                        launch { imageUri = pickVisualMedia(ImageOnly) }
-                    },
-                )
+                Column(
+                    modifier = Modifier.padding(
+                        horizontal = dimensionResource(id = com.hippo.ehviewer.R.dimen.search_category_padding_h),
+                        vertical = dimensionResource(id = com.hippo.ehviewer.R.dimen.search_category_padding_v),
+                    ).fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Text(
+                        text = stringResource(id = R.string.search_image),
+                        modifier = Modifier.height(dimensionResource(id = com.hippo.ehviewer.R.dimen.search_category_title_height)),
+                        fontWeight = FontWeight.Bold,
+                    )
+                    ImageSearch(
+                        image = imageUri,
+                        onSelectImage = {
+                            launch { imageUri = pickVisualMedia(ImageOnly) }
+                        },
+                    )
+                }
             }
         }
     }

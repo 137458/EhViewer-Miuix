@@ -45,6 +45,33 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
+import com.ehviewer.core.ui.component.FloatingBottomBar
+import com.ehviewer.core.ui.component.FloatingBottomBarItem
+import com.ehviewer.core.ui.component.SquircleShape
+import top.yukonga.miuix.kmp.basic.NavigationRail
+import top.yukonga.miuix.kmp.basic.NavigationRailItem
+import top.yukonga.miuix.kmp.blur.layerBackdrop
+import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Favorite
@@ -383,12 +410,30 @@ class MainActivity : AppCompatActivity() {
             val adaptiveInfo = currentWindowAdaptiveInfoV2()
             val needSignIn by Settings.needSignIn.collectAsState()
             val launchPage by Settings.launchPage.collectAsState()
+
+            val isWideScreen = configuration.screenWidthDp >= 600
+            val primaryNavItems = remember {
+                listOf(
+                    Triple(HomePageScreenDestination, R.string.homepage, Icons.Default.Home),
+                    Triple(SubscriptionScreenDestination, R.string.subscription, EhIcons.Default.Subscriptions),
+                    Triple(WhatshotScreenDestination, R.string.whats_hot, Icons.Default.Whatshot),
+                    Triple(FavouritesScreenDestination, R.string.favourite, Icons.Default.Favorite),
+                    Triple(DownloadsScreenDestination, R.string.downloads, Icons.Default.Download),
+                    Triple(SettingsScreenDestination, R.string.settings, Icons.Default.Settings),
+                )
+            }
+            val primaryIndex = primaryNavItems.indexOfFirst { it.first === currentDestination }
+            val isPrimaryDestination = primaryIndex >= 0
+            val contentBackdrop = rememberLayerBackdrop()
+            val bottomBarPadding = if (isPrimaryDestination && !isWideScreen) 80.dp else 0.dp
+            val effectiveFabPadding = snackbarFabPadding.coerceAtLeast(bottomBarPadding)
+
             CompositionLocalProvider(
                 LocalNavDrawerState provides navDrawerState,
                 LocalSideSheetState provides sideSheetState,
                 LocalDrawerHandle provides drawerHandle,
                 LocalSnackBarHostState provides snackbarState,
-                LocalSnackBarFabPadding provides animateDpAsState(snackbarFabPadding, label = "SnackbarFabPadding"),
+                LocalSnackBarFabPadding provides animateDpAsState(effectiveFabPadding, label = "SnackbarFabPadding"),
                 LocalWindowSizeClass provides adaptiveInfo.windowSizeClass,
             ) {
                 Scaffold(
@@ -406,63 +451,13 @@ class MainActivity : AppCompatActivity() {
                     var minOffset by remember {
                         mutableFloatStateOf(-with(density) { DrawerDefaults.MaximumDrawerWidth.toPx() })
                     }
-                    ModalNavigationDrawer(
-                        drawerContent = {
-                            ModalDrawerSheet(
-                                drawerState = navDrawerState,
-                                modifier = Modifier.widthIn(max = (configuration.screenWidthDp - 56).dp)
-                                    .onSizeChanged { minOffset = -it.width.toFloat() },
-                                windowInsets = WindowInsets.systemBars.only(WindowInsetsSides.Start),
-                            ) {
-                                val scrollState = rememberScrollState()
-                                Column(
-                                    modifier = Modifier.verticalScroll(scrollState)
-                                        .windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Bottom)),
-                                ) {
-                                    Image(
-                                        painter = painterResource(id = com.hippo.ehviewer.R.drawable.sadpanda_low_poly),
-                                        contentDescription = null,
-                                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-                                        contentScale = ContentScale.FillWidth,
-                                    )
-                                    navItems.forEach { (direction, stringId, icon) ->
-                                        NavigationDrawerItem(
-                                            label = {
-                                                Text(text = stringResource(id = stringId))
-                                            },
-                                            selected = currentDestination === direction,
-                                            onClick = {
-                                                navigator.navigate(direction)
-                                                closeDrawer()
-                                            },
-                                            modifier = Modifier.padding(horizontal = 12.dp),
-                                            icon = {
-                                                Icon(imageVector = icon, contentDescription = null)
-                                            },
-                                        )
-                                    }
-                                }
-                            }
-                        },
-                        drawerState = navDrawerState,
-                        gesturesEnabled = drawerEnabled && sideSheetState.isClosed || navDrawerState.isOpen,
-                    ) {
-                        val radius by remember {
-                            snapshotFlow {
-                                val step = calculateFraction(minOffset, 0f, navDrawerState.currentOffset)
-                                with(density) { lerp(0, 10, step).dp.toPx() }
-                            }
-                        }.collectAsState(0f)
-                        MutableSideSheet(
-                            drawerState = sideSheetState,
-                            modifier = Modifier.graphicsLayer {
-                                if (radius != 0f) {
-                                    renderEffect = BlurEffect(radius, radius, TileMode.Clamp)
-                                    shape = RectangleShape
-                                    clip = true
-                                }
-                            },
-                            enabled = drawerEnabled,
+
+                    @Composable
+                    fun MainContent() {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .layerBackdrop(contentBackdrop),
                         ) {
                             SharedTransitionLayout {
                                 CompositionLocalProvider(LocalSharedTransitionScope provides this) {
@@ -478,6 +473,173 @@ class MainActivity : AppCompatActivity() {
                                         navController = navController,
                                     )
                                 }
+                            }
+
+                            if (!isWideScreen) {
+                                AnimatedVisibility(
+                                    visible = isPrimaryDestination,
+                                    enter = slideInVertically { it } + fadeIn(),
+                                    exit = slideOutVertically { it } + fadeOut(),
+                                    modifier = Modifier
+                                        .align(Alignment.BottomCenter)
+                                        .navigationBarsPadding()
+                                        .padding(bottom = 12.dp),
+                                ) {
+                                    FloatingBottomBar(
+                                        selectedIndex = { primaryIndex.coerceAtLeast(0) },
+                                        onSelected = { index ->
+                                            navigator.navigate(primaryNavItems[index].first)
+                                        },
+                                        backdrop = contentBackdrop,
+                                        tabsCount = primaryNavItems.size,
+                                    ) {
+                                        primaryNavItems.forEachIndexed { index, (_, stringId, icon) ->
+                                            FloatingBottomBarItem(
+                                                onClick = { navigator.navigate(primaryNavItems[index].first) },
+                                            ) {
+                                                Icon(
+                                                    imageVector = icon,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(22.dp),
+                                                )
+                                                Text(
+                                                    text = stringResource(id = stringId),
+                                                    fontSize = 11.sp,
+                                                    fontWeight = if (primaryIndex == index) FontWeight.SemiBold else FontWeight.Normal,
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    if (isWideScreen) {
+                        Row(modifier = Modifier.fillMaxSize()) {
+                            NavigationRail(
+                                modifier = Modifier.fillMaxHeight(),
+                            ) {
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .size(44.dp)
+                                        .clip(SquircleShape(12.dp)),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Image(
+                                        painter = painterResource(id = com.hippo.ehviewer.R.drawable.sadpanda_low_poly),
+                                        contentDescription = null,
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier.fillMaxSize(),
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(16.dp))
+                                navItems.forEach { (direction, stringId, icon) ->
+                                    NavigationRailItem(
+                                        selected = currentDestination === direction,
+                                        onClick = { navigator.navigate(direction) },
+                                        icon = icon,
+                                        label = stringResource(id = stringId),
+                                    )
+                                }
+                            }
+                            Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                                MutableSideSheet(
+                                    drawerState = sideSheetState,
+                                    modifier = Modifier,
+                                    enabled = drawerEnabled,
+                                ) {
+                                    MainContent()
+                                }
+                            }
+                        }
+                    } else {
+                        ModalNavigationDrawer(
+                            drawerContent = {
+                                ModalDrawerSheet(
+                                    drawerState = navDrawerState,
+                                    drawerShape = SquircleShape(24.dp),
+                                    drawerContainerColor = MiuixTheme.colorScheme.surface,
+                                    modifier = Modifier
+                                        .widthIn(max = (configuration.screenWidthDp - 56).dp)
+                                        .onSizeChanged { minOffset = -it.width.toFloat() },
+                                    windowInsets = WindowInsets.systemBars.only(WindowInsetsSides.Start),
+                                ) {
+                                    val scrollState = rememberScrollState()
+                                    Column(
+                                        modifier = Modifier
+                                            .verticalScroll(scrollState)
+                                            .windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Bottom)),
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(16.dp)
+                                                .clip(SquircleShape(16.dp)),
+                                        ) {
+                                            Image(
+                                                painter = painterResource(id = com.hippo.ehviewer.R.drawable.sadpanda_low_poly),
+                                                contentDescription = null,
+                                                modifier = Modifier.fillMaxWidth(),
+                                                contentScale = ContentScale.FillWidth,
+                                            )
+                                        }
+                                        navItems.forEach { (direction, stringId, icon) ->
+                                            val isSelected = currentDestination === direction
+                                            val itemBg = if (isSelected) MiuixTheme.colorScheme.primary.copy(alpha = 0.12f) else Color.Transparent
+                                            val itemColor = if (isSelected) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurface
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(horizontal = 12.dp, vertical = 3.dp)
+                                                    .clip(SquircleShape(12.dp))
+                                                    .background(itemBg)
+                                                    .clickable {
+                                                        navigator.navigate(direction)
+                                                        closeDrawer()
+                                                    }
+                                                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                            ) {
+                                                Icon(
+                                                    imageVector = icon,
+                                                    contentDescription = null,
+                                                    tint = itemColor,
+                                                    modifier = Modifier.size(24.dp),
+                                                )
+                                                Spacer(modifier = Modifier.width(16.dp))
+                                                Text(
+                                                    text = stringResource(id = stringId),
+                                                    color = itemColor,
+                                                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                            drawerState = navDrawerState,
+                            gesturesEnabled = drawerEnabled && sideSheetState.isClosed || navDrawerState.isOpen,
+                        ) {
+                            val radius by remember {
+                                snapshotFlow {
+                                    val step = calculateFraction(minOffset, 0f, navDrawerState.currentOffset)
+                                    with(density) { lerp(0, 10, step).dp.toPx() }
+                                }
+                            }.collectAsState(0f)
+                            MutableSideSheet(
+                                drawerState = sideSheetState,
+                                modifier = Modifier.graphicsLayer {
+                                    if (radius != 0f) {
+                                        renderEffect = BlurEffect(radius, radius, TileMode.Clamp)
+                                        shape = RectangleShape
+                                        clip = true
+                                    }
+                                },
+                                enabled = drawerEnabled,
+                            ) {
+                                MainContent()
                             }
                         }
                     }

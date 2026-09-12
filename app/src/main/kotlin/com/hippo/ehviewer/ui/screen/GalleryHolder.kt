@@ -3,6 +3,7 @@ package com.hippo.ehviewer.ui.screen
 import androidx.compose.foundation.interaction.HoverInteraction
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.Icon
@@ -35,10 +36,9 @@ fun CheckableItem(
     Box(modifier) {
         content(src)
         if (checked) {
-            Icon(
-                imageVector = Icons.Default.CheckCircle,
-                contentDescription = null,
-                modifier = Modifier.align(Alignment.TopEnd),
+            com.ehviewer.core.ui.component.CheckIndicator(
+                selected = true,
+                modifier = Modifier.align(Alignment.TopEnd).padding(6.dp),
             )
         }
     }

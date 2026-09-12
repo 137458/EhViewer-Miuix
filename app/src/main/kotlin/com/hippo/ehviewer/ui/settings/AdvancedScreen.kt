@@ -12,28 +12,33 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.ImageOnly
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import com.ehviewer.core.files.delete
 import com.ehviewer.core.files.sendTo
 import com.ehviewer.core.files.toOkioPath
 import com.ehviewer.core.i18n.R
+import com.ehviewer.core.ui.component.BlurredBar
 import com.ehviewer.core.util.isAtLeastO
 import com.ehviewer.core.util.launch
 import com.ehviewer.core.util.logcat
@@ -66,10 +71,16 @@ import java.util.zip.ZipOutputStream
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.merge
-import me.zhanghai.compose.preference.DropdownListPreference
 import moe.tarsin.coroutines.runSuspendCatching
 import moe.tarsin.snackbar
 import moe.tarsin.string
+import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
+import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.SmallTitle
+import top.yukonga.miuix.kmp.basic.TopAppBar
+import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 context(ctx: Context)
 private fun dumplog(uri: Uri): Unit = with(ctx) {
@@ -108,207 +119,267 @@ private suspend fun importDatabase(uri: Uri) {
 @Destination<RootGraph>
 @Composable
 fun AnimatedVisibilityScope.AdvancedScreen(navigator: DestinationsNavigator) = Screen(navigator) {
-    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
+    val scrollBehavior = MiuixScrollBehavior()
+    val colorScheme = MiuixTheme.colorScheme
     fun launchSnackbar(message: String) = launch { snackbar(message) }
+
     Scaffold(
+        modifier = Modifier.fillMaxSize(),
         topBar = {
-            TopAppBar(
-                title = { Text(text = stringResource(id = R.string.settings_advanced)) },
-                navigationIcon = { NavigationIcon() },
+            BlurredBar(
+                backdrop = null,
                 scrollBehavior = scrollBehavior,
-            )
-        },
-    ) { paddingValues ->
-        Column(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection).verticalScroll(rememberScrollState()).padding(paddingValues)) {
-            SwitchPreference(
-                title = stringResource(id = R.string.settings_advanced_save_parse_error_body),
-                summary = stringResource(id = R.string.settings_advanced_save_parse_error_body_summary),
-                state = Settings.saveParseErrorBody.asMutableState(),
-            )
-            val stripAds = Settings.stripExtraneousAds.asMutableState()
-            SwitchPreference(
-                title = stringResource(id = R.string.settings_block_extraneous_ads),
-                state = stripAds,
-            )
-            AnimatedVisibility(visible = stripAds.value) {
-                LauncherPreference(
-                    title = stringResource(id = R.string.settings_ads_placeholder),
-                    contract = ActivityResultContracts.PickVisualMedia(),
-                    key = PickVisualMediaRequest(mediaType = ImageOnly),
-                ) { uri ->
-                    withIOContext {
-                        if (uri != null) {
-                            uri.toOkioPath() sendTo AdsPlaceholderFile
-                        } else {
-                            AdsPlaceholderFile.delete()
-                        }
-                    }
-                }
-            }
-            SwitchPreference(
-                title = stringResource(id = R.string.settings_advanced_save_crash_log),
-                summary = stringResource(id = R.string.settings_advanced_save_crash_log_summary),
-                state = Settings.saveCrashLog.asMutableState(),
-            )
-            val dumpLogError = stringResource(id = R.string.settings_advanced_dump_logcat_failed)
-            LauncherPreference(
-                title = stringResource(id = R.string.settings_advanced_dump_logcat),
-                summary = stringResource(id = R.string.settings_advanced_dump_logcat_summary),
-                contract = ActivityResultContracts.CreateDocument("application/zip"),
-                key = "log-" + ReadableTime.getFilenamableTime() + ".zip",
-            ) { uri ->
-                uri?.run {
-                    runCatching {
-                        dumplog(uri)
-                        launchSnackbar(string(R.string.settings_advanced_dump_logcat_to, uri.displayPath))
-                    }.onFailure {
-                        launchSnackbar(dumpLogError)
-                        logcat(it)
-                    }
-                }
-            }
-            SimpleMenuPreferenceInt(
-                title = stringResource(id = R.string.settings_advanced_read_cache_size),
-                entry = com.hippo.ehviewer.R.array.read_cache_size_entries,
-                entryValueRes = com.hippo.ehviewer.R.array.read_cache_size_entry_values,
-                state = Settings.readCacheSize.asMutableState(),
-            )
-            var currentLanguage by remember { mutableStateOf(getAppLanguage()) }
-            val languages = remember { getLanguages() }
-            DropdownListPreference(
-                value = currentLanguage,
-                onValueChange = {
-                    setAppLanguage(it)
-                    currentLanguage = it
-                },
-                items = languages,
-                title = { Text(stringResource(id = R.string.settings_advanced_app_language_title)) },
-                summary = { Text(languages[currentLanguage].orEmpty()) },
-            )
-            if (isCronetAvailable) {
-                val enableCronet = Settings.enableCronet.asMutableState()
-                if (BuildConfig.DEBUG || !enableCronet.value) {
-                    SwitchPreference(
-                        title = "Enable Cronet",
-                        state = enableCronet,
-                    )
-                }
-                AnimatedVisibility(enableCronet.value) {
-                    SwitchPreference(
-                        title = stringResource(id = R.string.settings_advanced_enable_quic),
-                        state = Settings.enableQuic.asMutableState(),
-                    )
-                }
-                LaunchedEffect(Unit) {
-                    merge(
-                        Settings.enableCronet.changesFlow(),
-                        Settings.enableQuic.changesFlow(),
-                    ).collectLatest {
-                        showRestartDialog()
-                    }
-                }
-            }
-            if (isAtLeastO) {
-                IntSliderPreference(
-                    maxValue = 16384,
-                    step = 3,
-                    title = stringResource(id = R.string.settings_advanced_hardware_bitmap_threshold),
-                    summary = stringResource(id = R.string.settings_advanced_hardware_bitmap_threshold_summary),
-                    state = Settings.hardwareBitmapThreshold.asMutableState(),
+            ) {
+                TopAppBar(
+                    title = stringResource(id = R.string.settings_advanced),
+                    navigationIcon = { NavigationIcon() },
+                    scrollBehavior = scrollBehavior,
+                    color = colorScheme.surface,
                 )
             }
-            SwitchPreference(
-                title = stringResource(id = R.string.preload_thumb_aggressively),
-                state = Settings.preloadThumbAggressively.asMutableState(),
-            )
-            SwitchPreference(
-                title = stringResource(id = R.string.animate_items),
-                summary = stringResource(id = R.string.animate_items_summary),
-                state = Settings.animateItems.asMutableState(),
-            )
-            SwitchPreference(
-                title = stringResource(id = R.string.desktop_site),
-                summary = stringResource(id = R.string.desktop_site_summary),
-                state = Settings.desktopSite.asMutableState(),
-            )
-            val exportFailed = stringResource(id = R.string.settings_advanced_export_data_failed)
-            LauncherPreference(
-                title = stringResource(id = R.string.settings_advanced_export_data),
-                summary = stringResource(id = R.string.settings_advanced_export_data_summary),
-                contract = ActivityResultContracts.CreateDocument("application/octet-stream"),
-                key = ReadableTime.getFilenamableTime() + ".db",
-            ) { uri ->
-                uri?.let {
-                    runCatching {
-                        exportDatabase(uri)
-                        launchSnackbar(string(R.string.settings_advanced_export_data_to, uri.displayPath))
-                    }.onFailure {
-                        logcat(it)
-                        launchSnackbar(exportFailed)
-                    }
-                }
-            }
-            val importFailed = stringResource(id = R.string.cant_read_the_file)
-            val importSucceed = stringResource(id = R.string.settings_advanced_import_data_successfully)
-            LauncherPreference(
-                title = stringResource(id = R.string.settings_advanced_import_data),
-                summary = stringResource(id = R.string.settings_advanced_import_data_summary),
-                contract = ActivityResultContracts.GetContent(),
-                key = "application/octet-stream",
-            ) { uri ->
-                uri?.let {
-                    runCatching {
-                        importDatabase(uri)
-                        launchSnackbar(importSucceed)
-                    }.onFailure {
-                        logcat(it)
-                        launchSnackbar(importFailed)
-                    }
-                }
-            }
-            val hasSignedIn by Settings.hasSignedIn.collectAsState()
-            if (hasSignedIn) {
-                val backupNothing = stringResource(id = R.string.settings_advanced_backup_favorite_nothing)
-                val backupFailed = stringResource(id = R.string.settings_advanced_backup_favorite_failed)
-                val backupSucceed = stringResource(id = R.string.settings_advanced_backup_favorite_success)
-                Preference(
-                    title = stringResource(id = R.string.settings_advanced_backup_favorite),
-                    summary = stringResource(id = R.string.settings_advanced_backup_favorite_summary),
+        },
+    ) { paddingValues ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(colorScheme.surface),
+            contentAlignment = Alignment.TopCenter,
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .widthIn(max = 760.dp)
+                    .fillMaxWidth()
+                    .nestedScroll(scrollBehavior.nestedScrollConnection)
+                    .verticalScroll(rememberScrollState())
+                    .padding(paddingValues),
+            ) {
+                SmallTitle(text = stringResource(id = R.string.settings_advanced_app_language_title))
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 4.dp),
                 ) {
-                    val favListUrlBuilder = FavListUrlBuilder()
-                    var favTotal = 0
-                    var favIndex = 0
-                    tailrec suspend fun doBackup() {
-                        val result = EhEngine.getFavorites(favListUrlBuilder.build())
-                        if (result.galleryInfoList.isEmpty()) {
-                            launchSnackbar(backupNothing)
-                        } else {
-                            if (favTotal == 0) favTotal = result.countArray.sum()
-                            favIndex += result.galleryInfoList.size
-                            val status = "($favIndex/$favTotal)"
-                            EhDB.putLocalFavorites(result.galleryInfoList)
-                            launchSnackbar(string(R.string.settings_advanced_backup_favorite_start, status))
-                            if (result.next != null) {
-                                delay(Settings.downloadDelay.value.toLong())
-                                favListUrlBuilder.setIndex(result.next, true)
-                                doBackup()
+                    var currentLanguage by remember { mutableStateOf(getAppLanguage()) }
+                    val languages = remember { getLanguages() }
+                    val languageKeys = remember(languages) { languages.keys.toList() }
+                    val languageValues = remember(languages) { languages.values.toList() }
+                    val selectedLangIndex = languageKeys.indexOf(currentLanguage).coerceAtLeast(0)
+                    OverlayDropdownPreference(
+                        title = stringResource(id = R.string.settings_advanced_app_language_title),
+                        items = languageValues,
+                        selectedIndex = selectedLangIndex,
+                        onSelectedIndexChange = { index ->
+                            if (index in languageKeys.indices) {
+                                val key = languageKeys[index]
+                                setAppLanguage(key)
+                                currentLanguage = key
+                            }
+                        },
+                    )
+                    SwitchPreference(
+                        title = stringResource(id = R.string.animate_items),
+                        summary = stringResource(id = R.string.animate_items_summary),
+                        state = Settings.animateItems.asMutableState(),
+                    )
+                    SwitchPreference(
+                        title = stringResource(id = R.string.desktop_site),
+                        summary = stringResource(id = R.string.desktop_site_summary),
+                        state = Settings.desktopSite.asMutableState(),
+                    )
+                    SimpleMenuPreferenceInt(
+                        title = stringResource(id = R.string.settings_advanced_read_cache_size),
+                        entry = com.hippo.ehviewer.R.array.read_cache_size_entries,
+                        entryValueRes = com.hippo.ehviewer.R.array.read_cache_size_entry_values,
+                        state = Settings.readCacheSize.asMutableState(),
+                    )
+                }
+
+                SmallTitle(text = stringResource(id = R.string.settings_advanced_save_crash_log))
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 4.dp),
+                ) {
+                    SwitchPreference(
+                        title = stringResource(id = R.string.settings_advanced_save_parse_error_body),
+                        summary = stringResource(id = R.string.settings_advanced_save_parse_error_body_summary),
+                        state = Settings.saveParseErrorBody.asMutableState(),
+                    )
+                    SwitchPreference(
+                        title = stringResource(id = R.string.settings_advanced_save_crash_log),
+                        summary = stringResource(id = R.string.settings_advanced_save_crash_log_summary),
+                        state = Settings.saveCrashLog.asMutableState(),
+                    )
+                    val dumpLogError = stringResource(id = R.string.settings_advanced_dump_logcat_failed)
+                    LauncherPreference(
+                        title = stringResource(id = R.string.settings_advanced_dump_logcat),
+                        summary = stringResource(id = R.string.settings_advanced_dump_logcat_summary),
+                        contract = ActivityResultContracts.CreateDocument("application/zip"),
+                        key = "log-" + ReadableTime.getFilenamableTime() + ".zip",
+                    ) { uri ->
+                        uri?.run {
+                            runCatching {
+                                dumplog(uri)
+                                launchSnackbar(string(R.string.settings_advanced_dump_logcat_to, uri.displayPath))
+                            }.onFailure {
+                                launchSnackbar(dumpLogError)
+                                logcat(it)
                             }
                         }
                     }
-                    launch {
-                        runSuspendCatching {
-                            doBackup()
-                        }.onSuccess {
-                            launchSnackbar(backupSucceed)
-                        }.onFailure {
-                            logcat(it)
-                            launchSnackbar(backupFailed)
+                }
+
+                SmallTitle(text = stringResource(id = R.string.settings_advanced))
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 4.dp),
+                ) {
+                    val stripAds = Settings.stripExtraneousAds.asMutableState()
+                    SwitchPreference(
+                        title = stringResource(id = R.string.settings_block_extraneous_ads),
+                        state = stripAds,
+                    )
+                    AnimatedVisibility(visible = stripAds.value) {
+                        LauncherPreference(
+                            title = stringResource(id = R.string.settings_ads_placeholder),
+                            contract = ActivityResultContracts.PickVisualMedia(),
+                            key = PickVisualMediaRequest(mediaType = ImageOnly),
+                        ) { uri ->
+                            withIOContext {
+                                if (uri != null) {
+                                    uri.toOkioPath() sendTo AdsPlaceholderFile
+                                } else {
+                                    AdsPlaceholderFile.delete()
+                                }
+                            }
                         }
                     }
+                    if (isCronetAvailable) {
+                        val enableCronet = Settings.enableCronet.asMutableState()
+                        if (BuildConfig.DEBUG || !enableCronet.value) {
+                            SwitchPreference(
+                                title = "Enable Cronet",
+                                state = enableCronet,
+                            )
+                        }
+                        AnimatedVisibility(enableCronet.value) {
+                            SwitchPreference(
+                                title = stringResource(id = R.string.settings_advanced_enable_quic),
+                                state = Settings.enableQuic.asMutableState(),
+                            )
+                        }
+                        LaunchedEffect(Unit) {
+                            merge(
+                                Settings.enableCronet.changesFlow(),
+                                Settings.enableQuic.changesFlow(),
+                            ).collectLatest {
+                                showRestartDialog()
+                            }
+                        }
+                    }
+                    if (isAtLeastO) {
+                        IntSliderPreference(
+                            maxValue = 16384,
+                            step = 3,
+                            title = stringResource(id = R.string.settings_advanced_hardware_bitmap_threshold),
+                            summary = stringResource(id = R.string.settings_advanced_hardware_bitmap_threshold_summary),
+                            state = Settings.hardwareBitmapThreshold.asMutableState(),
+                        )
+                    }
+                    SwitchPreference(
+                        title = stringResource(id = R.string.preload_thumb_aggressively),
+                        state = Settings.preloadThumbAggressively.asMutableState(),
+                    )
                 }
-            }
-            Preference(title = stringResource(id = R.string.open_by_default)) {
-                openByDefaultSettings()
+
+                SmallTitle(text = stringResource(id = R.string.settings_advanced_export_data))
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 4.dp),
+                ) {
+                    val exportFailed = stringResource(id = R.string.settings_advanced_export_data_failed)
+                    LauncherPreference(
+                        title = stringResource(id = R.string.settings_advanced_export_data),
+                        summary = stringResource(id = R.string.settings_advanced_export_data_summary),
+                        contract = ActivityResultContracts.CreateDocument("application/octet-stream"),
+                        key = ReadableTime.getFilenamableTime() + ".db",
+                    ) { uri ->
+                        uri?.let {
+                            runCatching {
+                                exportDatabase(uri)
+                                launchSnackbar(string(R.string.settings_advanced_export_data_to, uri.displayPath))
+                            }.onFailure {
+                                logcat(it)
+                                launchSnackbar(exportFailed)
+                            }
+                        }
+                    }
+                    val importFailed = stringResource(id = R.string.cant_read_the_file)
+                    val importSucceed = stringResource(id = R.string.settings_advanced_import_data_successfully)
+                    LauncherPreference(
+                        title = stringResource(id = R.string.settings_advanced_import_data),
+                        summary = stringResource(id = R.string.settings_advanced_import_data_summary),
+                        contract = ActivityResultContracts.GetContent(),
+                        key = "application/octet-stream",
+                    ) { uri ->
+                        uri?.let {
+                            runCatching {
+                                importDatabase(uri)
+                                launchSnackbar(importSucceed)
+                            }.onFailure {
+                                logcat(it)
+                                launchSnackbar(importFailed)
+                            }
+                        }
+                    }
+                    val hasSignedIn by Settings.hasSignedIn.collectAsState()
+                    if (hasSignedIn) {
+                        val backupNothing = stringResource(id = R.string.settings_advanced_backup_favorite_nothing)
+                        val backupFailed = stringResource(id = R.string.settings_advanced_backup_favorite_failed)
+                        val backupSucceed = stringResource(id = R.string.settings_advanced_backup_favorite_success)
+                        Preference(
+                            title = stringResource(id = R.string.settings_advanced_backup_favorite),
+                            summary = stringResource(id = R.string.settings_advanced_backup_favorite_summary),
+                        ) {
+                            val favListUrlBuilder = FavListUrlBuilder()
+                            var favTotal = 0
+                            var favIndex = 0
+                            tailrec suspend fun doBackup() {
+                                val result = EhEngine.getFavorites(favListUrlBuilder.build())
+                                if (result.galleryInfoList.isEmpty()) {
+                                    launchSnackbar(backupNothing)
+                                } else {
+                                    if (favTotal == 0) favTotal = result.countArray.sum()
+                                    favIndex += result.galleryInfoList.size
+                                    val status = "($favIndex/$favTotal)"
+                                    EhDB.putLocalFavorites(result.galleryInfoList)
+                                    launchSnackbar(string(R.string.settings_advanced_backup_favorite_start, status))
+                                    if (result.next != null) {
+                                        delay(Settings.downloadDelay.value.toLong())
+                                        favListUrlBuilder.setIndex(result.next, true)
+                                        doBackup()
+                                    }
+                                }
+                            }
+                            launch {
+                                runSuspendCatching {
+                                    doBackup()
+                                }.onSuccess {
+                                    launchSnackbar(backupSucceed)
+                                }.onFailure {
+                                    logcat(it)
+                                    launchSnackbar(backupFailed)
+                                }
+                            }
+                        }
+                    }
+                    Preference(title = stringResource(id = R.string.open_by_default)) {
+                        openByDefaultSettings()
+                    }
+                }
             }
         }
     }

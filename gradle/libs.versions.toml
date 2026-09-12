@@ -20,7 +20,9 @@ compose-bom = "2026.08.00"
 compose-multiplatform = "1.11.1"
 compose-destinations = "2.3.0"
 compose-preference = "2.2.0"
-java = "25"
+miuix = "0.9.4-rc01"
+backdrop = "2.0.0"
+java = "21"
 kotlin = "2.4.10"
 kotlinx-coroutines = "1.11.0"
 kotlinx-datetime = "0.8.0"
@@ -41,6 +43,11 @@ benchmark = "1.5.0-rc01"
 profileinstaller = "1.4.1"
 
 [libraries]
+backdrop = { module = "io.github.kyant0:backdrop", version.ref = "backdrop" }
+miuix-ui = { module = "top.yukonga.miuix.kmp:miuix-ui", version.ref = "miuix" }
+miuix-preference = { module = "top.yukonga.miuix.kmp:miuix-preference", version.ref = "miuix" }
+miuix-icons = { module = "top.yukonga.miuix.kmp:miuix-icons", version.ref = "miuix" }
+miuix-blur = { module = "top.yukonga.miuix.kmp:miuix-blur", version.ref = "miuix" }
 aboutlibraries-core = { module = "com.mikepenz:aboutlibraries-core", version.ref = "aboutlibraries" }
 aboutlibraries-compose-m3 = { module = "com.mikepenz:aboutlibraries-compose-m3", version.ref = "aboutlibraries" }
 accompanist-drawable-painter = { module = "com.google.accompanist:accompanist-drawablepainter", version.ref = "accompanist" }

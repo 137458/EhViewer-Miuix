@@ -16,6 +16,7 @@ import androidx.compose.material3.expressiveLightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import com.ehviewer.core.ui.component.scrollbarStyle
@@ -24,6 +25,11 @@ import com.ehviewer.core.util.isAtLeastS
 import com.hippo.ehviewer.Settings
 import com.hippo.ehviewer.collectAsState
 import com.materialkolor.dynamicColorScheme
+import top.yukonga.miuix.kmp.theme.ColorSchemeMode
+import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.theme.ThemeController
+import top.yukonga.miuix.kmp.theme.darkColorScheme as miuixDarkColorScheme
+import top.yukonga.miuix.kmp.theme.lightColorScheme as miuixLightColorScheme
 
 fun ColorScheme.amoled(amoled: Boolean) = if (amoled) {
     copy(
@@ -34,6 +40,47 @@ fun ColorScheme.amoled(amoled: Boolean) = if (amoled) {
     )
 } else {
     this
+}
+
+@Composable
+fun rememberMiuixThemeController(useDarkTheme: Boolean, isAmoled: Boolean): ThemeController {
+    return remember(useDarkTheme, isAmoled) {
+        val mode = if (useDarkTheme) ColorSchemeMode.Dark else ColorSchemeMode.Light
+        val lightColors = miuixLightColorScheme(
+            background = Color(0xFFF6F7F9),
+            surface = Color(0xFFF6F7F9),
+            surfaceContainer = Color.White,
+            surfaceContainerHigh = Color(0xFFF0F1F4),
+            surfaceContainerHighest = Color(0xFFE5E7EB),
+            onBackground = Color(0xFF191919),
+            onSurface = Color(0xFF191919),
+            onSurfaceContainer = Color(0xFF191919),
+            onSurfaceVariantSummary = Color(0xFF666666),
+            onSurfaceSecondary = Color(0xFF888888),
+        )
+        val darkColors = if (isAmoled) {
+            miuixDarkColorScheme(
+                background = Color.Black,
+                surface = Color.Black,
+                surfaceVariant = Color(0xFF121212),
+                surfaceContainer = Color.Black,
+                surfaceContainerHigh = Color(0xFF1E1E1E),
+                surfaceContainerHighest = Color(0xFF2C2C2C),
+                onBackground = Color(0xFFF3F4F6),
+                onSurface = Color(0xFFF3F4F6),
+                onSurfaceContainer = Color(0xFFF3F4F6),
+                onSurfaceVariantSummary = Color(0xFF9CA3AF),
+                onSurfaceSecondary = Color(0xFF9CA3AF),
+            )
+        } else {
+            miuixDarkColorScheme()
+        }
+        ThemeController(
+            colorSchemeMode = mode,
+            lightColors = lightColors,
+            darkColors = darkColors,
+        )
+    }
 }
 
 @Composable
@@ -65,13 +112,17 @@ fun EhTheme(useDarkTheme: Boolean, content: @Composable () -> Unit) {
         }
     }
 
-    MaterialTheme(colorScheme = colors, motionScheme = CustomMotionScheme) {
-        val scrollbarStyle = scrollbarStyle(color = MaterialTheme.colorScheme.primary)
-        CompositionLocalProvider(
-            LocalContentColor provides MaterialTheme.colorScheme.onBackground,
-            LocalScrollbarStyle provides scrollbarStyle,
-            content = content,
-        )
+    val miuixController = rememberMiuixThemeController(useDarkTheme, amoled)
+
+    MiuixTheme(controller = miuixController) {
+        MaterialTheme(colorScheme = colors, motionScheme = CustomMotionScheme) {
+            val scrollbarStyle = scrollbarStyle(color = MaterialTheme.colorScheme.primary)
+            CompositionLocalProvider(
+                LocalContentColor provides MaterialTheme.colorScheme.onBackground,
+                LocalScrollbarStyle provides scrollbarStyle,
+                content = content,
+            )
+        }
     }
 }
 

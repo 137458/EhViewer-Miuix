@@ -2,19 +2,22 @@ package com.hippo.ehviewer.ui.settings
 
 import android.content.Context
 import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
@@ -23,6 +26,7 @@ import androidx.compose.ui.text.fromHtml
 import androidx.compose.ui.unit.dp
 import com.ehviewer.core.files.delete
 import com.ehviewer.core.i18n.R
+import com.ehviewer.core.ui.component.BlurredBar
 import com.ehviewer.core.util.launch
 import com.ehviewer.core.util.withUIContext
 import com.hippo.ehviewer.BuildConfig
@@ -48,6 +52,13 @@ import moe.tarsin.coroutines.runSuspendCatching
 import moe.tarsin.navigate
 import moe.tarsin.snackbar
 import moe.tarsin.string
+import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
+import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.SmallTitle
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TopAppBar
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 private const val REPO_URL = "https://github.com/${BuildConfig.REPO_NAME}"
 private const val RELEASE_URL = "$REPO_URL/releases"
@@ -63,60 +74,99 @@ private fun author() = AnnotatedString.fromHtml(stringResource(R.string.settings
 @Destination<RootGraph>
 @Composable
 fun AnimatedVisibilityScope.AboutScreen(navigator: DestinationsNavigator) = Screen(navigator) {
-    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
+    val scrollBehavior = MiuixScrollBehavior()
+    val colorScheme = MiuixTheme.colorScheme
     fun launchSnackbar(message: String) = launch { snackbar(message) }
+
     Scaffold(
+        modifier = Modifier.fillMaxSize(),
         topBar = {
-            TopAppBar(
-                title = { Text(text = stringResource(id = R.string.settings_about)) },
-                navigationIcon = { NavigationIcon() },
+            BlurredBar(
+                backdrop = null,
                 scrollBehavior = scrollBehavior,
-            )
+            ) {
+                TopAppBar(
+                    title = stringResource(id = R.string.settings_about),
+                    navigationIcon = { NavigationIcon() },
+                    scrollBehavior = scrollBehavior,
+                    color = colorScheme.surface,
+                )
+            }
         },
     ) { paddingValues ->
-        Column(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection).verticalScroll(rememberScrollState()).padding(paddingValues)) {
-            Preference(
-                title = stringResource(id = R.string.settings_about_declaration),
-                summary = stringResource(id = R.string.settings_about_declaration_summary),
-            )
-            HtmlPreference(
-                title = stringResource(id = R.string.settings_about_author),
-                summary = author(),
-            )
-            UrlPreference(
-                title = stringResource(id = R.string.settings_about_latest_release),
-                url = RELEASE_URL,
-            )
-            UrlPreference(
-                title = stringResource(id = R.string.settings_about_source),
-                url = REPO_URL,
-            )
-            Preference(title = stringResource(id = R.string.license)) {
-                navigate(LicenseScreenDestination)
-            }
-            Preference(
-                title = stringResource(id = R.string.settings_about_version),
-                summary = versionCode(),
-            )
-            SwitchPreference(
-                title = stringResource(id = R.string.backup_before_update),
-                state = Settings.backupBeforeUpdate.asMutableState(),
-            )
-            SwitchPreference(
-                title = stringResource(id = R.string.use_ci_update_channel),
-                state = Settings.useCIUpdateChannel.asMutableState(),
-            )
-            SimpleMenuPreferenceInt(
-                title = stringResource(id = R.string.auto_updates),
-                entry = com.hippo.ehviewer.R.array.update_frequency,
-                entryValueRes = com.hippo.ehviewer.R.array.update_frequency_values,
-                state = Settings.updateIntervalDays.asMutableState(),
-            )
-            WorkPreference(title = stringResource(id = R.string.settings_about_check_for_updates)) {
-                runSuspendCatching {
-                    AppUpdater.checkForUpdate(true)?.let { showNewVersion(it) } ?: launchSnackbar(string(R.string.already_latest_version))
-                }.onFailure {
-                    launchSnackbar(string(R.string.update_failed, it.displayString()))
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(colorScheme.surface),
+            contentAlignment = Alignment.TopCenter,
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .widthIn(max = 760.dp)
+                    .fillMaxWidth()
+                    .nestedScroll(scrollBehavior.nestedScrollConnection)
+                    .verticalScroll(rememberScrollState())
+                    .padding(paddingValues),
+            ) {
+                SmallTitle(text = stringResource(id = R.string.settings_about))
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 4.dp),
+                ) {
+                    Preference(
+                        title = stringResource(id = R.string.settings_about_declaration),
+                        summary = stringResource(id = R.string.settings_about_declaration_summary),
+                    )
+                    HtmlPreference(
+                        title = stringResource(id = R.string.settings_about_author),
+                        summary = author(),
+                    )
+                    UrlPreference(
+                        title = stringResource(id = R.string.settings_about_latest_release),
+                        url = RELEASE_URL,
+                    )
+                    UrlPreference(
+                        title = stringResource(id = R.string.settings_about_source),
+                        url = REPO_URL,
+                    )
+                    Preference(title = stringResource(id = R.string.license)) {
+                        navigate(LicenseScreenDestination)
+                    }
+                    Preference(
+                        title = stringResource(id = R.string.settings_about_version),
+                        summary = versionCode(),
+                    )
+                }
+
+                SmallTitle(text = stringResource(id = R.string.settings_about_check_for_updates))
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 4.dp),
+                ) {
+                    SwitchPreference(
+                        title = stringResource(id = R.string.backup_before_update),
+                        state = Settings.backupBeforeUpdate.asMutableState(),
+                    )
+                    SwitchPreference(
+                        title = stringResource(id = R.string.use_ci_update_channel),
+                        state = Settings.useCIUpdateChannel.asMutableState(),
+                    )
+                    SimpleMenuPreferenceInt(
+                        title = stringResource(id = R.string.auto_updates),
+                        entry = com.hippo.ehviewer.R.array.update_frequency,
+                        entryValueRes = com.hippo.ehviewer.R.array.update_frequency_values,
+                        state = Settings.updateIntervalDays.asMutableState(),
+                    )
+                    WorkPreference(title = stringResource(id = R.string.settings_about_check_for_updates)) {
+                        runSuspendCatching {
+                            AppUpdater.checkForUpdate(true)?.let { showNewVersion(it) } ?: launchSnackbar(string(R.string.already_latest_version))
+                        }.onFailure {
+                            launchSnackbar(string(R.string.update_failed, it.displayString()))
+                        }
+                    }
                 }
             }
         }
@@ -132,10 +182,12 @@ suspend fun showNewVersion(release: Release) {
         Column(Modifier.verticalScroll(rememberScrollState())) {
             Text(
                 text = release.version,
-                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
             )
             Spacer(modifier = Modifier.height(16.dp))
-            Text(text = release.changelog)
+            Text(
+                text = release.changelog,
+            )
         }
     }
     if (Settings.backupBeforeUpdate.value) {

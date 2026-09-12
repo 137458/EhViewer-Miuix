@@ -11,7 +11,7 @@ import androidx.compose.material.icons.filled.NewLabel
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AppBarRow
-import androidx.compose.material3.CircularWavyProgressIndicator
+import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -333,7 +333,7 @@ fun AnimatedVisibilityScope.GalleryDetailScreen(args: GalleryDetailScreenArgs, n
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center,
             ) {
-                CircularWavyProgressIndicator()
+                InfiniteProgressIndicator()
             }
         }
     }

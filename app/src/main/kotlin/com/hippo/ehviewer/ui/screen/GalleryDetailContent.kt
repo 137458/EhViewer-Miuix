@@ -31,7 +31,7 @@ import androidx.compose.material.icons.filled.FolderZip
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularWavyProgressIndicator
+import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -311,7 +311,7 @@ fun GalleryDetailContent(
                             modifier = Modifier.fillMaxSize().padding(keylineMargin),
                             contentAlignment = Alignment.Center,
                         ) {
-                            CircularWavyProgressIndicator()
+                            InfiniteProgressIndicator()
                         }
                     }
                 }
@@ -380,7 +380,7 @@ fun GalleryDetailContent(
                             modifier = Modifier.fillMaxSize().padding(keylineMargin),
                             contentAlignment = Alignment.Center,
                         ) {
-                            CircularWavyProgressIndicator()
+                            InfiniteProgressIndicator()
                         }
                     }
                 }

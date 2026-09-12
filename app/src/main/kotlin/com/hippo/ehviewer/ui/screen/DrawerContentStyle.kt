@@ -1,16 +1,15 @@
 package com.hippo.ehviewer.ui.screen
 
-import androidx.compose.material3.DrawerDefaults
 import androidx.compose.material3.ListItemDefaults
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 fun selectedListItemColor() = ListItemDefaults.colors(
-    containerColor = MaterialTheme.colorScheme.secondaryContainer,
-    headlineColor = MaterialTheme.colorScheme.onSecondaryContainer,
-    trailingIconColor = MaterialTheme.colorScheme.onSecondaryContainer,
+    containerColor = MiuixTheme.colorScheme.primary.copy(alpha = 0.12f),
+    headlineColor = MiuixTheme.colorScheme.primary,
+    trailingIconColor = MiuixTheme.colorScheme.primary,
 )
 
 @Composable
@@ -18,12 +17,14 @@ fun listItemOnDrawerColor(selected: Boolean) = if (selected) {
     selectedListItemColor()
 } else {
     ListItemDefaults.colors(
-        containerColor = DrawerDefaults.modalContainerColor,
+        containerColor = MiuixTheme.colorScheme.surface,
+        headlineColor = MiuixTheme.colorScheme.onSurface,
+        trailingIconColor = MiuixTheme.colorScheme.onSurfaceVariantSummary,
     )
 }
 
 @Composable
 fun topBarOnDrawerColor() = TopAppBarDefaults.topAppBarColors(
-    containerColor = DrawerDefaults.modalContainerColor,
-    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+    containerColor = MiuixTheme.colorScheme.surface,
+    scrolledContainerColor = MiuixTheme.colorScheme.surfaceContainer,
 )

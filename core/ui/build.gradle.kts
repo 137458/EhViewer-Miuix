@@ -12,6 +12,11 @@ kotlin {
                 api(libs.compose.material3.adaptive)
                 api(libs.androidx.lifecycle.compose)
                 api(libs.androidx.lifecycle.viewmodel.compose)
+                api(libs.miuix.ui)
+                api(libs.miuix.preference)
+                api(libs.miuix.icons)
+                api(libs.miuix.blur)
+                api(libs.backdrop)
                 implementation(libs.compose.ui.backhandler)
                 implementation(libs.compose.ui.tooling.preview)
             }

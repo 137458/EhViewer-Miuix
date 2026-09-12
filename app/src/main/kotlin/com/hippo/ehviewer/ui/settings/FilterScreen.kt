@@ -1,21 +1,26 @@
 package com.hippo.ehviewer.ui.settings
 
 import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
+import androidx.compose.ui.state.ToggleableState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Help
 import androidx.compose.material.icons.filled.Add
@@ -24,23 +29,17 @@ import androidx.compose.material.icons.filled.FilterAlt
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExposedDropdownMenu
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.currentRecomposeScope
 import androidx.compose.runtime.getValue
@@ -57,6 +56,7 @@ import androidx.compose.ui.unit.dp
 import com.ehviewer.core.database.model.Filter
 import com.ehviewer.core.database.model.FilterMode
 import com.ehviewer.core.i18n.R
+import com.ehviewer.core.ui.component.BlurredBar
 import com.ehviewer.core.ui.util.Await
 import com.ehviewer.core.ui.util.thenIf
 import com.ehviewer.core.util.async
@@ -76,11 +76,20 @@ import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlin.coroutines.resume
 import moe.tarsin.coroutines.groupByToObserved
+import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.Checkbox
+import top.yukonga.miuix.kmp.basic.FloatingActionButton
+import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
+import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.SmallTitle
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TopAppBar
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Destination<RootGraph>
 @Composable
 fun AnimatedVisibilityScope.FilterScreen(navigator: DestinationsNavigator) = Screen(navigator) {
-    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
+    val scrollBehavior = MiuixScrollBehavior()
     val allFilterMap = remember { async { EhFilter.filters.await().groupByToObserved { it.mode } } }
     val textIsEmpty = stringResource(R.string.text_is_empty)
     val labelExist = stringResource(R.string.label_text_exist)
@@ -187,28 +196,29 @@ fun AnimatedVisibilityScope.FilterScreen(navigator: DestinationsNavigator) = Scr
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(text = stringResource(id = R.string.filter)) },
-                navigationIcon = { NavigationIcon() },
-                actions = {
-                    IconButton(
-                        onClick = {
-                            launch {
-                                awaitConfirmationOrCancel(
-                                    title = R.string.filter,
-                                    showCancelButton = false,
-                                ) {
-                                    Text(text = stringResource(id = R.string.filter_tip))
+            BlurredBar {
+                TopAppBar(
+                    title = stringResource(id = R.string.filter),
+                    navigationIcon = { NavigationIcon() },
+                    actions = {
+                        IconButton(
+                            onClick = {
+                                launch {
+                                    awaitConfirmationOrCancel(
+                                        title = R.string.filter,
+                                        showCancelButton = false,
+                                    ) {
+                                        Text(text = stringResource(id = R.string.filter_tip))
+                                    }
                                 }
-                            }
-                        },
-                        shapes = IconButtonDefaults.shapes(),
-                    ) {
-                        Icon(imageVector = Icons.AutoMirrored.Default.Help, contentDescription = null)
-                    }
-                },
-                scrollBehavior = scrollBehavior,
-            )
+                            },
+                        ) {
+                            Icon(imageVector = Icons.AutoMirrored.Default.Help, contentDescription = null)
+                        }
+                    },
+                    scrollBehavior = scrollBehavior,
+                )
+            }
         },
         floatingActionButton = {
             FloatingActionButton(onClick = ::addFilter) {
@@ -216,79 +226,97 @@ fun AnimatedVisibilityScope.FilterScreen(navigator: DestinationsNavigator) = Scr
             }
         },
     ) { paddingValues ->
-        Await({ allFilterMap.await() }) { filters ->
-            LazyColumn(
-                modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-                contentPadding = paddingValues,
-            ) {
-                var showTip = true
-                filters.forEach { (filterMode, filters) ->
-                    val title = when (filterMode) {
-                        FilterMode.TITLE -> R.string.filter_title
-                        FilterMode.UPLOADER -> R.string.filter_uploader
-                        FilterMode.TAG -> R.string.filter_tag
-                        FilterMode.TAG_NAMESPACE -> R.string.filter_tag_namespace
-                        FilterMode.COMMENTER -> R.string.filter_commenter
-                        FilterMode.COMMENT -> R.string.filter_comment
-                    }
-                    if (filters.isNotEmpty()) {
-                        item(key = filterMode) {
-                            Text(
-                                text = stringResource(id = title),
-                                modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp).thenIf(animateItems) { animateItem() },
-                                color = MaterialTheme.colorScheme.tertiary,
-                                style = MaterialTheme.typography.titleMedium,
-                            )
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MiuixTheme.colorScheme.background),
+            contentAlignment = Alignment.TopCenter,
+        ) {
+            Await({ allFilterMap.await() }) { filters ->
+                LazyColumn(
+                    modifier = Modifier
+                        .widthIn(max = 760.dp)
+                        .fillMaxHeight()
+                        .nestedScroll(scrollBehavior.nestedScrollConnection),
+                    contentPadding = paddingValues,
+                ) {
+                    var showTip = true
+                    filters.forEach { (filterMode, filterList) ->
+                        val title = when (filterMode) {
+                            FilterMode.TITLE -> R.string.filter_title
+                            FilterMode.UPLOADER -> R.string.filter_uploader
+                            FilterMode.TAG -> R.string.filter_tag
+                            FilterMode.TAG_NAMESPACE -> R.string.filter_tag_namespace
+                            FilterMode.COMMENTER -> R.string.filter_commenter
+                            FilterMode.COMMENT -> R.string.filter_comment
                         }
-                        items(filters, key = { requireNotNull(it.id) }) { filter ->
-                            val filterCheckBoxRecomposeScope = currentRecomposeScope
-                            Row(
-                                modifier = Modifier.fillMaxWidth().thenIf(animateItems) { animateItem() }.clickable { filter.trigger { filterCheckBoxRecomposeScope.invalidate() } },
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Checkbox(
-                                    checked = filter.enable,
-                                    onCheckedChange = { filter.trigger { filterCheckBoxRecomposeScope.invalidate() } },
+                        if (filterList.isNotEmpty()) {
+                            item(key = "title_$filterMode") {
+                                SmallTitle(
+                                    text = stringResource(id = title),
+                                    modifier = Modifier.thenIf(animateItems) { animateItem() },
                                 )
-                                Text(text = filter.text, modifier = Modifier.weight(1F))
-                                IconButton(
-                                    onClick = {
-                                        launch {
-                                            awaitConfirmationOrCancel(confirmText = R.string.delete) {
-                                                Text(text = stringResource(id = R.string.delete_filter, filter.text))
-                                            }
-                                            filter.forget {
-                                                filters.remove(filter)
+                            }
+                            item(key = "card_$filterMode") {
+                                Card(
+                                    modifier = Modifier
+                                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                                        .thenIf(animateItems) { animateItem() },
+                                ) {
+                                    filterList.forEach { filter ->
+                                        val filterCheckBoxRecomposeScope = currentRecomposeScope
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clickable { filter.trigger { filterCheckBoxRecomposeScope.invalidate() } }
+                                                .padding(horizontal = 16.dp, vertical = 12.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                        ) {
+                                            Checkbox(
+                                                state = ToggleableState(filter.enable),
+                                                onClick = { filter.trigger { filterCheckBoxRecomposeScope.invalidate() } },
+                                            )
+                                            Spacer(modifier = Modifier.size(12.dp))
+                                            Text(text = filter.text, modifier = Modifier.weight(1F))
+                                            IconButton(
+                                                onClick = {
+                                                    launch {
+                                                        awaitConfirmationOrCancel(confirmText = R.string.delete) {
+                                                            Text(text = stringResource(id = R.string.delete_filter, filter.text))
+                                                        }
+                                                        filter.forget {
+                                                            filterList.remove(filter)
+                                                        }
+                                                    }
+                                                },
+                                            ) {
+                                                Icon(imageVector = Icons.Default.Delete, contentDescription = null)
                                             }
                                         }
-                                    },
-                                    shapes = IconButtonDefaults.shapes(),
-                                ) {
-                                    Icon(imageVector = Icons.Default.Delete, contentDescription = null)
+                                    }
                                 }
                             }
+                            showTip = false
                         }
-                        showTip = false
                     }
-                }
-                if (showTip) {
-                    item {
-                        Column(
-                            modifier = Modifier.padding(paddingValues).fillMaxSize(),
-                            verticalArrangement = Arrangement.Center,
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                        ) {
-                            Spacer(modifier = Modifier.size(80.dp))
-                            Icon(
-                                imageVector = Icons.Default.FilterAlt,
-                                contentDescription = null,
-                                modifier = Modifier.padding(16.dp).size(120.dp),
-                                tint = MaterialTheme.colorScheme.primary,
-                            )
-                            Text(
-                                text = stringResource(id = R.string.filter),
-                                style = MaterialTheme.typography.headlineMedium,
-                            )
+                    if (showTip) {
+                        item {
+                            Column(
+                                modifier = Modifier.fillMaxSize(),
+                                verticalArrangement = Arrangement.Center,
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                            ) {
+                                Spacer(modifier = Modifier.size(80.dp))
+                                Icon(
+                                    imageVector = Icons.Default.FilterAlt,
+                                    contentDescription = null,
+                                    modifier = Modifier.padding(16.dp).size(120.dp),
+                                    tint = MiuixTheme.colorScheme.primary,
+                                )
+                                Text(
+                                    text = stringResource(id = R.string.filter),
+                                )
+                            }
                         }
                     }
                 }
