@@ -12,12 +12,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.FileCopy
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Save
-import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.Visibility
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Copy
+import top.yukonga.miuix.kmp.icon.extended.Download
+import top.yukonga.miuix.kmp.icon.extended.FileDownloads
+import top.yukonga.miuix.kmp.icon.extended.Refresh
+import top.yukonga.miuix.kmp.icon.extended.Share
+import top.yukonga.miuix.kmp.icon.extended.Show
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -51,12 +52,12 @@ fun ReaderPageSheetMeta(
         Text(text = stringResource(id = text), style = MiuixTheme.textStyles.body1)
     }
     Column(modifier = Modifier.verticalScroll(rememberScrollState()).navigationBarsPadding()) {
-        showAds?.let { Item(icon = Icons.Default.Visibility, text = R.string.show_blocked_image, onClick = it) }
-        Item(icon = Icons.Default.Refresh, text = R.string.refresh, onClick = retry)
-        Item(icon = Icons.Default.Visibility, text = R.string.view_original, onClick = retryOrigin)
-        Item(icon = Icons.Default.Share, text = R.string.action_share, onClick = share)
-        Item(icon = Icons.Default.FileCopy, text = R.string.action_copy, onClick = copy)
-        Item(icon = Icons.Default.Save, text = R.string.action_save, onClick = save)
-        Item(icon = Icons.Default.Save, text = R.string.action_save_to, onClick = saveTo)
+        showAds?.let { Item(icon = MiuixIcons.Show, text = R.string.show_blocked_image, onClick = it) }
+        Item(icon = MiuixIcons.Refresh, text = R.string.refresh, onClick = retry)
+        Item(icon = MiuixIcons.Show, text = R.string.view_original, onClick = retryOrigin)
+        Item(icon = MiuixIcons.Share, text = R.string.action_share, onClick = share)
+        Item(icon = MiuixIcons.Copy, text = R.string.action_copy, onClick = copy)
+        Item(icon = MiuixIcons.Download, text = R.string.action_save, onClick = save)
+        Item(icon = MiuixIcons.FileDownloads, text = R.string.action_save_to, onClick = saveTo)
     }
 }

@@ -21,17 +21,18 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.DriveFileMove
-import androidx.compose.material.icons.automirrored.filled.MenuBook
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.filled.HeartBroken
-import androidx.compose.material3.MaterialTheme
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Delete
+import top.yukonga.miuix.kmp.icon.extended.Download
+import top.yukonga.miuix.kmp.icon.extended.Favorites
+import top.yukonga.miuix.kmp.icon.extended.FavoritesFill
+import top.yukonga.miuix.kmp.icon.extended.MoveFile
+import top.yukonga.miuix.kmp.theme.MiuixTheme
+import com.ehviewer.core.ui.icons.EhIcons
+import com.ehviewer.core.ui.icons.filled.HeartBroken
+import com.ehviewer.core.ui.icons.filled.MenuBook
 import androidx.compose.material3.SelectableDates
-import androidx.compose.material3.Text
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -112,7 +113,7 @@ suspend fun keepNoMediaFileStatus(downloadDir: Path = downloadLocation, mediaSca
     }
 }
 
-fun getFavoriteIcon(favorited: Boolean) = if (favorited) Icons.Default.Favorite else Icons.Default.FavoriteBorder
+fun getFavoriteIcon(favorited: Boolean) = if (favorited) MiuixIcons.FavoritesFill else MiuixIcons.Favorites
 
 context(_: DialogState, _: MainActivity)
 suspend fun startDownload(forceDefault: Boolean, vararg galleryInfos: BaseGalleryInfo) {
@@ -189,7 +190,7 @@ suspend fun modifyFavorites(galleryInfo: GalleryInfo): Boolean {
             }
             val items = buildList {
                 if (isFavorited) {
-                    val remove = Icons.Default.HeartBroken to appCtx.getString(R.string.remove_from_favourites)
+                    val remove = EhIcons.Default.HeartBroken to appCtx.getString(R.string.remove_from_favourites)
                     add(remove)
                 }
                 add(localFav)
@@ -279,21 +280,21 @@ suspend fun doGalleryInfoAction(info: BaseGalleryInfo) {
     val downloaded = DownloadManager.getDownloadState(info.gid) != DownloadInfo.STATE_INVALID
     val favorited = info.favoriteSlot != NOT_FAVORITED
     val items = buildList {
-        add(Icons.AutoMirrored.Default.MenuBook to R.string.read)
+        add(EhIcons.Default.MenuBook to R.string.read)
         val download = if (downloaded) {
-            Icons.Default.Delete to R.string.delete_downloads
+            MiuixIcons.Delete to R.string.delete_downloads
         } else {
-            Icons.Default.Download to R.string.download
+            MiuixIcons.Download to R.string.download
         }
         add(download)
         val favorite = if (favorited) {
-            Icons.Default.HeartBroken to R.string.remove_from_favourites
+            EhIcons.Default.HeartBroken to R.string.remove_from_favourites
         } else {
-            Icons.Default.Favorite to R.string.add_to_favourites
+            MiuixIcons.Favorites to R.string.add_to_favourites
         }
         add(favorite)
         if (downloaded) {
-            add(Icons.AutoMirrored.Default.DriveFileMove to R.string.download_move_dialog_title)
+            add(MiuixIcons.MoveFile to R.string.download_move_dialog_title)
         }
     }
     val selected = awaitSelectItemWithIcon(items, EhUtils.getSuitableTitle(info))
@@ -337,7 +338,7 @@ private suspend fun confirmRemoveDownload(text: String): Boolean {
         Column {
             Text(
                 text = text,
-                style = MaterialTheme.typography.titleMedium,
+                style = MiuixTheme.textStyles.title4,
             )
             Spacer(modifier = Modifier.height(16.dp))
             LabeledCheckbox(

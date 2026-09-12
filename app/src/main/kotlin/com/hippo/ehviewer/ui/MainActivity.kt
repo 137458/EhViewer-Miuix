@@ -72,30 +72,23 @@ import top.yukonga.miuix.kmp.basic.NavigationRailItem
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.FormatListNumbered
-import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Whatshot
-import androidx.compose.material3.DrawerDefaults
-import androidx.compose.material3.DrawerState
-import androidx.compose.material3.DrawerValue
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalDrawerSheet
-import androidx.compose.material3.ModalNavigationDrawer
-import androidx.compose.material3.NavigationDrawerItem
+import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.SnackbarResult
-import androidx.compose.material3.Text
+import top.yukonga.miuix.kmp.basic.SnackbarHost
+import top.yukonga.miuix.kmp.basic.SnackbarHostState
+import top.yukonga.miuix.kmp.basic.SnackbarResult
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Download
+import top.yukonga.miuix.kmp.icon.extended.Favorites
+import top.yukonga.miuix.kmp.icon.extended.Recent
+import top.yukonga.miuix.kmp.icon.extended.Settings
+import com.ehviewer.core.ui.icons.EhIcons
+import com.ehviewer.core.ui.icons.filled.FormatListNumbered
+import com.ehviewer.core.ui.icons.filled.Home
+import com.ehviewer.core.ui.icons.filled.Subscriptions
+import com.ehviewer.core.ui.icons.filled.Whatshot
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
-import androidx.compose.material3.rememberDrawerState
-import androidx.compose.material3.rememberDrawerState2
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
@@ -104,30 +97,22 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.currentCompositeKeyHashCode
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.BlurEffect
-import androidx.compose.ui.graphics.RectangleShape
-import androidx.compose.ui.graphics.TileMode
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.util.lerp
 import androidx.compose.ui.zIndex
 import androidx.core.net.toUri
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
@@ -139,8 +124,7 @@ import com.ehviewer.core.i18n.R
 import com.ehviewer.core.ui.component.LabeledCheckbox
 import com.ehviewer.core.ui.component.LocalSideSheetState
 import com.ehviewer.core.ui.component.MutableSideSheet
-import com.ehviewer.core.ui.icons.EhIcons
-import com.ehviewer.core.ui.icons.filled.Subscriptions
+import com.ehviewer.core.ui.component.rememberSideSheetState
 import com.ehviewer.core.ui.util.LocalSnackBarFabPadding
 import com.ehviewer.core.ui.util.LocalWindowSizeClass
 import com.ehviewer.core.util.isAtLeastQ
@@ -198,14 +182,14 @@ import splitties.systemservices.clipboardManager
 import splitties.systemservices.connectivityManager
 
 private val navItems = arrayOf<Triple<Direction, Int, ImageVector>>(
-    Triple(HomePageScreenDestination, R.string.homepage, Icons.Default.Home),
+    Triple(HomePageScreenDestination, R.string.homepage, EhIcons.Default.Home),
     Triple(SubscriptionScreenDestination, R.string.subscription, EhIcons.Default.Subscriptions),
-    Triple(WhatshotScreenDestination, R.string.whats_hot, Icons.Default.Whatshot),
-    Triple(ToplistScreenDestination, R.string.toplist, Icons.Default.FormatListNumbered),
-    Triple(FavouritesScreenDestination, R.string.favourite, Icons.Default.Favorite),
-    Triple(HistoryScreenDestination, R.string.history, Icons.Default.History),
-    Triple(DownloadsScreenDestination, R.string.downloads, Icons.Default.Download),
-    Triple(SettingsScreenDestination, R.string.settings, Icons.Default.Settings),
+    Triple(WhatshotScreenDestination, R.string.whats_hot, EhIcons.Default.Whatshot),
+    Triple(ToplistScreenDestination, R.string.toplist, EhIcons.Default.FormatListNumbered),
+    Triple(FavouritesScreenDestination, R.string.favourite, MiuixIcons.Favorites),
+    Triple(HistoryScreenDestination, R.string.history, MiuixIcons.Recent),
+    Triple(DownloadsScreenDestination, R.string.downloads, MiuixIcons.Download),
+    Triple(SettingsScreenDestination, R.string.settings, MiuixIcons.Settings),
 )
 
 class MainActivity : AppCompatActivity() {
@@ -247,16 +231,11 @@ class MainActivity : AppCompatActivity() {
         }
         setMiuixContent {
             val configuration = LocalConfiguration.current
-            val navDrawerState = rememberDrawerState(DrawerValue.Closed)
-            val sideSheetState = rememberDrawerState2(DrawerValue.Closed)
+            val sideSheetState = rememberSideSheetState()
             val snackbarState = remember { SnackbarHostState() }
             val scope = rememberCoroutineScope()
             val navController = rememberNavController()
             val navigator = navController.rememberDestinationsNavigator()
-            fun closeDrawer(callback: () -> Unit = {}) = scope.launch {
-                navDrawerState.close()
-                callback()
-            }
 
             suspend fun DialogState.checkDownloadLocation() {
                 val valid = withIOContext { downloadLocation.isDirectory }
@@ -268,7 +247,7 @@ class MainActivity : AppCompatActivity() {
                     ) {
                         Text(
                             text = stringResource(id = R.string.invalid_download_location),
-                            style = MaterialTheme.typography.titleMedium,
+                            style = MiuixTheme.textStyles.title4,
                         )
                     }
                     navigator.navigate(DownloadScreenDestination)
@@ -414,12 +393,12 @@ class MainActivity : AppCompatActivity() {
             val isWideScreen = configuration.screenWidthDp >= 600
             val primaryNavItems = remember {
                 listOf(
-                    Triple(HomePageScreenDestination, R.string.homepage, Icons.Default.Home),
+                    Triple(HomePageScreenDestination, R.string.homepage, EhIcons.Default.Home),
                     Triple(SubscriptionScreenDestination, R.string.subscription, EhIcons.Default.Subscriptions),
-                    Triple(WhatshotScreenDestination, R.string.whats_hot, Icons.Default.Whatshot),
-                    Triple(FavouritesScreenDestination, R.string.favourite, Icons.Default.Favorite),
-                    Triple(DownloadsScreenDestination, R.string.downloads, Icons.Default.Download),
-                    Triple(SettingsScreenDestination, R.string.settings, Icons.Default.Settings),
+                    Triple(WhatshotScreenDestination, R.string.whats_hot, EhIcons.Default.Whatshot),
+                    Triple(FavouritesScreenDestination, R.string.favourite, MiuixIcons.Favorites),
+                    Triple(DownloadsScreenDestination, R.string.downloads, MiuixIcons.Download),
+                    Triple(SettingsScreenDestination, R.string.settings, MiuixIcons.Settings),
                 )
             }
             val isPrimaryDestination = navItems.any { it.first === currentDestination }
@@ -444,7 +423,6 @@ class MainActivity : AppCompatActivity() {
             val effectiveFabPadding = snackbarFabPadding.coerceAtLeast(bottomBarPadding)
 
             CompositionLocalProvider(
-                LocalNavDrawerState provides navDrawerState,
                 LocalSideSheetState provides sideSheetState,
                 LocalDrawerHandle provides drawerHandle,
                 LocalSnackBarHostState provides snackbarState,
@@ -454,7 +432,7 @@ class MainActivity : AppCompatActivity() {
                 Scaffold(
                     snackbarHost = {
                         SnackbarHost(
-                            hostState = snackbarState,
+                            state = snackbarState,
                             modifier = Modifier
                                 .padding(bottom = bottomBarPadding)
                                 .onGloballyPositioned {
@@ -465,10 +443,6 @@ class MainActivity : AppCompatActivity() {
                         )
                     },
                 ) { _ ->
-                    var minOffset by remember {
-                        mutableFloatStateOf(-with(density) { DrawerDefaults.MaximumDrawerWidth.toPx() })
-                    }
-
                     @Composable
                     fun MainContent() {
                         Box(
@@ -544,12 +518,12 @@ class MainActivity : AppCompatActivity() {
                                         .clip(SquircleShape(12.dp)),
                                     contentAlignment = Alignment.Center,
                                 ) {
-                                     Image(
-                                         painter = painterResource(id = com.hippo.ehviewer.R.mipmap.ic_launcher),
-                                         contentDescription = null,
-                                         contentScale = ContentScale.Fit,
-                                         modifier = Modifier.fillMaxSize(),
-                                     )
+                                    Image(
+                                        painter = painterResource(id = com.hippo.ehviewer.R.mipmap.ic_launcher),
+                                        contentDescription = null,
+                                        contentScale = ContentScale.Fit,
+                                        modifier = Modifier.fillMaxSize(),
+                                    )
                                 }
                                 Spacer(modifier = Modifier.height(16.dp))
                                 navItems.forEach { (direction, stringId, icon) ->
@@ -564,7 +538,7 @@ class MainActivity : AppCompatActivity() {
                             Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
                                 MutableSideSheet(
                                     drawerState = sideSheetState,
-                                    modifier = Modifier,
+                                    modifier = Modifier.fillMaxSize(),
                                     enabled = drawerEnabled,
                                 ) {
                                     MainContent()
@@ -572,92 +546,12 @@ class MainActivity : AppCompatActivity() {
                             }
                         }
                     } else {
-                        ModalNavigationDrawer(
-                            drawerContent = {
-                                ModalDrawerSheet(
-                                    drawerState = navDrawerState,
-                                    drawerShape = SquircleShape(24.dp),
-                                    drawerContainerColor = MiuixTheme.colorScheme.surface,
-                                    modifier = Modifier
-                                        .widthIn(max = (configuration.screenWidthDp - 56).dp)
-                                        .onSizeChanged { minOffset = -it.width.toFloat() },
-                                    windowInsets = WindowInsets.systemBars.only(WindowInsetsSides.Start),
-                                ) {
-                                    val scrollState = rememberScrollState()
-                                    Column(
-                                        modifier = Modifier
-                                            .verticalScroll(scrollState)
-                                            .windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Bottom)),
-                                    ) {
-                                        Box(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(16.dp)
-                                                .clip(SquircleShape(16.dp)),
-                                        ) {
-                                             Image(
-                                                 painter = painterResource(id = com.hippo.ehviewer.R.mipmap.ic_leanback_banner),
-                                                 contentDescription = null,
-                                                 modifier = Modifier.fillMaxWidth(),
-                                                 contentScale = ContentScale.FillWidth,
-                                             )
-                                        }
-                                        navItems.forEach { (direction, stringId, icon) ->
-                                            val isSelected = currentDestination === direction
-                                            val itemBg = if (isSelected) MiuixTheme.colorScheme.primary.copy(alpha = 0.12f) else Color.Transparent
-                                            val itemColor = if (isSelected) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurface
-                                            Row(
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .padding(horizontal = 12.dp, vertical = 3.dp)
-                                                    .clip(SquircleShape(12.dp))
-                                                    .background(itemBg)
-                                                    .clickable {
-                                                        navigateToTab(direction)
-                                                        closeDrawer()
-                                                    }
-                                                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                                                verticalAlignment = Alignment.CenterVertically,
-                                            ) {
-                                                Icon(
-                                                    imageVector = icon,
-                                                    contentDescription = null,
-                                                    tint = itemColor,
-                                                    modifier = Modifier.size(24.dp),
-                                                )
-                                                Spacer(modifier = Modifier.width(16.dp))
-                                                Text(
-                                                    text = stringResource(id = stringId),
-                                                    color = itemColor,
-                                                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-                            },
-                            drawerState = navDrawerState,
-                            gesturesEnabled = drawerEnabled && sideSheetState.isClosed || navDrawerState.isOpen,
+                        MutableSideSheet(
+                            drawerState = sideSheetState,
+                            modifier = Modifier.fillMaxSize(),
+                            enabled = drawerEnabled,
                         ) {
-                            val radius by remember {
-                                snapshotFlow {
-                                    val step = calculateFraction(minOffset, 0f, navDrawerState.currentOffset)
-                                    with(density) { lerp(0, 10, step).dp.toPx() }
-                                }
-                            }.collectAsState(0f)
-                            MutableSideSheet(
-                                drawerState = sideSheetState,
-                                modifier = Modifier.graphicsLayer {
-                                    if (radius != 0f) {
-                                        renderEffect = BlurEffect(radius, radius, TileMode.Clamp)
-                                        shape = RectangleShape
-                                        clip = true
-                                    }
-                                },
-                                enabled = drawerEnabled,
-                            ) {
-                                MainContent()
-                            }
+                            MainContent()
                         }
                     }
                 }
@@ -689,7 +583,7 @@ class MainActivity : AppCompatActivity() {
                     Column {
                         Text(
                             text = stringResource(id = R.string.app_link_not_verified_message),
-                            style = MaterialTheme.typography.titleMedium,
+                            style = MiuixTheme.textStyles.title4,
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         LabeledCheckbox(
@@ -732,8 +626,6 @@ class MainActivity : AppCompatActivity() {
         shareUrl?.let { outContent?.webUri = it.toUri() }
     }
 }
-
-val LocalNavDrawerState = compositionLocalOf<DrawerState> { error("CompositionLocal LocalNavDrawerState not present!") }
 
 val LocalDrawerHandle = compositionLocalOf<SnapshotStateList<Long>> { error("CompositionLocal LocalDrawerHandle not present!") }
 val LocalSnackBarHostState = compositionLocalOf<SnackbarHostState> { error("CompositionLocal LocalSnackBarHostState not present!") }

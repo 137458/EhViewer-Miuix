@@ -5,12 +5,12 @@ import androidx.collection.SieveCache
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.NewLabel
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Share
-import androidx.compose.material3.SnackbarResult
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Add
+import top.yukonga.miuix.kmp.icon.extended.More
+import top.yukonga.miuix.kmp.icon.extended.Refresh
+import top.yukonga.miuix.kmp.icon.extended.Share
+import top.yukonga.miuix.kmp.basic.SnackbarResult
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
@@ -185,7 +185,7 @@ fun AnimatedVisibilityScope.GalleryDetailScreen(args: GalleryDetailScreenArgs, n
                             Settings.clipboardTextHashCode = galleryDetailUrl.hashCode()
                         },
                     ) {
-                        Icon(imageVector = Icons.Default.Share, contentDescription = null)
+                        Icon(imageVector = MiuixIcons.Share, contentDescription = null)
                     }
                     if (windowSizeClass.isExpanded) {
                         IconButton(
@@ -204,7 +204,7 @@ fun AnimatedVisibilityScope.GalleryDetailScreen(args: GalleryDetailScreenArgs, n
                                 }
                             },
                         ) {
-                            Icon(imageVector = Icons.Default.NewLabel, contentDescription = null)
+                            Icon(imageVector = MiuixIcons.Add, contentDescription = null)
                         }
                         IconButton(
                             onClick = {
@@ -216,7 +216,7 @@ fun AnimatedVisibilityScope.GalleryDetailScreen(args: GalleryDetailScreenArgs, n
                                 getDetailError = ""
                             },
                         ) {
-                            Icon(imageVector = Icons.Default.Refresh, contentDescription = null)
+                            Icon(imageVector = MiuixIcons.Refresh, contentDescription = null)
                         }
                     }
                     IconButton(
@@ -293,7 +293,7 @@ fun AnimatedVisibilityScope.GalleryDetailScreen(args: GalleryDetailScreenArgs, n
                             }
                         },
                     ) {
-                        Icon(imageVector = Icons.Default.MoreVert, contentDescription = null)
+                        Icon(imageVector = MiuixIcons.More, contentDescription = null)
                     }
                 },
             )

@@ -14,12 +14,11 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularWavyProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.material3.WavyProgressIndicatorDefaults
+import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -89,22 +88,7 @@ fun PagerItem(
                 modifier = modifier.fillMaxWidth().aspectRatio(DEFAULT_ASPECT),
                 contentAlignment = Alignment.Center,
             ) {
-                AnimatedContent(
-                    targetState = state is PageStatus.Loading,
-                    transitionSpec = { fadeIn() togetherWith fadeOut() },
-                    label = "progressState",
-                ) { determinate ->
-                    val animatedProgress by animateFloatAsState(
-                        targetValue = state.progressObserved,
-                        animationSpec = WavyProgressIndicatorDefaults.ProgressAnimationSpec,
-                        label = "progress",
-                    )
-                    if (determinate) {
-                        CircularWavyProgressIndicator(progress = { animatedProgress })
-                    } else {
-                        CircularWavyProgressIndicator()
-                    }
-                }
+                InfiniteProgressIndicator()
             }
         }
         is PageStatus.Ready -> {
@@ -161,11 +145,11 @@ fun PagerItem(
                         text = state.message ?: defaultError,
                         modifier = Modifier.padding(8.dp),
                         textAlign = TextAlign.Center,
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = MiuixTheme.textStyles.body2,
                     )
                     Button(
                         onClick = { pageLoader.retryPage(page.index) },
-                        shapes = ButtonDefaults.shapes(),
+                        colors = ButtonDefaults.buttonColorsPrimary(),
                         modifier = Modifier.padding(8.dp),
                     ) {
                         Text(text = stringResource(id = R.string.action_retry))

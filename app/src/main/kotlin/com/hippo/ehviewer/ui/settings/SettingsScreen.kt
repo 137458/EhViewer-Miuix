@@ -11,11 +11,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Adb
-import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Security
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Download
+import top.yukonga.miuix.kmp.icon.extended.Info
+import top.yukonga.miuix.kmp.icon.extended.Lock
+import top.yukonga.miuix.kmp.icon.extended.Tune
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -94,25 +94,25 @@ fun AnimatedVisibilityScope.SettingsScreen(navigator: DestinationsNavigator) = S
                         navigator = navigator,
                     )
                     PreferenceHeader(
-                        icon = Icons.Default.Download,
+                        icon = MiuixIcons.Download,
                         title = R.string.settings_download,
                         childRoute = DownloadScreenDestination,
                         navigator = navigator,
                     )
                     PreferenceHeader(
-                        icon = Icons.Default.Security,
+                        icon = MiuixIcons.Lock,
                         title = R.string.settings_privacy,
                         childRoute = PrivacyScreenDestination,
                         navigator = navigator,
                     )
                     PreferenceHeader(
-                        icon = Icons.Default.Adb,
+                        icon = MiuixIcons.Tune,
                         title = R.string.settings_advanced,
                         childRoute = AdvancedScreenDestination,
                         navigator = navigator,
                     )
                     PreferenceHeader(
-                        icon = Icons.Default.Info,
+                        icon = MiuixIcons.Info,
                         title = R.string.settings_about,
                         childRoute = AboutScreenDestination,
                         navigator = navigator,

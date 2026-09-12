@@ -3,6 +3,7 @@ package com.hippo.ehviewer.ui.tools
 import android.content.Context
 import androidx.annotation.StringRes
 import androidx.compose.foundation.MutatorMutex
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,66 +19,41 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.state.ToggleableState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.clearText
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.NewLabel
 import top.yukonga.miuix.kmp.basic.ButtonDefaults as MiuixButtonDefaults
 import top.yukonga.miuix.kmp.basic.Checkbox as MiuixCheckbox
 import top.yukonga.miuix.kmp.basic.Icon as MiuixIcon
+import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.RadioButton as MiuixRadioButton
 import top.yukonga.miuix.kmp.basic.Text as MiuixText
 import top.yukonga.miuix.kmp.basic.TextButton as MiuixTextButton
 import top.yukonga.miuix.kmp.basic.TextField as MiuixTextField
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Add
+import top.yukonga.miuix.kmp.icon.extended.Close
+import top.yukonga.miuix.kmp.icon.extended.Create
+import top.yukonga.miuix.kmp.icon.extended.Info
+import top.yukonga.miuix.kmp.icon.extended.Ok
 import top.yukonga.miuix.kmp.layout.DialogDefaults as MiuixDialogDefaults
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.window.WindowDialog
 import com.ehviewer.core.ui.component.SquircleShape
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.AlertDialogDefaults
-import androidx.compose.material3.BasicAlertDialog
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDefaults
-import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DisplayMode
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExposedDropdownMenu
-import androidx.compose.material3.ExposedDropdownMenuAnchorType
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
-import androidx.compose.material3.InputChip
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.ListItemDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.ProvideTextStyle
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.SelectableDates
-import androidx.compose.material3.ShapeDefaults
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TimePicker
-import androidx.compose.material3.TimePickerDialog
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
@@ -214,125 +190,140 @@ suspend fun awaitSelectTags(): List<String> = dialog { cont ->
     var suggestionTranslate by rememberMutableStateInDataStore("SuggestionTranslate") { false }
     PausableAlertDialog(
         confirmButton = {
-            TextButton(
+            MiuixTextButton(
+                text = stringResource(id = android.R.string.ok),
                 onClick = { cont.resume(selected.toList()) },
-                shapes = ButtonDefaults.shapes(),
-                content = { Text(text = stringResource(id = android.R.string.ok)) },
             )
         },
         dismissButton = {
-            TextButton(
+            MiuixTextButton(
+                text = stringResource(id = android.R.string.cancel),
                 onClick = { cont.cancel() },
-                shapes = ButtonDefaults.shapes(),
-                content = { Text(text = stringResource(id = android.R.string.cancel)) },
             )
         },
         title = {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(text = stringResource(id = R.string.action_add_tag))
+                MiuixText(text = stringResource(id = R.string.action_add_tag))
                 if (EhTagDatabase.translatable) {
                     Spacer(modifier = Modifier.weight(1f))
-                    Text(
+                    MiuixText(
                         text = stringResource(id = R.string.translate_tag_for_tagger),
-                        style = MaterialTheme.typography.titleSmall,
+                        style = MiuixTheme.textStyles.body2,
                     )
-                    Checkbox(
-                        checked = suggestionTranslate,
-                        onCheckedChange = { suggestionTranslate = !suggestionTranslate },
+                    MiuixCheckbox(
+                        state = ToggleableState(suggestionTranslate),
+                        onClick = { suggestionTranslate = !suggestionTranslate },
                     )
                 }
             }
         },
         text = {
             Column {
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    selected.forEach { text ->
-                        InputChip(
-                            selected = true,
-                            onClick = { },
-                            label = { Text(text = text, overflow = TextOverflow.Ellipsis, maxLines = 1) },
-                            trailingIcon = {
-                                Icon(
-                                    imageVector = Icons.Default.Close,
-                                    contentDescription = null,
-                                    modifier = Modifier.clickable { selected -= text },
+                if (selected.isNotEmpty()) {
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                        modifier = Modifier.padding(bottom = 8.dp),
+                    ) {
+                        selected.forEach { text ->
+                            Row(
+                                modifier = Modifier
+                                    .clip(SquircleShape(8.dp))
+                                    .background(MiuixTheme.colorScheme.primaryContainer)
+                                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                MiuixText(
+                                    text = text,
+                                    overflow = TextOverflow.Ellipsis,
+                                    maxLines = 1,
+                                    style = MiuixTheme.textStyles.footnote1,
+                                    color = MiuixTheme.colorScheme.onPrimaryContainer,
                                 )
-                            },
-                        )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                MiuixIcon(
+                                    imageVector = MiuixIcons.Close,
+                                    contentDescription = null,
+                                    tint = MiuixTheme.colorScheme.onPrimaryContainer,
+                                    modifier = Modifier
+                                        .size(14.dp)
+                                        .clickable { selected -= text },
+                                )
+                            }
+                        }
                     }
                 }
-                var expanded by remember { mutableStateOf(false) }
-                ExposedDropdownMenuBox(
-                    expanded = expanded,
-                    onExpandedChange = { if (!it) expanded = false },
-                ) {
-                    OutlinedTextField(
-                        modifier = Modifier.menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable),
-                        state = state,
-                        label = { Text(text = stringResource(id = R.string.action_add_tag_tip)) },
-                        trailingIcon = {
-                            IconButton(
-                                onClick = {
-                                    val text = state.text.toString().trim()
-                                    if (text.isNotEmpty()) {
-                                        selected += text
-                                        state.clearText()
-                                    }
-                                },
-                                shapes = IconButtonDefaults.shapes(),
-                                content = {
-                                    Icon(
-                                        imageVector = Icons.Default.Add,
-                                        contentDescription = null,
-                                    )
-                                },
+                MiuixTextField(
+                    state = state,
+                    label = stringResource(id = R.string.action_add_tag_tip),
+                    trailingIcon = {
+                        IconButton(
+                            onClick = {
+                                val text = state.text.toString().trim()
+                                if (text.isNotEmpty()) {
+                                    selected += text
+                                    state.clearText()
+                                }
+                            },
+                        ) {
+                            MiuixIcon(
+                                imageVector = MiuixIcons.Add,
+                                contentDescription = null,
                             )
-                        },
-                    )
-                    val query = state.text.toString().trim().takeIf { s -> s.isNotEmpty() }
-                    var items by remember { mutableStateOf(emptyList<EhTagDatabase.Tag>()) }
-                    LaunchedEffect(suggestionTranslate, query) {
-                        items = query?.let { suggestion(query, suggestionTranslate).take(15) }.orEmpty()
-                        expanded = items.isNotEmpty()
-                    }
-                    ExposedDropdownMenu(
-                        expanded = expanded,
-                        onDismissRequest = {},
-                        modifier = Modifier.heightIn(max = 192.dp),
+                        }
+                    },
+                )
+                val query = state.text.toString().trim().takeIf { s -> s.isNotEmpty() }
+                var items by remember { mutableStateOf(emptyList<EhTagDatabase.Tag>()) }
+                LaunchedEffect(suggestionTranslate, query) {
+                    items = query?.let { suggestion(query, suggestionTranslate).take(15) }.orEmpty()
+                }
+                if (items.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 180.dp)
+                            .clip(SquircleShape(8.dp))
+                            .background(MiuixTheme.colorScheme.surfaceContainer),
                     ) {
-                        items.forEach { (tag, hint) ->
-                            DropdownMenuItem(
-                                text = {
-                                    Column {
-                                        Text(text = tag, overflow = TextOverflow.Ellipsis, maxLines = 2)
-                                        ProvideTextStyle(MaterialTheme.typography.bodySmall) {
-                                            if (hint != null) {
-                                                Text(
-                                                    text = hint,
-                                                    overflow = TextOverflow.Ellipsis,
-                                                    maxLines = 1,
-                                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                )
-                                            }
+                        items(items.size) { i ->
+                            val (tag, hint) = items[i]
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        if (tag.endsWith(':')) {
+                                            state.setTextAndPlaceCursorAtEnd(tag)
+                                        } else {
+                                            selected += tag
+                                            state.clearText()
                                         }
                                     }
-                                },
-                                onClick = {
-                                    if (tag.endsWith(':')) {
-                                        state.setTextAndPlaceCursorAtEnd(tag)
-                                    } else {
-                                        selected += tag
-                                        state.clearText()
-                                    }
-                                },
-                                contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding,
-                            )
+                                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                            ) {
+                                MiuixText(
+                                    text = tag,
+                                    overflow = TextOverflow.Ellipsis,
+                                    maxLines = 2,
+                                    style = MiuixTheme.textStyles.body2,
+                                )
+                                if (hint != null) {
+                                    MiuixText(
+                                        text = hint,
+                                        overflow = TextOverflow.Ellipsis,
+                                        maxLines = 1,
+                                        color = MiuixTheme.colorScheme.onSurfaceSecondary,
+                                        style = MiuixTheme.textStyles.footnote1,
+                                    )
+                                }
+                            }
                         }
                     }
                 }
             }
         },
-        idleIcon = Icons.Default.NewLabel,
+        idleIcon = MiuixIcons.Create,
     )
 }
 
@@ -564,29 +555,39 @@ suspend fun awaitSelectDate(
         initialDisplayMode,
         selectableDates,
     )
-    DatePickerDialog(
+    WindowDialog(
+        show = true,
         onDismissRequest = { cont.cancel() },
-        confirmButton = {
-            TextButton(onClick = { state.selectedDateMillis?.let { cont.resume(it) } ?: cont.cancel() }, shapes = ButtonDefaults.shapes()) {
-                Text(text = stringResource(id = android.R.string.ok))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = { cont.cancel() }, shapes = ButtonDefaults.shapes()) {
-                Text(text = stringResource(id = android.R.string.cancel))
-            }
-        },
+        maxWidth = 560.dp,
     ) {
-        DatePicker(
-            state = state,
-            title = {
-                Text(
-                    text = stringResource(id = title),
-                    modifier = Modifier.padding(DatePickerTitlePadding),
+        Column(modifier = Modifier.padding(16.dp)) {
+            DatePicker(
+                state = state,
+                title = {
+                    MiuixText(
+                        text = stringResource(id = title),
+                        modifier = Modifier.padding(DatePickerTitlePadding),
+                        style = MiuixTheme.textStyles.title4,
+                    )
+                },
+                showModeToggle = showModeToggle,
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+            ) {
+                MiuixTextButton(
+                    text = stringResource(id = android.R.string.cancel),
+                    onClick = { cont.cancel() },
                 )
-            },
-            showModeToggle = showModeToggle,
-        )
+                Spacer(modifier = Modifier.width(8.dp))
+                MiuixTextButton(
+                    text = stringResource(id = android.R.string.ok),
+                    onClick = { state.selectedDateMillis?.let { cont.resume(it) } ?: cont.cancel() },
+                )
+            }
+        }
     }
 }
 
@@ -608,27 +609,37 @@ suspend fun awaitSelectTime(
     initialMinute: Int,
 ) = dialog { cont ->
     val state = rememberTimePickerState(initialHour, initialMinute)
-    TimePickerDialog(
+    WindowDialog(
+        show = true,
         onDismissRequest = { cont.cancel() },
-        confirmButton = {
-            TextButton(onClick = { cont.resume(state.hour to state.minute) }, shapes = ButtonDefaults.shapes()) {
-                Text(stringResource(id = android.R.string.ok))
-            }
-        },
-        title = {
-            Text(
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            MiuixText(
                 modifier = Modifier.fillMaxWidth().padding(bottom = 20.dp),
                 text = title,
-                style = MaterialTheme.typography.labelMedium,
+                style = MiuixTheme.textStyles.title4,
             )
-        },
-        dismissButton = {
-            TextButton(onClick = { cont.cancel() }, shapes = ButtonDefaults.shapes()) {
-                Text(stringResource(id = android.R.string.cancel))
+            TimePicker(state = state)
+            Spacer(modifier = Modifier.height(16.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+            ) {
+                MiuixTextButton(
+                    text = stringResource(id = android.R.string.cancel),
+                    onClick = { cont.cancel() },
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                MiuixTextButton(
+                    text = stringResource(id = android.R.string.ok),
+                    onClick = { cont.resume(state.hour to state.minute) },
+                )
             }
-        },
-        content = { TimePicker(state = state) },
-    )
+        }
+    }
 }
 
 context(_: DialogState)
@@ -788,48 +799,40 @@ suspend fun awaitSelectItemWithIconAndTextField(
     maxChar: Int,
 ): Pair<Int, String> = showNoButton(false) {
     Column {
-        Text(text = stringResource(id = title), modifier = Modifier.padding(horizontal = 16.dp).padding(top = 16.dp), style = MaterialTheme.typography.titleMedium)
+        MiuixText(
+            text = stringResource(id = title),
+            modifier = Modifier.padding(horizontal = 16.dp).padding(top = 16.dp),
+            style = MiuixTheme.textStyles.title4,
+        )
         CircularLayout(
             modifier = Modifier.fillMaxWidth().aspectRatio(1F),
             placeFirstItemInCenter = true,
         ) {
             val note = rememberTextFieldState(initialNote)
-            TextField(
+            MiuixTextField(
                 state = note,
                 modifier = Modifier.fillMaxWidth(0.45F).aspectRatio(1F),
-                label = { Text(text = stringResource(id = hint)) },
+                label = stringResource(id = hint),
                 trailingIcon = {
                     if (note.text.isNotEmpty()) {
-                        IconButton(onClick = { note.clearText() }, shapes = IconButtonDefaults.shapes()) {
-                            Icon(imageVector = Icons.Default.Close, contentDescription = null)
+                        IconButton(onClick = { note.clearText() }) {
+                            MiuixIcon(imageVector = MiuixIcons.Close, contentDescription = null)
                         }
                     }
                 },
-                supportingText = {
-                    Text(
-                        text = "${note.text.toString().toByteArray().size} / $maxChar",
-                        modifier = Modifier.fillMaxWidth(),
-                        textAlign = TextAlign.End,
-                    )
-                },
-                shape = ShapeDefaults.ExtraSmall,
-                colors = TextFieldDefaults.colors(
-                    focusedIndicatorColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent,
-                ),
             )
             items.forEachIndexed { index, (icon, text) ->
                 Column(
                     modifier = Modifier.clip(IconWithTextCorner).clickable { resume(index to note.text.toString()) }.fillMaxWidth(0.2F),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    Icon(imageVector = icon, contentDescription = null, tint = AlertDialogDefaults.iconContentColor)
-                    Text(
+                    MiuixIcon(imageVector = icon, contentDescription = null, tint = MiuixTheme.colorScheme.onSurface)
+                    MiuixText(
                         text = text,
                         textAlign = TextAlign.Center,
                         overflow = TextOverflow.Ellipsis,
                         maxLines = 2,
-                        style = MaterialTheme.typography.bodySmall,
+                        style = MiuixTheme.textStyles.footnote1,
                     )
                 }
             }
@@ -854,7 +857,7 @@ private fun CheckableItem(text: String, checked: Boolean, modifier: Modifier = M
         )
         if (checked) {
             MiuixIcon(
-                imageVector = Icons.Default.Check,
+                imageVector = MiuixIcons.Ok,
                 contentDescription = null,
                 tint = checkedColor,
             )

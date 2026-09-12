@@ -11,13 +11,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.material3.minimumInteractiveComponentSize
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -25,6 +22,8 @@ import androidx.compose.ui.unit.dp
 import com.ehviewer.core.i18n.R
 import com.hippo.ehviewer.client.parser.Torrent
 import com.hippo.ehviewer.client.parser.format
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 fun TorrentList(
@@ -37,21 +36,21 @@ fun TorrentList(
         modifier = modifier.padding(vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text(text = title, style = MaterialTheme.typography.headlineSmall)
-        val labelStyle = MaterialTheme.typography.labelLarge
+        Text(text = title, style = MiuixTheme.textStyles.title3)
+        val labelStyle = MiuixTheme.textStyles.footnote1
         LazyColumn(
             contentPadding = PaddingValues(vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             items(items) {
-                Column(modifier = Modifier.clickable { onItemClick(it) }.minimumInteractiveComponentSize().padding(horizontal = 8.dp)) {
+                Column(modifier = Modifier.clickable { onItemClick(it) }.heightIn(min = 48.dp).padding(horizontal = 8.dp)) {
                     Text(
                         text = it.name,
                         modifier = Modifier.basicMarquee(
                             spacing = MarqueeSpacing(16.dp),
                             velocity = 60.dp,
                         ),
-                        color = MaterialTheme.colorScheme.primary,
+                        color = MiuixTheme.colorScheme.primary,
                     )
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -60,7 +59,7 @@ fun TorrentList(
                         Text(
                             text = it.posted,
                             modifier = Modifier.weight(2.5f),
-                            color = if (it.outdated) MaterialTheme.colorScheme.error else Color.Unspecified,
+                            color = if (it.outdated) MiuixTheme.colorScheme.error else MiuixTheme.colorScheme.onSurfaceSecondary,
                             style = labelStyle,
                         )
                         Text(

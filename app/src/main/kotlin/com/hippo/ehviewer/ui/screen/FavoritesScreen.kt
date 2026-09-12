@@ -14,15 +14,15 @@ import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.DriveFileMove
-import androidx.compose.material.icons.automirrored.filled.LastPage
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.DoneAll
-import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Shuffle
-import androidx.compose.material.icons.outlined.FolderSpecial
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Delete
+import top.yukonga.miuix.kmp.icon.extended.Download
+import top.yukonga.miuix.kmp.icon.extended.Folder
+import top.yukonga.miuix.kmp.icon.extended.MoveFile
+import top.yukonga.miuix.kmp.icon.extended.Refresh
+import top.yukonga.miuix.kmp.icon.extended.SelectAll
+import com.ehviewer.core.ui.icons.filled.LastPage
+import com.ehviewer.core.ui.icons.filled.Shuffle
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -216,7 +216,7 @@ fun AnimatedVisibilityScope.FavouritesScreen(navigator: DestinationsNavigator, v
         trailingIcon = {
             val sheetState = LocalSideSheetState.current
             IconButton(onClick = { launch { sheetState.open() } }) {
-                Icon(imageVector = Icons.Outlined.FolderSpecial, contentDescription = null)
+                Icon(imageVector = MiuixIcons.Folder, contentDescription = null)
             }
             AvatarIcon()
         },
@@ -332,7 +332,7 @@ fun AnimatedVisibilityScope.FavouritesScreen(navigator: DestinationsNavigator, v
     ) {
         if (!selectMode) {
             if (urlBuilder.isLocal) {
-                onClick(Icons.Default.Shuffle) {
+                onClick(EhIcons.Default.Shuffle) {
                     EhDB.randomLocalFav()?.let { info ->
                         withUIContext { navigate(info.asDst()) }
                     }
@@ -342,24 +342,24 @@ fun AnimatedVisibilityScope.FavouritesScreen(navigator: DestinationsNavigator, v
                 val date = awaitSelectDate()
                 refresh(urlBuilder.copy(jumpTo = date, prev = null, next = "2"))
             }
-            onClick(Icons.Default.Refresh) {
+            onClick(MiuixIcons.Refresh) {
                 refresh()
             }
-            onClick(Icons.AutoMirrored.Default.LastPage) {
+            onClick(EhIcons.Default.LastPage) {
                 refresh(urlBuilder.copy(jumpTo = null, prev = "1-0", next = null))
             }
         } else {
-            onClick(Icons.Default.DoneAll, autoClose = false) {
+            onClick(MiuixIcons.SelectAll, autoClose = false) {
                 val info = data.itemSnapshotList.items.associateBy { it.gid }
                 checkedInfoMap.putAll(info)
             }
-            onClick(Icons.Default.Download) {
+            onClick(MiuixIcons.Download) {
                 val info = checkedInfoMap.takeAndClear()
                 runSwallowingWithUI {
                     startDownload(false, *info.toTypedArray())
                 }
             }
-            onClick(Icons.Default.Delete) {
+            onClick(MiuixIcons.Delete) {
                 val info = checkedInfoMap.takeAndClear()
                 awaitConfirmationOrCancel(title = R.string.delete_favorites_dialog_title) {
                     Text(text = stringResource(R.string.delete_favorites_dialog_message, info.size))
@@ -376,7 +376,7 @@ fun AnimatedVisibilityScope.FavouritesScreen(navigator: DestinationsNavigator, v
                 // We refresh anyway as cloud data maybe partially modified
                 data.refresh()
             }
-            onClick(Icons.AutoMirrored.Default.DriveFileMove) {
+            onClick(MiuixIcons.MoveFile) {
                 // First is local favorite, the other 10 is cloud favorite
                 val items = buildList {
                     add(localFavName)

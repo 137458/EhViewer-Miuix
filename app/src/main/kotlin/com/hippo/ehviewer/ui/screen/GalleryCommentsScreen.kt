@@ -35,9 +35,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Reply
-import androidx.compose.material.icons.automirrored.filled.Send
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Reply
+import top.yukonga.miuix.kmp.icon.extended.Send
 import top.yukonga.miuix.kmp.basic.FloatingActionButton
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -386,7 +386,7 @@ fun AnimatedVisibilityScope.GalleryCommentsScreen(
                     },
                     modifier = Modifier.snackBarPadding(),
                 ) {
-                    Icon(imageVector = Icons.AutoMirrored.Default.Reply, contentDescription = null)
+                    Icon(imageVector = MiuixIcons.Reply, contentDescription = null)
                 }
             }
         },
@@ -583,7 +583,7 @@ fun AnimatedVisibilityScope.GalleryCommentsScreen(
                             modifier = Modifier.align(Alignment.CenterVertically).padding(16.dp),
                         ) {
                             Icon(
-                                imageVector = Icons.AutoMirrored.Default.Send,
+                                imageVector = MiuixIcons.Send,
                                 contentDescription = null,
                                 tint = MiuixTheme.colorScheme.onPrimaryContainer,
                             )

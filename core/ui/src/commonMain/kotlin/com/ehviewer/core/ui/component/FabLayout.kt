@@ -13,11 +13,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.SmallFloatingActionButton
+import top.yukonga.miuix.kmp.basic.FloatingActionButton
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Close
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
@@ -171,13 +171,16 @@ fun FabLayout(
             ) {
                 with(secondaryFab) {
                     forEachIndexed { index, (imageVector, autoClose, onClick) ->
-                        SmallFloatingActionButton(
+                        FloatingActionButton(
                             onClick = {
                                 launch(Dispatchers.Default) {
                                     onClick()
                                     if (autoClose) onExpandChanged(false)
                                 }
                             },
+                            minWidth = 40.dp,
+                            minHeight = 40.dp,
+                            containerColor = MiuixTheme.colorScheme.surfaceContainerHigh,
                             modifier = Modifier.padding(20.dp).offset {
                                 val distance = lerp(0, interval * (size - index) + padding, animatedProgress)
                                 IntOffset(0, -distance)
@@ -192,6 +195,7 @@ fun FabLayout(
         val appearState by state.appearProgress.asState()
         FloatingActionButton(
             onClick = { onExpandChanged(!updatedExpanded) },
+            containerColor = MiuixTheme.colorScheme.primary,
             modifier = Modifier.padding(16.dp).graphicsLayer {
                 rotationZ = lerp(-90f, 0f, appearState)
                 scaleX = appearState
@@ -199,8 +203,9 @@ fun FabLayout(
             },
         ) {
             Icon(
-                imageVector = Icons.Default.Close,
+                imageVector = MiuixIcons.Close,
                 contentDescription = null,
+                tint = MiuixTheme.colorScheme.onPrimary,
                 modifier = Modifier.graphicsLayer {
                     rotationZ = lerp(-135f, 0f, animatedProgress)
                 },

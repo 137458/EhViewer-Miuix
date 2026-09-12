@@ -14,12 +14,11 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
-import androidx.compose.material3.OutlinedTextField
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.TextField
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Copy
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
@@ -118,7 +117,7 @@ fun AnimatedVisibilityScope.EhScreen(navigator: DestinationsNavigator) = Screen(
                                         val state = rememberTextFieldState(cookies.joinToString("\n") { (k, v) -> "$k: $v" })
                                         Text(text = AnnotatedString.fromHtml(warning))
                                         Spacer(modifier = Modifier.size(dimensionResource(id = com.hippo.ehviewer.R.dimen.keyline_margin)))
-                                        OutlinedTextField(
+                                        TextField(
                                             state = state,
                                             readOnly = true,
                                             trailingIcon = {
@@ -128,9 +127,8 @@ fun AnimatedVisibilityScope.EhScreen(navigator: DestinationsNavigator) = Screen(
                                                         // Avoid double notify user since system have done that on Tiramisu above
                                                         if (!isAtLeastT) launchSnackBar(copiedToClipboard)
                                                     },
-                                                    shapes = IconButtonDefaults.shapes(),
                                                 ) {
-                                                    Icon(imageVector = Icons.Default.ContentCopy, contentDescription = null)
+                                                    Icon(imageVector = MiuixIcons.Copy, contentDescription = null)
                                                 }
                                             },
                                         )

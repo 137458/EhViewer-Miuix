@@ -19,7 +19,6 @@ coil = "3.5.0"
 compose-bom = "2026.08.00"
 compose-multiplatform = "1.11.1"
 compose-destinations = "2.3.0"
-compose-preference = "2.2.0"
 miuix = "0.9.4-rc01"
 backdrop = "2.0.0"
 java = "21"
@@ -83,7 +82,7 @@ coil-network = { module = "io.coil-kt.coil3:coil-network-ktor3" }
 
 compose-bom = { module = "androidx.compose:compose-bom-alpha", version.ref = "compose-bom" }
 compose-foundation = { module = "androidx.compose.foundation:foundation" }
-compose-material-icons-extended = { module = "org.jetbrains.compose.material:material-icons-extended", version = "1.7.3" }
+compose-material-icons-core = { module = "org.jetbrains.compose.material:material-icons-core", version = "1.7.3" }
 compose-material3 = { module = "org.jetbrains.compose.material3:material3", version = "1.9.0" }
 compose-material3-adaptive = { module = "org.jetbrains.compose.material3.adaptive:adaptive", version = "1.2.0" }
 compose-ui-backhandler = { module = "org.jetbrains.compose.ui:ui-backhandler", version.ref = "compose-multiplatform" }
@@ -92,8 +91,6 @@ compose-ui-tooling-preview = { module = "org.jetbrains.compose.ui:ui-tooling-pre
 
 compose-destinations-core = { module = "io.github.raamcosta.compose-destinations:core", version.ref = "compose-destinations" }
 compose-destinations-compiler = { module = "io.github.raamcosta.compose-destinations:ksp", version.ref = "compose-destinations" }
-
-compose-preference = { module = "me.zhanghai.compose.preference:preference", version.ref = "compose-preference" }
 
 material-motion-core = "io.github.fornewid:material-motion-compose-core:2.0.1"
 material-kolor = "com.materialkolor:material-kolor:5.0.0"

@@ -12,10 +12,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DownloadDone
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayArrow
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Ok
+import top.yukonga.miuix.kmp.icon.extended.Pause
+import top.yukonga.miuix.kmp.icon.extended.Play
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -162,9 +162,9 @@ fun DownloadCard(
                 Spacer(modifier = Modifier.weight(1f))
                 val running = downloadState == DownloadInfo.STATE_WAIT || downloadState == DownloadInfo.STATE_DOWNLOAD
                 val icon = when (downloadState) {
-                    DownloadInfo.STATE_WAIT, DownloadInfo.STATE_DOWNLOAD -> Icons.Default.Pause
-                    DownloadInfo.STATE_FINISH -> Icons.Default.DownloadDone
-                    else -> Icons.Default.PlayArrow
+                    DownloadInfo.STATE_WAIT, DownloadInfo.STATE_DOWNLOAD -> MiuixIcons.Pause
+                    DownloadInfo.STATE_FINISH -> MiuixIcons.Ok
+                    else -> MiuixIcons.Play
                 }
                 if (selectMode) {
                     Box(modifier = Modifier.offset(4.dp).padding(12.dp)) {

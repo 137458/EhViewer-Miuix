@@ -7,9 +7,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.StarHalf
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.StarOutline
+import com.ehviewer.core.ui.icons.EhIcons
+import com.ehviewer.core.ui.icons.filled.StarHalf
+import com.ehviewer.core.ui.icons.filled.StarOutline
 import top.yukonga.miuix.kmp.basic.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
@@ -28,8 +29,8 @@ private val colorYellow800 = Color(0xfff9a825)
 @Stable
 private fun getImageVector(index: Int, rating: Int) = when {
     index * 2 + 1 < rating -> Icons.Default.Star
-    index * 2 + 1 == rating -> Icons.AutoMirrored.Default.StarHalf
-    else -> Icons.Default.StarOutline
+    index * 2 + 1 == rating -> EhIcons.Default.StarHalf
+    else -> EhIcons.Default.StarOutline
 }
 
 @Composable

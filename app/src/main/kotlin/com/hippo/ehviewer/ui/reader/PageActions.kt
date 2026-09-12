@@ -11,7 +11,7 @@ import android.os.Environment
 import android.provider.MediaStore
 import android.webkit.MimeTypeMap
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.material3.SnackbarHostState
+import top.yukonga.miuix.kmp.basic.SnackbarHostState
 import androidx.core.content.FileProvider
 import com.ehviewer.core.files.toOkioPath
 import com.ehviewer.core.i18n.R

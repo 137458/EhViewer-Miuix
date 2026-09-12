@@ -5,8 +5,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Brightness5
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Theme
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import androidx.compose.runtime.Composable
@@ -36,7 +36,7 @@ fun ColorFilterSetting() = Column(modifier = Modifier.verticalScroll(rememberScr
     AnimatedVisibility(visible = customBrightness.value) {
         val brightness = Settings.customBrightnessValue.asMutableState()
         SliderChoice(
-            startSlot = { Icon(imageVector = Icons.Default.Brightness5, contentDescription = null) },
+            startSlot = { Icon(imageVector = MiuixIcons.Theme, contentDescription = null) },
             endSlot = { RollingNumber(number = brightness.value, length = 3) },
             range = -75..100,
             field = brightness,

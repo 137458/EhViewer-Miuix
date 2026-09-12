@@ -15,6 +15,8 @@
 * 迁移进度页（ProgressScreen）与开源许可页（LicenseScreen）至 Miuix 卡片与原生排版组件
 * 现代化全应用网页界面（WebViewSignInScreen、MyTagsScreen、UConfigScreen），支持视口自适应与响应式排版样式注入
 * 重构阅读器微件与偏好设置下拉菜单组件至原生 Miuix 菜单规范
+* 全面迁移全局界面、侧边栏、底栏与弹窗体系至 Miuix 架构，剥离 Material 3 SideDrawer
+* 统一全应用图标体系至 MiuixIcons 与本地轻量矢量图标，彻底移除 material-icons-extended 与 compose-preference 依赖
 
 ### 优化
 

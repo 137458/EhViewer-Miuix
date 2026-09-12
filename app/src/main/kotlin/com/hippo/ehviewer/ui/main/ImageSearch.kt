@@ -6,10 +6,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.sizeIn
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -18,6 +14,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.ehviewer.core.i18n.R
+import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.Text
 
 @Composable
 fun ImageSearch(
@@ -37,9 +37,9 @@ fun ImageSearch(
             )
         }
     }
-    FilledTonalButton(
+    Button(
         onClick = onSelectImage,
-        shapes = ButtonDefaults.shapes(),
+        colors = ButtonDefaults.buttonColorsPrimary(),
         modifier = Modifier.fillMaxWidth().padding(8.dp),
     ) {
         Text(text = stringResource(id = R.string.select_image))

@@ -19,27 +19,19 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.text.input.rememberTextFieldState
-import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.ui.state.ToggleableState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Help
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.FilterAlt
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExposedDropdownMenu
-import androidx.compose.material3.ExposedDropdownMenuAnchorType
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.TextButton
+import com.ehviewer.core.ui.component.DropdownFilterChip
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.TextButton
+import top.yukonga.miuix.kmp.basic.TextField
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Add
+import top.yukonga.miuix.kmp.icon.extended.Delete
+import top.yukonga.miuix.kmp.icon.extended.Filter
+import top.yukonga.miuix.kmp.icon.extended.Help
+import top.yukonga.miuix.kmp.icon.extended.Info
+import top.yukonga.miuix.kmp.window.WindowDialog
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.currentRecomposeScope
 import androidx.compose.runtime.getValue
@@ -99,7 +91,7 @@ fun AnimatedVisibilityScope.FilterScreen(navigator: DestinationsNavigator) = Scr
         launch {
             dialog { cont ->
                 val types = stringArrayResource(id = com.hippo.ehviewer.R.array.filter_entries)
-                val type = rememberTextFieldState(types[0])
+                var selectedTypeIndex by remember { mutableStateOf(0) }
                 val state = rememberTextFieldState()
                 var error by remember { mutableStateOf<String?>(null) }
                 fun invalidateAndSave() {
@@ -108,7 +100,7 @@ fun AnimatedVisibilityScope.FilterScreen(navigator: DestinationsNavigator) = Scr
                         return
                     }
                     error = null
-                    val mode = FilterMode.entries[types.indexOf(type.text)]
+                    val mode = FilterMode.entries[selectedTypeIndex]
                     val filter = Filter(mode, state.text.toString())
                     filter.remember {
                         if (it) {
@@ -119,77 +111,65 @@ fun AnimatedVisibilityScope.FilterScreen(navigator: DestinationsNavigator) = Scr
                         }
                     }
                 }
-                AlertDialog(
+                WindowDialog(
+                    show = true,
                     onDismissRequest = { cont.cancel() },
-                    confirmButton = {
-                        TextButton(onClick = ::invalidateAndSave, shapes = ButtonDefaults.shapes()) {
-                            Text(text = stringResource(id = R.string.add))
-                        }
-                    },
-                    dismissButton = {
-                        TextButton(onClick = { cont.cancel() }, shapes = ButtonDefaults.shapes()) {
-                            Text(text = stringResource(id = android.R.string.cancel))
-                        }
-                    },
-                    title = {
-                        Text(text = stringResource(id = R.string.add_filter))
-                    },
-                    text = {
-                        var expanded by remember { mutableStateOf(false) }
-                        Column {
-                            ExposedDropdownMenuBox(
-                                expanded = expanded,
-                                onExpandedChange = { expanded = !expanded },
-                            ) {
-                                OutlinedTextField(
-                                    modifier = Modifier.menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable),
-                                    readOnly = true,
-                                    state = type,
-                                    label = {
-                                        Text(text = stringResource(id = R.string.filter_label))
-                                    },
-                                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                                    colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
-                                )
-                                ExposedDropdownMenu(
-                                    expanded = expanded,
-                                    onDismissRequest = { expanded = false },
-                                ) {
-                                    types.forEach {
-                                        DropdownMenuItem(
-                                            text = { Text(text = it) },
-                                            onClick = {
-                                                expanded = false
-                                                type.setTextAndPlaceCursorAtEnd(it)
-                                            },
-                                            contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding,
-                                        )
-                                    }
+                    title = stringResource(id = R.string.add_filter),
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                    ) {
+                        DropdownFilterChip(
+                            label = stringResource(id = R.string.filter_label),
+                            menuItems = types.toList(),
+                            selectedItemIndex = selectedTypeIndex,
+                            onSelectedItemIndexChange = { selectedTypeIndex = it },
+                        )
+                        Spacer(modifier = Modifier.size(16.dp))
+                        TextField(
+                            state = state,
+                            label = stringResource(id = R.string.filter_text),
+                            lineLimits = TextFieldLineLimits.SingleLine,
+                            keyboardOptions = KeyboardOptions(
+                                imeAction = ImeAction.Done,
+                            ),
+                            trailingIcon = {
+                                if (error != null) {
+                                    Icon(
+                                        imageVector = MiuixIcons.Info,
+                                        contentDescription = null,
+                                        tint = MiuixTheme.colorScheme.error,
+                                    )
                                 }
-                            }
-                            Spacer(modifier = Modifier.size(16.dp))
-                            val isError = error != null
-                            OutlinedTextField(
-                                state = state,
-                                label = { Text(text = stringResource(id = R.string.filter_text)) },
-                                supportingText = { error?.let { Text(text = it) } },
-                                trailingIcon = {
-                                    if (isError) {
-                                        Icon(
-                                            imageVector = Icons.Filled.Info,
-                                            contentDescription = null,
-                                        )
-                                    }
-                                },
-                                isError = isError,
-                                lineLimits = TextFieldLineLimits.SingleLine,
-                                keyboardOptions = KeyboardOptions(
-                                    imeAction = ImeAction.Done,
-                                ),
+                            },
+                        )
+                        if (error != null) {
+                            Spacer(modifier = Modifier.size(4.dp))
+                            Text(
+                                text = error!!,
+                                color = MiuixTheme.colorScheme.error,
+                                style = MiuixTheme.textStyles.footnote1,
                             )
                         }
-                    },
-                )
+                        Spacer(modifier = Modifier.size(24.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.End,
+                        ) {
+                            TextButton(
+                                text = stringResource(id = android.R.string.cancel),
+                                onClick = { cont.cancel() },
+                            )
+                            Spacer(modifier = Modifier.size(8.dp))
+                            TextButton(
+                                text = stringResource(id = R.string.add),
+                                onClick = ::invalidateAndSave,
+                            )
+                        }
+                    }
+                }
             }
         }
     }
@@ -213,7 +193,7 @@ fun AnimatedVisibilityScope.FilterScreen(navigator: DestinationsNavigator) = Scr
                                 }
                             },
                         ) {
-                            Icon(imageVector = Icons.AutoMirrored.Default.Help, contentDescription = null)
+                            Icon(imageVector = MiuixIcons.Help, contentDescription = null)
                         }
                     },
                     scrollBehavior = scrollBehavior,
@@ -222,7 +202,7 @@ fun AnimatedVisibilityScope.FilterScreen(navigator: DestinationsNavigator) = Scr
         },
         floatingActionButton = {
             FloatingActionButton(onClick = ::addFilter) {
-                Icon(imageVector = Icons.Default.Add, contentDescription = null)
+                Icon(imageVector = MiuixIcons.Add, contentDescription = null)
             }
         },
     ) { paddingValues ->
@@ -290,7 +270,7 @@ fun AnimatedVisibilityScope.FilterScreen(navigator: DestinationsNavigator) = Scr
                                                     }
                                                 },
                                             ) {
-                                                Icon(imageVector = Icons.Default.Delete, contentDescription = null)
+                                                Icon(imageVector = MiuixIcons.Delete, contentDescription = null)
                                             }
                                         }
                                     }
@@ -308,7 +288,7 @@ fun AnimatedVisibilityScope.FilterScreen(navigator: DestinationsNavigator) = Scr
                             ) {
                                 Spacer(modifier = Modifier.size(80.dp))
                                 Icon(
-                                    imageVector = Icons.Default.FilterAlt,
+                                    imageVector = MiuixIcons.Filter,
                                     contentDescription = null,
                                     modifier = Modifier.padding(16.dp).size(120.dp),
                                     tint = MiuixTheme.colorScheme.primary,

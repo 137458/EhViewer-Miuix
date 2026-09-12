@@ -26,10 +26,10 @@ import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridScope
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.FolderZip
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.SnackbarHostState
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Folder
+import top.yukonga.miuix.kmp.icon.extended.Search
+import top.yukonga.miuix.kmp.basic.SnackbarHostState
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Icon
@@ -519,7 +519,7 @@ fun BelowHeader(galleryDetail: GalleryDetail, voteTag: VoteTag) {
             Text(text = favButtonText)
         }
         EhIconButton(
-            icon = Icons.Default.Search,
+            icon = MiuixIcons.Search,
             text = stringResource(id = R.string.similar_gallery),
             onClick = {
                 val keyword = EhUtils.extractTitle(galleryDetail.title)
@@ -593,7 +593,7 @@ fun BelowHeader(galleryDetail: GalleryDetail, voteTag: VoteTag) {
             }
         }
         EhIconButton(
-            icon = Icons.Default.FolderZip,
+            icon = MiuixIcons.Folder,
             text = stringResource(id = R.string.archive),
             onClick = ::showArchiveDialog,
         )

@@ -8,7 +8,7 @@ kotlin {
             dependencies {
                 api(projects.core.common)
                 api(libs.compose.material3)
-                api(libs.compose.material.icons.extended)
+                api(libs.compose.material.icons.core)
                 api(libs.compose.material3.adaptive)
                 api(libs.androidx.lifecycle.compose)
                 api(libs.androidx.lifecycle.viewmodel.compose)

@@ -14,15 +14,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material3.Badge
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ProvideTextStyle
-import androidx.compose.material3.ShapeDefaults
-import androidx.compose.material3.Text
+import com.ehviewer.core.ui.component.SquircleShape
+import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Download
+import top.yukonga.miuix.kmp.icon.extended.FavoritesFill
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -40,7 +39,6 @@ import coil3.compose.AsyncImage
 import com.ehviewer.core.model.GalleryInfo
 import com.ehviewer.core.model.GalleryInfo.Companion.NOT_FAVORITED
 import com.ehviewer.core.ui.component.CrystalCard
-import com.ehviewer.core.ui.component.ElevatedCard
 import com.ehviewer.core.ui.component.GalleryListCardRating
 import com.ehviewer.core.ui.util.SharedElementBox
 import com.ehviewer.core.ui.util.TransitionsVisibilityScope
@@ -79,72 +77,93 @@ fun GalleryInfoListItem(
                 text = EhUtils.getSuitableTitle(info),
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
-                style = MaterialTheme.typography.titleSmall,
+                style = MiuixTheme.textStyles.body1,
             )
             Spacer(modifier = Modifier.weight(1f))
-            ProvideTextStyle(MaterialTheme.typography.labelLarge) {
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text(
-                        text = info.uploader.orEmpty(),
-                        modifier = Modifier.alignByBaseline().alpha(if (info.disowned) 0.5f else 1f),
-                    )
-                    Spacer(modifier = Modifier.weight(1f))
-                    if (isInFavScene) {
-                        info.favoriteNote?.let {
-                            Text(text = it, modifier = Modifier.alignByBaseline(), fontStyle = FontStyle.Italic)
-                        }
-                    } else {
-                        val showFav by FavouriteStatusRouter.collectAsState(info) { it != NOT_FAVORITED }
-                        if (showFav) {
-                            Icon(
-                                Icons.Default.Favorite,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp).align(Alignment.CenterVertically),
-                            )
-                            info.favoriteName?.let {
-                                Text(text = it, modifier = Modifier.alignByBaseline())
-                            }
-                        }
-                    }
-                }
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    // Place the rating near the uploader text as there's more visual space
-                    GalleryListCardRating(rating = info.rating, modifier = Modifier.padding(top = 1.dp, bottom = 3.dp))
-                    Spacer(modifier = Modifier.weight(1f))
-                    val downloaded by DownloadManager.collectContainDownloadInfo(info.gid)
-                    if (downloaded) {
-                        Icon(
-                            Icons.Default.Download,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp),
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(
+                    text = info.uploader.orEmpty(),
+                    modifier = Modifier.alignByBaseline().alpha(if (info.disowned) 0.5f else 1f),
+                    style = MiuixTheme.textStyles.footnote1,
+                )
+                Spacer(modifier = Modifier.weight(1f))
+                if (isInFavScene) {
+                    info.favoriteNote?.let {
+                        Text(
+                            text = it,
+                            modifier = Modifier.alignByBaseline(),
+                            fontStyle = FontStyle.Italic,
+                            style = MiuixTheme.textStyles.footnote1,
                         )
                     }
-                    info.simpleLanguage?.let {
-                        Text(text = it)
-                    }
-                    if (info.pages != 0 && showPages) {
-                        val readProgress = if (showProgress) {
-                            remember { EhDB.getReadProgressFlow(info.gid) }.collectAsState(0).value
-                        } else {
-                            0
+                } else {
+                    val showFav by FavouriteStatusRouter.collectAsState(info) { it != NOT_FAVORITED }
+                    if (showFav) {
+                        Icon(
+                            imageVector = MiuixIcons.FavoritesFill,
+                            contentDescription = null,
+                            modifier = Modifier.size(14.dp).align(Alignment.CenterVertically),
+                            tint = EhUtils.favoriteIconColor,
+                        )
+                        info.favoriteName?.let {
+                            Text(
+                                text = it,
+                                modifier = Modifier.alignByBaseline(),
+                                style = MiuixTheme.textStyles.footnote1,
+                            )
                         }
-                        Text(text = if (readProgress > 0) "${readProgress + 1}/${info.pages}P" else "${info.pages}P")
                     }
                 }
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    val categoryColor = EhUtils.getCategoryColor(info.category)
-                    val categoryText = EhUtils.getCategory(info.category).uppercase()
-                    Text(
-                        text = categoryText,
-                        modifier = Modifier.clip(ShapeDefaults.Small).background(categoryColor).padding(vertical = 2.dp, horizontal = 8.dp),
-                        color = EhUtils.getCategoryTextColor(categoryColor),
+            }
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                // Place the rating near the uploader text as there's more visual space
+                GalleryListCardRating(rating = info.rating, modifier = Modifier.padding(top = 1.dp, bottom = 3.dp))
+                Spacer(modifier = Modifier.weight(1f))
+                val downloaded by DownloadManager.collectContainDownloadInfo(info.gid)
+                if (downloaded) {
+                    Icon(
+                        imageVector = MiuixIcons.Download,
+                        contentDescription = null,
+                        modifier = Modifier.size(14.dp),
+                        tint = MiuixTheme.colorScheme.primary,
                     )
-                    Spacer(modifier = Modifier.weight(1f))
-                    Text(text = info.posted.orEmpty())
                 }
+                info.simpleLanguage?.let {
+                    Text(text = it, style = MiuixTheme.textStyles.footnote1)
+                }
+                if (info.pages != 0 && showPages) {
+                    val readProgress = if (showProgress) {
+                        remember { EhDB.getReadProgressFlow(info.gid) }.collectAsState(0).value
+                    } else {
+                        0
+                    }
+                    Text(
+                        text = if (readProgress > 0) "${readProgress + 1}/${info.pages}P" else "${info.pages}P",
+                        style = MiuixTheme.textStyles.footnote1,
+                    )
+                }
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                val categoryColor = EhUtils.getCategoryColor(info.category)
+                val categoryText = EhUtils.getCategory(info.category).uppercase()
+                Text(
+                    text = categoryText,
+                    modifier = Modifier
+                        .clip(SquircleShape(6.dp))
+                        .background(categoryColor)
+                        .padding(vertical = 2.dp, horizontal = 6.dp),
+                    color = EhUtils.getCategoryTextColor(categoryColor),
+                    style = MiuixTheme.textStyles.footnote2,
+                )
+                Spacer(modifier = Modifier.weight(1f))
+                Text(
+                    text = info.posted.orEmpty(),
+                    style = MiuixTheme.textStyles.footnote2,
+                    color = MiuixTheme.colorScheme.onSurfaceSecondary,
+                )
             }
         }
     }
@@ -162,7 +181,7 @@ fun GalleryInfoGridItem(
     showProgress: Boolean = true,
     showFavoriteStatus: Boolean = true,
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
-) = ElevatedCard(
+) = CrystalCard(
     modifier = modifier,
     onClick = onClick,
     onLongClick = onLongClick,
@@ -170,7 +189,7 @@ fun GalleryInfoGridItem(
 ) {
     Box {
         with(listThumbGenerator) {
-            SharedElementBox(key = "${info.gid}", shape = ShapeDefaults.Medium) {
+            SharedElementBox(key = "${info.gid}", shape = SquircleShape(12.dp)) {
                 var ratio by remember(info) {
                     val ratio = if (info.thumbHeight != 0) {
                         (info.thumbWidth.toFloat() / info.thumbHeight).coerceIn(MIN_RATIO, MAX_RATIO)
@@ -190,34 +209,47 @@ fun GalleryInfoGridItem(
             }
         }
         val categoryColor = EhUtils.getCategoryColor(info.category)
-        Badge(
-            modifier = Modifier.align(Alignment.TopEnd).widthIn(min = 32.dp).height(24.dp),
-            containerColor = categoryColor,
-            contentColor = EhUtils.getCategoryTextColor(categoryColor),
+        Row(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(4.dp)
+                .clip(SquircleShape(6.dp))
+                .background(categoryColor)
+                .padding(horizontal = 6.dp, vertical = 2.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             val shouldShowLanguage = showLanguage && info.simpleLanguage != null
+            val textColor = EhUtils.getCategoryTextColor(categoryColor)
             if (showPages && info.pages > 0) {
                 val readProgress = if (showProgress) {
                     remember { EhDB.getReadProgressFlow(info.gid) }.collectAsState(0).value
                 } else {
                     0
                 }
-                Text(text = if (readProgress > 0) "${readProgress + 1}/${info.pages}" else "${info.pages}")
+                Text(
+                    text = if (readProgress > 0) "${readProgress + 1}/${info.pages}" else "${info.pages}",
+                    style = MiuixTheme.textStyles.footnote2,
+                    color = textColor,
+                )
                 if (shouldShowLanguage) {
                     Spacer(modifier = Modifier.width(4.dp))
                 }
             }
             if (shouldShowLanguage) {
-                Text(text = info.simpleLanguage.orEmpty())
+                Text(
+                    text = info.simpleLanguage.orEmpty(),
+                    style = MiuixTheme.textStyles.footnote2,
+                    color = textColor,
+                )
             }
         }
         if (showFavoriteStatus) {
             val isFavorited by FavouriteStatusRouter.collectAsState(info) { it != NOT_FAVORITED }
             if (isFavorited) {
                 Icon(
-                    imageVector = Icons.Default.Favorite,
+                    imageVector = MiuixIcons.FavoritesFill,
                     contentDescription = null,
-                    modifier = Modifier.align(Alignment.BottomEnd).padding(2.dp),
+                    modifier = Modifier.align(Alignment.BottomEnd).padding(4.dp),
                     tint = EhUtils.favoriteIconColor,
                 )
             }

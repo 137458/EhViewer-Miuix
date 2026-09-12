@@ -12,14 +12,19 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material3.FilterChip
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.Role
+import com.ehviewer.core.ui.component.SquircleShape
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Info
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -80,10 +85,10 @@ fun SearchFilter(
         // https://github.com/Calvin-LL/Reorderable/issues/4#issuecomment-1853131769
         item {}
         items(categories, { it.first }) {
-            FilterChip(
+            SearchFilterChip(
                 selected = isCategoryChecked(it.first),
                 onClick = { onCategoryChange(category xor it.first) },
-                label = { Text(text = stringResource(id = it.second)) },
+                label = stringResource(id = it.second),
                 modifier = Modifier.thenIf(animateItems) { animateItem() },
             )
         }
@@ -143,7 +148,7 @@ fun SearchFilter(
                 }
             }
         }
-        FilterChip(
+        SearchFilterChip(
             selected = advancedOption.fromPage != 0 || advancedOption.toPage != 0,
             onClick = {
                 launch {
@@ -200,7 +205,7 @@ fun SearchFilter(
                                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                                 ) {
                                     Icon(
-                                        imageVector = Icons.Default.Info,
+                                        imageVector = MiuixIcons.Info,
                                         contentDescription = null,
                                         tint = MiuixTheme.colorScheme.error,
                                         modifier = Modifier.size(16.dp),
@@ -217,35 +222,69 @@ fun SearchFilter(
                     onAdvancedOptionChange(advancedOption.copy(fromPage = from, toPage = to))
                 }
             },
-            label = { Text(text = pagesText) },
+            label = pagesText,
         )
         fun checked(bit: Int) = advancedOption.advanceSearch and bit != 0
         fun AdvancedSearchOption.inv(bit: Int) = onAdvancedOptionChange(copy(advanceSearch = advanceSearch xor bit))
-        FilterChip(
+        SearchFilterChip(
             selected = checked(AdvanceTable.SH),
             onClick = { advancedOption.inv(AdvanceTable.SH) },
-            label = { Text(text = stringResource(id = R.string.search_sh)) },
+            label = stringResource(id = R.string.search_sh),
         )
-        FilterChip(
+        SearchFilterChip(
             selected = checked(AdvanceTable.STO),
             onClick = { advancedOption.inv(AdvanceTable.STO) },
-            label = { Text(text = stringResource(id = R.string.search_sto)) },
+            label = stringResource(id = R.string.search_sto),
         )
         val disableFilter = stringResource(id = R.string.search_sf)
-        FilterChip(
+        SearchFilterChip(
             selected = checked(AdvanceTable.SFL),
             onClick = { advancedOption.inv(AdvanceTable.SFL) },
-            label = { Text(text = disableFilter + stringResource(id = R.string.search_sfl)) },
+            label = disableFilter + stringResource(id = R.string.search_sfl),
         )
-        FilterChip(
+        SearchFilterChip(
             selected = checked(AdvanceTable.SFU),
             onClick = { advancedOption.inv(AdvanceTable.SFU) },
-            label = { Text(text = disableFilter + stringResource(id = R.string.search_sfu)) },
+            label = disableFilter + stringResource(id = R.string.search_sfu),
         )
-        FilterChip(
+        SearchFilterChip(
             selected = checked(AdvanceTable.SFT),
             onClick = { advancedOption.inv(AdvanceTable.SFT) },
-            label = { Text(text = disableFilter + stringResource(id = R.string.search_sft)) },
+            label = disableFilter + stringResource(id = R.string.search_sft),
+        )
+    }
+}
+
+@Composable
+private fun SearchFilterChip(
+    selected: Boolean,
+    onClick: () -> Unit,
+    label: String,
+    modifier: Modifier = Modifier,
+) {
+    val backgroundColor = if (selected) {
+        MiuixTheme.colorScheme.primary.copy(alpha = 0.12f)
+    } else {
+        MiuixTheme.colorScheme.surfaceContainer
+    }
+    val contentColor = if (selected) {
+        MiuixTheme.colorScheme.primary
+    } else {
+        MiuixTheme.colorScheme.onSurface
+    }
+
+    Box(
+        modifier = modifier
+            .clip(SquircleShape(8.dp))
+            .background(backgroundColor)
+            .clickable(role = Role.Checkbox, onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 6.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = label,
+            color = contentColor,
+            style = MiuixTheme.textStyles.body2,
         )
     }
 }

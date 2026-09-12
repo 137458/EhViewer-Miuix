@@ -29,25 +29,25 @@ import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.DriveFileMove
-import androidx.compose.material.icons.automirrored.filled.Sort
-import androidx.compose.material.icons.automirrored.filled.ViewList
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.DoneAll
-import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.FilterList
-import androidx.compose.material.icons.filled.GridView
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.NewLabel
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Reorder
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Shuffle
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
+import top.yukonga.miuix.kmp.basic.DropdownEntry
+import top.yukonga.miuix.kmp.basic.DropdownItem
+import top.yukonga.miuix.kmp.menu.WindowIconDropdownMenu
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Add
+import top.yukonga.miuix.kmp.icon.extended.Delete
+import top.yukonga.miuix.kmp.icon.extended.Download
+import top.yukonga.miuix.kmp.icon.extended.Edit
+import top.yukonga.miuix.kmp.icon.extended.Filter
+import top.yukonga.miuix.kmp.icon.extended.GridView
+import top.yukonga.miuix.kmp.icon.extended.ListView
+import top.yukonga.miuix.kmp.icon.extended.More
+import top.yukonga.miuix.kmp.icon.extended.MoveFile
+import top.yukonga.miuix.kmp.icon.extended.Pause
+import top.yukonga.miuix.kmp.icon.extended.Play
+import top.yukonga.miuix.kmp.icon.extended.SelectAll
+import top.yukonga.miuix.kmp.icon.extended.Settings
+import top.yukonga.miuix.kmp.icon.extended.Sort
+import com.ehviewer.core.ui.icons.filled.Shuffle
 import androidx.compose.material3.SwipeToDismissBoxDefaults
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.fork.SwipeToDismissBox
@@ -259,7 +259,7 @@ fun AnimatedVisibilityScope.DownloadsScreen(navigator: DestinationsNavigator) = 
                             }
                         },
                     ) {
-                        Icon(imageVector = Icons.Default.NewLabel, contentDescription = null)
+                        Icon(imageVector = MiuixIcons.Add, contentDescription = null)
                     }
                     val letMeSelect = stringResource(R.string.let_me_select)
                     IconButton(
@@ -288,7 +288,7 @@ fun AnimatedVisibilityScope.DownloadsScreen(navigator: DestinationsNavigator) = 
                             }
                         },
                     ) {
-                        Icon(imageVector = Icons.Default.Download, contentDescription = null)
+                        Icon(imageVector = MiuixIcons.Download, contentDescription = null)
                     }
                 }
                 val custom = stringResource(R.string.select_grouping_mode_custom)
@@ -308,7 +308,7 @@ fun AnimatedVisibilityScope.DownloadsScreen(navigator: DestinationsNavigator) = 
                         }
                     },
                 ) {
-                    Icon(imageVector = Icons.Default.Settings, contentDescription = null)
+                    Icon(imageVector = MiuixIcons.Settings, contentDescription = null)
                 }
             },
         )
@@ -456,7 +456,7 @@ fun AnimatedVisibilityScope.DownloadsScreen(navigator: DestinationsNavigator) = 
                                         }
                                     },
                                 ) {
-                                    Icon(imageVector = Icons.Default.Edit, contentDescription = null)
+                                    Icon(imageVector = MiuixIcons.Edit, contentDescription = null)
                                 }
                                 IconButton(
                                     onClick = {},
@@ -479,7 +479,7 @@ fun AnimatedVisibilityScope.DownloadsScreen(navigator: DestinationsNavigator) = 
                                         },
                                     ),
                                 ) {
-                                    Icon(imageVector = Icons.Default.Reorder, contentDescription = null)
+                                    Icon(imageVector = MiuixIcons.Sort, contentDescription = null)
                                 }
                             }
                         }
@@ -519,62 +519,61 @@ fun AnimatedVisibilityScope.DownloadsScreen(navigator: DestinationsNavigator) = 
         },
         searchBarOffsetY = { searchBarOffsetY },
         trailingIcon = {
-            var expanded by remember { mutableStateOf(false) }
             val sideSheetState = LocalSideSheetState.current
             IconButton(onClick = { gridView = !gridView }) {
-                val icon = if (gridView) Icons.AutoMirrored.Default.ViewList else Icons.Default.GridView
+                val icon = if (gridView) MiuixIcons.ListView else MiuixIcons.GridView
                 Icon(imageVector = icon, contentDescription = null)
             }
-            IconButton(onClick = { expanded = !expanded }) {
-                Icon(imageVector = Icons.Default.MoreVert, contentDescription = null)
+            val labelsStr = stringResource(id = R.string.download_labels)
+            val startAllStr = stringResource(id = R.string.download_start_all)
+            val stopAllStr = stringResource(id = R.string.download_stop_all)
+            val resetProgressStr = stringResource(id = R.string.download_reset_reading_progress)
+            val resetProgressMsg = stringResource(id = R.string.reset_reading_progress_message)
+            val startAllReversedStr = stringResource(id = R.string.download_start_all_reversed)
+
+            val menuEntry = remember(sideSheetState, list) {
+                DropdownEntry(
+                    items = listOf(
+                        DropdownItem(
+                            text = labelsStr,
+                            onClick = { launch { sideSheetState.open() } },
+                        ),
+                        DropdownItem(
+                            text = startAllStr,
+                            onClick = { DownloadService.startService(DownloadService.ACTION_START_ALL) },
+                        ),
+                        DropdownItem(
+                            text = stopAllStr,
+                            onClick = { launchIO { DownloadManager.stopAllDownload() } },
+                        ),
+                        DropdownItem(
+                            text = resetProgressStr,
+                            onClick = {
+                                launchIO {
+                                    awaitConfirmationOrCancel(
+                                        confirmText = android.R.string.ok,
+                                        dismissText = android.R.string.cancel,
+                                    ) {
+                                        Text(text = resetProgressMsg)
+                                    }
+                                    withNonCancellableContext {
+                                        DownloadManager.resetAllReadingProgress()
+                                    }
+                                }
+                            },
+                        ),
+                        DropdownItem(
+                            text = startAllReversedStr,
+                            onClick = {
+                                val gidList = list.filter { it.state != DownloadInfo.STATE_FINISH }.asReversed().mapToLongArray(DownloadInfo::gid)
+                                DownloadService.startRangeDownload(gidList)
+                            },
+                        ),
+                    ),
+                )
             }
-            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                DropdownMenuItem(
-                    text = { Text(text = stringResource(id = R.string.download_labels)) },
-                    onClick = {
-                        expanded = false
-                        launch { sideSheetState.open() }
-                    },
-                )
-                DropdownMenuItem(
-                    text = { Text(text = stringResource(id = R.string.download_start_all)) },
-                    onClick = {
-                        expanded = false
-                        DownloadService.startService(DownloadService.ACTION_START_ALL)
-                    },
-                )
-                DropdownMenuItem(
-                    text = { Text(text = stringResource(id = R.string.download_stop_all)) },
-                    onClick = {
-                        expanded = false
-                        launchIO { DownloadManager.stopAllDownload() }
-                    },
-                )
-                DropdownMenuItem(
-                    text = { Text(text = stringResource(id = R.string.download_reset_reading_progress)) },
-                    onClick = {
-                        expanded = false
-                        launchIO {
-                            awaitConfirmationOrCancel(
-                                confirmText = android.R.string.ok,
-                                dismissText = android.R.string.cancel,
-                            ) {
-                                Text(text = stringResource(id = R.string.reset_reading_progress_message))
-                            }
-                            withNonCancellableContext {
-                                DownloadManager.resetAllReadingProgress()
-                            }
-                        }
-                    },
-                )
-                DropdownMenuItem(
-                    text = { Text(text = stringResource(id = R.string.download_start_all_reversed)) },
-                    onClick = {
-                        expanded = false
-                        val gidList = list.filter { it.state != DownloadInfo.STATE_FINISH }.asReversed().mapToLongArray(DownloadInfo::gid)
-                        DownloadService.startRangeDownload(gidList)
-                    },
-                )
+            WindowIconDropdownMenu(entry = menuEntry) {
+                Icon(imageVector = MiuixIcons.More, contentDescription = null)
             }
         },
     ) { contentPadding ->
@@ -713,12 +712,12 @@ fun AnimatedVisibilityScope.DownloadsScreen(navigator: DestinationsNavigator) = 
         autoCancel = !selectMode,
     ) {
         if (!selectMode) {
-            onClick(Icons.Default.Shuffle) {
+            onClick(EhIcons.Default.Shuffle) {
                 if (list.isNotEmpty()) {
                     withUIContext { navToReader(list.random().galleryInfo) }
                 }
             }
-            onClick(Icons.AutoMirrored.Default.Sort) {
+            onClick(MiuixIcons.Sort) {
                 val oldMode = SortMode.from(sortMode)
                 val sortModes = contextOf<Context>().resources.getStringArray(com.hippo.ehviewer.R.array.download_sort_modes).toList()
                 val (selected, checked) = awaitSelectItemWithCheckBox(
@@ -736,7 +735,7 @@ fun AnimatedVisibilityScope.DownloadsScreen(navigator: DestinationsNavigator) = 
                     invalidateKey = !invalidateKey
                 }
             }
-            onClick(Icons.Default.FilterList) {
+            onClick(MiuixIcons.Filter) {
                 val downloadStates = contextOf<Context>().resources.getStringArray(com.hippo.ehviewer.R.array.download_state).toList()
                 val state = awaitSingleChoice(
                     downloadStates,
@@ -746,24 +745,24 @@ fun AnimatedVisibilityScope.DownloadsScreen(navigator: DestinationsNavigator) = 
                 filterState = filterState.copy(state = state)
             }
         } else {
-            onClick(Icons.Default.DoneAll, autoClose = false) {
+            onClick(MiuixIcons.SelectAll, autoClose = false) {
                 val info = list.associateBy { it.gid }
                 checkedInfoMap.putAll(info)
             }
-            onClick(Icons.Default.PlayArrow) {
+            onClick(MiuixIcons.Play) {
                 val gidList = checkedInfoMap.takeAndClear().mapToLongArray(DownloadInfo::gid)
                 DownloadService.startRangeDownload(gidList)
             }
-            onClick(Icons.Default.Pause) {
+            onClick(MiuixIcons.Pause) {
                 val gidList = checkedInfoMap.takeAndClear().mapToLongArray(DownloadInfo::gid)
                 DownloadManager.stopRangeDownload(gidList)
             }
-            onClick(Icons.Default.Delete) {
+            onClick(MiuixIcons.Delete) {
                 val infoList = checkedInfoMap.takeAndClear()
                 confirmRemoveDownloadRange(infoList)
                 list.removeAll(infoList)
             }
-            onClick(Icons.AutoMirrored.Default.DriveFileMove) {
+            onClick(MiuixIcons.MoveFile) {
                 val infoList = checkedInfoMap.takeAndClear()
                 val toLabel = showMoveDownloadLabelList(infoList)
                 with(filterState) {

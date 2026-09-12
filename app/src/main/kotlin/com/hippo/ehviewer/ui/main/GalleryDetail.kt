@@ -1,6 +1,7 @@
 package com.hippo.ehviewer.ui.main
 
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -13,20 +14,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Label
-import androidx.compose.material.icons.filled.NoAccounts
-import androidx.compose.material3.AssistChip
-import androidx.compose.material3.Card
-import androidx.compose.material3.ElevatedCard
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ProvideTextStyle
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -35,11 +27,19 @@ import androidx.compose.ui.unit.dp
 import com.ehviewer.core.i18n.R
 import com.ehviewer.core.model.GalleryDetail
 import com.ehviewer.core.model.GalleryInfo
+import com.ehviewer.core.ui.component.SquircleShape
 import com.ehviewer.core.ui.icons.EhIcons
 import com.ehviewer.core.ui.icons.big.SadAndroid
 import com.ehviewer.core.ui.util.TransitionsVisibilityScope
 import com.ehviewer.core.ui.util.detailThumbGenerator
 import com.hippo.ehviewer.client.EhUtils
+import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Blocklist
+import top.yukonga.miuix.kmp.icon.extended.Folder
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 fun GalleryDetailHeaderInfoCard(
@@ -51,26 +51,38 @@ fun GalleryDetailHeaderInfoCard(
         onClick = onClick,
         modifier = modifier.width(IntrinsicSize.Max),
     ) {
-        ProvideTextStyle(MaterialTheme.typography.labelMedium) {
-            Row(modifier = Modifier.padding(8.dp)) {
-                Text(text = language.orEmpty())
+        Column(modifier = Modifier.padding(8.dp)) {
+            Row {
+                Text(
+                    text = language.orEmpty(),
+                    style = MiuixTheme.textStyles.footnote1,
+                )
                 Spacer(modifier = Modifier.width(16.dp).weight(1f))
-                Text(text = size.orEmpty())
+                Text(
+                    text = size.orEmpty(),
+                    style = MiuixTheme.textStyles.footnote1,
+                )
             }
-            Row(modifier = Modifier.padding(horizontal = 8.dp)) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Row {
                 Text(
                     text = stringResource(id = R.string.favored_times, favoriteCount),
                     modifier = Modifier.alignByBaseline(),
+                    style = MiuixTheme.textStyles.footnote1,
                 )
                 Spacer(modifier = Modifier.width(16.dp).weight(1f))
                 Text(
                     text = pluralStringResource(id = R.plurals.page_count, pages, pages),
                     modifier = Modifier.alignByBaseline(),
+                    style = MiuixTheme.textStyles.footnote1,
                 )
             }
+            Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = posted.orEmpty(),
-                modifier = Modifier.align(Alignment.CenterHorizontally).padding(8.dp),
+                modifier = Modifier.align(Alignment.CenterHorizontally),
+                style = MiuixTheme.textStyles.footnote2,
+                color = MiuixTheme.colorScheme.onSurfaceSecondary,
             )
         }
     }
@@ -85,7 +97,7 @@ fun GalleryDetailHeaderCard(
     onBlockUploaderIconClick: () -> Unit,
     onCategoryChipClick: () -> Unit,
     modifier: Modifier = Modifier,
-) = ElevatedCard(modifier = modifier) {
+) = Card(modifier = modifier) {
     Row {
         with(detailThumbGenerator) {
             EhThumbCard(
@@ -110,30 +122,59 @@ fun GalleryDetailHeaderCard(
             }
             Spacer(modifier = Modifier.weight(1F))
             val categoryText = EhUtils.getCategory(info.category).uppercase()
-            AssistChip(
-                onClick = onCategoryChipClick,
-                label = { Text(text = categoryText, overflow = TextOverflow.Visible, softWrap = false, maxLines = 1) },
-                modifier = Modifier.padding(horizontal = dimensionResource(id = com.hippo.ehviewer.R.dimen.keyline_margin)),
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Default.Label,
-                        contentDescription = null,
-                    )
-                },
-            )
+            Row(
+                modifier = Modifier
+                    .padding(horizontal = dimensionResource(id = com.hippo.ehviewer.R.dimen.keyline_margin), vertical = 3.dp)
+                    .clip(SquircleShape(8.dp))
+                    .background(MiuixTheme.colorScheme.surfaceContainer)
+                    .clickable(onClick = onCategoryChipClick)
+                    .padding(horizontal = 10.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    imageVector = MiuixIcons.Folder,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                    tint = MiuixTheme.colorScheme.primary,
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = categoryText,
+                    overflow = TextOverflow.Visible,
+                    softWrap = false,
+                    maxLines = 1,
+                    style = MiuixTheme.textStyles.footnote1,
+                    color = MiuixTheme.colorScheme.primary,
+                )
+            }
             val uploaderText = info.uploader.orEmpty()
-            AssistChip(
-                onClick = onUploaderChipClick,
-                label = { Text(text = uploaderText, overflow = TextOverflow.Visible, softWrap = false, maxLines = 1) },
-                modifier = Modifier.padding(horizontal = dimensionResource(id = com.hippo.ehviewer.R.dimen.keyline_margin)),
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.NoAccounts,
-                        contentDescription = null,
-                        modifier = Modifier.clickable(onClick = onBlockUploaderIconClick),
-                    )
-                },
-            )
+            Row(
+                modifier = Modifier
+                    .padding(horizontal = dimensionResource(id = com.hippo.ehviewer.R.dimen.keyline_margin), vertical = 3.dp)
+                    .clip(SquircleShape(8.dp))
+                    .background(MiuixTheme.colorScheme.surfaceContainer)
+                    .clickable(onClick = onUploaderChipClick)
+                    .padding(horizontal = 10.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    imageVector = MiuixIcons.Blocklist,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(16.dp)
+                        .clickable(onClick = onBlockUploaderIconClick),
+                    tint = MiuixTheme.colorScheme.onSurfaceSecondary,
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = uploaderText,
+                    overflow = TextOverflow.Visible,
+                    softWrap = false,
+                    maxLines = 1,
+                    style = MiuixTheme.textStyles.footnote1,
+                    color = MiuixTheme.colorScheme.onSurface,
+                )
+            }
         }
     }
 }
@@ -148,10 +189,13 @@ fun GalleryDetailErrorTip(error: String, onClick: () -> Unit) = Column(
         imageVector = EhIcons.Big.Default.SadAndroid,
         contentDescription = null,
         modifier = Modifier.clickable(onClick = onClick),
+        tint = MiuixTheme.colorScheme.onSurface,
     )
     Spacer(modifier = Modifier.size(8.dp))
     Text(
         text = error,
         modifier = Modifier.widthIn(max = 228.dp),
+        style = MiuixTheme.textStyles.body2,
+        color = MiuixTheme.colorScheme.onSurfaceSecondary,
     )
 }

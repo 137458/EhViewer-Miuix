@@ -1,6 +1,6 @@
 package moe.tarsin.coroutines
 
-import androidx.compose.material3.SnackbarHostState
+import top.yukonga.miuix.kmp.basic.SnackbarHostState
 import com.ehviewer.core.util.launch
 import com.hippo.ehviewer.util.displayString
 import kotlinx.coroutines.CancellationException

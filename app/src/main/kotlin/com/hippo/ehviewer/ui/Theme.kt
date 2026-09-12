@@ -8,7 +8,6 @@ import androidx.compose.animation.ExitTransition
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
@@ -19,26 +18,18 @@ import com.hippo.ehviewer.ui.theme.EhTheme
 import com.hippo.ehviewer.ui.tools.DialogState
 import com.hippo.ehviewer.ui.tools.LocalGlobalDialogState
 import com.ramcosta.composedestinations.animations.NavHostAnimatedDestinationStyle
-import me.zhanghai.compose.preference.ProvidePreferenceTheme
-import me.zhanghai.compose.preference.preferenceTheme
 import soup.compose.material.motion.animation.materialSharedAxisXIn
 import soup.compose.material.motion.animation.materialSharedAxisXOut
 import soup.compose.material.motion.animation.rememberSlideDistance
 
 inline fun ComponentActivity.setMiuixContent(crossinline content: @Composable DialogState.() -> Unit) = setContent {
     EhTheme(useDarkTheme = isSystemInDarkTheme()) {
-        val theme = preferenceTheme(
-            iconColor = MaterialTheme.colorScheme.primary,
-            titleTextStyle = MaterialTheme.typography.titleMedium,
-        )
-        ProvidePreferenceTheme(theme) {
-            ProvideVectorPainterCache {
-                val dialogState = remember { DialogState() }
-                CompositionLocalProvider(LocalGlobalDialogState provides dialogState) {
-                    Box(modifier = Modifier.fillMaxSize()) {
-                        content(dialogState)
-                        dialogState.Place()
-                    }
+        ProvideVectorPainterCache {
+            val dialogState = remember { DialogState() }
+            CompositionLocalProvider(LocalGlobalDialogState provides dialogState) {
+                Box(modifier = Modifier.fillMaxSize()) {
+                    content(dialogState)
+                    dialogState.Place()
                 }
             }
         }

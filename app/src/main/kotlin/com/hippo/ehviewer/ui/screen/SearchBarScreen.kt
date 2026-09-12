@@ -32,17 +32,18 @@ import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.clearText
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.MenuBook
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.ImageSearch
-import androidx.compose.material.icons.filled.Menu
+import com.ehviewer.core.ui.icons.EhIcons
+import com.ehviewer.core.ui.icons.filled.MenuBook
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.InputField
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SearchBar
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Back
+import top.yukonga.miuix.kmp.icon.extended.Close
+import top.yukonga.miuix.kmp.icon.extended.Image
+import top.yukonga.miuix.kmp.icon.extended.Search
 import top.yukonga.miuix.kmp.basic.SearchBarDefaults
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
@@ -77,7 +78,6 @@ import com.hippo.ehviewer.EhApplication.Companion.searchDatabase
 import com.hippo.ehviewer.Settings
 import com.hippo.ehviewer.client.EhTagDatabase
 import com.hippo.ehviewer.collectAsState
-import com.hippo.ehviewer.ui.LocalNavDrawerState
 import com.hippo.ehviewer.ui.destinations.ImageSearchScreenDestination
 import com.hippo.ehviewer.ui.theme.scrim
 import com.hippo.ehviewer.ui.tools.DialogState
@@ -256,12 +256,11 @@ fun SearchBarScreen(
                     leadingIcon = {
                         if (expanded) {
                             IconButton(onClick = { hideSearchView() }) {
-                                Icon(Icons.AutoMirrored.Default.ArrowBack, contentDescription = null)
+                                Icon(MiuixIcons.Back, contentDescription = null)
                             }
                         } else {
-                            val drawerState = LocalNavDrawerState.current
-                            IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                                Icon(Icons.Default.Menu, contentDescription = null)
+                            IconButton(onClick = { onExpandedChange(true) }) {
+                                Icon(MiuixIcons.Search, contentDescription = null)
                             }
                         }
                     },
@@ -270,11 +269,11 @@ fun SearchBarScreen(
                             AnimatedContent(targetState = query.isNotEmpty()) { hasText ->
                                 if (hasText) {
                                     IconButton(onClick = { searchFieldState.clearText() }) {
-                                        Icon(Icons.Default.Close, contentDescription = null)
+                                        Icon(MiuixIcons.Close, contentDescription = null)
                                     }
                                 } else {
                                     IconButton(onClick = { navigate(ImageSearchScreenDestination) }) {
-                                        Icon(Icons.Default.ImageSearch, contentDescription = null)
+                                        Icon(MiuixIcons.Image, contentDescription = null)
                                     }
                                 }
                             }
@@ -316,7 +315,7 @@ fun SearchBarScreen(
                     ) {
                         if (it.canOpenDirectly) {
                             Icon(
-                                imageVector = Icons.AutoMirrored.Default.MenuBook,
+                                imageVector = EhIcons.Default.MenuBook,
                                 contentDescription = null,
                                 modifier = Modifier.padding(end = 12.dp).size(20.dp),
                                 tint = MiuixTheme.colorScheme.primary,
@@ -339,7 +338,7 @@ fun SearchBarScreen(
                         if (it.canDelete) {
                             IconButton(onClick = { deleteKeyword(it.keyword) }) {
                                 Icon(
-                                    imageVector = Icons.Default.Close,
+                                    imageVector = MiuixIcons.Close,
                                     contentDescription = null,
                                     tint = MiuixTheme.colorScheme.onSurfaceVariantActions,
                                     modifier = Modifier.size(20.dp),

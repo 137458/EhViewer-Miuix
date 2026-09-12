@@ -1,18 +1,32 @@
 package com.ehviewer.core.ui.component
 
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExposedDropdownMenu
-import androidx.compose.material3.ExposedDropdownMenuAnchorType
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.Text
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.unit.dp
+import top.yukonga.miuix.kmp.basic.DropdownDefaults
+import top.yukonga.miuix.kmp.basic.DropdownEntry
+import top.yukonga.miuix.kmp.basic.DropdownItem
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.basic.ArrowRight
+import top.yukonga.miuix.kmp.popup.WindowDropdownPopup
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 fun DropdownFilterChip(
@@ -23,27 +37,66 @@ fun DropdownFilterChip(
     modifier: Modifier = Modifier,
 ) {
     var expanded by remember { mutableStateOf(false) }
-    ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }, modifier = modifier) {
-        FilterChip(
-            selected = selectedItemIndex != 0,
-            onClick = {},
-            label = {
-                Text(text = if (selectedItemIndex == 0) label else menuItems[selectedItemIndex])
-            },
-            modifier = Modifier.menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable),
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-        )
-        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }, matchAnchorWidth = false) {
-            menuItems.forEachIndexed { index, item ->
-                DropdownMenuItem(
-                    text = { Text(text = item) },
+    val isSelected = selectedItemIndex != 0
+    val chipText = if (selectedItemIndex == 0) label else menuItems.getOrElse(selectedItemIndex) { label }
+
+    val entry = remember(menuItems, selectedItemIndex) {
+        DropdownEntry(
+            items = menuItems.mapIndexed { index, item ->
+                DropdownItem(
+                    text = item,
+                    selected = index == selectedItemIndex,
                     onClick = {
-                        expanded = false
                         onSelectedItemIndexChange(index)
                     },
-                    contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding,
                 )
-            }
+            },
+        )
+    }
+
+    val backgroundColor = if (isSelected) {
+        MiuixTheme.colorScheme.primary.copy(alpha = 0.12f)
+    } else {
+        MiuixTheme.colorScheme.surfaceContainer
+    }
+    val contentColor = if (isSelected) {
+        MiuixTheme.colorScheme.primary
+    } else {
+        MiuixTheme.colorScheme.onSurface
+    }
+
+    Box(modifier = modifier) {
+        Row(
+            modifier = Modifier
+                .clip(SquircleShape(8.dp))
+                .background(backgroundColor)
+                .clickable(role = Role.Button) { expanded = true }
+                .padding(horizontal = 12.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = chipText,
+                color = contentColor,
+                style = MiuixTheme.textStyles.body2,
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            Icon(
+                imageVector = MiuixIcons.Basic.ArrowRight,
+                contentDescription = null,
+                tint = contentColor.copy(alpha = 0.7f),
+                modifier = Modifier.size(12.dp),
+            )
+        }
+
+        if (expanded) {
+            WindowDropdownPopup(
+                entry = entry,
+                show = expanded,
+                onDismiss = { expanded = false },
+                onDismissFinished = {},
+                maxHeight = null,
+                dropdownColors = DropdownDefaults.dropdownColors(),
+            )
         }
     }
 }

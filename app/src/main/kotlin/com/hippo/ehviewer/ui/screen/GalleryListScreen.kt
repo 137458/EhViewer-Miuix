@@ -21,14 +21,14 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Help
-import androidx.compose.material.icons.automirrored.filled.LastPage
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Reorder
-import androidx.compose.material.icons.filled.Shuffle
-import androidx.compose.material.icons.outlined.Bookmarks
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Add
+import top.yukonga.miuix.kmp.icon.extended.Help
+import top.yukonga.miuix.kmp.icon.extended.Refresh
+import top.yukonga.miuix.kmp.icon.extended.Sort
+import com.ehviewer.core.ui.icons.filled.Bookmarks
+import com.ehviewer.core.ui.icons.filled.LastPage
+import com.ehviewer.core.ui.icons.filled.Shuffle
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -271,7 +271,7 @@ fun AnimatedVisibilityScope.GalleryListScreen(
                         },
                     ) {
                         Icon(
-                            imageVector = Icons.AutoMirrored.Default.Help,
+                            imageVector = MiuixIcons.Help,
                             contentDescription = stringResource(id = R.string.readme),
                         )
                     }
@@ -320,7 +320,7 @@ fun AnimatedVisibilityScope.GalleryListScreen(
                         enabled = data.loadState.isIdle,
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Add,
+                            imageVector = MiuixIcons.Add,
                             contentDescription = stringResource(id = R.string.add),
                         )
                     }
@@ -428,7 +428,7 @@ fun AnimatedVisibilityScope.GalleryListScreen(
                                         ),
                                     ) {
                                         Icon(
-                                            imageVector = Icons.Default.Reorder,
+                                            imageVector = MiuixIcons.Sort,
                                             contentDescription = null,
                                             tint = MiuixTheme.colorScheme.onSurfaceVariantActions,
                                         )
@@ -514,7 +514,7 @@ fun AnimatedVisibilityScope.GalleryListScreen(
         trailingIcon = {
             val sheetState = LocalSideSheetState.current
             IconButton(onClick = { launch { sheetState.open() } }) {
-                Icon(imageVector = Icons.Outlined.Bookmarks, contentDescription = stringResource(id = R.string.quick_search))
+                Icon(imageVector = EhIcons.Default.Bookmarks, contentDescription = stringResource(id = R.string.quick_search))
             }
             AvatarIcon()
         },
@@ -603,12 +603,12 @@ fun AnimatedVisibilityScope.GalleryListScreen(
         autoCancel = true,
     ) {
         if (urlBuilder.mode in arrayOf(MODE_NORMAL, MODE_UPLOADER, MODE_TAG)) {
-            onClick(Icons.Default.Shuffle) {
+            onClick(EhIcons.Default.Shuffle) {
                 urlBuilder.setRange(Random.nextInt(100))
                 data.refresh()
             }
         }
-        onClick(Icons.Default.Refresh) {
+        onClick(MiuixIcons.Refresh) {
             urlBuilder.setRange(0)
             data.refresh()
         }
@@ -627,7 +627,7 @@ fun AnimatedVisibilityScope.GalleryListScreen(
                 }
                 data.refresh()
             }
-            onClick(Icons.AutoMirrored.Default.LastPage) {
+            onClick(EhIcons.Default.LastPage) {
                 if (isTopList) {
                     urlBuilder.page = TOPLIST_PAGES
                 } else {

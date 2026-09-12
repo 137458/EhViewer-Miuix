@@ -9,9 +9,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.material3.LocalContentColor
-import androidx.compose.material3.LocalTextStyle
-import androidx.compose.material3.Text
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -52,9 +51,10 @@ fun rememberTextStyleNumberMaxSize(textStyle: TextStyle): DpSize {
 }
 
 @Composable
-fun RollingNumberPlaceholder(number: Int, style: TextStyle = LocalTextStyle.current) {
-    val styleNoSpacing = style.copy(letterSpacing = TextUnit.Unspecified)
-    val size = rememberTextStyleNumberMaxSize(style)
+fun RollingNumberPlaceholder(number: Int, style: TextStyle = TextStyle.Default) {
+    val resolvedStyle = if (style == TextStyle.Default) MiuixTheme.textStyles.body1 else style
+    val styleNoSpacing = resolvedStyle.copy(letterSpacing = TextUnit.Unspecified)
+    val size = rememberTextStyleNumberMaxSize(resolvedStyle)
     Row(horizontalArrangement = Arrangement.Center) {
         "$number".forEach { char ->
             Text(
@@ -128,16 +128,17 @@ fun RollingNumber(
     number: Int,
     modifier: Modifier = Modifier,
     color: Color = Color.Unspecified,
-    style: TextStyle = LocalTextStyle.current,
+    style: TextStyle = TextStyle.Default,
     separator: Boolean = false,
     length: Int? = null,
 ) {
     val isNegative = number < 0
-    val textColor = color.takeOrElse { style.color.takeOrElse { LocalContentColor.current } }
+    val resolvedStyle = if (style == TextStyle.Default) MiuixTheme.textStyles.body1 else style
+    val textColor = color.takeOrElse { resolvedStyle.color.takeOrElse { MiuixTheme.colorScheme.onSurface } }
     val string = remember(number) { "${abs(number)}" }
     val transition = updateTransition(string)
-    val styleNoSpacing = style.merge(color = textColor).copy(letterSpacing = TextUnit.Unspecified)
-    val size = rememberTextStyleNumberMaxSize(style)
+    val styleNoSpacing = resolvedStyle.merge(color = textColor).copy(letterSpacing = TextUnit.Unspecified)
+    val size = rememberTextStyleNumberMaxSize(resolvedStyle)
     LazyRow(
         modifier = modifier.clipToBounds().layout { measurable, constraints ->
             val placeable = measurable.measure(constraints.copy(maxHeight = Int.MAX_VALUE))

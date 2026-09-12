@@ -6,8 +6,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Settings
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Settings
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -70,7 +70,7 @@ fun BottomReaderBar(onClickSettings: () -> Unit, containerColor: Color) = Row(
     )
     ActionButton(
         onClick = onClickSettings,
-        imageVector = Icons.Outlined.Settings,
+        imageVector = MiuixIcons.Settings,
         contentDescription = stringResource(R.string.action_settings),
     )
 }

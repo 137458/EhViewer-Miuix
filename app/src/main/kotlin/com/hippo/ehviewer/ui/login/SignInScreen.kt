@@ -20,10 +20,10 @@ import androidx.compose.foundation.text.input.OutputTransformation
 import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Hide
+import top.yukonga.miuix.kmp.icon.extended.Info
+import top.yukonga.miuix.kmp.icon.extended.Show
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -139,7 +139,7 @@ fun AnimatedVisibilityScope.SignInScreen(navigator: DestinationsNavigator) = Scr
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
             lineLimits = TextFieldLineLimits.SingleLine,
             trailingIcon = if (showUsernameError) {
-                { Icon(imageVector = Icons.Filled.Info, contentDescription = null, tint = MiuixTheme.colorScheme.error) }
+                { Icon(imageVector = MiuixIcons.Info, contentDescription = null, tint = MiuixTheme.colorScheme.error) }
             } else null,
         )
         if (showUsernameError) {
@@ -163,10 +163,10 @@ fun AnimatedVisibilityScope.SignInScreen(navigator: DestinationsNavigator) = Scr
             outputTransformation = if (passwordHidden) OutputTransformation { replace(0, length, "\u2022".repeat(length)) } else null,
             trailingIcon = {
                 if (showPasswordError) {
-                    Icon(imageVector = Icons.Filled.Info, contentDescription = null, tint = MiuixTheme.colorScheme.error)
+                    Icon(imageVector = MiuixIcons.Info, contentDescription = null, tint = MiuixTheme.colorScheme.error)
                 } else {
                     IconButton(onClick = { passwordHidden = !passwordHidden }) {
-                        val visibilityIcon = if (passwordHidden) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
+                        val visibilityIcon = if (passwordHidden) MiuixIcons.Show else MiuixIcons.Hide
                         Icon(imageVector = visibilityIcon, contentDescription = null)
                     }
                 }

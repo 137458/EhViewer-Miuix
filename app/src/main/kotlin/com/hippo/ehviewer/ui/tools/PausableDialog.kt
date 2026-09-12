@@ -15,10 +15,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeContent
 import androidx.compose.foundation.layout.width
 import androidx.compose.ui.unit.dp
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.window.WindowDialog
-import androidx.compose.material3.FilledTonalIconButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -92,7 +92,7 @@ fun BoxScope.PausableAlertDialog(
     val fraction by animateFloatAsState(if (showDialog) 0f else 1f)
     val (viewportW, viewportH) = LocalWindowInfo.current.containerSize.toSize()
     val density = LocalDensity.current
-    val (buttonW, buttonH) = with(density) { IconButtonDefaults.smallContainerSize().toSize() }
+    val (buttonW, buttonH) = with(density) { 40.dp.toPx() to 40.dp.toPx() }
     val safeContent = WindowInsets.safeContent
     val layoutDirection = LocalLayoutDirection.current
     val safe = Rect(
@@ -109,9 +109,8 @@ fun BoxScope.PausableAlertDialog(
         idle = idle.safeOffset(safe)
     }
     val state = rememberDraggable2DState { delta -> idle += delta }
-    FilledTonalIconButton(
+    IconButton(
         onClick = { showDialog = true },
-        shapes = IconButtonDefaults.shapes(),
         modifier = Modifier.offset {
             lerp(disappear, idle.round(), fraction)
         }.graphicsLayer {
@@ -129,8 +128,12 @@ fun BoxScope.PausableAlertDialog(
                 }
             },
         ),
+        backgroundColor = MiuixTheme.colorScheme.surfaceContainerHigh,
+        cornerRadius = 20.dp,
+        minWidth = 40.dp,
+        minHeight = 40.dp,
     ) {
-        Icon(imageVector = idleIcon, contentDescription = null)
+        Icon(imageVector = idleIcon, contentDescription = null, tint = MiuixTheme.colorScheme.onSurface)
     }
 }
 

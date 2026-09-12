@@ -11,11 +11,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.NoAccounts
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.RestartAlt
-import androidx.compose.material3.SnackbarHostState
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Contacts
+import top.yukonga.miuix.kmp.icon.extended.RemoveContact
+import top.yukonga.miuix.kmp.icon.extended.Reset
+import top.yukonga.miuix.kmp.basic.SnackbarHostState
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Icon
@@ -164,7 +164,7 @@ fun AvatarIcon() {
                                                 modifier = Modifier.align(Alignment.CenterHorizontally),
                                             ) {
                                                 Icon(
-                                                    imageVector = Icons.Default.RestartAlt,
+                                                    imageVector = MiuixIcons.Reset,
                                                     contentDescription = stringResource(id = R.string.reset),
                                                 )
                                                 Spacer(modifier = Modifier.size(4.dp))
@@ -182,7 +182,7 @@ fun AvatarIcon() {
             val avatar by Settings.avatar.collectAsState()
             AnimatedContent(targetState = avatar == null) { noAvatar ->
                 if (noAvatar) {
-                    Icon(imageVector = Icons.Default.Person, contentDescription = null)
+                    Icon(imageVector = MiuixIcons.Contacts, contentDescription = null)
                 } else {
                     AsyncImage(
                         model = avatar,
@@ -212,7 +212,7 @@ fun AvatarIcon() {
                 }
             },
         ) {
-            Icon(imageVector = Icons.Default.NoAccounts, contentDescription = null)
+            Icon(imageVector = MiuixIcons.RemoveContact, contentDescription = null)
         }
     }
 }

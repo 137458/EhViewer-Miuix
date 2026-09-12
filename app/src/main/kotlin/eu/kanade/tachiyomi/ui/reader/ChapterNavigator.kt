@@ -6,7 +6,8 @@ import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.Text
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -40,7 +41,7 @@ fun ChapterNavigator(
         modifier = Modifier.padding(horizontal = horizontalPadding).clip(CircleShape).background(containerColor).padding(horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(text = "$currentPage")
+        Text(text = "$currentPage", style = MiuixTheme.textStyles.footnote1)
         val steps = totalPages - 2
         val maxTickCount = defaultMaxTickCount()
         val interactionSource = remember { MutableInteractionSource() }
@@ -62,6 +63,6 @@ fun ChapterNavigator(
             maxTickCount = maxTickCount,
             interactionSource = interactionSource,
         )
-        Text(text = "$totalPages")
+        Text(text = "$totalPages", style = MiuixTheme.textStyles.footnote1)
     }
 }

@@ -7,11 +7,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Card
-import androidx.compose.material3.LocalContentColor
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ProvideTextStyle
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.neverEqualPolicy
@@ -28,6 +23,9 @@ import com.ehviewer.core.model.GalleryComment
 import com.hippo.ehviewer.ui.legacy.CoilImageGetter
 import com.hippo.ehviewer.ui.legacy.LinkifyTextView
 import com.hippo.ehviewer.util.ReadableTime
+import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 fun GalleryCommentCard(
@@ -55,19 +53,21 @@ fun GalleryCommentCard(
             modifier = Modifier.padding(horizontal = margin, vertical = 8.dp).fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            ProvideTextStyle(value = MaterialTheme.typography.titleSmall) {
-                val userText = if (uploader) stringResource(id = R.string.comment_user_uploader, user.orEmpty()) else user.orEmpty()
-                Text(
-                    text = userText,
-                    modifier = Modifier.clickable(onClick = onUserClick),
-                )
-                Text(
-                    text = ReadableTime.getTimeAgo(time),
-                )
-            }
+            val userText = if (uploader) stringResource(id = R.string.comment_user_uploader, user.orEmpty()) else user.orEmpty()
+            Text(
+                text = userText,
+                modifier = Modifier.clickable(onClick = onUserClick),
+                style = MiuixTheme.textStyles.body2,
+                color = if (uploader) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = ReadableTime.getTimeAgo(time),
+                style = MiuixTheme.textStyles.footnote1,
+                color = MiuixTheme.colorScheme.onSurfaceSecondary,
+            )
         }
-        val textColor = LocalContentColor.current.toArgb()
-        val linkTextColor = MaterialTheme.colorScheme.primary.toArgb()
+        val textColor = MiuixTheme.colorScheme.onSurface.toArgb()
+        val linkTextColor = MiuixTheme.colorScheme.primary.toArgb()
         val redrawSignal = remember { mutableStateOf(Unit, neverEqualPolicy()) }
         val commentText = processComment(comment, CoilImageGetter { redrawSignal.value = Unit })
         AndroidView(

@@ -10,12 +10,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.LocalContentColor
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
+import androidx.compose.foundation.background
+import androidx.compose.ui.draw.clip
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -74,8 +74,8 @@ fun GalleryTags(
                                 Text(
                                     text = vote.display,
                                     modifier = Modifier.align(Alignment.TopEnd).padding(horizontal = 2.dp),
-                                    color = MaterialTheme.colorScheme.error,
-                                    style = MaterialTheme.typography.labelSmallEmphasized.copy(fontSize = 10.sp),
+                                    color = MiuixTheme.colorScheme.error,
+                                    style = MiuixTheme.textStyles.footnote2.copy(fontSize = 10.sp),
                                 )
                             }
                         }
@@ -95,20 +95,26 @@ private fun BaseRoundText(
     isGroup: Boolean = false,
 ) {
     val bgColor = if (isGroup) {
-        MaterialTheme.colorScheme.primaryContainer
+        MiuixTheme.colorScheme.primaryContainer
     } else {
-        MaterialTheme.colorScheme.tertiaryContainer
+        MiuixTheme.colorScheme.surfaceContainerHigh
     }
-    Surface(
-        modifier = Modifier.padding(4.dp),
-        color = bgColor,
-        shape = GalleryTagCorner,
+    val contentColor = if (isGroup) {
+        MiuixTheme.colorScheme.onPrimaryContainer
+    } else {
+        MiuixTheme.colorScheme.onSurface
+    }
+    Box(
+        modifier = Modifier
+            .padding(4.dp)
+            .clip(GalleryTagCorner)
+            .background(bgColor),
     ) {
         Text(
             text = text,
             modifier = modifier.padding(horizontal = 12.dp, vertical = 4.dp).width(IntrinsicSize.Max),
-            color = LocalContentColor.current.let { if (weak) it.copy(0.5F) else it },
-            style = MaterialTheme.typography.labelLarge.includeFontPadding,
+            color = if (weak) contentColor.copy(alpha = 0.5f) else contentColor,
+            style = MiuixTheme.textStyles.footnote1.includeFontPadding,
             textDecoration = if (solid) TextDecoration.Underline else null,
         )
     }
