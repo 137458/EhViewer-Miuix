@@ -20,21 +20,12 @@
 </h1>
 
 <p align="center">
-  <a href="https://github.com/FooIbar/EhViewer/actions/workflows/ci.yml">
-    <img src="https://github.com/FooIbar/EhViewer/actions/workflows/ci.yml/badge.svg" alt="Github Actions">
-  </a>
-  <a href="/LICENSE">
-    <img src="https://img.shields.io/github/license/FooIbar/EhViewer" alt="LICENSE">
-  </a>
-  <a href="https://www.codefactor.io/repository/github/FooIbar/EhViewer">
-    <img src="https://www.codefactor.io/repository/github/FooIbar/EhViewer/badge" alt="CodeFactor">
-  </a>
-  <a href="https://github.com/FooIbar/EhViewer/releases">
-    <img src="https://img.shields.io/github/v/release/FooIbar/EhViewer" alt="Release">
-  </a>
-  <a href="https://github.com/FooIbar/EhViewer/issues">
-    <img src="https://img.shields.io/github/issues/FooIbar/EhViewer" alt="Issues">
-  </a>
+  <a href="https://github.com/137458/ehviewer-miuix/releases"><img src="https://img.shields.io/github/v/release/137458/ehviewer-miuix" alt="Release"></a>
+  <a href="/LICENSE"><img src="https://img.shields.io/badge/License-GPLv3-blue.svg" alt="LICENSE"></a>
+  <a href="https://github.com/137458/ehviewer-miuix/issues"><img src="https://img.shields.io/github/issues/137458/ehviewer-miuix" alt="Issues"></a>
+  <img src="https://img.shields.io/badge/Platform-Android%208.0%2B-green.svg" alt="Android">
+  <img src="https://img.shields.io/badge/Design-MIUIX%20%2F%20HyperOS-FF6900.svg" alt="Design">
+  <img src="https://img.shields.io/badge/Language-Kotlin%202.4-7F52FF.svg" alt="Kotlin">
 </p>
 
 <div align="center">
