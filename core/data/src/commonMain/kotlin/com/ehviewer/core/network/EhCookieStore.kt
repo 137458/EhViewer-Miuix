@@ -13,9 +13,38 @@ object EhCookieStore : CookiesStorage {
 
     fun removeAllCookies() = manager.removeAllCookies()
 
-    fun hasSignedIn(): Boolean = manager.getCookies(urlE)?.run {
-        containsKey(KEY_IPB_MEMBER_ID) && containsKey(KEY_IPB_PASS_HASH)
-    } == true
+    fun hasSignedIn(): Boolean {
+        val signedIn = manager.getCookies(urlE)?.run {
+            containsKey(KEY_IPB_MEMBER_ID) && containsKey(KEY_IPB_PASS_HASH)
+        } == true
+        if (signedIn) {
+            syncExCookies()
+        }
+        return signedIn
+    }
+
+    fun setIdentityCookies(memberId: String, passHash: String, igneous: String? = null) {
+        val eDomain = ".e-hentai.org"
+        val exDomain = ".exhentai.org"
+        manager.setCookie(urlE, Cookie(KEY_IPB_MEMBER_ID, memberId, domain = eDomain, path = "/"))
+        manager.setCookie(urlE, Cookie(KEY_IPB_PASS_HASH, passHash, domain = eDomain, path = "/"))
+        manager.setCookie(urlEx, Cookie(KEY_IPB_MEMBER_ID, memberId, domain = exDomain, path = "/"))
+        manager.setCookie(urlEx, Cookie(KEY_IPB_PASS_HASH, passHash, domain = exDomain, path = "/"))
+        if (!igneous.isNullOrBlank()) {
+            manager.setCookie(urlEx, Cookie(KEY_IGNEOUS, igneous, domain = exDomain, path = "/"))
+        }
+        manager.flush()
+    }
+
+    fun syncExCookies() {
+        val eCookies = manager.getCookies(urlE) ?: return
+        val memberId = eCookies[KEY_IPB_MEMBER_ID] ?: return
+        val passHash = eCookies[KEY_IPB_PASS_HASH] ?: return
+        val exDomain = ".exhentai.org"
+        manager.setCookie(urlEx, Cookie(KEY_IPB_MEMBER_ID, memberId, domain = exDomain, path = "/"))
+        manager.setCookie(urlEx, Cookie(KEY_IPB_PASS_HASH, passHash, domain = exDomain, path = "/"))
+        manager.flush()
+    }
 
     const val KEY_IPB_MEMBER_ID = "ipb_member_id"
     const val KEY_IPB_PASS_HASH = "ipb_pass_hash"

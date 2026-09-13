@@ -170,7 +170,6 @@ fun AnimatedVisibilityScope.GalleryListScreen(
     var urlBuilder by viewModel.urlBuilder
     var searchBarExpanded by rememberSaveable { mutableStateOf(false) }
     var searchBarOffsetY by remember { mutableIntStateOf(0) }
-    var fabExpanded by remember { mutableStateOf(false) }
     var fabHidden by remember { mutableStateOf(false) }
 
     val animateItems by Settings.animateItems.collectAsState()
@@ -533,6 +532,18 @@ fun AnimatedVisibilityScope.GalleryListScreen(
             }
             AvatarIcon()
         },
+        subHeader = if (urlBuilder.mode == MODE_NORMAL) {
+            {
+                GalleryCategoryFilterStrip(
+                    selectedCategory = category,
+                    onSelectCategory = { newCat ->
+                        category = newCat
+                        urlBuilder.category = newCat
+                        data.refresh()
+                    },
+                )
+            }
+        } else null,
         filter = {
             SearchFilter(
                 category = category,
@@ -602,47 +613,38 @@ fun AnimatedVisibilityScope.GalleryListScreen(
     val invalidNum = stringResource(R.string.error_invalid_number)
     val outOfRange = stringResource(R.string.error_out_of_range)
 
-    val hideFab by asyncState(
-        produce = { fabHidden },
-        transform = {
-            onEachLatest { hide ->
-                if (!hide) delay(FAB_ANIMATE_TIME.toLong())
-            }
+    HomeFloatingActionCapsule(
+        visible = !fabHidden,
+        onRefresh = {
+            urlBuilder.setRange(0)
+            data.refresh()
         },
-    )
-
-    FabLayout(
-        hidden = hideFab,
-        expanded = fabExpanded,
-        onExpandChanged = { fabExpanded = it },
-        autoCancel = true,
-    ) {
-        if (urlBuilder.mode in arrayOf(MODE_NORMAL, MODE_UPLOADER, MODE_TAG)) {
-            onClick(EhIcons.Default.Shuffle) {
+        onShuffle = if (urlBuilder.mode in arrayOf(MODE_NORMAL, MODE_UPLOADER, MODE_TAG)) {
+            {
                 urlBuilder.setRange(Random.nextInt(100))
                 data.refresh()
             }
-        }
-        onClick(MiuixIcons.Refresh) {
-            urlBuilder.setRange(0)
-            data.refresh()
-        }
-        if (urlBuilder.mode != MODE_WHATS_HOT) {
-            onClick(EhIcons.Default.GoTo) {
-                if (isTopList) {
-                    val hint = string(R.string.go_to_hint, urlBuilder.page, TOPLIST_PAGES)
-                    val text = awaitInputText(title = gotoTitle, hint = hint, isNumber = true) { oriText ->
-                        val goto = ensureNotNull(oriText.trim().toIntOrNull()) { invalidNum }
-                        ensure(goto in 1..TOPLIST_PAGES) { outOfRange }
+        } else null,
+        onGoTo = if (urlBuilder.mode != MODE_WHATS_HOT) {
+            {
+                launch {
+                    if (isTopList) {
+                        val hint = string(R.string.go_to_hint, urlBuilder.page, TOPLIST_PAGES)
+                        val text = awaitInputText(title = gotoTitle, hint = hint, isNumber = true) { oriText ->
+                            val goto = ensureNotNull(oriText.trim().toIntOrNull()) { invalidNum }
+                            ensure(goto in 1..TOPLIST_PAGES) { outOfRange }
+                        }
+                        urlBuilder.page = text.trim().toInt()
+                    } else {
+                        val date = awaitSelectDate()
+                        urlBuilder.setSeek(date)
                     }
-                    urlBuilder.page = text.trim().toInt()
-                } else {
-                    val date = awaitSelectDate()
-                    urlBuilder.setSeek(date)
+                    data.refresh()
                 }
-                data.refresh()
             }
-            onClick(EhIcons.Default.LastPage) {
+        } else null,
+        onLastPage = if (urlBuilder.mode != MODE_WHATS_HOT) {
+            {
                 if (isTopList) {
                     urlBuilder.page = TOPLIST_PAGES
                 } else {
@@ -650,8 +652,8 @@ fun AnimatedVisibilityScope.GalleryListScreen(
                 }
                 data.refresh()
             }
-        }
-    }
+        } else null,
+    )
 }
 
 const val TOPLIST_PAGES = 200

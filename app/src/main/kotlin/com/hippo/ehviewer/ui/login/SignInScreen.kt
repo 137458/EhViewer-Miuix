@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
@@ -39,6 +40,9 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.ehviewer.core.i18n.R
+import com.ehviewer.core.network.EhCookieStore
+import com.ehviewer.core.ui.component.LiquidGlassSurface
+import com.ehviewer.core.ui.component.SquircleShape
 import com.ehviewer.core.ui.util.LocalWindowSizeClass
 import com.ehviewer.core.ui.util.isExpanded
 import com.ehviewer.core.util.launchIO
@@ -79,10 +83,39 @@ fun AnimatedVisibilityScope.SignInScreen(navigator: DestinationsNavigator) = Scr
     var isProgressIndicatorVisible by rememberSaveable { mutableStateOf(false) }
     var showUsernameError by rememberSaveable { mutableStateOf(false) }
     var showPasswordError by rememberSaveable { mutableStateOf(false) }
+    var showCookieDialog by rememberSaveable { mutableStateOf(false) }
     val username = rememberTextFieldState()
     val password = rememberTextFieldState()
     var passwordHidden by rememberSaveable { mutableStateOf(true) }
     var signInJob by remember { mutableStateOf<Job?>(null) }
+
+    CookieSignInDialog(
+        show = showCookieDialog,
+        onDismissRequest = { showCookieDialog = false },
+        onConfirm = { memberId, passHash, igneous ->
+            showCookieDialog = false
+            focusManager.clearFocus()
+            isProgressIndicatorVisible = true
+            EhUtils.signOut()
+            signInJob = launchIO {
+                runCatching {
+                    EhCookieStore.setIdentityCookies(memberId, passHash, igneous)
+                    EhCookieStore.flush()
+                    postLogin().await()
+                }.onFailure {
+                    withUIContext {
+                        isProgressIndicatorVisible = false
+                        awaitConfirmationOrCancel(
+                            confirmText = R.string.get_it,
+                            title = R.string.sign_in_failed,
+                            showCancelButton = false,
+                            text = { Text(it.displayString()) },
+                        )
+                    }
+                }
+            }
+        },
+    )
 
     fun signIn() {
         if (signInJob?.isActive == true) return
@@ -133,7 +166,7 @@ fun AnimatedVisibilityScope.SignInScreen(navigator: DestinationsNavigator) = Scr
     fun UsernameAndPasswordTextField() {
         TextField(
             state = username,
-            modifier = Modifier.width(dimensionResource(id = com.hippo.ehviewer.R.dimen.single_max_width))
+            modifier = Modifier.fillMaxWidth()
                 .semantics { contentType = ContentType.Username },
             label = stringResource(R.string.username),
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
@@ -149,14 +182,14 @@ fun AnimatedVisibilityScope.SignInScreen(navigator: DestinationsNavigator) = Scr
                 text = stringResource(R.string.error_username_cannot_empty),
                 color = MiuixTheme.colorScheme.error,
                 style = MiuixTheme.textStyles.body2,
-                modifier = Modifier.width(dimensionResource(id = com.hippo.ehviewer.R.dimen.single_max_width)).padding(start = 16.dp, top = 4.dp, bottom = 8.dp),
+                modifier = Modifier.fillMaxWidth().padding(start = 16.dp, top = 4.dp, bottom = 8.dp),
             )
         } else {
             Spacer(modifier = Modifier.height(16.dp))
         }
         TextField(
             state = password,
-            modifier = Modifier.width(dimensionResource(id = com.hippo.ehviewer.R.dimen.single_max_width))
+            modifier = Modifier.fillMaxWidth()
                 .semantics { contentType = ContentType.Password },
             label = stringResource(R.string.password),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
@@ -179,7 +212,7 @@ fun AnimatedVisibilityScope.SignInScreen(navigator: DestinationsNavigator) = Scr
                 text = stringResource(R.string.error_password_cannot_empty),
                 color = MiuixTheme.colorScheme.error,
                 style = MiuixTheme.textStyles.body2,
-                modifier = Modifier.width(dimensionResource(id = com.hippo.ehviewer.R.dimen.single_max_width)).padding(start = 16.dp, top = 4.dp, bottom = 8.dp),
+                modifier = Modifier.fillMaxWidth().padding(start = 16.dp, top = 4.dp, bottom = 8.dp),
             )
         } else {
             Spacer(modifier = Modifier.height(16.dp))
@@ -190,122 +223,188 @@ fun AnimatedVisibilityScope.SignInScreen(navigator: DestinationsNavigator) = Scr
         when {
             !windowSizeClass.isExpanded -> {
                 Column(
-                    modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).systemBarsPadding().padding(dimensionResource(id = com.hippo.ehviewer.R.dimen.keyline_margin)),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .systemBarsPadding()
+                        .padding(dimensionResource(id = com.hippo.ehviewer.R.dimen.keyline_margin)),
                     horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
                 ) {
-                    Image(
-                        painter = painterResource(id = com.hippo.ehviewer.R.drawable.ic_launcher_foreground),
-                        contentDescription = null,
-                        modifier = Modifier.padding(dimensionResource(id = com.hippo.ehviewer.R.dimen.keyline_margin)),
-                    )
-                    UsernameAndPasswordTextField()
-                    Text(
-                        text = stringResource(id = R.string.app_waring),
-                        modifier = Modifier.widthIn(max = dimensionResource(id = com.hippo.ehviewer.R.dimen.single_max_width)).padding(top = 24.dp),
-                        style = MiuixTheme.textStyles.title3,
-                    )
-                    Text(
-                        text = stringResource(id = R.string.app_waring_2),
-                        modifier = Modifier.widthIn(max = dimensionResource(id = com.hippo.ehviewer.R.dimen.single_max_width)).padding(top = 12.dp),
-                        style = MiuixTheme.textStyles.title2,
-                    )
-                    Spacer(modifier = Modifier.height(dimensionResource(id = com.hippo.ehviewer.R.dimen.keyline_margin)))
-                    Row(modifier = Modifier.padding(top = dimensionResource(com.hippo.ehviewer.R.dimen.keyline_margin))) {
-                        Button(
-                            onClick = { openBrowser(EhUrl.URL_REGISTER) },
-                            colors = ButtonDefaults.buttonColors(),
-                            modifier = Modifier.weight(1f).padding(horizontal = 4.dp),
+                    LiquidGlassSurface(
+                        modifier = Modifier
+                            .widthIn(max = dimensionResource(id = com.hippo.ehviewer.R.dimen.single_max_width))
+                            .fillMaxWidth(),
+                        shape = SquircleShape(24.dp),
+                        elevation = 8.dp,
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(20.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
-                            Text(text = stringResource(id = R.string.register))
+                            Image(
+                                painter = painterResource(id = com.hippo.ehviewer.R.drawable.ic_launcher_foreground),
+                                contentDescription = null,
+                                modifier = Modifier.size(72.dp),
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            UsernameAndPasswordTextField()
+                            Text(
+                                text = stringResource(id = R.string.app_waring),
+                                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                                style = MiuixTheme.textStyles.body2,
+                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                            )
+                            Text(
+                                text = stringResource(id = R.string.app_waring_2),
+                                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                                style = MiuixTheme.textStyles.title4,
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                Button(
+                                    onClick = { openBrowser(EhUrl.URL_REGISTER) },
+                                    colors = ButtonDefaults.buttonColors(),
+                                    modifier = Modifier.weight(1f),
+                                ) {
+                                    Text(text = stringResource(id = R.string.register))
+                                }
+                                Button(
+                                    onClick = ::signIn,
+                                    colors = ButtonDefaults.buttonColorsPrimary(),
+                                    modifier = Modifier.weight(1f),
+                                ) {
+                                    Text(text = stringResource(id = R.string.sign_in))
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                            ) {
+                                TextButton(
+                                    text = stringResource(id = R.string.sign_in_via_webview),
+                                    onClick = { navigate(WebViewSignInScreenDestination) },
+                                )
+                                TextButton(
+                                    text = stringResource(id = R.string.sign_in_via_cookie),
+                                    onClick = { showCookieDialog = true },
+                                )
+                                TextButton(
+                                    text = stringResource(id = R.string.guest_mode),
+                                    onClick = {
+                                        Settings.gallerySite.value = EhUrl.SITE_E
+                                        Settings.needSignIn.value = false
+                                    },
+                                )
+                            }
                         }
-                        Button(
-                            onClick = ::signIn,
-                            colors = ButtonDefaults.buttonColorsPrimary(),
-                            modifier = Modifier.weight(1f).padding(horizontal = 4.dp),
-                        ) {
-                            Text(text = stringResource(id = R.string.sign_in))
-                        }
-                    }
-                    Row(modifier = Modifier.padding(horizontal = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        TextButton(
-                            text = stringResource(id = R.string.sign_in_via_webview),
-                            onClick = { navigate(WebViewSignInScreenDestination) },
-                            modifier = Modifier.weight(1f),
-                        )
-                        TextButton(
-                            text = stringResource(id = R.string.guest_mode),
-                            onClick = {
-                                Settings.gallerySite.value = EhUrl.SITE_E
-                                Settings.needSignIn.value = false
-                            },
-                            modifier = Modifier.weight(1f),
-                        )
                     }
                 }
             }
             else -> {
                 Row(
-                    modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).systemBarsPadding().padding(dimensionResource(id = com.hippo.ehviewer.R.dimen.keyline_margin)),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .systemBarsPadding()
+                        .padding(dimensionResource(id = com.hippo.ehviewer.R.dimen.keyline_margin)),
                     verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center,
                 ) {
-                    Column(
-                        modifier = Modifier.width(dimensionResource(id = com.hippo.ehviewer.R.dimen.signinscreen_landscape_caption_frame_width)).padding(dimensionResource(id = com.hippo.ehviewer.R.dimen.keyline_margin)),
-                        horizontalAlignment = Alignment.CenterHorizontally,
+                    LiquidGlassSurface(
+                        modifier = Modifier
+                            .width(dimensionResource(id = com.hippo.ehviewer.R.dimen.signinscreen_landscape_caption_frame_width))
+                            .padding(end = 16.dp),
+                        shape = SquircleShape(24.dp),
+                        elevation = 8.dp,
                     ) {
-                        Image(
-                            painter = painterResource(id = com.hippo.ehviewer.R.drawable.ic_launcher_foreground),
-                            contentDescription = null,
-                            alignment = Alignment.Center,
-                            modifier = Modifier.padding(dimensionResource(id = com.hippo.ehviewer.R.dimen.keyline_margin)),
-                        )
-                        Text(
-                            text = stringResource(id = R.string.app_waring),
-                            modifier = Modifier.widthIn(max = 360.dp),
-                            style = MiuixTheme.textStyles.title3,
-                        )
-                        Text(
-                            text = stringResource(id = R.string.app_waring_2),
-                            modifier = Modifier.widthIn(max = 360.dp),
-                            style = MiuixTheme.textStyles.title2,
-                        )
-                    }
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        UsernameAndPasswordTextField()
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Row(horizontalArrangement = Arrangement.Center) {
-                            Button(
-                                onClick = ::signIn,
-                                colors = ButtonDefaults.buttonColorsPrimary(),
-                                modifier = Modifier.padding(horizontal = 4.dp).width(128.dp),
-                            ) {
-                                Text(text = stringResource(id = R.string.sign_in))
-                            }
-                            Button(
-                                onClick = { openBrowser(EhUrl.URL_REGISTER) },
-                                colors = ButtonDefaults.buttonColors(),
-                                modifier = Modifier.padding(horizontal = 4.dp).width(128.dp),
-                            ) {
-                                Text(text = stringResource(id = R.string.register))
-                            }
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                        ) {
+                            Image(
+                                painter = painterResource(id = com.hippo.ehviewer.R.drawable.ic_launcher_foreground),
+                                contentDescription = null,
+                                modifier = Modifier.size(80.dp),
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = stringResource(id = R.string.app_waring),
+                                modifier = Modifier.fillMaxWidth(),
+                                style = MiuixTheme.textStyles.body2,
+                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = stringResource(id = R.string.app_waring_2),
+                                modifier = Modifier.fillMaxWidth(),
+                                style = MiuixTheme.textStyles.title3,
+                            )
                         }
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Row(horizontalArrangement = Arrangement.Center) {
-                            TextButton(
-                                text = stringResource(id = R.string.sign_in_via_webview),
-                                onClick = { navigate(WebViewSignInScreenDestination) },
-                                modifier = Modifier.padding(horizontal = 4.dp).width(128.dp),
-                            )
-                            TextButton(
-                                text = stringResource(id = R.string.guest_mode),
-                                onClick = {
-                                    Settings.gallerySite.value = EhUrl.SITE_E
-                                    Settings.needSignIn.value = false
-                                },
-                                modifier = Modifier.padding(horizontal = 4.dp).width(128.dp),
-                            )
+                    }
+                    LiquidGlassSurface(
+                        modifier = Modifier
+                            .widthIn(max = dimensionResource(id = com.hippo.ehviewer.R.dimen.single_max_width))
+                            .fillMaxWidth(),
+                        shape = SquircleShape(24.dp),
+                        elevation = 8.dp,
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                        ) {
+                            UsernameAndPasswordTextField()
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                Button(
+                                    onClick = { openBrowser(EhUrl.URL_REGISTER) },
+                                    colors = ButtonDefaults.buttonColors(),
+                                    modifier = Modifier.weight(1f),
+                                ) {
+                                    Text(text = stringResource(id = R.string.register))
+                                }
+                                Button(
+                                    onClick = ::signIn,
+                                    colors = ButtonDefaults.buttonColorsPrimary(),
+                                    modifier = Modifier.weight(1f),
+                                ) {
+                                    Text(text = stringResource(id = R.string.sign_in))
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                            ) {
+                                TextButton(
+                                    text = stringResource(id = R.string.sign_in_via_webview),
+                                    onClick = { navigate(WebViewSignInScreenDestination) },
+                                )
+                                TextButton(
+                                    text = stringResource(id = R.string.sign_in_via_cookie),
+                                    onClick = { showCookieDialog = true },
+                                )
+                                TextButton(
+                                    text = stringResource(id = R.string.guest_mode),
+                                    onClick = {
+                                        Settings.gallerySite.value = EhUrl.SITE_E
+                                        Settings.needSignIn.value = false
+                                    },
+                                )
+                            }
                         }
                     }
                 }

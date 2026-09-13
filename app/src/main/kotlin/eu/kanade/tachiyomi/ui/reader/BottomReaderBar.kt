@@ -1,11 +1,10 @@
 package eu.kanade.tachiyomi.ui.reader
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -17,6 +16,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.ehviewer.core.i18n.R
+import com.ehviewer.core.ui.component.LiquidGlassSurface
+import com.ehviewer.core.ui.component.SquircleShape
 import com.ehviewer.core.ui.icons.EhIcons
 import com.ehviewer.core.ui.icons.filled.Crop
 import com.ehviewer.core.ui.icons.filled.CropOff
@@ -33,46 +34,56 @@ import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Settings
 import top.yukonga.miuix.kmp.menu.WindowIconDropdownMenu
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
-fun BottomReaderBar(onClickSettings: () -> Unit, containerColor: Color) = Row(
-    modifier = Modifier
+fun BottomReaderBar(
+    onClickSettings: () -> Unit,
+    modifier: Modifier = Modifier,
+    containerColor: Color = MiuixTheme.colorScheme.surfaceContainer,
+) = LiquidGlassSurface(
+    modifier = modifier
         .fillMaxWidth()
-        .background(containerColor)
-        .navigationBarsPadding()
         .height(56.dp),
-    horizontalArrangement = Arrangement.SpaceEvenly,
-    verticalAlignment = Alignment.CenterVertically,
+    shape = SquircleShape(20.dp),
+    elevation = 8.dp,
+    containerColor = containerColor,
 ) {
-    val readingMode by Settings.readingMode.collectAsState { ReadingModeType.fromPreference(it) }
-    DropdownIconButton(
-        label = stringResource(R.string.viewer),
-        menuItems = ReadingModeType.entries,
-        selectedItem = readingMode,
-        onSelectedItemChange = {
-            Settings.readingMode.value = it.prefValue
-        },
-    )
-    val orientationMode by Settings.orientationMode.collectAsState { OrientationType.fromPreference(it) }
-    DropdownIconButton(
-        label = stringResource(R.string.pref_rotation_type),
-        menuItems = OrientationType.entries,
-        selectedItem = orientationMode,
-        onSelectedItemChange = {
-            Settings.orientationMode.value = it.prefValue
-        },
-    )
-    var cropBorder by Settings.cropBorder.asMutableState()
-    ActionButton(
-        onClick = { cropBorder = !cropBorder },
-        imageVector = if (cropBorder) EhIcons.Default.Crop else EhIcons.Default.CropOff,
-        contentDescription = stringResource(R.string.pref_crop_borders),
-    )
-    ActionButton(
-        onClick = onClickSettings,
-        imageVector = MiuixIcons.Settings,
-        contentDescription = stringResource(R.string.action_settings),
-    )
+    Row(
+        modifier = Modifier.fillMaxSize(),
+        horizontalArrangement = Arrangement.SpaceEvenly,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        val readingMode by Settings.readingMode.collectAsState { ReadingModeType.fromPreference(it) }
+        DropdownIconButton(
+            label = stringResource(R.string.viewer),
+            menuItems = ReadingModeType.entries,
+            selectedItem = readingMode,
+            onSelectedItemChange = {
+                Settings.readingMode.value = it.prefValue
+            },
+        )
+        val orientationMode by Settings.orientationMode.collectAsState { OrientationType.fromPreference(it) }
+        DropdownIconButton(
+            label = stringResource(R.string.pref_rotation_type),
+            menuItems = OrientationType.entries,
+            selectedItem = orientationMode,
+            onSelectedItemChange = {
+                Settings.orientationMode.value = it.prefValue
+            },
+        )
+        var cropBorder by Settings.cropBorder.asMutableState()
+        ActionButton(
+            onClick = { cropBorder = !cropBorder },
+            imageVector = if (cropBorder) EhIcons.Default.Crop else EhIcons.Default.CropOff,
+            contentDescription = stringResource(R.string.pref_crop_borders),
+        )
+        ActionButton(
+            onClick = onClickSettings,
+            imageVector = MiuixIcons.Settings,
+            contentDescription = stringResource(R.string.action_settings),
+        )
+    }
 }
 
 @Composable

@@ -133,6 +133,7 @@ import com.hippo.ehviewer.ui.destinations.SettingsScreenDestination
 import com.hippo.ehviewer.ui.destinations.SignInScreenDestination
 import com.hippo.ehviewer.ui.destinations.SubscriptionScreenDestination
 import com.hippo.ehviewer.ui.destinations.ToplistScreenDestination
+import com.hippo.ehviewer.ui.destinations.WebViewSignInScreenDestination
 import com.hippo.ehviewer.ui.destinations.WhatshotScreenDestination
 import com.hippo.ehviewer.ui.screen.asDst
 import com.hippo.ehviewer.ui.screen.asDstWith
@@ -415,6 +416,16 @@ class MainActivity : AppCompatActivity() {
                     restoreState = true
                 }
             }
+
+            LaunchedEffect(needSignIn) {
+                if (!needSignIn && (currentDestination === SignInScreenDestination || currentDestination === WebViewSignInScreenDestination)) {
+                    val target = if (hasNetwork) navItems[launchPage].first else DownloadsScreenDestination
+                    navigator.navigate(target) {
+                        popUpTo(SignInScreenDestination) { inclusive = true }
+                    }
+                }
+            }
+
             val contentBackdrop = rememberLayerBackdrop()
             val bottomBarPadding = if (isPrimaryDestination && !isWideScreen) 80.dp else 0.dp
             val effectiveFabPadding = snackbarFabPadding.coerceAtLeast(bottomBarPadding)

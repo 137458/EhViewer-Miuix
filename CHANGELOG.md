@@ -2,7 +2,17 @@
 
 ## [未发布]
 
+### 新功能
+
+* 首页交互与排布现代化重构：引入横向分类快速胶囊过滤栏（GalleryCategoryFilterStrip），支持一键快速筛选各专属分类画廊；重构悬浮操作栏为悬浮液态玻璃操作胶囊（HomeFloatingActionCapsule），整合随机漫游、极速刷新、页码与日期快速跳转等核心功能
+* 支持手动 Cookie 登录：新增 Cookie 登录对话框，支持剪贴板整段 Cookie 智能提取与解析（自动识别 ipb_member_id、ipb_pass_hash、igneous），支持多字段手动输入校验登录
+* 全域液态玻璃质感赋能：登录页（SignInScreen）认证卡片、阅读器底部控制栏（BottomReaderBar）与章节进度条（ChapterNavigator）全面升级为液态玻璃悬浮材质（LiquidGlassSurface），支持物理透镜折射、高光边缘与多端降级渲染
+
 ### 修复
+
+* 修复网页登录（WebViewSignInScreen）提取 Cookie 成功后因底层原生 WebView 提前销毁及等待取消导致的应用闪退与挂起问题
+* 修复 CookieManager 解析包含非 RFC 6265 字符的 Cookie 时抛出 IllegalArgumentException 崩溃的问题，增加双重容错与手动安全分割机制
+* 修复登录完成后因根导航栈保留已弃用登录页面而导致的页面流转卡顿问题
 
 * 修复画廊评论页在进程恢复后因缓存失效导致的空指针异常，增加详情自动异步恢复与降级机制
 * 修复启动目的地设置为排行榜或历史记录时主底部导航栏隐藏且无法切换的问题

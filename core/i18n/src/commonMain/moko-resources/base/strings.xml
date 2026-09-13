@@ -41,6 +41,17 @@
     <string name="sign_in">Sign in</string>
     <string name="register">Register</string>
     <string name="sign_in_via_webview">Sign in via WebView</string>
+    <string name="sign_in_via_cookie">Sign in via Cookie</string>
+    <string name="cookie_sign_in_dialog_title">Cookie Sign In</string>
+    <string name="cookie_sign_in_tip">Paste raw cookie string for auto parsing or enter fields manually. ipb_member_id and ipb_pass_hash are required; igneous is needed for ExHentai.</string>
+    <string name="cookie_paste_hint">Paste cookie string here to auto-extract...</string>
+    <string name="cookie_invalid">Invalid Cookie: ipb_member_id and ipb_pass_hash cannot be empty</string>
+    <string name="cookie_smart_paste">Smart parse clipboard</string>
+    <string name="action_shuffle">Shuffle</string>
+    <string name="action_last_page">Last page</string>
+    <string name="action_go_to">Go to</string>
+    <string name="more_actions">More Actions</string>
+    <string name="category_all">All</string>
     <string name="sign_in_first">Please sign in first</string>
     <string name="text_is_empty">Text is empty</string>
     <string name="waring">Warning</string>

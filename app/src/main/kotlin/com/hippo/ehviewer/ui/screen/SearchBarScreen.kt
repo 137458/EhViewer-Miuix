@@ -45,6 +45,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
@@ -120,6 +121,7 @@ fun SearchBarScreen(
     localSearch: Boolean = true,
     searchBarOffsetY: () -> Int = { 0 },
     trailingIcon: @Composable () -> Unit = {},
+    subHeader: @Composable (() -> Unit)? = null,
     filter: @Composable (() -> Unit)? = null,
     floatingActionButton: @Composable () -> Unit = {},
     content: @Composable (PaddingValues) -> Unit,
@@ -215,6 +217,8 @@ fun SearchBarScreen(
     }
 
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        val density = LocalDensity.current
+        val subHeaderHeight = if (subHeader != null) 40.dp else 0.dp
         Scaffold(
             topBar = {
                 Column {
@@ -222,7 +226,7 @@ fun SearchBarScreen(
                     Box(Modifier.windowInsetsTopHeight(WindowInsets.statusBars).fillMaxWidth().background(scrim))
 
                     // Placeholder, fill immutable SearchBar padding
-                    Spacer(modifier = Modifier.height(SearchBarDefaults.InputFieldMinHeight + 16.dp))
+                    Spacer(modifier = Modifier.height(SearchBarDefaults.InputFieldMinHeight + 16.dp + subHeaderHeight))
                 }
             },
             floatingActionButton = floatingActionButton,
@@ -358,6 +362,20 @@ fun SearchBarScreen(
                         }
                     }
                 }
+            }
+        }
+        if (!expanded && subHeader != null) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .offset {
+                        val inputFieldOffset = with(density) { (SearchBarDefaults.InputFieldMinHeight + 16.dp).roundToPx() }
+                        IntOffset(0, searchBarOffsetY() + inputFieldOffset)
+                    }
+                    .windowInsetsPadding(WindowInsets.statusBars)
+                    .fillMaxWidth(),
+            ) {
+                subHeader()
             }
         }
     }

@@ -10,14 +10,20 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBarsIgnoringVisibility
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import com.ehviewer.core.ui.util.LocalWindowSizeClass
+import com.ehviewer.core.ui.util.isExpanded
 import com.hippo.ehviewer.ui.main.NavigationIcon
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import top.yukonga.miuix.kmp.basic.SmallTopAppBar
@@ -54,21 +60,32 @@ fun BoxScope.ReaderAppBars(
 
     AnimatedVisibility(
         visible = visible,
-        modifier = Modifier.windowInsetsPadding(WindowInsets.systemBarsIgnoringVisibility.only(WindowInsetsSides.Horizontal)).align(Alignment.BottomStart),
+        modifier = Modifier
+            .windowInsetsPadding(WindowInsets.systemBarsIgnoringVisibility.only(WindowInsetsSides.Horizontal))
+            .align(Alignment.BottomCenter),
         enter = slideInVertically(initialOffsetY = { it }, animationSpec = animationSpec),
         exit = slideOutVertically(targetOffsetY = { it }, animationSpec = animationSpec),
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        val windowSizeClass = LocalWindowSizeClass.current
+        val horizontalPadding = if (windowSizeClass.isExpanded) 32.dp else 16.dp
+        Column(
+            modifier = Modifier
+                .navigationBarsPadding()
+                .padding(horizontal = horizontalPadding, vertical = 12.dp)
+                .widthIn(max = 600.dp)
+                .fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
             if (showSeekBar && totalPages > 1) {
                 ChapterNavigator(
                     isRtl = isRtl,
                     currentPage = currentPage,
                     totalPages = totalPages,
                     onSliderValueChange = onSliderValueChange,
-                    containerColor = backgroundColor,
                 )
             }
-            BottomReaderBar(onClickSettings = onClickSettings, containerColor = backgroundColor)
+            BottomReaderBar(onClickSettings = onClickSettings)
         }
     }
 }
