@@ -28,6 +28,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
@@ -35,14 +36,13 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.graphics.Color
 import com.ehviewer.core.database.model.Filter
 import com.ehviewer.core.database.model.FilterMode
 import com.ehviewer.core.i18n.R
 import com.ehviewer.core.ui.component.BlurredBar
+import com.ehviewer.core.ui.component.DropdownFilterChip
 import com.ehviewer.core.ui.component.blurBackdropSource
 import com.ehviewer.core.ui.component.rememberBlurBackdrop
-import com.ehviewer.core.ui.component.DropdownFilterChip
 import com.ehviewer.core.ui.util.Await
 import com.ehviewer.core.ui.util.thenIf
 import com.ehviewer.core.util.async

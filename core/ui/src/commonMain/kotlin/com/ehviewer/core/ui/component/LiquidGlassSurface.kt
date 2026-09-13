@@ -89,7 +89,9 @@ fun LiquidGlassSurface(
                             alpha = if (isDark) 0.25f else 0.1f,
                         ),
                     )
-                } else Modifier,
+                } else {
+                    Modifier
+                },
             )
             .clip(shape)
             .then(

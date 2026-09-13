@@ -148,6 +148,5 @@ fun HomeFloatingActionCapsule(
                 }
             }
         }
-        }
+    }
 }
-

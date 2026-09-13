@@ -44,9 +44,9 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 private val DefaultBlurRadius = 20.dp
 private val DefaultCornerRadius = 24.dp
-private const val DefaultRefractionRatio = 0.12f
-private const val DefaultChromaticAberration = 0.15f
-private const val PressedScale = 0.96f
+private const val DEFAULT_REFRACTION_RATIO = 0.12f
+private const val DEFAULT_CHROMATIC_ABERRATION = 0.15f
+private const val PRESSED_SCALE = 0.96f
 
 val LiquidGlassHighlightLight = Highlight(
     width = 1.dp,
@@ -90,8 +90,7 @@ val LiquidGlassHighlightDark = Highlight(
 
 val LocalBackdrop = compositionLocalOf<LayerBackdrop?> { null }
 
-fun Modifier.blurBackdropSource(backdrop: LayerBackdrop?): Modifier =
-    if (backdrop != null) this.layerBackdrop(backdrop) else this
+fun Modifier.blurBackdropSource(backdrop: LayerBackdrop?): Modifier = if (backdrop != null) this.layerBackdrop(backdrop) else this
 
 fun Modifier.backdropBlur(
     backdrop: Backdrop?,
@@ -160,8 +159,8 @@ fun LiquidGlass(
     modifier: Modifier = Modifier,
     cornerRadius: Dp = DefaultCornerRadius,
     blurRadius: Dp = DefaultBlurRadius,
-    refractionRatio: Float = DefaultRefractionRatio,
-    chromaticAberration: Float = DefaultChromaticAberration,
+    refractionRatio: Float = DEFAULT_REFRACTION_RATIO,
+    chromaticAberration: Float = DEFAULT_CHROMATIC_ABERRATION,
     enabled: Boolean = true,
     content: @Composable BoxScope.() -> Unit,
 ) {
@@ -178,7 +177,7 @@ fun LiquidGlass(
     val pressScale = remember { Animatable(1f) }
     LaunchedEffect(isPressed) {
         pressScale.animateTo(
-            targetValue = if (isPressed) PressedScale else 1f,
+            targetValue = if (isPressed) PRESSED_SCALE else 1f,
             animationSpec = spring(
                 dampingRatio = 0.7f,
                 stiffness = 400f,

@@ -543,7 +543,9 @@ fun AnimatedVisibilityScope.GalleryListScreen(
                     },
                 )
             }
-        } else null,
+        } else {
+            null
+        },
         filter = {
             SearchFilter(
                 category = category,
@@ -570,7 +572,9 @@ fun AnimatedVisibilityScope.GalleryListScreen(
                         urlBuilder.setRange(Random.nextInt(100))
                         data.refresh()
                     }
-                } else null,
+                } else {
+                    null
+                },
                 onGoTo = if (urlBuilder.mode != MODE_WHATS_HOT) {
                     {
                         launch {
@@ -588,7 +592,9 @@ fun AnimatedVisibilityScope.GalleryListScreen(
                             data.refresh()
                         }
                     }
-                } else null,
+                } else {
+                    null
+                },
                 onLastPage = if (urlBuilder.mode != MODE_WHATS_HOT) {
                     {
                         if (isTopList) {
@@ -598,7 +604,9 @@ fun AnimatedVisibilityScope.GalleryListScreen(
                         }
                         data.refresh()
                     }
-                } else null,
+                } else {
+                    null
+                },
             )
         },
     ) { contentPadding ->

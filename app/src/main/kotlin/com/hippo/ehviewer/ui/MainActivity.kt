@@ -80,12 +80,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -103,6 +107,8 @@ import com.ehviewer.core.ui.component.LabeledCheckbox
 import com.ehviewer.core.ui.component.LocalSideSheetState
 import com.ehviewer.core.ui.component.MutableSideSheet
 import com.ehviewer.core.ui.component.SquircleShape
+import com.ehviewer.core.ui.component.blurBackdropSource
+import com.ehviewer.core.ui.component.rememberBlurBackdrop
 import com.ehviewer.core.ui.component.rememberSideSheetState
 import com.ehviewer.core.ui.icons.EhIcons
 import com.ehviewer.core.ui.icons.filled.FormatListNumbered
@@ -173,8 +179,6 @@ import top.yukonga.miuix.kmp.basic.SnackbarHost
 import top.yukonga.miuix.kmp.basic.SnackbarHostState
 import top.yukonga.miuix.kmp.basic.SnackbarResult
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.blur.layerBackdrop
-import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Download
 import top.yukonga.miuix.kmp.icon.extended.Favorites
@@ -402,14 +406,14 @@ class MainActivity : AppCompatActivity() {
                     Triple(SettingsScreenDestination, R.string.settings, MiuixIcons.Settings),
                 )
             }
-            val isPrimaryDestination = navItems.any { it.first === currentDestination }
+            val isPrimaryDestination = navItems.any { it.first.route == currentDestination?.route }
             val primaryIndex = MainNavPolicy.getPrimaryBottomIndex(
                 currentDestination,
                 primaryNavItems.map { it.first },
             )
             var lastNavTime by remember { mutableStateOf(0L) }
             fun navigateToTab(direction: Direction) {
-                if (currentDestination === direction) {
+                if (currentDestination?.route == direction.route) {
                     return
                 }
                 val now = System.currentTimeMillis()
@@ -435,7 +439,7 @@ class MainActivity : AppCompatActivity() {
                 }
             }
 
-            val contentBackdrop = rememberLayerBackdrop()
+            val contentBackdrop = rememberBlurBackdrop()
             val bottomBarPadding = if (isPrimaryDestination && !isWideScreen) 80.dp else 0.dp
             val effectiveFabPadding = snackbarFabPadding.coerceAtLeast(bottomBarPadding)
 
@@ -462,13 +466,14 @@ class MainActivity : AppCompatActivity() {
                 ) { _ ->
                     @Composable
                     fun MainContent() {
+                        val hapticFeedback = LocalHapticFeedback.current
                         Box(
                             modifier = Modifier.fillMaxSize(),
                         ) {
                             Box(
                                 modifier = Modifier
                                     .fillMaxSize()
-                                    .layerBackdrop(contentBackdrop),
+                                    .blurBackdropSource(contentBackdrop),
                             ) {
                                 SharedTransitionLayout {
                                     CompositionLocalProvider(LocalSharedTransitionScope provides this) {
@@ -507,6 +512,7 @@ class MainActivity : AppCompatActivity() {
                                             modifier = Modifier.fillMaxWidth(),
                                             selectedIndex = { primaryIndex.coerceAtLeast(0) },
                                             onSelected = { index ->
+                                                hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
                                                 navigateToTab(primaryNavItems[index].first)
                                             },
                                             backdrop = contentBackdrop,
@@ -514,7 +520,13 @@ class MainActivity : AppCompatActivity() {
                                         ) {
                                             primaryNavItems.forEachIndexed { index, (_, stringId, icon) ->
                                                 FloatingBottomBarItem(
-                                                    onClick = { navigateToTab(primaryNavItems[index].first) },
+                                                    onClick = {
+                                                        hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                                                        navigateToTab(primaryNavItems[index].first)
+                                                    },
+                                                    modifier = Modifier.semantics {
+                                                        selected = primaryIndex == index
+                                                    },
                                                 ) {
                                                     Icon(
                                                         imageVector = icon,
@@ -557,7 +569,7 @@ class MainActivity : AppCompatActivity() {
                                 Spacer(modifier = Modifier.height(16.dp))
                                 navItems.forEach { (direction, stringId, icon) ->
                                     NavigationRailItem(
-                                        selected = currentDestination === direction,
+                                        selected = currentDestination?.route == direction.route,
                                         onClick = { navigateToTab(direction) },
                                         icon = icon,
                                         label = stringResource(id = stringId),

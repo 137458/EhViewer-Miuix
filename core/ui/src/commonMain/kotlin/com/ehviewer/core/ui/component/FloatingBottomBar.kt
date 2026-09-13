@@ -121,6 +121,9 @@ import top.yukonga.miuix.kmp.blur.sensor.rememberDeviceTilt
 import top.yukonga.miuix.kmp.theme.LocalContentColor as MiuixLocalContentColor
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
+private const val FLOATING_BAR_MIN_WIDTH_DP = 320
+private const val FLOATING_BAR_MAX_WIDTH_DP = 540
+
 val LocalFloatingBottomBarContentColor = staticCompositionLocalOf { Color.Unspecified }
 val LocalFloatingBottomBarTabScale = staticCompositionLocalOf { { 1f } }
 
@@ -426,7 +429,7 @@ fun FloatingBottomBar(
     val combinedBackdrop = backdrop?.let { rememberCombinedBackdrop(it, tabsBackdrop) }
 
     Box(
-        modifier = modifier,
+        modifier = modifier.width(IntrinsicSize.Min),
         contentAlignment = Alignment.CenterStart,
     ) {
         // ── 1. Base Layer（未选中状态底层外壳） ──
@@ -552,7 +555,6 @@ fun FloatingBottomBar(
                             backdrop = combinedBackdrop,
                             shape = { pillShape },
                             effects = {
-                                padding = maxOf(padding, 40.dp.toPx())
                                 val progress = dampedDragAnimation.pressProgress
                                 lens(
                                     refractionHeight = 10.dp.toPx() * progress,
@@ -572,16 +574,16 @@ fun FloatingBottomBar(
                             onDrawSurface = {
                                 val progress = dampedDragAnimation.pressProgress
                                 drawRect(
-                                    color = if (!isDark) Color.White.copy(alpha = 0.2f) else Color.White.copy(alpha = 0.12f),
+                                    color = if (!isDark) Color.Black.copy(alpha = 0.1f) else Color.White.copy(alpha = 0.1f),
                                     alpha = 1f - progress,
                                 )
-                                drawRect(Color.White.copy(alpha = 0.06f * progress))
+                                drawRect(Color.Black.copy(alpha = 0.03f * progress))
                             },
                         )
                         .innerShadow(shape = pillShape) {
                             InnerShadow(
                                 radius = 8.dp * dampedDragAnimation.pressProgress,
-                                color = if (isDark) Color.Black.copy(alpha = 0.2f) else Color.Black.copy(alpha = 0.08f),
+                                color = Color.Black.copy(alpha = 0.15f),
                                 alpha = dampedDragAnimation.pressProgress,
                             )
                         }
@@ -654,8 +656,8 @@ fun IosLiquidGlassNavigationBar(
         Box(
             modifier = Modifier
                 .widthIn(
-                    min = 280.dp,
-                    max = 540.dp,
+                    min = FLOATING_BAR_MIN_WIDTH_DP.dp,
+                    max = FLOATING_BAR_MAX_WIDTH_DP.dp,
                 )
                 .fillMaxWidth(),
             contentAlignment = Alignment.Center,

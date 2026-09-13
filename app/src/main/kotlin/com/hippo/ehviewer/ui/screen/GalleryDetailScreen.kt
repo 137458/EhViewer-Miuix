@@ -19,10 +19,6 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.util.fastJoinToString
-import com.ehviewer.core.ui.component.BlurredBar
-import com.ehviewer.core.ui.component.blurBackdropSource
-import com.ehviewer.core.ui.component.rememberBlurBackdrop
-import top.yukonga.miuix.kmp.theme.MiuixTheme
 import androidx.lifecycle.viewModelScope
 import com.ehviewer.core.data.model.findBaseInfo
 import com.ehviewer.core.database.model.DownloadInfo
@@ -32,6 +28,9 @@ import com.ehviewer.core.i18n.R
 import com.ehviewer.core.model.BaseGalleryInfo
 import com.ehviewer.core.model.GalleryDetail
 import com.ehviewer.core.model.GalleryInfo
+import com.ehviewer.core.ui.component.BlurredBar
+import com.ehviewer.core.ui.component.blurBackdropSource
+import com.ehviewer.core.ui.component.rememberBlurBackdrop
 import com.ehviewer.core.ui.util.LocalWindowSizeClass
 import com.ehviewer.core.ui.util.isExpanded
 import com.ehviewer.core.ui.util.launchInVM
@@ -83,6 +82,7 @@ import top.yukonga.miuix.kmp.icon.extended.Add
 import top.yukonga.miuix.kmp.icon.extended.More
 import top.yukonga.miuix.kmp.icon.extended.Refresh
 import top.yukonga.miuix.kmp.icon.extended.Share
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 typealias VoteTag = suspend GalleryDetail.(String, Int) -> Unit
 
@@ -189,125 +189,125 @@ fun AnimatedVisibilityScope.GalleryDetailScreen(args: GalleryDetailScreenArgs, n
                     scrollBehavior = scrollBehavior,
                     color = if (backdrop != null) Color.Transparent else MiuixTheme.colorScheme.surface,
                     actions = {
-                    IconButton(
-                        onClick = {
-                            AppHelper.share(contextOf<MainActivity>(), galleryDetailUrl)
-                            // In case the link is copied to the clipboard
-                            Settings.clipboardTextHashCode = galleryDetailUrl.hashCode()
-                        },
-                    ) {
-                        Icon(imageVector = MiuixIcons.Share, contentDescription = null)
-                    }
-                    if (windowSizeClass.isExpanded) {
                         IconButton(
                             onClick = {
-                                val detail = galleryInfo as? GalleryDetail ?: return@IconButton
-                                launchIO {
-                                    if (detail.apiUid < 0) {
-                                        snackbar(signInFirst)
-                                    } else {
-                                        val tags = awaitSelectTags()
-                                        if (tags.isNotEmpty()) {
-                                            val text = tags.fastJoinToString(",")
-                                            detail.voteTag(text, 1)
+                                AppHelper.share(contextOf<MainActivity>(), galleryDetailUrl)
+                                // In case the link is copied to the clipboard
+                                Settings.clipboardTextHashCode = galleryDetailUrl.hashCode()
+                            },
+                        ) {
+                            Icon(imageVector = MiuixIcons.Share, contentDescription = null)
+                        }
+                        if (windowSizeClass.isExpanded) {
+                            IconButton(
+                                onClick = {
+                                    val detail = galleryInfo as? GalleryDetail ?: return@IconButton
+                                    launchIO {
+                                        if (detail.apiUid < 0) {
+                                            snackbar(signInFirst)
+                                        } else {
+                                            val tags = awaitSelectTags()
+                                            if (tags.isNotEmpty()) {
+                                                val text = tags.fastJoinToString(",")
+                                                detail.voteTag(text, 1)
+                                            }
                                         }
                                     }
+                                },
+                            ) {
+                                Icon(imageVector = MiuixIcons.Add, contentDescription = null)
+                            }
+                            IconButton(
+                                onClick = {
+                                    // Invalidate cache
+                                    detailCache.remove(gid)
+
+                                    // Trigger recompose
+                                    galleryInfo = galleryInfo?.findBaseInfo()
+                                    getDetailError = ""
+                                },
+                            ) {
+                                Icon(imageVector = MiuixIcons.Refresh, contentDescription = null)
+                            }
+                        }
+                        IconButton(
+                            onClick = {
+                                launchIO {
+                                    awaitSelectAction {
+                                        if (!windowSizeClass.isExpanded) {
+                                            onSelect(addTag) {
+                                                val detail = galleryInfo as? GalleryDetail ?: return@onSelect
+                                                if (detail.apiUid < 0) {
+                                                    snackbar(signInFirst)
+                                                } else {
+                                                    val tags = awaitSelectTags()
+                                                    if (tags.isNotEmpty()) {
+                                                        val text = tags.fastJoinToString(",")
+                                                        detail.voteTag(text, 1)
+                                                    }
+                                                }
+                                            }
+                                            onSelect(refresh) {
+                                                detailCache.remove(gid)
+                                                galleryInfo = galleryInfo?.findBaseInfo()
+                                                getDetailError = ""
+                                            }
+                                        }
+                                        onSelect(clearCache) {
+                                            val gd = galleryInfo as? GalleryDetail ?: return@onSelect
+                                            awaitConfirmationOrCancel(
+                                                confirmText = R.string.clear_all,
+                                                title = R.string.clear_image_cache,
+                                            ) {
+                                                Text(text = stringResource(id = R.string.clear_image_cache_confirm))
+                                            }
+                                            SpiderDen(gd).clearCache()
+                                            snackbar(cacheCleared)
+                                        }
+                                        onSelect(openInBrowser) {
+                                            openBrowser(galleryDetailUrl)
+                                        }
+                                        onSelect(exportArchive) {
+                                            val downloadInfo = DownloadManager.getDownloadInfo(gid)
+                                            val canExport = downloadInfo?.state == DownloadInfo.STATE_FINISH
+                                            if (!canExport) {
+                                                awaitConfirmationOrCancel(
+                                                    showCancelButton = false,
+                                                    text = { Text(text = stringResource(id = R.string.download_gallery_first)) },
+                                                )
+                                            } else {
+                                                val info = galleryInfo ?: return@onSelect
+                                                val uri = awaitActivityResult(
+                                                    CreateDocument("application/vnd.comicbook+zip"),
+                                                    EhUtils.getSuitableTitle(info) + ".cbz",
+                                                )
+                                                val dirname = downloadInfo.dirname
+                                                if (uri != null && dirname != null) {
+                                                    val file = uri.toOkioPath()
+                                                    val msg = runCatching {
+                                                        bgWork {
+                                                            withIOContext {
+                                                                SpiderDen(info, dirname).exportAsCbz(file)
+                                                            }
+                                                        }
+                                                        exportSuccess
+                                                    }.getOrElse {
+                                                        logcat(it)
+                                                        file.delete()
+                                                        exportFailed
+                                                    }
+                                                    snackbar(message = msg)
+                                                }
+                                            }
+                                        }
+                                    }()
                                 }
                             },
                         ) {
-                            Icon(imageVector = MiuixIcons.Add, contentDescription = null)
+                            Icon(imageVector = MiuixIcons.More, contentDescription = null)
                         }
-                        IconButton(
-                            onClick = {
-                                // Invalidate cache
-                                detailCache.remove(gid)
-
-                                // Trigger recompose
-                                galleryInfo = galleryInfo?.findBaseInfo()
-                                getDetailError = ""
-                            },
-                        ) {
-                            Icon(imageVector = MiuixIcons.Refresh, contentDescription = null)
-                        }
-                    }
-                    IconButton(
-                        onClick = {
-                            launchIO {
-                                awaitSelectAction {
-                                    if (!windowSizeClass.isExpanded) {
-                                        onSelect(addTag) {
-                                            val detail = galleryInfo as? GalleryDetail ?: return@onSelect
-                                            if (detail.apiUid < 0) {
-                                                snackbar(signInFirst)
-                                            } else {
-                                                val tags = awaitSelectTags()
-                                                if (tags.isNotEmpty()) {
-                                                    val text = tags.fastJoinToString(",")
-                                                    detail.voteTag(text, 1)
-                                                }
-                                            }
-                                        }
-                                        onSelect(refresh) {
-                                            detailCache.remove(gid)
-                                            galleryInfo = galleryInfo?.findBaseInfo()
-                                            getDetailError = ""
-                                        }
-                                    }
-                                    onSelect(clearCache) {
-                                        val gd = galleryInfo as? GalleryDetail ?: return@onSelect
-                                        awaitConfirmationOrCancel(
-                                            confirmText = R.string.clear_all,
-                                            title = R.string.clear_image_cache,
-                                        ) {
-                                            Text(text = stringResource(id = R.string.clear_image_cache_confirm))
-                                        }
-                                        SpiderDen(gd).clearCache()
-                                        snackbar(cacheCleared)
-                                    }
-                                    onSelect(openInBrowser) {
-                                        openBrowser(galleryDetailUrl)
-                                    }
-                                    onSelect(exportArchive) {
-                                        val downloadInfo = DownloadManager.getDownloadInfo(gid)
-                                        val canExport = downloadInfo?.state == DownloadInfo.STATE_FINISH
-                                        if (!canExport) {
-                                            awaitConfirmationOrCancel(
-                                                showCancelButton = false,
-                                                text = { Text(text = stringResource(id = R.string.download_gallery_first)) },
-                                            )
-                                        } else {
-                                            val info = galleryInfo ?: return@onSelect
-                                            val uri = awaitActivityResult(
-                                                CreateDocument("application/vnd.comicbook+zip"),
-                                                EhUtils.getSuitableTitle(info) + ".cbz",
-                                            )
-                                            val dirname = downloadInfo.dirname
-                                            if (uri != null && dirname != null) {
-                                                val file = uri.toOkioPath()
-                                                val msg = runCatching {
-                                                    bgWork {
-                                                        withIOContext {
-                                                            SpiderDen(info, dirname).exportAsCbz(file)
-                                                        }
-                                                    }
-                                                    exportSuccess
-                                                }.getOrElse {
-                                                    logcat(it)
-                                                    file.delete()
-                                                    exportFailed
-                                                }
-                                                snackbar(message = msg)
-                                            }
-                                        }
-                                    }
-                                }()
-                            }
-                        },
-                    ) {
-                        Icon(imageVector = MiuixIcons.More, contentDescription = null)
-                    }
-                },
-            )
+                    },
+                )
             }
         },
     ) { contentPadding ->

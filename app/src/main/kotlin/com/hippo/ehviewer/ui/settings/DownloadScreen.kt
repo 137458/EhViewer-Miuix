@@ -32,8 +32,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.ehviewer.core.ui.component.blurBackdropSource
-import com.ehviewer.core.ui.component.rememberBlurBackdrop
 import arrow.fx.coroutines.parMap
 import arrow.fx.coroutines.parMapNotNull
 import com.ehviewer.core.database.model.DownloadInfo
@@ -49,6 +47,8 @@ import com.ehviewer.core.i18n.R
 import com.ehviewer.core.model.BaseGalleryInfo
 import com.ehviewer.core.model.GalleryInfo
 import com.ehviewer.core.ui.component.BlurredBar
+import com.ehviewer.core.ui.component.blurBackdropSource
+import com.ehviewer.core.ui.component.rememberBlurBackdrop
 import com.ehviewer.core.util.isAtLeastQ
 import com.ehviewer.core.util.launch
 import com.ehviewer.core.util.launchIO

@@ -48,8 +48,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
-import com.ehviewer.core.ui.component.blurBackdropSource
-import com.ehviewer.core.ui.component.rememberBlurBackdrop
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -75,6 +73,8 @@ import com.ehviewer.core.i18n.R
 import com.ehviewer.core.model.GalleryComment
 import com.ehviewer.core.model.GalleryDetail
 import com.ehviewer.core.ui.component.BlurredBar
+import com.ehviewer.core.ui.component.blurBackdropSource
+import com.ehviewer.core.ui.component.rememberBlurBackdrop
 import com.ehviewer.core.ui.util.animateFloatMergePredictiveBackAsState
 import com.ehviewer.core.ui.util.snackBarPadding
 import com.ehviewer.core.ui.util.thenIf

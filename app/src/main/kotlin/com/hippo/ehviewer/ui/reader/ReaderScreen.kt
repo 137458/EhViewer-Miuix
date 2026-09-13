@@ -32,9 +32,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
-import com.ehviewer.core.ui.component.LocalBackdrop
-import com.ehviewer.core.ui.component.blurBackdropSource
-import com.ehviewer.core.ui.component.rememberBlurBackdrop
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -50,6 +47,9 @@ import arrow.core.raise.ensure
 import arrow.core.right
 import com.ehviewer.core.i18n.R
 import com.ehviewer.core.model.BaseGalleryInfo
+import com.ehviewer.core.ui.component.LocalBackdrop
+import com.ehviewer.core.ui.component.blurBackdropSource
+import com.ehviewer.core.ui.component.rememberBlurBackdrop
 import com.ehviewer.core.ui.util.Await
 import com.ehviewer.core.ui.util.asyncInVM
 import com.ehviewer.core.ui.util.rememberSystemUiController
@@ -229,144 +229,144 @@ fun ReaderScreen(pageLoader: PageLoader, info: BaseGalleryInfo?) {
                 moveNext = { launch { if (isWebtoon) lazyListState.scrollDown() else pagerState.moveToNext() } },
             ).focusRequester(focusRequester).focusable().thenIf(keepScreenOn) { keepScreenOn() },
         ) {
-        LaunchedEffect(Unit) {
-            focusRequester.requestFocus()
-        }
-        syncState.Sync(isWebtoon) { appbarVisible = false }
-        val readerBackground by collectReaderBackgroundAsState()
-        val isDarkTheme = isSystemInDarkTheme()
-        LaunchedEffect(isDarkTheme) {
-            snapshotFlow { appbarVisible }.collect {
-                uiController.isSystemBarsVisible = it || !fullscreen
-                uiController.statusBarDarkContentEnabled = if (it) !isDarkTheme else readerBackground.isLight
-            }
-        }
-        var showNavigationOverlay by remember {
-            val showOnStart = Settings.showNavigationOverlayNewUser.value || Settings.showNavigationOverlayOnStart.value
-            Settings.showNavigationOverlayNewUser.value = false
-            mutableStateOf(showOnStart)
-        }
-        val onSelectPage = { page: Page ->
-            if (Settings.readerLongTapAction.value) {
-                launch {
-                    val blocked = page.status is PageStatus.Blocked
-                    dialog { cont ->
-                        fun dispose() = cont.resume(Unit)
-                        WindowBottomSheet(
-                            show = true,
-                            onDismissRequest = { dispose() },
-                        ) {
-                            ReaderPageSheetMeta(
-                                retry = { pageLoader.retryPage(page.index) },
-                                retryOrigin = { pageLoader.retryPage(page.index, true) },
-                                share = { launchIO { with(pageLoader) { shareImage(page, info) } } },
-                                copy = { launchIO { with(pageLoader) { copy(page) } } },
-                                save = { launchIO { with(pageLoader) { save(page) } } },
-                                saveTo = { launchIO { with(pageLoader) { saveTo(page) } } },
-                                showAds = { page.unblock() }.takeIf { blocked },
-                                dismiss = { dispose() },
-                            )
-                        }
-                    }
-                }
-            }
-        }
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .blurBackdropSource(readerBackdrop),
-        ) {
-            EhTheme(useDarkTheme = !readerBackground.isLight) {
-                val insets = if (fullscreen) {
-                    if (cutoutShort) {
-                        WindowInsets()
-                    } else {
-                        WindowInsets.displayCutout
-                    }
-                } else {
-                    WindowInsets.systemBars
-                }
-                GalleryPager(
-                    type = readingMode,
-                    pagerState = pagerState,
-                    lazyListState = lazyListState,
-                    pageLoader = pageLoader,
-                    showNavigationOverlay = showNavigationOverlay,
-                    onNavigationModeChange = { showNavigationOverlay = true },
-                    onSelectPage = onSelectPage,
-                    onMenuRegionClick = { appbarVisible = !appbarVisible },
-                    modifier = Modifier.background(readerBackground.color).pointerInput(syncState) {
-                        awaitEachGesture {
-                            waitForUpOrCancellation()
-                            syncState.reset()
-                            showNavigationOverlay = false
-                        }
-                    }.fillMaxSize().windowInsetsPadding(insets),
-                )
-            }
-        }
-        val brightness by Settings.customBrightness.collectAsState()
-        val brightnessValue by Settings.customBrightnessValue.collectAsState()
-        val colorOverlayEnabled by Settings.colorFilter.collectAsState()
-        val colorOverlay by Settings.colorFilterValue.collectAsState()
-        val colorOverlayMode by Settings.colorFilterMode.collectAsState {
-            when (it) {
-                0 -> BlendMode.SrcOver
-                1 -> BlendMode.Multiply
-                2 -> BlendMode.Screen
-                3 -> BlendMode.Overlay
-                4 -> BlendMode.Lighten
-                5 -> BlendMode.Darken
-                else -> unreachable()
-            }
-        }
-        ReaderContentOverlay(
-            brightness = { brightnessValue }.takeIf { brightness && brightnessValue < 0 },
-            color = { colorOverlay }.takeIf { colorOverlayEnabled },
-            colorBlendMode = colorOverlayMode,
-        )
-        if (brightness) {
             LaunchedEffect(Unit) {
-                Settings.customBrightnessValue.valueFlow().sample(100)
-                    .onCompletion { activity.setCustomBrightnessValue(0) }
-                    .collect { activity.setCustomBrightnessValue(it) }
+                focusRequester.requestFocus()
             }
-        }
-        val showPageNumber by Settings.showPageNumber.collectAsState()
-        if (showPageNumber && !appbarVisible) {
-            PageIndicatorText(
-                currentPage = syncState.sliderValue,
-                totalPages = pageLoader.size,
-                modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding(),
-            )
-        }
-        ReaderAppBars(
-            visible = appbarVisible,
-            title = pageLoader.title,
-            isRtl = readingMode == ReadingModeType.RIGHT_TO_LEFT,
-            showSeekBar = showSeekbar,
-            currentPage = syncState.sliderValue,
-            totalPages = pageLoader.size,
-            onSliderValueChange = syncState::sliderScrollTo,
-            onClickSettings = {
-                launch {
-                    dialog { cont ->
-                        fun dispose() = cont.resume(Unit)
-                        var isColorFilter by remember { mutableStateOf(false) }
-                        WindowBottomSheet(
-                            show = true,
-                            onDismissRequest = { dispose() },
-                            enableWindowDim = !isColorFilter,
-                        ) {
-                            SettingsPager(isWebtoon = isWebtoon, modifier = Modifier.fillMaxSize()) { page ->
-                                isColorFilter = page == 2
-                                appbarVisible = !isColorFilter
+            syncState.Sync(isWebtoon) { appbarVisible = false }
+            val readerBackground by collectReaderBackgroundAsState()
+            val isDarkTheme = isSystemInDarkTheme()
+            LaunchedEffect(isDarkTheme) {
+                snapshotFlow { appbarVisible }.collect {
+                    uiController.isSystemBarsVisible = it || !fullscreen
+                    uiController.statusBarDarkContentEnabled = if (it) !isDarkTheme else readerBackground.isLight
+                }
+            }
+            var showNavigationOverlay by remember {
+                val showOnStart = Settings.showNavigationOverlayNewUser.value || Settings.showNavigationOverlayOnStart.value
+                Settings.showNavigationOverlayNewUser.value = false
+                mutableStateOf(showOnStart)
+            }
+            val onSelectPage = { page: Page ->
+                if (Settings.readerLongTapAction.value) {
+                    launch {
+                        val blocked = page.status is PageStatus.Blocked
+                        dialog { cont ->
+                            fun dispose() = cont.resume(Unit)
+                            WindowBottomSheet(
+                                show = true,
+                                onDismissRequest = { dispose() },
+                            ) {
+                                ReaderPageSheetMeta(
+                                    retry = { pageLoader.retryPage(page.index) },
+                                    retryOrigin = { pageLoader.retryPage(page.index, true) },
+                                    share = { launchIO { with(pageLoader) { shareImage(page, info) } } },
+                                    copy = { launchIO { with(pageLoader) { copy(page) } } },
+                                    save = { launchIO { with(pageLoader) { save(page) } } },
+                                    saveTo = { launchIO { with(pageLoader) { saveTo(page) } } },
+                                    showAds = { page.unblock() }.takeIf { blocked },
+                                    dismiss = { dispose() },
+                                )
                             }
                         }
                     }
                 }
-            },
-        )
+            }
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .blurBackdropSource(readerBackdrop),
+            ) {
+                EhTheme(useDarkTheme = !readerBackground.isLight) {
+                    val insets = if (fullscreen) {
+                        if (cutoutShort) {
+                            WindowInsets()
+                        } else {
+                            WindowInsets.displayCutout
+                        }
+                    } else {
+                        WindowInsets.systemBars
+                    }
+                    GalleryPager(
+                        type = readingMode,
+                        pagerState = pagerState,
+                        lazyListState = lazyListState,
+                        pageLoader = pageLoader,
+                        showNavigationOverlay = showNavigationOverlay,
+                        onNavigationModeChange = { showNavigationOverlay = true },
+                        onSelectPage = onSelectPage,
+                        onMenuRegionClick = { appbarVisible = !appbarVisible },
+                        modifier = Modifier.background(readerBackground.color).pointerInput(syncState) {
+                            awaitEachGesture {
+                                waitForUpOrCancellation()
+                                syncState.reset()
+                                showNavigationOverlay = false
+                            }
+                        }.fillMaxSize().windowInsetsPadding(insets),
+                    )
+                }
+            }
+            val brightness by Settings.customBrightness.collectAsState()
+            val brightnessValue by Settings.customBrightnessValue.collectAsState()
+            val colorOverlayEnabled by Settings.colorFilter.collectAsState()
+            val colorOverlay by Settings.colorFilterValue.collectAsState()
+            val colorOverlayMode by Settings.colorFilterMode.collectAsState {
+                when (it) {
+                    0 -> BlendMode.SrcOver
+                    1 -> BlendMode.Multiply
+                    2 -> BlendMode.Screen
+                    3 -> BlendMode.Overlay
+                    4 -> BlendMode.Lighten
+                    5 -> BlendMode.Darken
+                    else -> unreachable()
+                }
+            }
+            ReaderContentOverlay(
+                brightness = { brightnessValue }.takeIf { brightness && brightnessValue < 0 },
+                color = { colorOverlay }.takeIf { colorOverlayEnabled },
+                colorBlendMode = colorOverlayMode,
+            )
+            if (brightness) {
+                LaunchedEffect(Unit) {
+                    Settings.customBrightnessValue.valueFlow().sample(100)
+                        .onCompletion { activity.setCustomBrightnessValue(0) }
+                        .collect { activity.setCustomBrightnessValue(it) }
+                }
+            }
+            val showPageNumber by Settings.showPageNumber.collectAsState()
+            if (showPageNumber && !appbarVisible) {
+                PageIndicatorText(
+                    currentPage = syncState.sliderValue,
+                    totalPages = pageLoader.size,
+                    modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding(),
+                )
+            }
+            ReaderAppBars(
+                visible = appbarVisible,
+                title = pageLoader.title,
+                isRtl = readingMode == ReadingModeType.RIGHT_TO_LEFT,
+                showSeekBar = showSeekbar,
+                currentPage = syncState.sliderValue,
+                totalPages = pageLoader.size,
+                onSliderValueChange = syncState::sliderScrollTo,
+                onClickSettings = {
+                    launch {
+                        dialog { cont ->
+                            fun dispose() = cont.resume(Unit)
+                            var isColorFilter by remember { mutableStateOf(false) }
+                            WindowBottomSheet(
+                                show = true,
+                                onDismissRequest = { dispose() },
+                                enableWindowDim = !isColorFilter,
+                            ) {
+                                SettingsPager(isWebtoon = isWebtoon, modifier = Modifier.fillMaxSize()) { page ->
+                                    isColorFilter = page == 2
+                                    appbarVisible = !isColorFilter
+                                }
+                            }
+                        }
+                    }
+                },
+            )
         }
     }
 }
