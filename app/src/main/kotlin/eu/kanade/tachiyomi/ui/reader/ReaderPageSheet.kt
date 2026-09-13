@@ -27,6 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.ehviewer.core.i18n.R
 import moe.tarsin.kt.andThen
@@ -44,7 +45,11 @@ fun ReaderPageSheetMeta(
 ) {
     @Composable
     fun Item(icon: ImageVector, @StringRes text: Int, onClick: () -> Unit) = Row(
-        modifier = Modifier.fillMaxWidth().height(56.dp).clickable(onClick = onClick andThen dismiss).padding(horizontal = 16.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(56.dp)
+            .clickable(role = Role.Button, onClick = onClick andThen dismiss)
+            .padding(horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(imageVector = icon, contentDescription = null, tint = MiuixTheme.colorScheme.onSurface)

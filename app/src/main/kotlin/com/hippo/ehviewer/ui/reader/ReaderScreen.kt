@@ -108,20 +108,20 @@ sealed interface ReaderScreenArgs {
 
 @Composable
 private fun Background(
-    color: Color,
+    readerBackground: ReaderBackground,
     content: @Composable () -> Unit,
-) = Box(Modifier.fillMaxSize().background(color), contentAlignment = Alignment.Center) {
-    EhTheme(useDarkTheme = color != Color.White, content = content)
+) = Box(Modifier.fillMaxSize().background(readerBackground.color), contentAlignment = Alignment.Center) {
+    EhTheme(useDarkTheme = !readerBackground.isLight, content = content)
 }
 
 @Destination<RootGraph>
 @Composable
 fun AnimatedVisibilityScope.ReaderScreen(args: ReaderScreenArgs, navigator: DestinationsNavigator) = Screen(navigator) {
-    val bgColor by collectBackgroundColorAsState()
+    val readerBackground by collectReaderBackgroundAsState()
     val uiController = rememberSystemUiController()
     DisposableEffect(uiController) {
         val lightStatusBar = uiController.statusBarDarkContentEnabled
-        uiController.statusBarDarkContentEnabled = bgColor == Color.White
+        uiController.statusBarDarkContentEnabled = readerBackground.isLight
         onDispose {
             uiController.statusBarDarkContentEnabled = lightStatusBar
         }
@@ -145,13 +145,13 @@ fun AnimatedVisibilityScope.ReaderScreen(args: ReaderScreenArgs, navigator: Dest
             { await() }
         },
         placeholder = {
-            Background(bgColor) {
+            Background(readerBackground) {
                 InfiniteProgressIndicator()
             }
         },
     ) { result ->
         when (result) {
-            is Either.Left -> Background(bgColor) {
+            is Either.Left -> Background(readerBackground) {
                 Text(
                     text = result.value.displayString(),
                     color = MiuixTheme.colorScheme.error,
@@ -227,12 +227,12 @@ fun ReaderScreen(pageLoader: PageLoader, info: BaseGalleryInfo?) {
             focusRequester.requestFocus()
         }
         syncState.Sync(isWebtoon) { appbarVisible = false }
-        val bgColor by collectBackgroundColorAsState()
+        val readerBackground by collectReaderBackgroundAsState()
         val isDarkTheme = isSystemInDarkTheme()
         LaunchedEffect(isDarkTheme) {
             snapshotFlow { appbarVisible }.collect {
                 uiController.isSystemBarsVisible = it || !fullscreen
-                uiController.statusBarDarkContentEnabled = if (it) !isDarkTheme else bgColor == Color.White
+                uiController.statusBarDarkContentEnabled = if (it) !isDarkTheme else readerBackground.isLight
             }
         }
         var showNavigationOverlay by remember {
@@ -265,7 +265,7 @@ fun ReaderScreen(pageLoader: PageLoader, info: BaseGalleryInfo?) {
                 }
             }
         }
-        EhTheme(useDarkTheme = bgColor != Color.White) {
+        EhTheme(useDarkTheme = !readerBackground.isLight) {
             val insets = if (fullscreen) {
                 if (cutoutShort) {
                     WindowInsets()
@@ -284,7 +284,7 @@ fun ReaderScreen(pageLoader: PageLoader, info: BaseGalleryInfo?) {
                 onNavigationModeChange = { showNavigationOverlay = true },
                 onSelectPage = onSelectPage,
                 onMenuRegionClick = { appbarVisible = !appbarVisible },
-                modifier = Modifier.background(bgColor).pointerInput(syncState) {
+                modifier = Modifier.background(readerBackground.color).pointerInput(syncState) {
                     awaitEachGesture {
                         waitForUpOrCancellation()
                         syncState.reset()
@@ -386,16 +386,25 @@ suspend inline fun <T> usePageLoader(args: ReaderScreenArgs, crossinline block: 
     )
 }
 
+/**
+ * Reader surface colour plus its light/dark classification.
+ *
+ * The light/dark decision drives [EhTheme] and the status-bar icon colour, so it is carried
+ * explicitly rather than inferred from the colour value: comparing the background against
+ * [Color.White] would silently mis-classify any future off-white reader theme.
+ */
+private data class ReaderBackground(val color: Color, val isLight: Boolean)
+
 @Composable
-private fun collectBackgroundColorAsState(): State<Color> {
+private fun collectReaderBackgroundAsState(): State<ReaderBackground> {
     val grey = colorResource(com.hippo.ehviewer.R.color.reader_background_dark)
     val dark = isSystemInDarkTheme()
     return Settings.readerTheme.collectAsState { theme ->
         when (theme) {
-            0 -> Color.White
-            2 -> grey
-            3 -> if (dark) grey else Color.White
-            else -> Color.Black
+            0 -> ReaderBackground(Color.White, isLight = true)
+            2 -> ReaderBackground(grey, isLight = false)
+            3 -> if (dark) ReaderBackground(grey, isLight = false) else ReaderBackground(Color.White, isLight = true)
+            else -> ReaderBackground(Color.Black, isLight = false)
         }
     }
 }

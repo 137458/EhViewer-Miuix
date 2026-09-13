@@ -31,6 +31,7 @@ import androidx.compose.foundation.text.input.clearText
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.foundation.verticalScroll
+import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.ButtonDefaults as MiuixButtonDefaults
 import top.yukonga.miuix.kmp.basic.Checkbox as MiuixCheckbox
 import top.yukonga.miuix.kmp.basic.Icon as MiuixIcon
@@ -73,6 +74,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -657,16 +659,14 @@ suspend fun awaitSingleChoice(
             )
         }
         items.forEachIndexed { index, text ->
-            Row(
-                modifier = Modifier
-                    .clip(SquircleShape(8.dp))
-                    .clickable { resume(index) }
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
+            BasicComponent(
+                startAction = {
+                    MiuixRadioButton(selected = index == selected, onClick = null)
+                },
+                onClick = { resume(index) },
+                role = Role.RadioButton,
+                holdDownState = index == selected,
             ) {
-                MiuixRadioButton(selected = index == selected, onClick = { resume(index) })
-                Spacer(Modifier.width(12.dp))
                 MiuixText(text = text, style = MiuixTheme.textStyles.body1)
             }
         }
@@ -698,11 +698,17 @@ suspend fun awaitSelectItem(
         }
         FastScrollLazyColumn {
             itemsIndexed(items) { index, text ->
-                CheckableItem(
-                    text = text,
-                    checked = index == selected,
-                    modifier = Modifier.fillMaxWidth().clickable { resume(index) },
-                )
+                BasicComponent(
+                    onClick = { resume(index) },
+                    role = Role.RadioButton,
+                    holdDownState = index == selected,
+                ) {
+                    CheckableItem(
+                        text = text,
+                        checked = index == selected,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
             }
         }
     }
@@ -736,11 +742,17 @@ suspend fun awaitSelectItemWithCheckBox(
         )
         FastScrollLazyColumn {
             itemsIndexed(items) { index, text ->
-                CheckableItem(
-                    text = text,
-                    checked = index == selected,
-                    modifier = Modifier.fillMaxWidth().clickable { resume(index to checked) },
-                )
+                BasicComponent(
+                    onClick = { resume(index to checked) },
+                    role = Role.RadioButton,
+                    holdDownState = index == selected,
+                ) {
+                    CheckableItem(
+                        text = text,
+                        checked = index == selected,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
             }
         }
         Spacer(Modifier.height(8.dp))
@@ -767,20 +779,18 @@ suspend fun awaitSelectItemWithIcon(
             )
         }
         itemsIndexed(items) { index, (icon, text) ->
-            Row(
-                modifier = Modifier
-                    .clip(SquircleShape(8.dp))
-                    .clickable { resume(index) }
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
+            BasicComponent(
+                startAction = {
+                    MiuixIcon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = MiuixTheme.colorScheme.onSurface,
+                    )
+                },
+                onClick = { resume(index) },
+                role = Role.Button,
+                holdDownState = false,
             ) {
-                MiuixIcon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = MiuixTheme.colorScheme.onSurface,
-                )
-                Spacer(Modifier.width(16.dp))
                 MiuixText(
                     text = stringResource(id = text),
                     style = MiuixTheme.textStyles.body1,
@@ -823,7 +833,10 @@ suspend fun awaitSelectItemWithIconAndTextField(
             )
             items.forEachIndexed { index, (icon, text) ->
                 Column(
-                    modifier = Modifier.clip(IconWithTextCorner).clickable { resume(index to note.text.toString()) }.fillMaxWidth(0.2F),
+                    modifier = Modifier
+                        .clip(IconWithTextCorner)
+                        .clickable(role = Role.Button) { resume(index to note.text.toString()) }
+                        .fillMaxWidth(0.2F),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     MiuixIcon(imageVector = icon, contentDescription = null, tint = MiuixTheme.colorScheme.onSurface)
@@ -845,9 +858,7 @@ private fun CheckableItem(text: String, checked: Boolean, modifier: Modifier = M
     val textStyle = MiuixTheme.textStyles.body1
     val checkedColor = MiuixTheme.colorScheme.primary
     Row(
-        modifier = modifier
-            .clip(SquircleShape(8.dp))
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+        modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
     ) {
         MiuixText(

@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.text.parseAsHtml
@@ -56,7 +57,7 @@ fun GalleryCommentCard(
             val userText = if (uploader) stringResource(id = R.string.comment_user_uploader, user.orEmpty()) else user.orEmpty()
             Text(
                 text = userText,
-                modifier = Modifier.clickable(onClick = onUserClick),
+                modifier = Modifier.clickable(role = Role.Button, onClick = onUserClick),
                 style = MiuixTheme.textStyles.body2,
                 color = if (uploader) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurface,
             )

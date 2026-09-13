@@ -22,6 +22,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.ehviewer.core.i18n.R
@@ -35,6 +36,7 @@ import com.ehviewer.core.ui.util.detailThumbGenerator
 import com.hippo.ehviewer.client.EhUtils
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Blocklist
@@ -157,14 +159,20 @@ fun GalleryDetailHeaderCard(
                     .padding(horizontal = 10.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Icon(
-                    imageVector = MiuixIcons.Blocklist,
-                    contentDescription = null,
-                    modifier = Modifier
-                        .size(16.dp)
-                        .clickable(onClick = onBlockUploaderIconClick),
-                    tint = MiuixTheme.colorScheme.onSurfaceSecondary,
-                )
+                IconButton(
+                    onClick = onBlockUploaderIconClick,
+                    modifier = Modifier.size(24.dp),
+                    cornerRadius = 12.dp,
+                    minHeight = 24.dp,
+                    minWidth = 24.dp,
+                ) {
+                    Icon(
+                        imageVector = MiuixIcons.Blocklist,
+                        contentDescription = stringResource(id = R.string.block_uploader),
+                        modifier = Modifier.size(16.dp),
+                        tint = MiuixTheme.colorScheme.onSurfaceSecondary,
+                    )
+                }
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
                     text = uploaderText,
@@ -187,8 +195,8 @@ fun GalleryDetailErrorTip(error: String, onClick: () -> Unit) = Column(
 ) {
     Icon(
         imageVector = EhIcons.Big.Default.SadAndroid,
-        contentDescription = null,
-        modifier = Modifier.clickable(onClick = onClick),
+        contentDescription = stringResource(id = R.string.action_retry),
+        modifier = Modifier.clickable(role = Role.Button, onClick = onClick),
         tint = MiuixTheme.colorScheme.onSurface,
     )
     Spacer(modifier = Modifier.size(8.dp))

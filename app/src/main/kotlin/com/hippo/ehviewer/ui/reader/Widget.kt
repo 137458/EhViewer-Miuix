@@ -1,9 +1,7 @@
 package com.hippo.ehviewer.ui.reader
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
@@ -16,10 +14,8 @@ import androidx.compose.ui.unit.dp
 import com.ehviewer.core.ui.component.Slider
 import top.yukonga.miuix.kmp.basic.DropdownEntry
 import top.yukonga.miuix.kmp.basic.DropdownItem
-import top.yukonga.miuix.kmp.basic.Switch
-import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.preference.WindowDropdownPreference
-import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 fun SpinnerChoice(title: String, entries: Array<String>, values: List<Int>, field: MutableState<Int>) {
@@ -44,17 +40,11 @@ fun SpinnerChoice(title: String, entries: Array<String>, values: List<Int>, fiel
 
 @Composable
 fun SwitchChoice(title: String, field: MutableState<Boolean>) {
-    var value by field
-    Row(
-        modifier = Modifier.fillMaxWidth().height(48.dp).clickable { value = !value }.padding(horizontal = 16.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(text = title, modifier = Modifier.weight(1f), color = MiuixTheme.colorScheme.onSurfaceVariantSummary)
-        Switch(
-            checked = value,
-            onCheckedChange = { value = !value },
-        )
-    }
+    SwitchPreference(
+        checked = field.value,
+        onCheckedChange = { field.value = it },
+        title = title,
+    )
 }
 
 @Composable

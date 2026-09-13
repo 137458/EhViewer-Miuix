@@ -43,6 +43,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.ehviewer.core.database.model.Filter
@@ -248,7 +249,7 @@ fun AnimatedVisibilityScope.FilterScreen(navigator: DestinationsNavigator) = Scr
                                         Row(
                                             modifier = Modifier
                                                 .fillMaxWidth()
-                                                .clickable { filter.trigger { filterCheckBoxRecomposeScope.invalidate() } }
+                                                .clickable(role = Role.Checkbox) { filter.trigger { filterCheckBoxRecomposeScope.invalidate() } }
                                                 .padding(horizontal = 16.dp, vertical = 12.dp),
                                             verticalAlignment = Alignment.CenterVertically,
                                         ) {

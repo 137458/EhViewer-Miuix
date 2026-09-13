@@ -83,6 +83,7 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import arrow.core.partially1
@@ -337,10 +338,10 @@ fun AnimatedVisibilityScope.DownloadsScreen(navigator: DestinationsNavigator) = 
                         .padding(horizontal = 4.dp, vertical = 2.dp)
                         .clip(SquircleShape(8.dp))
                         .background(
-                            if (selected) MiuixTheme.colorScheme.primary.copy(alpha = 0.15f)
+                            if (selected) MiuixTheme.colorScheme.primaryContainer
                             else Color.Transparent,
                         )
-                        .clickable {
+                        .clickable(role = Role.RadioButton) {
                             switchLabel("")
                             closeSheet()
                         }
@@ -349,7 +350,7 @@ fun AnimatedVisibilityScope.DownloadsScreen(navigator: DestinationsNavigator) = 
                 ) {
                     Text(
                         text = "$allName [$totalCount]",
-                        color = if (selected) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurface,
+                        color = if (selected) MiuixTheme.colorScheme.onPrimaryContainer else MiuixTheme.colorScheme.onSurface,
                         style = MiuixTheme.textStyles.body1,
                     )
                 }
@@ -362,10 +363,10 @@ fun AnimatedVisibilityScope.DownloadsScreen(navigator: DestinationsNavigator) = 
                         .padding(horizontal = 4.dp, vertical = 2.dp)
                         .clip(SquircleShape(8.dp))
                         .background(
-                            if (selected) MiuixTheme.colorScheme.primary.copy(alpha = 0.15f)
+                            if (selected) MiuixTheme.colorScheme.primaryContainer
                             else Color.Transparent,
                         )
-                        .clickable {
+                        .clickable(role = Role.RadioButton) {
                             switchLabel(null)
                             closeSheet()
                         }
@@ -374,7 +375,7 @@ fun AnimatedVisibilityScope.DownloadsScreen(navigator: DestinationsNavigator) = 
                 ) {
                     Text(
                         text = "$emptyLabelName [${downloadsCount.getOrDefault(null, 0)}]",
-                        color = if (selected) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurface,
+                        color = if (selected) MiuixTheme.colorScheme.onPrimaryContainer else MiuixTheme.colorScheme.onSurface,
                         style = MiuixTheme.textStyles.body1,
                     )
                 }
@@ -394,7 +395,20 @@ fun AnimatedVisibilityScope.DownloadsScreen(navigator: DestinationsNavigator) = 
                     val dismissState = remember { SwipeToDismissBoxState(SwipeToDismissBoxValue.Settled, positionalThreshold) }
                     SwipeToDismissBox(
                         state = dismissState,
-                        backgroundContent = {},
+                        backgroundContent = {
+                            Row(
+                                modifier = Modifier.fillMaxSize(),
+                                horizontalArrangement = Arrangement.End,
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Icon(
+                                    imageVector = MiuixIcons.Delete,
+                                    contentDescription = stringResource(id = R.string.delete),
+                                    tint = MiuixTheme.colorScheme.error,
+                                    modifier = Modifier.padding(end = 20.dp),
+                                )
+                            }
+                        },
                         enableDismissFromStartToEnd = false,
                         gesturesEnabled = editEnable,
                         onDismiss = {
@@ -421,11 +435,11 @@ fun AnimatedVisibilityScope.DownloadsScreen(navigator: DestinationsNavigator) = 
                                 .padding(horizontal = 4.dp, vertical = 2.dp)
                                 .clip(SquircleShape(8.dp))
                                 .background(
-                                    if (selected) MiuixTheme.colorScheme.primary.copy(alpha = 0.15f)
+                                    if (selected) MiuixTheme.colorScheme.primaryContainer
                                     else if (isDragging) MiuixTheme.colorScheme.surfaceContainer
                                     else Color.Transparent,
                                 )
-                                .clickable {
+                                .clickable(role = Role.RadioButton) {
                                     switchLabel(item)
                                     closeSheet()
                                 }
@@ -434,7 +448,7 @@ fun AnimatedVisibilityScope.DownloadsScreen(navigator: DestinationsNavigator) = 
                         ) {
                             Text(
                                 text = "$name [${downloadsCount.getOrDefault(item, 0)}]",
-                                color = if (selected) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurface,
+                                color = if (selected) MiuixTheme.colorScheme.onPrimaryContainer else MiuixTheme.colorScheme.onSurface,
                                 style = MiuixTheme.textStyles.body1,
                                 modifier = Modifier.weight(1f),
                             )

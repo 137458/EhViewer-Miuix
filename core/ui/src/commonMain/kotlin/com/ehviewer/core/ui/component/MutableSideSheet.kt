@@ -237,7 +237,7 @@ fun MutableSideSheet(
                     fraction = {
                         calculateFraction(maxValue, minValue, drawerState.requireOffset())
                     },
-                    color = Color.Black.copy(alpha = 0.32f),
+                    color = MiuixTheme.colorScheme.windowDimming,
                 )
 
                 val predictiveState by animateFloatMergeOneWayPredictiveBackAsState(drawerState.isOpen) {

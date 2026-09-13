@@ -7,6 +7,7 @@ import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.asPaddingValues
@@ -23,6 +24,7 @@ import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Add
+import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.icon.extended.Help
 import top.yukonga.miuix.kmp.icon.extended.Refresh
 import top.yukonga.miuix.kmp.icon.extended.Sort
@@ -65,6 +67,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEach
 import androidx.lifecycle.createSavedStateHandle
@@ -223,15 +226,15 @@ fun AnimatedVisibilityScope.GalleryListScreen(
             )
             toplists.forEach { (name, keyword) ->
                 val isSelected = urlBuilder.keyword == keyword
-                val bgColor = if (isSelected) MiuixTheme.colorScheme.primary.copy(alpha = 0.12f) else Color.Transparent
-                val textColor = if (isSelected) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurface
+                val bgColor = if (isSelected) MiuixTheme.colorScheme.primaryContainer else Color.Transparent
+                val textColor = if (isSelected) MiuixTheme.colorScheme.onPrimaryContainer else MiuixTheme.colorScheme.onSurface
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 12.dp, vertical = 2.dp)
                         .clip(SquircleShape(12.dp))
                         .background(bgColor)
-                        .clickable {
+                        .clickable(role = Role.RadioButton) {
                             Settings.recentToplist = keyword
                             urlBuilder = ListUrlBuilder(MODE_TOPLIST, keyword = keyword)
                             data.refresh()
@@ -352,7 +355,20 @@ fun AnimatedVisibilityScope.GalleryListScreen(
                             val dismissState = remember { SwipeToDismissBoxState(SwipeToDismissBoxValue.Settled, positionalThreshold) }
                             SwipeToDismissBox(
                                 state = dismissState,
-                                backgroundContent = {},
+                                backgroundContent = {
+                                    Row(
+                                        modifier = Modifier.fillMaxSize(),
+                                        horizontalArrangement = Arrangement.End,
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        Icon(
+                                            imageVector = MiuixIcons.Delete,
+                                            contentDescription = stringResource(id = R.string.delete),
+                                            tint = MiuixTheme.colorScheme.error,
+                                            modifier = Modifier.padding(end = 20.dp),
+                                        )
+                                    }
+                                },
                                 enableDismissFromStartToEnd = false,
                                 onDismiss = {
                                     dialogState.runCatching {
@@ -383,7 +399,7 @@ fun AnimatedVisibilityScope.GalleryListScreen(
                                         .padding(horizontal = 4.dp, vertical = 2.dp)
                                         .clip(SquircleShape(12.dp))
                                         .background(itemBg)
-                                        .clickable {
+                                        .clickable(role = Role.Button) {
                                             if (urlBuilder.mode == MODE_WHATS_HOT) {
                                                 val builder = ListUrlBuilder(item).apply {
                                                     language = languageFilter

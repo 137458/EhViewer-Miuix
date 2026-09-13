@@ -2,7 +2,6 @@ package com.hippo.ehviewer.ui.main
 
 import androidx.compose.foundation.MarqueeSpacing
 import androidx.compose.foundation.basicMarquee
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -11,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -22,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import com.ehviewer.core.i18n.R
 import com.hippo.ehviewer.client.parser.Torrent
 import com.hippo.ehviewer.client.parser.format
+import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -43,7 +42,9 @@ fun TorrentList(
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             items(items) {
-                Column(modifier = Modifier.clickable { onItemClick(it) }.heightIn(min = 48.dp).padding(horizontal = 8.dp)) {
+                BasicComponent(
+                    onClick = { onItemClick(it) },
+                ) {
                     Text(
                         text = it.name,
                         modifier = Modifier.basicMarquee(

@@ -3,7 +3,6 @@ package com.hippo.ehviewer.ui.main
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -166,14 +165,12 @@ fun DownloadCard(
                     DownloadInfo.STATE_FINISH -> MiuixIcons.Ok
                     else -> MiuixIcons.Play
                 }
-                if (selectMode) {
-                    Box(modifier = Modifier.offset(4.dp).padding(12.dp)) {
-                        Icon(imageVector = icon, contentDescription = null)
-                    }
-                } else {
-                    IconButton(onClick = if (running) onStop else onStart, modifier = Modifier.offset(4.dp)) {
-                        Icon(imageVector = icon, contentDescription = null)
-                    }
+                IconButton(
+                    onClick = if (running) onStop else onStart,
+                    modifier = Modifier.offset(4.dp),
+                    enabled = !selectMode,
+                ) {
+                    Icon(imageVector = icon, contentDescription = null)
                 }
             }
         }

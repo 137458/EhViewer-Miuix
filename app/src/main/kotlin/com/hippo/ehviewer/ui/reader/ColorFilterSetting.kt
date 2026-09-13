@@ -26,6 +26,16 @@ import com.ehviewer.core.ui.component.RollingNumber
 import com.hippo.ehviewer.Settings
 import com.hippo.ehviewer.asMutableState
 
+/**
+ * Reader colour-filter settings.
+ *
+ * Compatibility exception — colour picker:
+ * The ARGB channels are edited with four integer sliders plus [RollingNumber] rather than with
+ * Miuix `ColorPicker`. At Miuix `0.9.4-rc01` `ColorPicker` works in HSV / OkHSV / OkLab / OkLCh and
+ * exposes no per-channel 0-255 value, while this filter is applied through `BlendMode` /
+ * `ColorFilter` and needs exact ARGB channel control. Re-evaluate if Miuix adds an RGB-channel
+ * picker.
+ */
 @Composable
 fun ColorFilterSetting() = Column(modifier = Modifier.verticalScroll(rememberScrollState()).navigationBarsPadding()) {
     val customBrightness = Settings.customBrightness.asMutableState()

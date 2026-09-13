@@ -113,7 +113,7 @@ private fun BaseRoundText(
         Text(
             text = text,
             modifier = modifier.padding(horizontal = 12.dp, vertical = 4.dp).width(IntrinsicSize.Max),
-            color = if (weak) contentColor.copy(alpha = 0.5f) else contentColor,
+            color = if (weak) MiuixTheme.colorScheme.onSurfaceVariantSummary else contentColor,
             style = MiuixTheme.textStyles.footnote1.includeFontPadding,
             textDecoration = if (solid) TextDecoration.Underline else null,
         )

@@ -1,12 +1,13 @@
 package com.hippo.ehviewer.ui.main
 
 import android.content.Context
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.plus
@@ -22,7 +23,7 @@ import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
 import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
-import com.ehviewer.core.ui.component.SquircleShape
+import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.PullToRefresh
@@ -39,7 +40,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -200,8 +200,9 @@ fun GalleryList(
             is LoadState.Error -> {
                 Surface {
                     ErrorTip(
-                        modifier = Modifier.widthIn(max = 228.dp).clip(SquircleShape(8.dp)).clickable { data.retry() },
+                        modifier = Modifier.widthIn(max = 228.dp),
                         text = state.error.displayString(),
+                        onRetry = { data.retry() },
                     )
                 }
             }
@@ -215,7 +216,7 @@ fun GalleryList(
 }
 
 @Composable
-fun ErrorTip(modifier: Modifier = Modifier, text: String) {
+fun ErrorTip(modifier: Modifier = Modifier, text: String, onRetry: (() -> Unit)? = null) {
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center,
@@ -235,6 +236,12 @@ fun ErrorTip(modifier: Modifier = Modifier, text: String) {
                 style = MiuixTheme.textStyles.body1,
                 textAlign = TextAlign.Center,
             )
+            if (onRetry != null) {
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(onClick = onRetry) {
+                    Text(text = stringResource(id = R.string.action_retry))
+                }
+            }
         }
     }
 }

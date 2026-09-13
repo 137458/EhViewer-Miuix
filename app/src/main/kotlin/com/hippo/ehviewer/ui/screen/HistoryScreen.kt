@@ -3,6 +3,7 @@ package com.hippo.ehviewer.ui.screen
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -150,7 +151,20 @@ fun AnimatedVisibilityScope.HistoryScreen(navigator: DestinationsNavigator) = Sc
                     val dismissState = rememberSwipeToDismissBoxState()
                     SwipeToDismissBox(
                         state = dismissState,
-                        backgroundContent = {},
+                        backgroundContent = {
+                            Row(
+                                modifier = Modifier.fillMaxSize(),
+                                horizontalArrangement = Arrangement.End,
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Icon(
+                                    imageVector = MiuixIcons.Delete,
+                                    contentDescription = stringResource(id = R.string.delete),
+                                    tint = MiuixTheme.colorScheme.error,
+                                    modifier = Modifier.padding(end = marginH + 16.dp),
+                                )
+                            }
+                        },
                         modifier = Modifier.thenIf(animateItems) { animateItem() },
                         enableDismissFromStartToEnd = false,
                         onDismiss = { EhDB.deleteHistoryInfo(info) },

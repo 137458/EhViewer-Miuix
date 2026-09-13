@@ -177,6 +177,7 @@
     <string name="comment_failed">留言失敗</string>
     <string name="copy_comment_text">複製留言文字</string>
     <string name="block_commenter">隱藏評論者</string>
+    <string name="block_uploader">隱藏上傳者</string>
     <string name="filter_the_commenter">隱藏評論者“%s”？</string>
     <string name="edit_comment">修改留言</string>
     <string name="edit_comment_successfully">留言已被修改</string>

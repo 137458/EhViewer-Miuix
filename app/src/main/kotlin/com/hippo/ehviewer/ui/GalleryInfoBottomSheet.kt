@@ -20,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.ehviewer.core.i18n.R
 import com.ehviewer.core.model.GalleryDetail
@@ -75,7 +76,7 @@ fun GalleryInfoBottomSheet(detail: GalleryDetail) {
         LazyColumn(contentPadding = WindowInsets.systemBars.only(WindowInsetsSides.Bottom).asPaddingValues()) {
             itemsIndexed(data) { index, (key, content) ->
                 Row(
-                    modifier = Modifier.padding(horizontal = dimensionResource(id = com.hippo.ehviewer.R.dimen.keyline_margin)).clickable {
+                    modifier = Modifier.padding(horizontal = dimensionResource(id = com.hippo.ehviewer.R.dimen.keyline_margin)).clickable(role = Role.Button) {
                         if (index == INDEX_PARENT) {
                             if (content != null) {
                                 navWithUrl(content)
