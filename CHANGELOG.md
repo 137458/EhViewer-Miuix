@@ -10,6 +10,10 @@
 
 ### 修复
 
+* 修复搜索栏未避让状态栏导致图标重叠的问题，补齐状态栏与横向导航栏安全内边距
+* 修复悬浮底部导航栏宽度塌缩导致项目重叠挤压的问题，移除固有最小宽度限制并提供响应式宽度约束
+* 修复全应用页面顶栏实色无毛玻璃过渡的问题，接入 rememberBlurBackdrop 与 BlurredBar 渐进式纹理模糊
+* 修复悬浮操作胶囊与局部控件液态玻璃效果失效的问题，贯通 LocalBackdrop 采样上下文并规范化挂载至 Scaffold 浮动操作位
 * 修复主界面由于 layerBackdrop 递归包含自身导致的 RenderNode 渲染死循环与原生崩溃问题
 * 修复网页登录（WebViewSignInScreen）提取 Cookie 成功后因底层原生 WebView 提前销毁及等待取消导致的应用闪退与挂起问题
 * 修复 CookieManager 解析包含非 RFC 6265 字符的 Cookie 时抛出 IllegalArgumentException 崩溃的问题，增加双重容错与手动安全分割机制

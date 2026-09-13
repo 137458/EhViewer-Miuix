@@ -33,10 +33,20 @@ import androidx.compose.foundation.text.input.clearText
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.graphics.RectangleShape
+import com.ehviewer.core.ui.component.LocalBackdrop
+import com.ehviewer.core.ui.component.blurBackdropSource
+import com.ehviewer.core.ui.component.rememberBlurBackdrop
+import top.yukonga.miuix.kmp.blur.BlendColorEntry
+import top.yukonga.miuix.kmp.blur.BlurDefaults
+import top.yukonga.miuix.kmp.blur.ProgressiveBlur
+import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
+import top.yukonga.miuix.kmp.blur.progressiveTextureBlur
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
@@ -216,22 +226,53 @@ fun SearchBarScreen(
         }
     }
 
-    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-        val density = LocalDensity.current
-        val subHeaderHeight = if (subHeader != null) 40.dp else 0.dp
-        Scaffold(
-            topBar = {
-                Column {
-                    val scrim = MiuixTheme.colorScheme.background.scrim()
-                    Box(Modifier.windowInsetsTopHeight(WindowInsets.statusBars).fillMaxWidth().background(scrim))
+    val backdrop = rememberBlurBackdrop()
 
-                    // Placeholder, fill immutable SearchBar padding
-                    Spacer(modifier = Modifier.height(SearchBarDefaults.InputFieldMinHeight + 16.dp + subHeaderHeight))
-                }
-            },
-            floatingActionButton = floatingActionButton,
-            content = content,
-        )
+    CompositionLocalProvider(LocalBackdrop provides backdrop) {
+        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+            val density = LocalDensity.current
+            val subHeaderHeight = if (subHeader != null) 40.dp else 0.dp
+            Scaffold(
+                topBar = {
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        if (backdrop != null && isRuntimeShaderSupported()) {
+                            Box(
+                                modifier = Modifier
+                                    .matchParentSize()
+                                    .progressiveTextureBlur(
+                                        backdrop = backdrop,
+                                        shape = RectangleShape,
+                                        gradient = ProgressiveBlur.Top.copy(curve = 2.2f),
+                                        blurRadius = 10f,
+                                        colors = BlurDefaults.blurColors(
+                                            blendColors = listOf(
+                                                BlendColorEntry(color = MiuixTheme.colorScheme.surface.copy(alpha = 0.85f)),
+                                            ),
+                                        ),
+                                    ),
+                            )
+                        } else {
+                            val scrim = MiuixTheme.colorScheme.background.scrim()
+                            Box(Modifier.windowInsetsTopHeight(WindowInsets.statusBars).fillMaxWidth().background(scrim))
+                        }
+                        Column {
+                            Spacer(modifier = Modifier.windowInsetsTopHeight(WindowInsets.statusBars))
+                            // Placeholder, fill immutable SearchBar padding
+                            Spacer(modifier = Modifier.height(SearchBarDefaults.InputFieldMinHeight + 16.dp + subHeaderHeight))
+                        }
+                    }
+                },
+                floatingActionButton = floatingActionButton,
+                content = { paddingValues ->
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .blurBackdropSource(backdrop),
+                    ) {
+                        content(paddingValues)
+                    }
+                },
+            )
         // https://issuetracker.google.com/337191298
         // Workaround for can't exit SearchBar due to refocus in non-touch mode
         Box(Modifier.size(1.dp).focusable())
@@ -240,11 +281,20 @@ fun SearchBarScreen(
         val contentActive by activeState.state
         val placeholder = title.takeUnless { expanded || contentActive } ?: searchFieldHint
         val searchBg = MiuixTheme.colorScheme.background
+        if (expanded) {
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .background(searchBg),
+            )
+        }
         SearchBar(
-            modifier = Modifier.align(Alignment.TopCenter)
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .windowInsetsPadding(WindowInsets.statusBars)
+                .windowInsetsPadding(WindowInsets.navigationBars.only(WindowInsetsSides.Horizontal))
                 .thenIf(!expanded) { offset { IntOffset(0, searchBarOffsetY()) } }
-                .thenIf(expanded) { fillMaxSize().background(searchBg) }
-                .windowInsetsPadding(WindowInsets.navigationBars.only(WindowInsetsSides.Horizontal)),
+                .thenIf(expanded) { fillMaxSize() },
             inputField = {
                 InputField(
                     query = query,
@@ -368,11 +418,11 @@ fun SearchBarScreen(
             Box(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
+                    .windowInsetsPadding(WindowInsets.statusBars)
                     .offset {
                         val inputFieldOffset = with(density) { (SearchBarDefaults.InputFieldMinHeight + 16.dp).roundToPx() }
                         IntOffset(0, searchBarOffsetY() + inputFieldOffset)
                     }
-                    .windowInsetsPadding(WindowInsets.statusBars)
                     .fillMaxWidth(),
             ) {
                 subHeader()
@@ -380,6 +430,8 @@ fun SearchBarScreen(
         }
     }
 }
+}
+
 
 fun wrapTagKeyword(keyword: String, translate: Boolean = false): String = run {
     val tag = keyword.substringAfter(':')

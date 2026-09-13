@@ -14,10 +14,15 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.util.fastJoinToString
+import com.ehviewer.core.ui.component.BlurredBar
+import com.ehviewer.core.ui.component.blurBackdropSource
+import com.ehviewer.core.ui.component.rememberBlurBackdrop
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 import androidx.lifecycle.viewModelScope
 import com.ehviewer.core.data.model.findBaseInfo
 import com.ehviewer.core.database.model.DownloadInfo
@@ -170,14 +175,20 @@ fun AnimatedVisibilityScope.GalleryDetailScreen(args: GalleryDetailScreenArgs, n
     val exportFailed = stringResource(id = R.string.export_as_archive_failed)
     val windowSizeClass = LocalWindowSizeClass.current
     val title = galleryInfo?.let { EhUtils.getSuitableTitle(it) }.orEmpty()
+    val backdrop = rememberBlurBackdrop()
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = title,
-                largeTitle = title,
-                navigationIcon = { NavigationIcon() },
+            BlurredBar(
+                backdrop = backdrop,
                 scrollBehavior = scrollBehavior,
-                actions = {
+            ) {
+                TopAppBar(
+                    title = title,
+                    largeTitle = title,
+                    navigationIcon = { NavigationIcon() },
+                    scrollBehavior = scrollBehavior,
+                    color = if (backdrop != null) Color.Transparent else MiuixTheme.colorScheme.surface,
+                    actions = {
                     IconButton(
                         onClick = {
                             AppHelper.share(contextOf<MainActivity>(), galleryDetailUrl)
@@ -297,36 +308,43 @@ fun AnimatedVisibilityScope.GalleryDetailScreen(args: GalleryDetailScreenArgs, n
                     }
                 },
             )
+            }
         },
-    ) {
-        val gi = galleryInfo
-        if (gi != null) {
-            if (args is TokenArgs && args.page != 0) {
-                val from = stringResource(id = R.string.read_from, args.page)
-                val read = stringResource(id = R.string.read)
-                launchInVM {
-                    val result = snackbar(from, read, true)
-                    if (result == SnackbarResult.ActionPerformed) {
-                        navToReader(gi.findBaseInfo(), args.page)
+    ) { contentPadding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .blurBackdropSource(backdrop),
+        ) {
+            val gi = galleryInfo
+            if (gi != null) {
+                if (args is TokenArgs && args.page != 0) {
+                    val from = stringResource(id = R.string.read_from, args.page)
+                    val read = stringResource(id = R.string.read)
+                    launchInVM {
+                        val result = snackbar(from, read, true)
+                        if (result == SnackbarResult.ActionPerformed) {
+                            navToReader(gi.findBaseInfo(), args.page)
+                        }
                     }
                 }
-            }
-            GalleryDetailContent(
-                galleryInfo = gi,
-                contentPadding = it,
-                getDetailError = getDetailError,
-                onRetry = { getDetailError = "" },
-                voteTag = voteTag,
-                modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-            )
-        } else if (getDetailError.isNotBlank()) {
-            GalleryDetailErrorTip(error = getDetailError, onClick = { getDetailError = "" })
-        } else {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center,
-            ) {
-                InfiniteProgressIndicator()
+                GalleryDetailContent(
+                    galleryInfo = gi,
+                    contentPadding = contentPadding,
+                    getDetailError = getDetailError,
+                    onRetry = { getDetailError = "" },
+                    voteTag = voteTag,
+                    modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+                )
+            } else if (getDetailError.isNotBlank()) {
+                GalleryDetailErrorTip(error = getDetailError, onClick = { getDetailError = "" })
+            } else {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    InfiniteProgressIndicator()
+                }
             }
         }
     }

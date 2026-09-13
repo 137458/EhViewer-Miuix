@@ -486,30 +486,38 @@ class MainActivity : AppCompatActivity() {
                                     modifier = Modifier
                                         .align(Alignment.BottomCenter)
                                         .navigationBarsPadding()
-                                        .padding(bottom = 12.dp),
+                                        .padding(horizontal = 24.dp, vertical = 12.dp),
                                 ) {
-                                    FloatingBottomBar(
-                                        selectedIndex = { primaryIndex.coerceAtLeast(0) },
-                                        onSelected = { index ->
-                                            navigateToTab(primaryNavItems[index].first)
-                                        },
-                                        backdrop = contentBackdrop,
-                                        tabsCount = primaryNavItems.size,
+                                    Box(
+                                        modifier = Modifier
+                                            .widthIn(min = 320.dp, max = 540.dp)
+                                            .fillMaxWidth(),
+                                        contentAlignment = Alignment.Center,
                                     ) {
-                                        primaryNavItems.forEachIndexed { index, (_, stringId, icon) ->
-                                            FloatingBottomBarItem(
-                                                onClick = { navigateToTab(primaryNavItems[index].first) },
-                                            ) {
-                                                Icon(
-                                                    imageVector = icon,
-                                                    contentDescription = null,
-                                                    modifier = Modifier.size(22.dp),
-                                                )
-                                                Text(
-                                                    text = stringResource(id = stringId),
-                                                    fontSize = 11.sp,
-                                                    fontWeight = if (primaryIndex == index) FontWeight.SemiBold else FontWeight.Normal,
-                                                )
+                                        FloatingBottomBar(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            selectedIndex = { primaryIndex.coerceAtLeast(0) },
+                                            onSelected = { index ->
+                                                navigateToTab(primaryNavItems[index].first)
+                                            },
+                                            backdrop = contentBackdrop,
+                                            tabsCount = primaryNavItems.size,
+                                        ) {
+                                            primaryNavItems.forEachIndexed { index, (_, stringId, icon) ->
+                                                FloatingBottomBarItem(
+                                                    onClick = { navigateToTab(primaryNavItems[index].first) },
+                                                ) {
+                                                    Icon(
+                                                        imageVector = icon,
+                                                        contentDescription = null,
+                                                        modifier = Modifier.size(22.dp),
+                                                    )
+                                                    Text(
+                                                        text = stringResource(id = stringId),
+                                                        fontSize = 11.sp,
+                                                        fontWeight = if (primaryIndex == index) FontWeight.SemiBold else FontWeight.Normal,
+                                                    )
+                                                }
                                             }
                                         }
                                     }

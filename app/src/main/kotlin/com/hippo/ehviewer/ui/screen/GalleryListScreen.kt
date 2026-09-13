@@ -554,6 +554,53 @@ fun AnimatedVisibilityScope.GalleryListScreen(
                 onAdvancedOptionChange = { advancedSearchOption = it },
             )
         },
+        floatingActionButton = {
+            val gotoTitle = stringResource(R.string.go_to)
+            val invalidNum = stringResource(R.string.error_invalid_number)
+            val outOfRange = stringResource(R.string.error_out_of_range)
+
+            HomeFloatingActionCapsule(
+                visible = !fabHidden,
+                onRefresh = {
+                    urlBuilder.setRange(0)
+                    data.refresh()
+                },
+                onShuffle = if (urlBuilder.mode in arrayOf(MODE_NORMAL, MODE_UPLOADER, MODE_TAG)) {
+                    {
+                        urlBuilder.setRange(Random.nextInt(100))
+                        data.refresh()
+                    }
+                } else null,
+                onGoTo = if (urlBuilder.mode != MODE_WHATS_HOT) {
+                    {
+                        launch {
+                            if (isTopList) {
+                                val hint = string(R.string.go_to_hint, urlBuilder.page, TOPLIST_PAGES)
+                                val text = awaitInputText(title = gotoTitle, hint = hint, isNumber = true) { oriText ->
+                                    val goto = ensureNotNull(oriText.trim().toIntOrNull()) { invalidNum }
+                                    ensure(goto in 1..TOPLIST_PAGES) { outOfRange }
+                                }
+                                urlBuilder.page = text.trim().toInt()
+                            } else {
+                                val date = awaitSelectDate()
+                                urlBuilder.setSeek(date)
+                            }
+                            data.refresh()
+                        }
+                    }
+                } else null,
+                onLastPage = if (urlBuilder.mode != MODE_WHATS_HOT) {
+                    {
+                        if (isTopList) {
+                            urlBuilder.page = TOPLIST_PAGES
+                        } else {
+                            urlBuilder.setIndex("1", false)
+                        }
+                        data.refresh()
+                    }
+                } else null,
+            )
+        },
     ) { contentPadding ->
         val height by collectListThumbSizeAsState()
         val showPages by Settings.showGalleryPages.collectAsState()
@@ -608,52 +655,6 @@ fun AnimatedVisibilityScope.GalleryListScreen(
             onLoading = { searchBarOffsetY = 0 },
         )
     }
-
-    val gotoTitle = stringResource(R.string.go_to)
-    val invalidNum = stringResource(R.string.error_invalid_number)
-    val outOfRange = stringResource(R.string.error_out_of_range)
-
-    HomeFloatingActionCapsule(
-        visible = !fabHidden,
-        onRefresh = {
-            urlBuilder.setRange(0)
-            data.refresh()
-        },
-        onShuffle = if (urlBuilder.mode in arrayOf(MODE_NORMAL, MODE_UPLOADER, MODE_TAG)) {
-            {
-                urlBuilder.setRange(Random.nextInt(100))
-                data.refresh()
-            }
-        } else null,
-        onGoTo = if (urlBuilder.mode != MODE_WHATS_HOT) {
-            {
-                launch {
-                    if (isTopList) {
-                        val hint = string(R.string.go_to_hint, urlBuilder.page, TOPLIST_PAGES)
-                        val text = awaitInputText(title = gotoTitle, hint = hint, isNumber = true) { oriText ->
-                            val goto = ensureNotNull(oriText.trim().toIntOrNull()) { invalidNum }
-                            ensure(goto in 1..TOPLIST_PAGES) { outOfRange }
-                        }
-                        urlBuilder.page = text.trim().toInt()
-                    } else {
-                        val date = awaitSelectDate()
-                        urlBuilder.setSeek(date)
-                    }
-                    data.refresh()
-                }
-            }
-        } else null,
-        onLastPage = if (urlBuilder.mode != MODE_WHATS_HOT) {
-            {
-                if (isTopList) {
-                    urlBuilder.page = TOPLIST_PAGES
-                } else {
-                    urlBuilder.setIndex("1", false)
-                }
-                data.refresh()
-            }
-        } else null,
-    )
 }
 
 const val TOPLIST_PAGES = 200

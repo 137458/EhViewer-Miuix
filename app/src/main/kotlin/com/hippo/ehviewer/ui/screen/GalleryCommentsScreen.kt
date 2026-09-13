@@ -44,9 +44,12 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
+import com.ehviewer.core.ui.component.blurBackdropSource
+import com.ehviewer.core.ui.component.rememberBlurBackdrop
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -204,6 +207,7 @@ fun AnimatedVisibilityScope.GalleryCommentsScreen(
     navigator: DestinationsNavigator,
 ) = Screen(navigator) {
     val scrollBehavior = MiuixScrollBehavior()
+    val backdrop = rememberBlurBackdrop()
     val commentingState = rememberSaveable { mutableStateOf(false) }
     var commenting by commentingState
     val animationProgress by animateFloatMergePredictiveBackAsState(enable = commenting) { commenting = false }
@@ -231,10 +235,13 @@ fun AnimatedVisibilityScope.GalleryCommentsScreen(
     if (galleryDetail == null) {
         Scaffold(
             topBar = {
-                BlurredBar {
+                BlurredBar(
+                    backdrop = backdrop,
+                ) {
                     TopAppBar(
                         title = stringResource(id = R.string.gallery_comments),
                         navigationIcon = { NavigationIcon() },
+                        color = if (backdrop != null) Color.Transparent else MiuixTheme.colorScheme.surface,
                     )
                 }
             },
@@ -242,6 +249,7 @@ fun AnimatedVisibilityScope.GalleryCommentsScreen(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
+                    .blurBackdropSource(backdrop)
                     .padding(paddingValues),
                 contentAlignment = Alignment.Center,
             ) {
@@ -364,13 +372,14 @@ fun AnimatedVisibilityScope.GalleryCommentsScreen(
             modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
             topBar = {
                 BlurredBar(
-                    backdrop = null,
+                    backdrop = backdrop,
                     scrollBehavior = scrollBehavior,
                 ) {
                     TopAppBar(
                         title = stringResource(id = R.string.gallery_comments),
                         navigationIcon = { NavigationIcon() },
                         scrollBehavior = scrollBehavior,
+                        color = if (backdrop != null) Color.Transparent else MiuixTheme.colorScheme.surface,
                     )
                 }
             },
@@ -409,7 +418,11 @@ fun AnimatedVisibilityScope.GalleryCommentsScreen(
                 pullToRefreshState = refreshState,
                 modifier = Modifier.imePadding().padding(top = paddingValues.calculateTopPadding()),
             ) {
-                Box(modifier = Modifier.fillMaxSize()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .blurBackdropSource(backdrop),
+                ) {
                     val additionalPadding = if (commenting) {
                         editTextMeasured
                     } else {

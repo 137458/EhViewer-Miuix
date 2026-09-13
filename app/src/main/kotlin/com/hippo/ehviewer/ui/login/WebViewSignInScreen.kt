@@ -1,6 +1,7 @@
 package com.hippo.ehviewer.ui.login
 
 import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
@@ -11,10 +12,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import com.ehviewer.core.i18n.R
 import com.ehviewer.core.network.EhCookieStore
 import com.ehviewer.core.ui.component.BlurredBar
+import com.ehviewer.core.ui.component.blurBackdropSource
+import com.ehviewer.core.ui.component.rememberBlurBackdrop
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 import com.google.accompanist.web.WebView
 import com.google.accompanist.web.rememberWebViewState
 import com.hippo.ehviewer.Settings
@@ -53,12 +58,17 @@ fun AnimatedVisibilityScope.WebViewSignInScreen(navigator: DestinationsNavigator
             }
         }
     }
+    val backdrop = rememberBlurBackdrop()
+
     Scaffold(
         topBar = {
-            BlurredBar {
+            BlurredBar(
+                backdrop = backdrop,
+            ) {
                 TopAppBar(
                     title = stringResource(id = R.string.sign_in),
                     navigationIcon = { NavigationIcon() },
+                    color = if (backdrop != null) Color.Transparent else MiuixTheme.colorScheme.surface,
                     actions = {
                         if (state.isLoading || isHandlingLogin) {
                             InfiniteProgressIndicator()
@@ -68,16 +78,22 @@ fun AnimatedVisibilityScope.WebViewSignInScreen(navigator: DestinationsNavigator
             }
         },
     ) { paddingValues ->
-        WebView(
-            state = state,
+        Box(
             modifier = Modifier
-                .padding(paddingValues)
-                .fillMaxSize(),
-            onCreated = {
-                EhUtils.signOut()
-                it.setDefaultSettings()
-                it.evaluateJavascript(WebInjectionHelper.VIEWPORT_META_INJECTION_SCRIPT, null)
-            },
-        )
+                .fillMaxSize()
+                .blurBackdropSource(backdrop),
+        ) {
+            WebView(
+                state = state,
+                modifier = Modifier
+                    .padding(paddingValues)
+                    .fillMaxSize(),
+                onCreated = {
+                    EhUtils.signOut()
+                    it.setDefaultSettings()
+                    it.evaluateJavascript(WebInjectionHelper.VIEWPORT_META_INJECTION_SCRIPT, null)
+                },
+            )
+        }
     }
 }

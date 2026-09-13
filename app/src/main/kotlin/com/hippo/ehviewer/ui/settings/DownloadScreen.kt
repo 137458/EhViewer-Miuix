@@ -28,9 +28,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.ehviewer.core.ui.component.blurBackdropSource
+import com.ehviewer.core.ui.component.rememberBlurBackdrop
 import arrow.fx.coroutines.parMap
 import arrow.fx.coroutines.parMapNotNull
 import com.ehviewer.core.database.model.DownloadInfo
@@ -102,18 +105,20 @@ fun AnimatedVisibilityScope.DownloadScreen(navigator: DestinationsNavigator) = S
     val colorScheme = MiuixTheme.colorScheme
     fun launchSnackbar(message: String) = launch { snackbar(message) }
 
+    val backdrop = rememberBlurBackdrop()
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
             BlurredBar(
-                backdrop = null,
+                backdrop = backdrop,
                 scrollBehavior = scrollBehavior,
             ) {
                 TopAppBar(
                     title = stringResource(id = R.string.settings_download),
                     navigationIcon = { NavigationIcon() },
                     scrollBehavior = scrollBehavior,
-                    color = colorScheme.surface,
+                    color = if (backdrop != null) Color.Transparent else colorScheme.surface,
                 )
             }
         },
@@ -121,7 +126,8 @@ fun AnimatedVisibilityScope.DownloadScreen(navigator: DestinationsNavigator) = S
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(colorScheme.surface),
+                .background(colorScheme.surface)
+                .blurBackdropSource(backdrop),
             contentAlignment = Alignment.TopCenter,
         ) {
             Column(

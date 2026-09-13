@@ -49,19 +49,12 @@ fun HomeFloatingActionCapsule(
 ) {
     val haptic = LocalHapticFeedback.current
 
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .navigationBarsPadding()
-            .snackBarPadding()
-            .padding(end = 16.dp, bottom = 16.dp),
-        contentAlignment = Alignment.BottomEnd,
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn() + slideInVertically { it / 2 },
+        exit = fadeOut() + slideOutVertically { it / 2 },
+        modifier = modifier.snackBarPadding(),
     ) {
-        AnimatedVisibility(
-            visible = visible,
-            enter = fadeIn() + slideInVertically { it / 2 },
-            exit = fadeOut() + slideOutVertically { it / 2 },
-        ) {
             LiquidGlassSurface(
                 shape = CircleShape,
                 elevation = 6.dp,
@@ -140,5 +133,5 @@ fun HomeFloatingActionCapsule(
                 }
             }
         }
-    }
 }
+

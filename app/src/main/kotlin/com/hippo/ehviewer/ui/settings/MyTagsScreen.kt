@@ -8,9 +8,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import com.ehviewer.core.i18n.R
 import com.ehviewer.core.ui.component.BlurredBar
+import com.ehviewer.core.ui.component.blurBackdropSource
+import com.ehviewer.core.ui.component.rememberBlurBackdrop
 import com.google.accompanist.web.LoadingState
 import com.google.accompanist.web.WebView
 import com.google.accompanist.web.rememberWebViewState
@@ -43,12 +46,17 @@ fun AnimatedVisibilityScope.MyTagsScreen(navigator: DestinationsNavigator) = Scr
         }
     }
 
+    val backdrop = rememberBlurBackdrop()
+
     Scaffold(
         topBar = {
-            BlurredBar {
+            BlurredBar(
+                backdrop = backdrop,
+            ) {
                 TopAppBar(
                     title = stringResource(id = R.string.my_tags),
                     navigationIcon = { NavigationIcon() },
+                    color = if (backdrop != null) Color.Transparent else MiuixTheme.colorScheme.surface,
                     actions = {
                         if (state.isLoading) {
                             InfiniteProgressIndicator()
@@ -61,7 +69,8 @@ fun AnimatedVisibilityScope.MyTagsScreen(navigator: DestinationsNavigator) = Scr
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(MiuixTheme.colorScheme.background),
+                .background(MiuixTheme.colorScheme.background)
+                .blurBackdropSource(backdrop),
         ) {
             WebView(
                 state = state,

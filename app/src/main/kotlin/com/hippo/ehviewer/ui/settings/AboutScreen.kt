@@ -19,6 +19,7 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
@@ -27,6 +28,8 @@ import androidx.compose.ui.unit.dp
 import com.ehviewer.core.files.delete
 import com.ehviewer.core.i18n.R
 import com.ehviewer.core.ui.component.BlurredBar
+import com.ehviewer.core.ui.component.blurBackdropSource
+import com.ehviewer.core.ui.component.rememberBlurBackdrop
 import com.ehviewer.core.util.launch
 import com.ehviewer.core.util.withUIContext
 import com.hippo.ehviewer.BuildConfig
@@ -92,18 +95,20 @@ fun AnimatedVisibilityScope.AboutScreen(navigator: DestinationsNavigator) = Scre
         }
     }
 
+    val backdrop = rememberBlurBackdrop()
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
             BlurredBar(
-                backdrop = null,
+                backdrop = backdrop,
                 scrollBehavior = scrollBehavior,
             ) {
                 TopAppBar(
                     title = stringResource(id = R.string.settings_about),
                     navigationIcon = { NavigationIcon() },
                     scrollBehavior = scrollBehavior,
-                    color = colorScheme.surface,
+                    color = if (backdrop != null) Color.Transparent else colorScheme.surface,
                 )
             }
         },
@@ -111,7 +116,8 @@ fun AnimatedVisibilityScope.AboutScreen(navigator: DestinationsNavigator) = Scre
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(colorScheme.surface),
+                .background(colorScheme.surface)
+                .blurBackdropSource(backdrop),
             contentAlignment = Alignment.TopCenter,
         ) {
             Column(

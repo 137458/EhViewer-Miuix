@@ -35,7 +35,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 fun LiquidGlassSurface(
     modifier: Modifier = Modifier,
     shape: Shape = SquircleShape(24.dp),
-    backdrop: Backdrop? = null,
+    backdrop: Backdrop? = LocalBackdrop.current,
     containerColor: Color = MiuixTheme.colorScheme.surfaceContainer,
     elevation: Dp = 8.dp,
     refractionHeight: Dp = 16.dp,

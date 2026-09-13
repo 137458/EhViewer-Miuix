@@ -21,6 +21,7 @@ import androidx.compose.foundation.lazy.layout.LazyLayoutCacheWindow
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
@@ -31,6 +32,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
+import com.ehviewer.core.ui.component.LocalBackdrop
+import com.ehviewer.core.ui.component.blurBackdropSource
+import com.ehviewer.core.ui.component.rememberBlurBackdrop
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -214,15 +218,17 @@ fun ReaderScreen(pageLoader: PageLoader, info: BaseGalleryInfo?) {
     val syncState = rememberSliderPagerDoubleSyncState(lazyListState, pagerState, pageLoader)
     var appbarVisible by remember { mutableStateOf(false) }
     val isWebtoon by rememberUpdatedState(ReadingModeType.isWebtoon(readingMode))
+    val readerBackdrop = rememberBlurBackdrop()
     val focusRequester = remember { FocusRequester() }
-    Box(
-        Modifier.keyEventHandler(
-            volumeKeysEnabled = { volumeKeysEnabled && !appbarVisible },
-            volumeKeysInverted = { volumeKeysInverted },
-            movePrevious = { launch { if (isWebtoon) lazyListState.scrollUp() else pagerState.moveToPrevious() } },
-            moveNext = { launch { if (isWebtoon) lazyListState.scrollDown() else pagerState.moveToNext() } },
-        ).focusRequester(focusRequester).focusable().thenIf(keepScreenOn) { keepScreenOn() },
-    ) {
+    CompositionLocalProvider(LocalBackdrop provides readerBackdrop) {
+        Box(
+            Modifier.keyEventHandler(
+                volumeKeysEnabled = { volumeKeysEnabled && !appbarVisible },
+                volumeKeysInverted = { volumeKeysInverted },
+                movePrevious = { launch { if (isWebtoon) lazyListState.scrollUp() else pagerState.moveToPrevious() } },
+                moveNext = { launch { if (isWebtoon) lazyListState.scrollDown() else pagerState.moveToNext() } },
+            ).focusRequester(focusRequester).focusable().thenIf(keepScreenOn) { keepScreenOn() },
+        ) {
         LaunchedEffect(Unit) {
             focusRequester.requestFocus()
         }
@@ -265,33 +271,39 @@ fun ReaderScreen(pageLoader: PageLoader, info: BaseGalleryInfo?) {
                 }
             }
         }
-        EhTheme(useDarkTheme = !readerBackground.isLight) {
-            val insets = if (fullscreen) {
-                if (cutoutShort) {
-                    WindowInsets()
-                } else {
-                    WindowInsets.displayCutout
-                }
-            } else {
-                WindowInsets.systemBars
-            }
-            GalleryPager(
-                type = readingMode,
-                pagerState = pagerState,
-                lazyListState = lazyListState,
-                pageLoader = pageLoader,
-                showNavigationOverlay = showNavigationOverlay,
-                onNavigationModeChange = { showNavigationOverlay = true },
-                onSelectPage = onSelectPage,
-                onMenuRegionClick = { appbarVisible = !appbarVisible },
-                modifier = Modifier.background(readerBackground.color).pointerInput(syncState) {
-                    awaitEachGesture {
-                        waitForUpOrCancellation()
-                        syncState.reset()
-                        showNavigationOverlay = false
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .blurBackdropSource(readerBackdrop),
+        ) {
+            EhTheme(useDarkTheme = !readerBackground.isLight) {
+                val insets = if (fullscreen) {
+                    if (cutoutShort) {
+                        WindowInsets()
+                    } else {
+                        WindowInsets.displayCutout
                     }
-                }.fillMaxSize().windowInsetsPadding(insets),
-            )
+                } else {
+                    WindowInsets.systemBars
+                }
+                GalleryPager(
+                    type = readingMode,
+                    pagerState = pagerState,
+                    lazyListState = lazyListState,
+                    pageLoader = pageLoader,
+                    showNavigationOverlay = showNavigationOverlay,
+                    onNavigationModeChange = { showNavigationOverlay = true },
+                    onSelectPage = onSelectPage,
+                    onMenuRegionClick = { appbarVisible = !appbarVisible },
+                    modifier = Modifier.background(readerBackground.color).pointerInput(syncState) {
+                        awaitEachGesture {
+                            waitForUpOrCancellation()
+                            syncState.reset()
+                            showNavigationOverlay = false
+                        }
+                    }.fillMaxSize().windowInsetsPadding(insets),
+                )
+            }
         }
         val brightness by Settings.customBrightness.collectAsState()
         val brightnessValue by Settings.customBrightnessValue.collectAsState()
@@ -355,6 +367,7 @@ fun ReaderScreen(pageLoader: PageLoader, info: BaseGalleryInfo?) {
                 }
             },
         )
+        }
     }
 }
 

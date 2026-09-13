@@ -15,11 +15,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.ehviewer.core.i18n.R
 import com.ehviewer.core.network.EhCookieStore
 import com.ehviewer.core.ui.component.BlurredBar
+import com.ehviewer.core.ui.component.blurBackdropSource
+import com.ehviewer.core.ui.component.rememberBlurBackdrop
 import com.ehviewer.core.util.launch
 import com.google.accompanist.web.LoadingState
 import com.google.accompanist.web.WebView
@@ -51,12 +54,17 @@ fun AnimatedVisibilityScope.UConfigScreen(navigator: DestinationsNavigator) = Sc
     val wvNavigator = rememberWebViewNavigator()
     var isApplying by rememberSaveable { mutableStateOf(false) }
 
+    val backdrop = rememberBlurBackdrop()
+
     Scaffold(
         topBar = {
-            BlurredBar {
+            BlurredBar(
+                backdrop = backdrop,
+            ) {
                 TopAppBar(
                     title = stringResource(id = R.string.u_config),
                     navigationIcon = { NavigationIcon() },
+                    color = if (backdrop != null) Color.Transparent else MiuixTheme.colorScheme.surface,
                     actions = {
                         if (isApplying) {
                             InfiniteProgressIndicator(
@@ -85,7 +93,8 @@ fun AnimatedVisibilityScope.UConfigScreen(navigator: DestinationsNavigator) = Sc
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(MiuixTheme.colorScheme.background),
+                .background(MiuixTheme.colorScheme.background)
+                .blurBackdropSource(backdrop),
         ) {
             val state = rememberWebViewState(url = url)
             LaunchedEffect(state.loadingState) {

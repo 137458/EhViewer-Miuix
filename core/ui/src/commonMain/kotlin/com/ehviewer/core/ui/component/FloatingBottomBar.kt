@@ -426,7 +426,7 @@ fun FloatingBottomBar(
     val combinedBackdrop = backdrop?.let { rememberCombinedBackdrop(it, tabsBackdrop) }
 
     Box(
-        modifier = modifier.width(IntrinsicSize.Min),
+        modifier = modifier,
         contentAlignment = Alignment.CenterStart,
     ) {
         // ── 1. Base Layer（未选中状态底层外壳） ──
