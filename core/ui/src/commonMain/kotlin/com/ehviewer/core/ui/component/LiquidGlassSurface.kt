@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.dropShadow
@@ -40,6 +41,7 @@ fun LiquidGlassSurface(
     elevation: Dp = 8.dp,
     refractionHeight: Dp = 16.dp,
     refractionAmount: Dp = 16.dp,
+    contentAlignment: Alignment = Alignment.Center,
     content: @Composable BoxScope.() -> Unit,
 ) {
     val isDark = MiuixTheme.colorScheme.surface.luminance() < 0.5f
@@ -126,6 +128,7 @@ fun LiquidGlassSurface(
                         )
                 },
             ),
+        contentAlignment = contentAlignment,
         content = content,
     )
 }

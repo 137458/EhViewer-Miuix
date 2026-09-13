@@ -407,7 +407,16 @@ class MainActivity : AppCompatActivity() {
                 currentDestination,
                 primaryNavItems.map { it.first },
             )
+            var lastNavTime by remember { mutableStateOf(0L) }
             fun navigateToTab(direction: Direction) {
+                if (currentDestination === direction) {
+                    return
+                }
+                val now = System.currentTimeMillis()
+                if (now - lastNavTime < 300L) {
+                    return
+                }
+                lastNavTime = now
                 navigator.navigate(direction) {
                     popUpTo(NavGraphs.root.startRoute) {
                         saveState = true

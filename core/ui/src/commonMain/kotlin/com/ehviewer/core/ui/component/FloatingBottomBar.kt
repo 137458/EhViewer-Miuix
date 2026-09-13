@@ -552,6 +552,7 @@ fun FloatingBottomBar(
                             backdrop = combinedBackdrop,
                             shape = { pillShape },
                             effects = {
+                                padding = maxOf(padding, 40.dp.toPx())
                                 val progress = dampedDragAnimation.pressProgress
                                 lens(
                                     refractionHeight = 10.dp.toPx() * progress,
@@ -571,16 +572,16 @@ fun FloatingBottomBar(
                             onDrawSurface = {
                                 val progress = dampedDragAnimation.pressProgress
                                 drawRect(
-                                    color = if (!isDark) Color.Black.copy(alpha = 0.1f) else Color.White.copy(alpha = 0.1f),
+                                    color = if (!isDark) Color.White.copy(alpha = 0.2f) else Color.White.copy(alpha = 0.12f),
                                     alpha = 1f - progress,
                                 )
-                                drawRect(Color.Black.copy(alpha = 0.03f * progress))
+                                drawRect(Color.White.copy(alpha = 0.06f * progress))
                             },
                         )
                         .innerShadow(shape = pillShape) {
                             InnerShadow(
                                 radius = 8.dp * dampedDragAnimation.pressProgress,
-                                color = Color.Black.copy(alpha = 0.15f),
+                                color = if (isDark) Color.Black.copy(alpha = 0.2f) else Color.Black.copy(alpha = 0.08f),
                                 alpha = dampedDragAnimation.pressProgress,
                             )
                         }

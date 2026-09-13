@@ -8,6 +8,7 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -55,83 +56,98 @@ fun HomeFloatingActionCapsule(
         exit = fadeOut() + slideOutVertically { it / 2 },
         modifier = modifier.snackBarPadding(),
     ) {
-            LiquidGlassSurface(
-                shape = CircleShape,
-                elevation = 6.dp,
-                modifier = Modifier.height(48.dp),
+        LiquidGlassSurface(
+            shape = CircleShape,
+            elevation = 6.dp,
+            modifier = Modifier.height(48.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .padding(horizontal = 6.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 6.dp),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    if (onShuffle != null) {
-                        IconButton(
-                            onClick = {
-                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                onShuffle()
-                            },
-                            modifier = Modifier.size(36.dp),
-                        ) {
-                            Icon(
-                                imageVector = EhIcons.Default.Shuffle,
-                                contentDescription = stringResource(R.string.action_shuffle),
-                                tint = MiuixTheme.colorScheme.onSurface,
-                                modifier = Modifier.size(20.dp),
-                            )
-                        }
-                    }
-
+                if (onShuffle != null) {
                     IconButton(
                         onClick = {
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            onRefresh()
+                            onShuffle()
                         },
+                        minWidth = 36.dp,
+                        minHeight = 36.dp,
+                        cornerRadius = 18.dp,
                         modifier = Modifier.size(36.dp),
                     ) {
                         Icon(
-                            imageVector = MiuixIcons.Refresh,
-                            contentDescription = stringResource(R.string.refresh),
-                            tint = MiuixTheme.colorScheme.primary,
+                            imageVector = EhIcons.Default.Shuffle,
+                            contentDescription = stringResource(R.string.action_shuffle),
+                            tint = MiuixTheme.colorScheme.onSurface,
                             modifier = Modifier.size(20.dp),
                         )
                     }
+                }
 
-                    if (onGoTo != null) {
-                        IconButton(
-                            onClick = {
-                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                onGoTo()
-                            },
-                            modifier = Modifier.size(36.dp),
-                        ) {
-                            Icon(
-                                imageVector = EhIcons.Default.GoTo,
-                                contentDescription = stringResource(R.string.action_go_to),
-                                tint = MiuixTheme.colorScheme.onSurface,
-                                modifier = Modifier.size(20.dp),
-                            )
-                        }
+                IconButton(
+                    onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onRefresh()
+                    },
+                    minWidth = 36.dp,
+                    minHeight = 36.dp,
+                    cornerRadius = 18.dp,
+                    modifier = Modifier.size(36.dp),
+                ) {
+                    Icon(
+                        imageVector = MiuixIcons.Refresh,
+                        contentDescription = stringResource(R.string.refresh),
+                        tint = MiuixTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
+
+                if (onGoTo != null) {
+                    IconButton(
+                        onClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            onGoTo()
+                        },
+                        minWidth = 36.dp,
+                        minHeight = 36.dp,
+                        cornerRadius = 18.dp,
+                        modifier = Modifier.size(36.dp),
+                    ) {
+                        Icon(
+                            imageVector = EhIcons.Default.GoTo,
+                            contentDescription = stringResource(R.string.action_go_to),
+                            tint = MiuixTheme.colorScheme.onSurface,
+                            modifier = Modifier.size(20.dp),
+                        )
                     }
+                }
 
-                    if (onLastPage != null) {
-                        IconButton(
-                            onClick = {
-                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                onLastPage()
-                            },
-                            modifier = Modifier.size(36.dp),
-                        ) {
-                            Icon(
-                                imageVector = EhIcons.Default.LastPage,
-                                contentDescription = stringResource(R.string.action_last_page),
-                                tint = MiuixTheme.colorScheme.onSurface,
-                                modifier = Modifier.size(20.dp),
-                            )
-                        }
+                if (onLastPage != null) {
+                    IconButton(
+                        onClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            onLastPage()
+                        },
+                        minWidth = 36.dp,
+                        minHeight = 36.dp,
+                        cornerRadius = 18.dp,
+                        modifier = Modifier.size(36.dp),
+                    ) {
+                        Icon(
+                            imageVector = EhIcons.Default.LastPage,
+                            contentDescription = stringResource(R.string.action_last_page),
+                            tint = MiuixTheme.colorScheme.onSurface,
+                            modifier = Modifier.size(20.dp),
+                        )
                     }
                 }
             }
+        }
         }
 }
 

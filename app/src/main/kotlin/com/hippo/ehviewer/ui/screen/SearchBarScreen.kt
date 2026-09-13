@@ -89,6 +89,8 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import moe.tarsin.navigate
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.graphics.graphicsLayer
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.InputField
@@ -101,8 +103,10 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.Close
 import top.yukonga.miuix.kmp.icon.extended.Image
+import top.yukonga.miuix.kmp.icon.extended.More
 import top.yukonga.miuix.kmp.icon.extended.Search
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.window.WindowBottomSheet
 
 fun interface SuggestionProvider {
     suspend fun providerSuggestions(text: String): List<Suggestion>
@@ -226,19 +230,28 @@ fun SearchBarScreen(
         }
     }
 
+    var showFilterSheet by rememberSaveable { mutableStateOf(false) }
     val backdrop = rememberBlurBackdrop()
 
     CompositionLocalProvider(LocalBackdrop provides backdrop) {
         BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
             val density = LocalDensity.current
+            val statusBarPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
             val subHeaderHeight = if (subHeader != null) 40.dp else 0.dp
+            val compactBarHeight = 48.dp
+            val fullBarHeight = SearchBarDefaults.InputFieldMinHeight + 16.dp + subHeaderHeight
+            val collapseThresholdPx = with(density) { (SearchBarDefaults.InputFieldMinHeight + 16.dp).toPx() }
+            val collapseProgress = if (expanded) 0f else (-searchBarOffsetY().toFloat() / collapseThresholdPx).coerceIn(0f, 1f)
+
             Scaffold(
                 topBar = {
                     Box(modifier = Modifier.fillMaxWidth()) {
+                        val dynamicBlurHeight = statusBarPadding + fullBarHeight + (compactBarHeight - fullBarHeight) * collapseProgress
                         if (backdrop != null && isRuntimeShaderSupported()) {
                             Box(
                                 modifier = Modifier
-                                    .matchParentSize()
+                                    .fillMaxWidth()
+                                    .height(dynamicBlurHeight)
                                     .progressiveTextureBlur(
                                         backdrop = backdrop,
                                         shape = RectangleShape,
@@ -246,19 +259,24 @@ fun SearchBarScreen(
                                         blurRadius = 10f,
                                         colors = BlurDefaults.blurColors(
                                             blendColors = listOf(
-                                                BlendColorEntry(color = MiuixTheme.colorScheme.surface.copy(alpha = 0.85f)),
+                                                BlendColorEntry(color = MiuixTheme.colorScheme.surface.copy(alpha = 0.35f)),
                                             ),
                                         ),
                                     ),
                             )
                         } else {
                             val scrim = MiuixTheme.colorScheme.background.scrim()
-                            Box(Modifier.windowInsetsTopHeight(WindowInsets.statusBars).fillMaxWidth().background(scrim))
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(dynamicBlurHeight)
+                                    .background(scrim),
+                            )
                         }
                         Column {
                             Spacer(modifier = Modifier.windowInsetsTopHeight(WindowInsets.statusBars))
                             // Placeholder, fill immutable SearchBar padding
-                            Spacer(modifier = Modifier.height(SearchBarDefaults.InputFieldMinHeight + 16.dp + subHeaderHeight))
+                            Spacer(modifier = Modifier.height(fullBarHeight))
                         }
                     }
                 },
@@ -273,163 +291,253 @@ fun SearchBarScreen(
                     }
                 },
             )
-        // https://issuetracker.google.com/337191298
-        // Workaround for can't exit SearchBar due to refocus in non-touch mode
-        Box(Modifier.size(1.dp).focusable())
-        val activeState = rememberCompositionActiveState()
-        val query = searchFieldState.text.toString()
-        val contentActive by activeState.state
-        val placeholder = title.takeUnless { expanded || contentActive } ?: searchFieldHint
-        val searchBg = MiuixTheme.colorScheme.background
-        if (expanded) {
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .background(searchBg),
-            )
-        }
-        SearchBar(
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .windowInsetsPadding(WindowInsets.statusBars)
-                .windowInsetsPadding(WindowInsets.navigationBars.only(WindowInsetsSides.Horizontal))
-                .thenIf(!expanded) { offset { IntOffset(0, searchBarOffsetY()) } }
-                .thenIf(expanded) { fillMaxSize() },
-            inputField = {
-                InputField(
-                    query = query,
-                    onQueryChange = { searchFieldState.setTextAndPlaceCursorAtEnd(it) },
-                    onSearch = {
-                        hideSearchView()
-                        onApplySearch()
-                    },
-                    expanded = expanded,
-                    onExpandedChange = onExpandedChange,
-                    modifier = Modifier.widthIn(max = (maxWidth - SearchBarHorizontalPadding * 2).coerceAtMost(M3SearchBarMaxWidth)).fillMaxWidth(),
-                    label = placeholder,
-                    color = if (expanded) MiuixTheme.colorScheme.surfaceContainer else MiuixTheme.colorScheme.surfaceContainerHigh,
-                    leadingIcon = {
-                        if (expanded) {
-                            IconButton(onClick = { hideSearchView() }) {
-                                Icon(MiuixIcons.Back, contentDescription = null)
-                            }
-                        } else {
-                            IconButton(onClick = { onExpandedChange(true) }) {
-                                Icon(MiuixIcons.Search, contentDescription = null)
-                            }
-                        }
-                    },
-                    trailingIcon = {
-                        if (expanded) {
-                            AnimatedContent(targetState = query.isNotEmpty()) { hasText ->
-                                if (hasText) {
-                                    IconButton(onClick = { searchFieldState.clearText() }) {
-                                        Icon(MiuixIcons.Close, contentDescription = null)
-                                    }
-                                } else {
-                                    IconButton(onClick = { navigate(ImageSearchScreenDestination) }) {
-                                        Icon(MiuixIcons.Image, contentDescription = null)
-                                    }
+            // https://issuetracker.google.com/337191298
+            // Workaround for can't exit SearchBar due to refocus in non-touch mode
+            Box(Modifier.size(1.dp).focusable())
+            val activeState = rememberCompositionActiveState()
+            val query = searchFieldState.text.toString()
+            val contentActive by activeState.state
+            val placeholder = title.takeUnless { expanded || contentActive } ?: searchFieldHint
+            val searchBg = MiuixTheme.colorScheme.background
+            if (expanded) {
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .background(searchBg),
+                )
+            }
+            SearchBar(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .windowInsetsPadding(WindowInsets.statusBars)
+                    .windowInsetsPadding(WindowInsets.navigationBars.only(WindowInsetsSides.Horizontal))
+                    .thenIf(!expanded) {
+                        offset { IntOffset(0, searchBarOffsetY()) }
+                            .graphicsLayer {
+                                alpha = (1f - collapseProgress * 1.5f).coerceIn(0f, 1f)
+                                if (collapseProgress >= 0.8f) {
+                                    translationY = -10000f
                                 }
                             }
-                        } else {
-                            Row {
-                                trailingIcon()
+                    }
+                    .thenIf(expanded) { fillMaxSize() },
+                inputField = {
+                    InputField(
+                        query = query,
+                        onQueryChange = { searchFieldState.setTextAndPlaceCursorAtEnd(it) },
+                        onSearch = {
+                            hideSearchView()
+                            onApplySearch()
+                        },
+                        expanded = expanded,
+                        onExpandedChange = onExpandedChange,
+                        modifier = Modifier.widthIn(max = (maxWidth - SearchBarHorizontalPadding * 2).coerceAtMost(M3SearchBarMaxWidth)).fillMaxWidth(),
+                        label = placeholder,
+                        color = if (expanded) MiuixTheme.colorScheme.surfaceContainer else MiuixTheme.colorScheme.surfaceContainerHigh,
+                        leadingIcon = {
+                            if (expanded) {
+                                IconButton(onClick = { hideSearchView() }) {
+                                    Icon(MiuixIcons.Back, contentDescription = null)
+                                }
+                            } else {
+                                IconButton(onClick = { onExpandedChange(true) }) {
+                                    Icon(MiuixIcons.Search, contentDescription = null)
+                                }
                             }
-                        }
-                    },
-                )
-            },
-            expanded = expanded,
-            onExpandedChange = onExpandedChange,
-            outsideEndAction = {
-                TextButton(
-                    text = stringResource(id = android.R.string.cancel),
-                    onClick = { hideSearchView() },
-                    modifier = Modifier.padding(end = 12.dp),
-                )
-            },
-        ) {
-            activeState.Anchor()
-            filter?.invoke()
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom).asPaddingValues(),
+                        },
+                        trailingIcon = {
+                            if (expanded) {
+                                AnimatedContent(targetState = query.isNotEmpty()) { hasText ->
+                                    if (hasText) {
+                                        IconButton(onClick = { searchFieldState.clearText() }) {
+                                            Icon(MiuixIcons.Close, contentDescription = null)
+                                        }
+                                    } else {
+                                        IconButton(onClick = { navigate(ImageSearchScreenDestination) }) {
+                                            Icon(MiuixIcons.Image, contentDescription = null)
+                                        }
+                                    }
+                                }
+                            } else {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    if (filter != null) {
+                                        IconButton(onClick = { showFilterSheet = true }) {
+                                            Icon(MiuixIcons.More, contentDescription = null)
+                                        }
+                                    }
+                                    trailingIcon()
+                                }
+                            }
+                        },
+                    )
+                },
+                expanded = expanded,
+                onExpandedChange = onExpandedChange,
+                outsideEndAction = {
+                    TextButton(
+                        text = stringResource(id = android.R.string.cancel),
+                        onClick = { hideSearchView() },
+                        modifier = Modifier.padding(end = 12.dp),
+                    )
+                },
             ) {
-                item {}
-                items(mSuggestionList, key = { it.keyword.hashCode() * 31 + it.canDelete.hashCode() }) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 12.dp, vertical = 2.dp)
-                            .clip(SquircleShape(12.dp))
-                            .thenIf(animateItems) { animateItem() },
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
+                activeState.Anchor()
+                filter?.invoke()
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom).asPaddingValues(),
+                ) {
+                    item {}
+                    items(mSuggestionList, key = { it.keyword.hashCode() * 31 + it.canDelete.hashCode() }) {
                         Row(
                             modifier = Modifier
-                                .weight(1f)
+                                .fillMaxWidth()
+                                .padding(horizontal = 12.dp, vertical = 2.dp)
                                 .clip(SquircleShape(12.dp))
-                                .clickable(role = Role.Button) { it.onClick() }
-                                .padding(horizontal = 16.dp, vertical = 12.dp),
+                                .thenIf(animateItems) { animateItem() },
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            if (it.canOpenDirectly) {
-                                Icon(
-                                    imageVector = EhIcons.Default.MenuBook,
-                                    contentDescription = null,
-                                    modifier = Modifier.padding(end = 12.dp).size(20.dp),
-                                    tint = MiuixTheme.colorScheme.primary,
-                                )
-                            }
-                            Column(modifier = Modifier.fillMaxWidth()) {
-                                Text(
-                                    text = it.keyword,
-                                    color = MiuixTheme.colorScheme.onSurface,
-                                    style = MiuixTheme.textStyles.body1,
-                                )
-                                if (it.hint != null) {
-                                    Text(
-                                        text = it.hint!!,
-                                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                        style = MiuixTheme.textStyles.body2,
+                            Row(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(SquircleShape(12.dp))
+                                    .clickable(role = Role.Button) { it.onClick() }
+                                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                if (it.canOpenDirectly) {
+                                    Icon(
+                                        imageVector = EhIcons.Default.MenuBook,
+                                        contentDescription = null,
+                                        modifier = Modifier.padding(end = 12.dp).size(20.dp),
+                                        tint = MiuixTheme.colorScheme.primary,
                                     )
                                 }
+                                Column(modifier = Modifier.fillMaxWidth()) {
+                                    Text(
+                                        text = it.keyword,
+                                        color = MiuixTheme.colorScheme.onSurface,
+                                        style = MiuixTheme.textStyles.body1,
+                                    )
+                                    if (it.hint != null) {
+                                        Text(
+                                            text = it.hint!!,
+                                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                            style = MiuixTheme.textStyles.body2,
+                                        )
+                                    }
+                                }
                             }
-                        }
-                        if (it.canDelete) {
-                            IconButton(
-                                onClick = { deleteKeyword(it.keyword) },
-                                modifier = Modifier.padding(end = 8.dp),
-                            ) {
-                                Icon(
-                                    imageVector = MiuixIcons.Close,
-                                    contentDescription = stringResource(id = R.string.delete),
-                                    tint = MiuixTheme.colorScheme.onSurfaceVariantActions,
-                                    modifier = Modifier.size(20.dp),
-                                )
+                            if (it.canDelete) {
+                                IconButton(
+                                    onClick = { deleteKeyword(it.keyword) },
+                                    modifier = Modifier.padding(end = 8.dp),
+                                ) {
+                                    Icon(
+                                        imageVector = MiuixIcons.Close,
+                                        contentDescription = stringResource(id = R.string.delete),
+                                        tint = MiuixTheme.colorScheme.onSurfaceVariantActions,
+                                        modifier = Modifier.size(20.dp),
+                                    )
+                                }
                             }
                         }
                     }
                 }
             }
-        }
-        if (!expanded && subHeader != null) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .windowInsetsPadding(WindowInsets.statusBars)
-                    .offset {
-                        val inputFieldOffset = with(density) { (SearchBarDefaults.InputFieldMinHeight + 16.dp).roundToPx() }
-                        IntOffset(0, searchBarOffsetY() + inputFieldOffset)
+
+            if (!expanded && subHeader != null) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .windowInsetsPadding(WindowInsets.statusBars)
+                        .offset {
+                            val inputFieldOffset = with(density) { (SearchBarDefaults.InputFieldMinHeight + 16.dp).roundToPx() }
+                            IntOffset(0, searchBarOffsetY() + inputFieldOffset)
+                        }
+                        .graphicsLayer {
+                            alpha = (1f - collapseProgress * 1.5f).coerceIn(0f, 1f)
+                            if (collapseProgress >= 0.8f) {
+                                translationY = -10000f
+                            }
+                        }
+                        .fillMaxWidth(),
+                ) {
+                    subHeader()
+                }
+            }
+
+            if (!expanded) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .windowInsetsPadding(WindowInsets.statusBars)
+                        .windowInsetsPadding(WindowInsets.navigationBars.only(WindowInsetsSides.Horizontal))
+                        .fillMaxWidth()
+                        .height(compactBarHeight),
+                ) {
+                    if (title != null) {
+                        Text(
+                            text = title,
+                            style = MiuixTheme.textStyles.title2,
+                            color = MiuixTheme.colorScheme.onSurface,
+                            modifier = Modifier
+                                .align(Alignment.CenterStart)
+                                .padding(start = 24.dp)
+                                .graphicsLayer {
+                                    alpha = ((collapseProgress - 0.3f) / 0.7f).coerceIn(0f, 1f)
+                                },
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
                     }
-                    .fillMaxWidth(),
-            ) {
-                subHeader()
+                    Row(
+                        modifier = Modifier
+                            .align(Alignment.CenterEnd)
+                            .padding(end = 12.dp)
+                            .graphicsLayer {
+                                alpha = ((collapseProgress - 0.2f) / 0.8f).coerceIn(0f, 1f)
+                                scaleX = 0.85f + 0.15f * collapseProgress
+                                scaleY = 0.85f + 0.15f * collapseProgress
+                            },
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        if (collapseProgress > 0.2f) {
+                            IconButton(
+                                onClick = { onExpandedChange(true) },
+                            ) {
+                                Icon(
+                                    imageVector = MiuixIcons.Search,
+                                    contentDescription = null,
+                                )
+                            }
+                            if (filter != null) {
+                                IconButton(
+                                    onClick = { showFilterSheet = true },
+                                ) {
+                                    Icon(
+                                        imageVector = MiuixIcons.More,
+                                        contentDescription = null,
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (filter != null) {
+                WindowBottomSheet(
+                    show = showFilterSheet,
+                    onDismissRequest = { showFilterSheet = false },
+                ) {
+                    Box(modifier = Modifier.padding(bottom = 16.dp)) {
+                        filter()
+                    }
+                }
             }
         }
     }
-}
 }
 
 
