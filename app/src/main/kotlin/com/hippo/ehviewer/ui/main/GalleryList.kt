@@ -216,7 +216,12 @@ fun GalleryList(
 }
 
 @Composable
-fun ErrorTip(modifier: Modifier = Modifier, text: String, onRetry: (() -> Unit)? = null) {
+fun ErrorTip(
+    modifier: Modifier = Modifier,
+    text: String,
+    enabled: Boolean = true,
+    onRetry: (() -> Unit)? = null,
+) {
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center,
@@ -237,8 +242,15 @@ fun ErrorTip(modifier: Modifier = Modifier, text: String, onRetry: (() -> Unit)?
                 textAlign = TextAlign.Center,
             )
             if (onRetry != null) {
+                var retrying by remember(text) { mutableStateOf(false) }
                 Spacer(modifier = Modifier.height(16.dp))
-                Button(onClick = onRetry) {
+                Button(
+                    enabled = enabled && !retrying,
+                    onClick = {
+                        retrying = true
+                        onRetry()
+                    },
+                ) {
                     Text(text = stringResource(id = R.string.action_retry))
                 }
             }

@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.selection.triStateToggleable
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.text.input.rememberTextFieldState
@@ -249,13 +250,16 @@ fun AnimatedVisibilityScope.FilterScreen(navigator: DestinationsNavigator) = Scr
                                         Row(
                                             modifier = Modifier
                                                 .fillMaxWidth()
-                                                .clickable(role = Role.Checkbox) { filter.trigger { filterCheckBoxRecomposeScope.invalidate() } }
+                                                .triStateToggleable(
+                                                    state = ToggleableState(filter.enable),
+                                                    onClick = { filter.trigger { filterCheckBoxRecomposeScope.invalidate() } },
+                                                )
                                                 .padding(horizontal = 16.dp, vertical = 12.dp),
                                             verticalAlignment = Alignment.CenterVertically,
                                         ) {
                                             Checkbox(
                                                 state = ToggleableState(filter.enable),
-                                                onClick = { filter.trigger { filterCheckBoxRecomposeScope.invalidate() } },
+                                                onClick = null,
                                             )
                                             Spacer(modifier = Modifier.size(12.dp))
                                             Text(text = filter.text, modifier = Modifier.weight(1F))
@@ -271,7 +275,7 @@ fun AnimatedVisibilityScope.FilterScreen(navigator: DestinationsNavigator) = Scr
                                                     }
                                                 },
                                             ) {
-                                                Icon(imageVector = MiuixIcons.Delete, contentDescription = null)
+                                                Icon(imageVector = MiuixIcons.Delete, contentDescription = stringResource(id = R.string.delete))
                                             }
                                         }
                                     }

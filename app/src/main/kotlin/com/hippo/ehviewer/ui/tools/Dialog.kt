@@ -270,7 +270,7 @@ suspend fun awaitSelectTags(): List<String> = dialog { cont ->
                         ) {
                             MiuixIcon(
                                 imageVector = MiuixIcons.Add,
-                                contentDescription = null,
+                                contentDescription = stringResource(id = R.string.action_add_tag),
                             )
                         }
                     },
@@ -826,7 +826,10 @@ suspend fun awaitSelectItemWithIconAndTextField(
                 trailingIcon = {
                     if (note.text.isNotEmpty()) {
                         IconButton(onClick = { note.clearText() }) {
-                            MiuixIcon(imageVector = MiuixIcons.Close, contentDescription = null)
+                            MiuixIcon(
+                                imageVector = MiuixIcons.Close,
+                                contentDescription = stringResource(id = R.string.clear_all),
+                            )
                         }
                     }
                 },

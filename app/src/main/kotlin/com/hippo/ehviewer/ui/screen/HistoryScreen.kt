@@ -37,7 +37,9 @@ import androidx.paging.compose.itemContentType
 import androidx.paging.compose.itemKey
 import androidx.paging.map
 import com.ehviewer.core.i18n.R
+import com.ehviewer.core.ui.component.DismissDeleteBackground
 import com.ehviewer.core.ui.component.FastScrollLazyColumn
+import com.ehviewer.core.ui.component.dismissDeleteAction
 import com.ehviewer.core.ui.icons.EhIcons
 import com.ehviewer.core.ui.icons.big.History
 import com.ehviewer.core.ui.util.Await
@@ -149,23 +151,22 @@ fun AnimatedVisibilityScope.HistoryScreen(navigator: DestinationsNavigator) = Sc
                 val info = historyData[index]
                 if (info != null) {
                     val dismissState = rememberSwipeToDismissBoxState()
+                    val deleteHistory = {
+                        launch {
+                            EhDB.deleteHistoryInfo(info)
+                        }
+                    }
                     SwipeToDismissBox(
                         state = dismissState,
                         backgroundContent = {
-                            Row(
-                                modifier = Modifier.fillMaxSize(),
-                                horizontalArrangement = Arrangement.End,
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Icon(
-                                    imageVector = MiuixIcons.Delete,
-                                    contentDescription = stringResource(id = R.string.delete),
-                                    tint = MiuixTheme.colorScheme.error,
-                                    modifier = Modifier.padding(end = marginH + 16.dp),
-                                )
-                            }
+                            DismissDeleteBackground(endPadding = marginH + 16.dp)
                         },
-                        modifier = Modifier.thenIf(animateItems) { animateItem() },
+                        modifier = Modifier
+                            .dismissDeleteAction(
+                                label = stringResource(id = R.string.delete),
+                                onDelete = { deleteHistory() },
+                            )
+                            .thenIf(animateItems) { animateItem() },
                         enableDismissFromStartToEnd = false,
                         onDismiss = { EhDB.deleteHistoryInfo(info) },
                     ) {

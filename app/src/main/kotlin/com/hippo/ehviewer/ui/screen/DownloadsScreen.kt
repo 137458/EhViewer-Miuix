@@ -27,6 +27,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.items
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.material3.SwipeToDismissBoxDefaults
@@ -64,6 +65,7 @@ import arrow.core.partially1
 import com.ehviewer.core.database.model.DownloadInfo
 import com.ehviewer.core.i18n.R
 import com.ehviewer.core.model.TagNamespace
+import com.ehviewer.core.ui.component.DismissDeleteBackground
 import com.ehviewer.core.ui.component.FAB_ANIMATE_TIME
 import com.ehviewer.core.ui.component.FabLayout
 import com.ehviewer.core.ui.component.FastScrollLazyColumn
@@ -71,6 +73,7 @@ import com.ehviewer.core.ui.component.FastScrollLazyVerticalStaggeredGrid
 import com.ehviewer.core.ui.component.LocalSideSheetState
 import com.ehviewer.core.ui.component.ProvideSideSheetContent
 import com.ehviewer.core.ui.component.SquircleShape
+import com.ehviewer.core.ui.component.dismissDeleteAction
 import com.ehviewer.core.ui.icons.EhIcons
 import com.ehviewer.core.ui.icons.big.Download
 import com.ehviewer.core.ui.icons.filled.Shuffle
@@ -344,10 +347,14 @@ fun AnimatedVisibilityScope.DownloadsScreen(navigator: DestinationsNavigator) = 
                                 Color.Transparent
                             },
                         )
-                        .clickable(role = Role.RadioButton) {
-                            switchLabel("")
-                            closeSheet()
-                        }
+                        .selectable(
+                            selected = selected,
+                            role = Role.RadioButton,
+                            onClick = {
+                                switchLabel("")
+                                closeSheet()
+                            },
+                        )
                         .padding(horizontal = 16.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -372,10 +379,14 @@ fun AnimatedVisibilityScope.DownloadsScreen(navigator: DestinationsNavigator) = 
                                 Color.Transparent
                             },
                         )
-                        .clickable(role = Role.RadioButton) {
-                            switchLabel(null)
-                            closeSheet()
-                        }
+                        .selectable(
+                            selected = selected,
+                            role = Role.RadioButton,
+                            onClick = {
+                                switchLabel(null)
+                                closeSheet()
+                            },
+                        )
                         .padding(horizontal = 16.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -399,39 +410,31 @@ fun AnimatedVisibilityScope.DownloadsScreen(navigator: DestinationsNavigator) = 
                     // Not using rememberSwipeToDismissBoxState to prevent LazyColumn from reusing it
                     // SQLite may reuse ROWIDs from previously deleted rows so they'll have the same key
                     val dismissState = remember { SwipeToDismissBoxState(SwipeToDismissBoxValue.Settled, positionalThreshold) }
+                    val deleteAction: suspend () -> Unit = {
+                        dialogState.runCatching {
+                            awaitConfirmationOrCancel(confirmText = R.string.delete) {
+                                Text(text = stringResource(R.string.delete_label, item))
+                            }
+                        }.onSuccess {
+                            DownloadManager.deleteLabel(item)
+                            when (filterState.label) {
+                                item -> switchLabel("")
+                                null -> invalidateKey = !invalidateKey
+                            }
+                        }.onFailure {
+                            dismissState.reset()
+                        }
+                    }
                     SwipeToDismissBox(
                         state = dismissState,
-                        backgroundContent = {
-                            Row(
-                                modifier = Modifier.fillMaxSize(),
-                                horizontalArrangement = Arrangement.End,
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Icon(
-                                    imageVector = MiuixIcons.Delete,
-                                    contentDescription = stringResource(id = R.string.delete),
-                                    tint = MiuixTheme.colorScheme.error,
-                                    modifier = Modifier.padding(end = 20.dp),
-                                )
-                            }
-                        },
+                        backgroundContent = { DismissDeleteBackground() },
+                        modifier = Modifier.dismissDeleteAction(
+                            label = stringResource(id = R.string.delete),
+                            onDelete = { launch { deleteAction() } },
+                        ),
                         enableDismissFromStartToEnd = false,
                         gesturesEnabled = editEnable,
-                        onDismiss = {
-                            dialogState.runCatching {
-                                awaitConfirmationOrCancel(confirmText = R.string.delete) {
-                                    Text(text = stringResource(R.string.delete_label, item))
-                                }
-                            }.onSuccess {
-                                DownloadManager.deleteLabel(item)
-                                when (filterState.label) {
-                                    item -> switchLabel("")
-                                    null -> invalidateKey = !invalidateKey
-                                }
-                            }.onFailure {
-                                dismissState.reset()
-                            }
-                        },
+                        onDismiss = { deleteAction() },
                     ) {
                         val selected = filterState.label == item
                         val name = if (filterMode == DownloadsFilterMode.ARTIST) getTranslation(label) else label
@@ -449,10 +452,14 @@ fun AnimatedVisibilityScope.DownloadsScreen(navigator: DestinationsNavigator) = 
                                         Color.Transparent
                                     },
                                 )
-                                .clickable(role = Role.RadioButton) {
-                                    switchLabel(item)
-                                    closeSheet()
-                                }
+                                .selectable(
+                                    selected = selected,
+                                    role = Role.RadioButton,
+                                    onClick = {
+                                        switchLabel(item)
+                                        closeSheet()
+                                    },
+                                )
                                 .padding(start = 16.dp, end = 8.dp, top = 6.dp, bottom = 6.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
@@ -480,7 +487,7 @@ fun AnimatedVisibilityScope.DownloadsScreen(navigator: DestinationsNavigator) = 
                                         }
                                     },
                                 ) {
-                                    Icon(imageVector = MiuixIcons.Edit, contentDescription = null)
+                                    Icon(imageVector = MiuixIcons.Edit, contentDescription = renameLabel)
                                 }
                                 IconButton(
                                     onClick = {},
@@ -503,7 +510,7 @@ fun AnimatedVisibilityScope.DownloadsScreen(navigator: DestinationsNavigator) = 
                                         },
                                     ),
                                 ) {
-                                    Icon(imageVector = MiuixIcons.Sort, contentDescription = null)
+                                    Icon(imageVector = MiuixIcons.Sort, contentDescription = stringResource(id = R.string.sort_by))
                                 }
                             }
                         }

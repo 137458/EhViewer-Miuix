@@ -165,12 +165,17 @@ fun DownloadCard(
                     DownloadInfo.STATE_FINISH -> MiuixIcons.Ok
                     else -> MiuixIcons.Play
                 }
+                val actionDesc = when (downloadState) {
+                    DownloadInfo.STATE_WAIT, DownloadInfo.STATE_DOWNLOAD -> stringResource(id = R.string.download_pause)
+                    DownloadInfo.STATE_FINISH -> stringResource(id = R.string.download_state_finish)
+                    else -> stringResource(id = R.string.download_start)
+                }
                 IconButton(
                     onClick = if (running) onStop else onStart,
                     modifier = Modifier.offset(4.dp),
                     enabled = !selectMode,
                 ) {
-                    Icon(imageVector = icon, contentDescription = null)
+                    Icon(imageVector = icon, contentDescription = actionDesc)
                 }
             }
         }

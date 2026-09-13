@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -177,13 +178,15 @@ fun GalleryDetailHeaderCard(
                     }
                     Box(
                         modifier = Modifier
-                            .clickable(onClick = onUploaderChipClick)
+                            .defaultMinSize(minHeight = 36.dp)
+                            .clickable(role = Role.Button, onClick = onUploaderChipClick)
                             .padding(
                                 start = if (canBlock) 2.dp else 10.dp,
                                 end = 10.dp,
                                 top = 6.dp,
                                 bottom = 6.dp,
                             ),
+                        contentAlignment = Alignment.CenterStart,
                     ) {
                         Text(
                             text = uploaderText,

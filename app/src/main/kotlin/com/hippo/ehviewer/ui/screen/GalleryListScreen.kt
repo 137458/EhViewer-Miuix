@@ -23,6 +23,7 @@ import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.material3.SwipeToDismissBoxDefaults
@@ -63,12 +64,14 @@ import arrow.core.raise.ensure
 import arrow.core.raise.ensureNotNull
 import com.ehviewer.core.database.model.QuickSearch
 import com.ehviewer.core.i18n.R
+import com.ehviewer.core.ui.component.DismissDeleteBackground
 import com.ehviewer.core.ui.component.FAB_ANIMATE_TIME
 import com.ehviewer.core.ui.component.FabLayout
 import com.ehviewer.core.ui.component.FastScrollLazyColumn
 import com.ehviewer.core.ui.component.LocalSideSheetState
 import com.ehviewer.core.ui.component.ProvideSideSheetContent
 import com.ehviewer.core.ui.component.SquircleShape
+import com.ehviewer.core.ui.component.dismissDeleteAction
 import com.ehviewer.core.ui.icons.EhIcons
 import com.ehviewer.core.ui.icons.filled.Bookmarks
 import com.ehviewer.core.ui.icons.filled.GoTo
@@ -234,13 +237,17 @@ fun AnimatedVisibilityScope.GalleryListScreen(
                         .padding(horizontal = 12.dp, vertical = 2.dp)
                         .clip(SquircleShape(12.dp))
                         .background(bgColor)
-                        .clickable(role = Role.RadioButton) {
-                            Settings.recentToplist = keyword
-                            urlBuilder = ListUrlBuilder(MODE_TOPLIST, keyword = keyword)
-                            data.refresh()
-                            fabHidden = false
-                            launch { sheetState.close() }
-                        }
+                        .selectable(
+                            selected = isSelected,
+                            role = Role.RadioButton,
+                            onClick = {
+                                Settings.recentToplist = keyword
+                                urlBuilder = ListUrlBuilder(MODE_TOPLIST, keyword = keyword)
+                                data.refresh()
+                                fabHidden = false
+                                launch { sheetState.close() }
+                            },
+                        )
                         .padding(horizontal = 16.dp, vertical = 14.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -353,40 +360,32 @@ fun AnimatedVisibilityScope.GalleryListScreen(
                             // Not using rememberSwipeToDismissBoxState to prevent LazyColumn from reusing it
                             // SQLite may reuse ROWIDs from previously deleted rows so they'll have the same key
                             val dismissState = remember { SwipeToDismissBoxState(SwipeToDismissBoxValue.Settled, positionalThreshold) }
+                            val deleteAction: suspend () -> Unit = {
+                                dialogState.runCatching {
+                                    awaitConfirmationOrCancel(confirmText = R.string.delete) {
+                                        Text(text = stringResource(R.string.delete_quick_search, item.name))
+                                    }
+                                }.onSuccess {
+                                    EhDB.deleteQuickSearch(item)
+                                    with(quickSearchList) {
+                                        subList(index + 1, size).forEach {
+                                            it.position--
+                                        }
+                                        removeAt(index)
+                                    }
+                                }.onFailure {
+                                    dismissState.reset()
+                                }
+                            }
                             SwipeToDismissBox(
                                 state = dismissState,
-                                backgroundContent = {
-                                    Row(
-                                        modifier = Modifier.fillMaxSize(),
-                                        horizontalArrangement = Arrangement.End,
-                                        verticalAlignment = Alignment.CenterVertically,
-                                    ) {
-                                        Icon(
-                                            imageVector = MiuixIcons.Delete,
-                                            contentDescription = stringResource(id = R.string.delete),
-                                            tint = MiuixTheme.colorScheme.error,
-                                            modifier = Modifier.padding(end = 20.dp),
-                                        )
-                                    }
-                                },
+                                backgroundContent = { DismissDeleteBackground() },
+                                modifier = Modifier.dismissDeleteAction(
+                                    label = stringResource(id = R.string.delete),
+                                    onDelete = { launch { deleteAction() } },
+                                ),
                                 enableDismissFromStartToEnd = false,
-                                onDismiss = {
-                                    dialogState.runCatching {
-                                        awaitConfirmationOrCancel(confirmText = R.string.delete) {
-                                            Text(text = stringResource(R.string.delete_quick_search, item.name))
-                                        }
-                                    }.onSuccess {
-                                        EhDB.deleteQuickSearch(item)
-                                        with(quickSearchList) {
-                                            subList(index + 1, size).forEach {
-                                                it.position--
-                                            }
-                                            removeAt(index)
-                                        }
-                                    }.onFailure {
-                                        dismissState.reset()
-                                    }
-                                },
+                                onDismiss = { deleteAction() },
                             ) {
                                 val itemBg = if (isDragging) {
                                     MiuixTheme.colorScheme.surfaceContainerHigh

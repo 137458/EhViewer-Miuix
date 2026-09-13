@@ -309,35 +309,45 @@ fun SearchBarScreen(
                             .fillMaxWidth()
                             .padding(horizontal = 12.dp, vertical = 2.dp)
                             .clip(SquircleShape(12.dp))
-                            .clickable(role = Role.Button) { it.onClick() }
-                            .thenIf(animateItems) { animateItem() }
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                            .thenIf(animateItems) { animateItem() },
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        if (it.canOpenDirectly) {
-                            Icon(
-                                imageVector = EhIcons.Default.MenuBook,
-                                contentDescription = null,
-                                modifier = Modifier.padding(end = 12.dp).size(20.dp),
-                                tint = MiuixTheme.colorScheme.primary,
-                            )
-                        }
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = it.keyword,
-                                color = MiuixTheme.colorScheme.onSurface,
-                                style = MiuixTheme.textStyles.body1,
-                            )
-                            if (it.hint != null) {
-                                Text(
-                                    text = it.hint!!,
-                                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                    style = MiuixTheme.textStyles.body2,
+                        Row(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(SquircleShape(12.dp))
+                                .clickable(role = Role.Button) { it.onClick() }
+                                .padding(horizontal = 16.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            if (it.canOpenDirectly) {
+                                Icon(
+                                    imageVector = EhIcons.Default.MenuBook,
+                                    contentDescription = null,
+                                    modifier = Modifier.padding(end = 12.dp).size(20.dp),
+                                    tint = MiuixTheme.colorScheme.primary,
                                 )
+                            }
+                            Column(modifier = Modifier.fillMaxWidth()) {
+                                Text(
+                                    text = it.keyword,
+                                    color = MiuixTheme.colorScheme.onSurface,
+                                    style = MiuixTheme.textStyles.body1,
+                                )
+                                if (it.hint != null) {
+                                    Text(
+                                        text = it.hint!!,
+                                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                        style = MiuixTheme.textStyles.body2,
+                                    )
+                                }
                             }
                         }
                         if (it.canDelete) {
-                            IconButton(onClick = { deleteKeyword(it.keyword) }) {
+                            IconButton(
+                                onClick = { deleteKeyword(it.keyword) },
+                                modifier = Modifier.padding(end = 8.dp),
+                            ) {
                                 Icon(
                                     imageVector = MiuixIcons.Close,
                                     contentDescription = stringResource(id = R.string.delete),

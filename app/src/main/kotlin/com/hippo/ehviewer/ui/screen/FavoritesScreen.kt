@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -172,13 +173,17 @@ fun AnimatedVisibilityScope.FavouritesScreen(navigator: DestinationsNavigator, v
                         .padding(horizontal = 4.dp, vertical = 2.dp)
                         .clip(SquircleShape(12.dp))
                         .background(bgColor)
-                        .clickable(role = Role.RadioButton) {
-                            val newCat = index - 2
-                            refresh(FavListUrlBuilder(newCat))
-                            Settings.recentFavCat = newCat
-                            fabHidden = false
-                            launch { sheetState.close() }
-                        }
+                        .selectable(
+                            selected = isSelected,
+                            role = Role.RadioButton,
+                            onClick = {
+                                val newCat = index - 2
+                                refresh(FavListUrlBuilder(newCat))
+                                Settings.recentFavCat = newCat
+                                fabHidden = false
+                                launch { sheetState.close() }
+                            },
+                        )
                         .padding(horizontal = 16.dp, vertical = 14.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
