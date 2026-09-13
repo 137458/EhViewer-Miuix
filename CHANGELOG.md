@@ -10,6 +10,7 @@
 
 ### 修复
 
+* 修复主界面由于 layerBackdrop 递归包含自身导致的 RenderNode 渲染死循环与原生崩溃问题
 * 修复网页登录（WebViewSignInScreen）提取 Cookie 成功后因底层原生 WebView 提前销毁及等待取消导致的应用闪退与挂起问题
 * 修复 CookieManager 解析包含非 RFC 6265 字符的 Cookie 时抛出 IllegalArgumentException 崩溃的问题，增加双重容错与手动安全分割机制
 * 修复登录完成后因根导航栈保留已弃用登录页面而导致的页面流转卡顿问题

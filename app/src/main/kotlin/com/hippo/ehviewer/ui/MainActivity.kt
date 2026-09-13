@@ -454,23 +454,27 @@ class MainActivity : AppCompatActivity() {
                     @Composable
                     fun MainContent() {
                         Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .layerBackdrop(contentBackdrop),
+                            modifier = Modifier.fillMaxSize(),
                         ) {
-                            SharedTransitionLayout {
-                                CompositionLocalProvider(LocalSharedTransitionScope provides this) {
-                                    val start = when {
-                                        needSignIn -> SignInScreenDestination
-                                        hasNetwork -> navItems[launchPage].first
-                                        else -> DownloadsScreenDestination
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .layerBackdrop(contentBackdrop),
+                            ) {
+                                SharedTransitionLayout {
+                                    CompositionLocalProvider(LocalSharedTransitionScope provides this) {
+                                        val start = when {
+                                            needSignIn -> SignInScreenDestination
+                                            hasNetwork -> navItems[launchPage].first
+                                            else -> DownloadsScreenDestination
+                                        }
+                                        DestinationsNavHost(
+                                            navGraph = NavGraphs.root,
+                                            start = start,
+                                            defaultTransitions = rememberEhNavAnim(),
+                                            navController = navController,
+                                        )
                                     }
-                                    DestinationsNavHost(
-                                        navGraph = NavGraphs.root,
-                                        start = start,
-                                        defaultTransitions = rememberEhNavAnim(),
-                                        navController = navController,
-                                    )
                                 }
                             }
 
