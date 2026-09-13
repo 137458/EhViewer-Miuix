@@ -4,6 +4,7 @@ import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
@@ -149,39 +150,51 @@ fun GalleryDetailHeaderCard(
                     color = MiuixTheme.colorScheme.primary,
                 )
             }
-            val uploaderText = info.uploader.orEmpty()
-            Row(
-                modifier = Modifier
-                    .padding(horizontal = dimensionResource(id = com.hippo.ehviewer.R.dimen.keyline_margin), vertical = 3.dp)
-                    .clip(SquircleShape(8.dp))
-                    .background(MiuixTheme.colorScheme.surfaceContainer)
-                    .clickable(onClick = onUploaderChipClick)
-                    .padding(horizontal = 10.dp, vertical = 6.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                IconButton(
-                    onClick = onBlockUploaderIconClick,
-                    modifier = Modifier.size(24.dp),
-                    cornerRadius = 12.dp,
-                    minHeight = 24.dp,
-                    minWidth = 24.dp,
+            info.uploader?.takeIf { it.isNotEmpty() }?.let { uploaderText ->
+                val canBlock = uploaderText != "(Disowned)"
+                Row(
+                    modifier = Modifier
+                        .padding(horizontal = dimensionResource(id = com.hippo.ehviewer.R.dimen.keyline_margin), vertical = 3.dp)
+                        .clip(SquircleShape(8.dp))
+                        .background(MiuixTheme.colorScheme.surfaceContainer),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Icon(
-                        imageVector = MiuixIcons.Blocklist,
-                        contentDescription = stringResource(id = R.string.block_uploader),
-                        modifier = Modifier.size(16.dp),
-                        tint = MiuixTheme.colorScheme.onSurfaceSecondary,
-                    )
+                    if (canBlock) {
+                        IconButton(
+                            onClick = onBlockUploaderIconClick,
+                            modifier = Modifier.size(28.dp),
+                            cornerRadius = 8.dp,
+                            minHeight = 28.dp,
+                            minWidth = 28.dp,
+                        ) {
+                            Icon(
+                                imageVector = MiuixIcons.Blocklist,
+                                contentDescription = stringResource(id = R.string.block_uploader),
+                                modifier = Modifier.size(16.dp),
+                                tint = MiuixTheme.colorScheme.onSurfaceSecondary,
+                            )
+                        }
+                    }
+                    Box(
+                        modifier = Modifier
+                            .clickable(onClick = onUploaderChipClick)
+                            .padding(
+                                start = if (canBlock) 2.dp else 10.dp,
+                                end = 10.dp,
+                                top = 6.dp,
+                                bottom = 6.dp,
+                            ),
+                    ) {
+                        Text(
+                            text = uploaderText,
+                            overflow = TextOverflow.Ellipsis,
+                            softWrap = false,
+                            maxLines = 1,
+                            style = MiuixTheme.textStyles.footnote1,
+                            color = MiuixTheme.colorScheme.onSurface,
+                        )
+                    }
                 }
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = uploaderText,
-                    overflow = TextOverflow.Visible,
-                    softWrap = false,
-                    maxLines = 1,
-                    style = MiuixTheme.textStyles.footnote1,
-                    color = MiuixTheme.colorScheme.onSurface,
-                )
             }
         }
     }
