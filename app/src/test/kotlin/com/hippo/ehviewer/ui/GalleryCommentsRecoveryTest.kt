@@ -4,9 +4,9 @@ import com.ehviewer.core.model.GalleryCommentList
 import com.ehviewer.core.model.GalleryDetail
 import com.hippo.ehviewer.ui.screen.GalleryCommentsState
 import com.hippo.ehviewer.ui.screen.resolveGalleryCommentsState
-import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import org.junit.Test
 
 class GalleryCommentsRecoveryTest {
 

@@ -180,4 +180,3 @@ private class BgEffectNode(
         drawContent()
     }
 }
-

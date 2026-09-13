@@ -16,4 +16,3 @@ fun BackdropEffectScope.vibrancy() {
         saturation = 1.5f,
     )
 }
-

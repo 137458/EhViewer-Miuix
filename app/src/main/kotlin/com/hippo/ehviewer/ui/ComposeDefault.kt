@@ -4,7 +4,6 @@ import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import top.yukonga.miuix.kmp.basic.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -18,6 +17,7 @@ import com.hippo.ehviewer.ui.tools.LocalGlobalDialogState
 import com.hippo.ehviewer.util.findActivity
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.CoroutineScope
+import top.yukonga.miuix.kmp.basic.SnackbarHostState
 
 @Composable
 context(scope: AnimatedVisibilityScope)

@@ -170,4 +170,3 @@ internal class BgEffectPainter(
         }
     }
 }
-

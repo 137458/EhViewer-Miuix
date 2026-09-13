@@ -3,9 +3,9 @@
 
 package com.ehviewer.core.ui.effect
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.spring
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Spacer
@@ -14,11 +14,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import kotlin.math.floor
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-
-import kotlin.math.floor
 
 @Composable
 fun BgEffectBackground(
@@ -86,4 +85,3 @@ fun BgEffectBackground(
         content()
     }
 }
-

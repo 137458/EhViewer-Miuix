@@ -21,17 +21,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Delete
-import top.yukonga.miuix.kmp.icon.extended.Download
-import top.yukonga.miuix.kmp.icon.extended.Favorites
-import top.yukonga.miuix.kmp.icon.extended.FavoritesFill
-import top.yukonga.miuix.kmp.icon.extended.MoveFile
-import top.yukonga.miuix.kmp.theme.MiuixTheme
-import com.ehviewer.core.ui.icons.EhIcons
-import com.ehviewer.core.ui.icons.filled.HeartBroken
-import com.ehviewer.core.ui.icons.filled.MenuBook
 import androidx.compose.material3.SelectableDates
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -47,6 +36,9 @@ import com.ehviewer.core.model.GalleryInfo
 import com.ehviewer.core.model.GalleryInfo.Companion.LOCAL_FAVORITED
 import com.ehviewer.core.model.GalleryInfo.Companion.NOT_FAVORITED
 import com.ehviewer.core.ui.component.LabeledCheckbox
+import com.ehviewer.core.ui.icons.EhIcons
+import com.ehviewer.core.ui.icons.filled.HeartBroken
+import com.ehviewer.core.ui.icons.filled.MenuBook
 import com.ehviewer.core.util.isAtLeastT
 import com.ehviewer.core.util.mapToLongArray
 import com.ehviewer.core.util.toEpochMillis
@@ -90,6 +82,14 @@ import moe.tarsin.string
 import moe.tarsin.tip
 import okio.Path
 import splitties.init.appCtx
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Delete
+import top.yukonga.miuix.kmp.icon.extended.Download
+import top.yukonga.miuix.kmp.icon.extended.Favorites
+import top.yukonga.miuix.kmp.icon.extended.FavoritesFill
+import top.yukonga.miuix.kmp.icon.extended.MoveFile
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 private fun removeNoMediaFile(downloadDir: Path) {
     (downloadDir / ".nomedia").delete()

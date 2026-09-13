@@ -2,11 +2,11 @@ package moe.tarsin
 
 import android.content.Context
 import androidx.annotation.StringRes
-import top.yukonga.miuix.kmp.basic.SnackbarDuration
-import top.yukonga.miuix.kmp.basic.SnackbarHostState
 import com.hippo.ehviewer.ui.MainActivity
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.ramcosta.composedestinations.spec.Direction
+import top.yukonga.miuix.kmp.basic.SnackbarDuration
+import top.yukonga.miuix.kmp.basic.SnackbarHostState
 
 context(nav: DestinationsNavigator)
 fun navigate(direction: Direction) = nav.navigate(direction)

@@ -8,10 +8,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
-import com.ehviewer.core.ui.icons.EhIcons
-import com.ehviewer.core.ui.icons.filled.StarHalf
-import com.ehviewer.core.ui.icons.filled.StarOutline
-import top.yukonga.miuix.kmp.basic.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.remember
@@ -21,8 +17,12 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.ehviewer.core.ui.icons.EhIcons
+import com.ehviewer.core.ui.icons.filled.StarHalf
+import com.ehviewer.core.ui.icons.filled.StarOutline
 import com.ehviewer.core.ui.util.IconCached
 import kotlin.math.roundToInt
+import top.yukonga.miuix.kmp.basic.Icon
 
 private val colorYellow800 = Color(0xfff9a825)
 

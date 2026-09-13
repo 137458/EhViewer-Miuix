@@ -41,8 +41,8 @@ import com.ehviewer.core.i18n.R
 import com.hippo.ehviewer.Settings
 import com.hippo.ehviewer.collectAsState
 import kotlin.time.Duration.Companion.minutes
-import top.yukonga.miuix.kmp.basic.Surface
 import kotlin.time.TimeSource
+import top.yukonga.miuix.kmp.basic.Surface
 
 context(ctx: Context)
 fun isAuthenticationSupported(): Boolean {

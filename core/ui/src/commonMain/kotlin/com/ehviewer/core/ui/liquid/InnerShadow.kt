@@ -157,4 +157,3 @@ private class InnerShadowNode(
 private val ShadowMaskPaint: Paint = Paint().apply {
     blendMode = BlendMode.Clear
 }
-

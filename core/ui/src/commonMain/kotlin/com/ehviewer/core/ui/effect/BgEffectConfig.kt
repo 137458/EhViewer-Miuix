@@ -136,4 +136,3 @@ internal object BgEffectConfig {
         }
     }
 }
-

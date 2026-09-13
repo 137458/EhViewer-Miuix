@@ -24,13 +24,13 @@ import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.util.fastFirstOrNull
+import kotlin.math.abs
+import kotlin.time.TimeSource
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlin.math.abs
-import kotlin.time.TimeSource
 
 internal class DampedDragAnimation(
     private val animationScope: CoroutineScope,
@@ -215,4 +215,3 @@ private suspend inline fun AwaitPointerEventScope.awaitDragOrUp(
         }
     }
 }
-

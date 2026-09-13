@@ -113,4 +113,3 @@ private const val SPOT_SHADER = """
         float intensity = smoothstep(radius, radius * 0.5, dist);
         return color * intensity;
     }"""
-

@@ -86,7 +86,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastCoerceIn
 import androidx.compose.ui.util.fastRoundToInt
 import androidx.compose.ui.util.lerp
-
 import com.ehviewer.core.ui.animation.DampedDragAnimation
 import com.ehviewer.core.ui.animation.InteractiveHighlight
 import com.ehviewer.core.ui.liquid.InnerShadow
@@ -94,6 +93,13 @@ import com.ehviewer.core.ui.liquid.innerShadow
 import com.ehviewer.core.ui.liquid.lens
 import com.ehviewer.core.ui.liquid.rememberCombinedBackdrop
 import com.ehviewer.core.ui.liquid.vibrancy
+import kotlin.math.PI
+import kotlin.math.abs
+import kotlin.math.atan2
+import kotlin.math.cos
+import kotlin.math.roundToInt
+import kotlin.math.sign
+import kotlin.math.sin
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
@@ -114,13 +120,6 @@ import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.blur.sensor.rememberDeviceTilt
 import top.yukonga.miuix.kmp.theme.LocalContentColor as MiuixLocalContentColor
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import kotlin.math.PI
-import kotlin.math.abs
-import kotlin.math.atan2
-import kotlin.math.cos
-import kotlin.math.roundToInt
-import kotlin.math.sign
-import kotlin.math.sin
 
 val LocalFloatingBottomBarContentColor = staticCompositionLocalOf { Color.Unspecified }
 val LocalFloatingBottomBarTabScale = staticCompositionLocalOf { { 1f } }
@@ -407,8 +406,11 @@ fun FloatingBottomBar(
                     animationScope = animationScope,
                     position = { size, _ ->
                         Offset(
-                            if (isLtr) (dampedDragAnimation.value + 0.5f) * tabWidthPx + panelOffset
-                            else size.width - (dampedDragAnimation.value + 0.5f) * tabWidthPx + panelOffset,
+                            if (isLtr) {
+                                (dampedDragAnimation.value + 0.5f) * tabWidthPx + panelOffset
+                            } else {
+                                size.width - (dampedDragAnimation.value + 0.5f) * tabWidthPx + panelOffset
+                            },
                             size.height / 2f,
                         )
                     },
@@ -708,4 +710,3 @@ fun IosLiquidGlassNavigationBar(
         }
     }
 }
-

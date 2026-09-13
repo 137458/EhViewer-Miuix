@@ -92,4 +92,3 @@ const val OS2_BG_FRAG = """
         return vec4(color.rgb * color.a, color.a);
     }
 """
-

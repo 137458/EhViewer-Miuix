@@ -12,8 +12,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import com.ehviewer.core.ui.component.RollingNumber
-import top.yukonga.miuix.kmp.basic.Text
 import com.ehviewer.core.ui.component.SquircleShape
+import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable

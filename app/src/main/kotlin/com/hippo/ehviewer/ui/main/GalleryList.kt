@@ -23,14 +23,6 @@ import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
 import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
-import top.yukonga.miuix.kmp.basic.Button
-import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
-import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.PullToRefresh
-import top.yukonga.miuix.kmp.basic.Surface
-import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.rememberPullToRefreshState
-import top.yukonga.miuix.kmp.theme.MiuixTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -66,6 +58,14 @@ import com.hippo.ehviewer.util.displayString
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
+import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.PullToRefresh
+import top.yukonga.miuix.kmp.basic.Surface
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.rememberPullToRefreshState
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 context(_: CoroutineScope, _: Context)
@@ -110,108 +110,108 @@ fun GalleryList(
         contentPadding = contentPadding,
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-        val showLoadStateIndicator = when (val state = data.loadState.append) {
-            LoadState.Loading -> true
-            is LoadState.Error -> state.error !is NoHitsFoundException
-            is LoadState.NotLoading -> false
-        }
-        if (listMode == 0) {
-            val columnWidth by collectDetailSizeAsState()
-            FastScrollLazyVerticalGrid(
-                columns = GridCells.Adaptive(columnWidth),
-                modifier = contentModifier.fillMaxSize(),
-                state = detailListState,
-                contentPadding = contentPadding + PaddingValues(marginH, marginV),
-                verticalArrangement = Arrangement.spacedBy(dimensionResource(com.hippo.ehviewer.R.dimen.gallery_list_interval)),
-                horizontalArrangement = Arrangement.spacedBy(dimensionResource(com.hippo.ehviewer.R.dimen.gallery_list_interval)),
-            ) {
-                items(
-                    count = data.itemCount,
-                    key = data.itemKey(key = { item -> item.gid }),
-                    contentType = data.itemContentType(),
-                ) { index ->
-                    val info = data[index]
-                    if (info != null) {
-                        detailItemContent(info)
-                        PrefetchAround(data, index, 5) { imageRequest(it) }
+            val showLoadStateIndicator = when (val state = data.loadState.append) {
+                LoadState.Loading -> true
+                is LoadState.Error -> state.error !is NoHitsFoundException
+                is LoadState.NotLoading -> false
+            }
+            if (listMode == 0) {
+                val columnWidth by collectDetailSizeAsState()
+                FastScrollLazyVerticalGrid(
+                    columns = GridCells.Adaptive(columnWidth),
+                    modifier = contentModifier.fillMaxSize(),
+                    state = detailListState,
+                    contentPadding = contentPadding + PaddingValues(marginH, marginV),
+                    verticalArrangement = Arrangement.spacedBy(dimensionResource(com.hippo.ehviewer.R.dimen.gallery_list_interval)),
+                    horizontalArrangement = Arrangement.spacedBy(dimensionResource(com.hippo.ehviewer.R.dimen.gallery_list_interval)),
+                ) {
+                    items(
+                        count = data.itemCount,
+                        key = data.itemKey(key = { item -> item.gid }),
+                        contentType = data.itemContentType(),
+                    ) { index ->
+                        val info = data[index]
+                        if (info != null) {
+                            detailItemContent(info)
+                            PrefetchAround(data, index, 5) { imageRequest(it) }
+                        }
+                    }
+                    if (showLoadStateIndicator) {
+                        item(span = { GridItemSpan(maxLineSpan) }) {
+                            LoadStateIndicator(state = data.loadState.append) {
+                                data.retry()
+                            }
+                        }
                     }
                 }
-                if (showLoadStateIndicator) {
-                    item(span = { GridItemSpan(maxLineSpan) }) {
-                        LoadStateIndicator(state = data.loadState.append) {
-                            data.retry()
+            } else {
+                val gridInterval = dimensionResource(com.hippo.ehviewer.R.dimen.gallery_grid_interval)
+                val thumbColumns by Settings.thumbColumns.collectAsState()
+                FastScrollLazyVerticalStaggeredGrid(
+                    columns = StaggeredGridCells.Fixed(thumbColumns),
+                    modifier = contentModifier.fillMaxSize(),
+                    state = thumbListState,
+                    contentPadding = contentPadding + PaddingValues(marginH, marginV),
+                    verticalItemSpacing = gridInterval,
+                    horizontalArrangement = Arrangement.spacedBy(gridInterval),
+                ) {
+                    items(
+                        count = data.itemCount,
+                        key = data.itemKey(key = { item -> item.gid }),
+                        contentType = data.itemContentType(),
+                    ) { index ->
+                        val info = data[index]
+                        if (info != null) {
+                            thumbItemContent(info)
+                            PrefetchAround(data, index, 10) { imageRequest(it) }
+                        }
+                    }
+                    if (showLoadStateIndicator) {
+                        item(span = StaggeredGridItemSpan.FullLine) {
+                            LoadStateIndicator(state = data.loadState.append) {
+                                data.retry()
+                            }
                         }
                     }
                 }
             }
-        } else {
-            val gridInterval = dimensionResource(com.hippo.ehviewer.R.dimen.gallery_grid_interval)
-            val thumbColumns by Settings.thumbColumns.collectAsState()
-            FastScrollLazyVerticalStaggeredGrid(
-                columns = StaggeredGridCells.Fixed(thumbColumns),
-                modifier = contentModifier.fillMaxSize(),
-                state = thumbListState,
-                contentPadding = contentPadding + PaddingValues(marginH, marginV),
-                verticalItemSpacing = gridInterval,
-                horizontalArrangement = Arrangement.spacedBy(gridInterval),
-            ) {
-                items(
-                    count = data.itemCount,
-                    key = data.itemKey(key = { item -> item.gid }),
-                    contentType = data.itemContentType(),
-                ) { index ->
-                    val info = data[index]
-                    if (info != null) {
-                        thumbItemContent(info)
-                        PrefetchAround(data, index, 10) { imageRequest(it) }
-                    }
-                }
-                if (showLoadStateIndicator) {
-                    item(span = StaggeredGridItemSpan.FullLine) {
-                        LoadStateIndicator(state = data.loadState.append) {
-                            data.retry()
-                        }
-                    }
-                }
-            }
-        }
 
-        when (val state = data.loadState.refresh) {
-            is LoadState.Loading -> if (!isRefreshing && scrollToTopOnRefresh) {
-                LaunchedEffect(Unit) {
-                    onLoading()
-                }
-                LaunchedEffect(Unit) {
-                    if (listMode == 0) {
-                        detailListState.scrollToItem(0)
-                    } else {
-                        thumbListState.scrollToItem(0)
+            when (val state = data.loadState.refresh) {
+                is LoadState.Loading -> if (!isRefreshing && scrollToTopOnRefresh) {
+                    LaunchedEffect(Unit) {
+                        onLoading()
+                    }
+                    LaunchedEffect(Unit) {
+                        if (listMode == 0) {
+                            detailListState.scrollToItem(0)
+                        } else {
+                            thumbListState.scrollToItem(0)
+                        }
+                    }
+                    Surface {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            CircularProgressIndicator()
+                        }
                     }
                 }
-                Surface {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        CircularProgressIndicator()
+                is LoadState.Error -> {
+                    Surface {
+                        ErrorTip(
+                            modifier = Modifier.widthIn(max = 228.dp),
+                            text = state.error.displayString(),
+                            onRetry = { data.retry() },
+                        )
                     }
                 }
-            }
-            is LoadState.Error -> {
-                Surface {
-                    ErrorTip(
-                        modifier = Modifier.widthIn(max = 228.dp),
-                        text = state.error.displayString(),
-                        onRetry = { data.retry() },
-                    )
+                is LoadState.NotLoading -> if (data.itemCount == 0) {
+                    // Only for local favorites as empty gallery lists from network are treated as error
+                    ErrorTip(modifier = Modifier.widthIn(max = 228.dp), text = stringResource(id = R.string.gallery_list_empty_hit))
                 }
-            }
-            is LoadState.NotLoading -> if (data.itemCount == 0) {
-                // Only for local favorites as empty gallery lists from network are treated as error
-                ErrorTip(modifier = Modifier.widthIn(max = 228.dp), text = stringResource(id = R.string.gallery_list_empty_hit))
             }
         }
-    }
     }
 }
 

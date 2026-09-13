@@ -1,11 +1,11 @@
 package moe.tarsin.coroutines
 
-import top.yukonga.miuix.kmp.basic.SnackbarHostState
 import com.ehviewer.core.util.launch
 import com.hippo.ehviewer.util.displayString
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import moe.tarsin.snackbar
+import top.yukonga.miuix.kmp.basic.SnackbarHostState
 
 inline fun <T, reified E : Throwable> Result<T>.except() = onFailure { if (it is E) throw it }
 

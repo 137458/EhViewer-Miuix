@@ -7,4 +7,3 @@ enum class DeviceType {
     PHONE,
     PAD,
 }
-

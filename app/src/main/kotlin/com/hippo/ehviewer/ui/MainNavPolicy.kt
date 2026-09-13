@@ -32,9 +32,7 @@ object MainNavPolicy {
         SettingsScreenDestination,
     )
 
-    fun isTopLevelDestination(destination: Any?): Boolean {
-        return destination.routeKey() in ALL_TOP_DESTINATIONS
-    }
+    fun isTopLevelDestination(destination: Any?): Boolean = destination.routeKey() in ALL_TOP_DESTINATIONS
 
     fun getPrimaryBottomIndex(
         destination: Any?,

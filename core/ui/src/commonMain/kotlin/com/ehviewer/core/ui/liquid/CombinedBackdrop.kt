@@ -45,6 +45,4 @@ class CombinedBackdrop(
 fun rememberCombinedBackdrop(
     first: Backdrop,
     second: Backdrop,
-): Backdrop =
-    remember(first, second) { CombinedBackdrop(first, second) }
-
+): Backdrop = remember(first, second) { CombinedBackdrop(first, second) }

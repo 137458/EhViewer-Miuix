@@ -20,10 +20,6 @@ import androidx.compose.foundation.text.input.OutputTransformation
 import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.verticalScroll
-import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Hide
-import top.yukonga.miuix.kmp.icon.extended.Info
-import top.yukonga.miuix.kmp.icon.extended.Show
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -69,6 +65,10 @@ import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Hide
+import top.yukonga.miuix.kmp.icon.extended.Info
+import top.yukonga.miuix.kmp.icon.extended.Show
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Destination<RootGraph>(start = true)
@@ -140,7 +140,9 @@ fun AnimatedVisibilityScope.SignInScreen(navigator: DestinationsNavigator) = Scr
             lineLimits = TextFieldLineLimits.SingleLine,
             trailingIcon = if (showUsernameError) {
                 { Icon(imageVector = MiuixIcons.Info, contentDescription = null, tint = MiuixTheme.colorScheme.error) }
-            } else null,
+            } else {
+                null
+            },
         )
         if (showUsernameError) {
             Text(

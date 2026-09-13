@@ -9,4 +9,3 @@ expect class RuntimeShaderCompat(sksl: String) {
     fun setFloatUniform(name: String, values: FloatArray)
     val brush: Brush
 }
-

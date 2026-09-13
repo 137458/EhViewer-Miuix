@@ -7,8 +7,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ShaderBrush
 import androidx.compose.ui.graphics.SolidColor
 
-actual fun isRuntimeShaderSupported(): Boolean =
-    Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+actual fun isRuntimeShaderSupported(): Boolean = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
 
 actual class RuntimeShaderCompat actual constructor(sksl: String) {
     private val shader: RuntimeShader? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -40,4 +39,3 @@ actual class RuntimeShaderCompat actual constructor(sksl: String) {
             SolidColor(Color.Transparent)
         }
 }
-

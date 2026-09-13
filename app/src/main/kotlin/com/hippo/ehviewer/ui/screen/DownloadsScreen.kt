@@ -29,37 +29,10 @@ import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
-import top.yukonga.miuix.kmp.basic.DropdownEntry
-import top.yukonga.miuix.kmp.basic.DropdownItem
-import top.yukonga.miuix.kmp.menu.WindowIconDropdownMenu
-import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Add
-import top.yukonga.miuix.kmp.icon.extended.Delete
-import top.yukonga.miuix.kmp.icon.extended.Download
-import top.yukonga.miuix.kmp.icon.extended.Edit
-import top.yukonga.miuix.kmp.icon.extended.Filter
-import top.yukonga.miuix.kmp.icon.extended.GridView
-import top.yukonga.miuix.kmp.icon.extended.ListView
-import top.yukonga.miuix.kmp.icon.extended.More
-import top.yukonga.miuix.kmp.icon.extended.MoveFile
-import top.yukonga.miuix.kmp.icon.extended.Pause
-import top.yukonga.miuix.kmp.icon.extended.Play
-import top.yukonga.miuix.kmp.icon.extended.SelectAll
-import top.yukonga.miuix.kmp.icon.extended.Settings
-import top.yukonga.miuix.kmp.icon.extended.Sort
-import com.ehviewer.core.ui.icons.filled.Shuffle
 import androidx.compose.material3.SwipeToDismissBoxDefaults
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.fork.SwipeToDismissBox
 import androidx.compose.material3.fork.SwipeToDismissBoxState
-import com.ehviewer.core.ui.component.SquircleShape
-import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
-import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
-import top.yukonga.miuix.kmp.basic.SmallTopAppBar
-import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.theme.MiuixTheme
-import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -78,13 +51,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import arrow.core.partially1
 import com.ehviewer.core.database.model.DownloadInfo
@@ -96,8 +70,10 @@ import com.ehviewer.core.ui.component.FastScrollLazyColumn
 import com.ehviewer.core.ui.component.FastScrollLazyVerticalStaggeredGrid
 import com.ehviewer.core.ui.component.LocalSideSheetState
 import com.ehviewer.core.ui.component.ProvideSideSheetContent
+import com.ehviewer.core.ui.component.SquircleShape
 import com.ehviewer.core.ui.icons.EhIcons
 import com.ehviewer.core.ui.icons.big.Download
+import com.ehviewer.core.ui.icons.filled.Shuffle
 import com.ehviewer.core.ui.util.HapticFeedbackType
 import com.ehviewer.core.ui.util.asyncState
 import com.ehviewer.core.ui.util.ifTrueThen
@@ -141,6 +117,30 @@ import kotlinx.coroutines.delay
 import moe.tarsin.navigate
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
+import top.yukonga.miuix.kmp.basic.DropdownEntry
+import top.yukonga.miuix.kmp.basic.DropdownItem
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
+import top.yukonga.miuix.kmp.basic.SmallTopAppBar
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Add
+import top.yukonga.miuix.kmp.icon.extended.Delete
+import top.yukonga.miuix.kmp.icon.extended.Download
+import top.yukonga.miuix.kmp.icon.extended.Edit
+import top.yukonga.miuix.kmp.icon.extended.Filter
+import top.yukonga.miuix.kmp.icon.extended.GridView
+import top.yukonga.miuix.kmp.icon.extended.ListView
+import top.yukonga.miuix.kmp.icon.extended.More
+import top.yukonga.miuix.kmp.icon.extended.MoveFile
+import top.yukonga.miuix.kmp.icon.extended.Pause
+import top.yukonga.miuix.kmp.icon.extended.Play
+import top.yukonga.miuix.kmp.icon.extended.SelectAll
+import top.yukonga.miuix.kmp.icon.extended.Settings
+import top.yukonga.miuix.kmp.icon.extended.Sort
+import top.yukonga.miuix.kmp.menu.WindowIconDropdownMenu
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Destination<RootGraph>
 @Composable
@@ -338,8 +338,11 @@ fun AnimatedVisibilityScope.DownloadsScreen(navigator: DestinationsNavigator) = 
                         .padding(horizontal = 4.dp, vertical = 2.dp)
                         .clip(SquircleShape(8.dp))
                         .background(
-                            if (selected) MiuixTheme.colorScheme.primaryContainer
-                            else Color.Transparent,
+                            if (selected) {
+                                MiuixTheme.colorScheme.primaryContainer
+                            } else {
+                                Color.Transparent
+                            },
                         )
                         .clickable(role = Role.RadioButton) {
                             switchLabel("")
@@ -363,8 +366,11 @@ fun AnimatedVisibilityScope.DownloadsScreen(navigator: DestinationsNavigator) = 
                         .padding(horizontal = 4.dp, vertical = 2.dp)
                         .clip(SquircleShape(8.dp))
                         .background(
-                            if (selected) MiuixTheme.colorScheme.primaryContainer
-                            else Color.Transparent,
+                            if (selected) {
+                                MiuixTheme.colorScheme.primaryContainer
+                            } else {
+                                Color.Transparent
+                            },
                         )
                         .clickable(role = Role.RadioButton) {
                             switchLabel(null)
@@ -435,9 +441,13 @@ fun AnimatedVisibilityScope.DownloadsScreen(navigator: DestinationsNavigator) = 
                                 .padding(horizontal = 4.dp, vertical = 2.dp)
                                 .clip(SquircleShape(8.dp))
                                 .background(
-                                    if (selected) MiuixTheme.colorScheme.primaryContainer
-                                    else if (isDragging) MiuixTheme.colorScheme.surfaceContainer
-                                    else Color.Transparent,
+                                    if (selected) {
+                                        MiuixTheme.colorScheme.primaryContainer
+                                    } else if (isDragging) {
+                                        MiuixTheme.colorScheme.surfaceContainer
+                                    } else {
+                                        Color.Transparent
+                                    },
                                 )
                                 .clickable(role = Role.RadioButton) {
                                     switchLabel(item)
