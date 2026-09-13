@@ -9,3 +9,4 @@ build
 .vscode
 /captures
 app/src/main/jniLibs/
+.zcode/

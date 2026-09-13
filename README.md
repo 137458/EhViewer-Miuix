@@ -15,7 +15,7 @@
 </p>
 
 <h1 align="center">
-  <img src="https://github.com/FooIbar/EhViewer-art/blob/master/launcher_icon-web.svg" width="160" alt="EhViewer MIUIX">
+  <img src="docs/images/launcher_icon.svg" width="160" alt="EhViewer MIUIX">
   <br>EhViewer MIUIX<br>
 </h1>
 
