@@ -81,12 +81,12 @@ suspend inline fun <R> timeoutBySpeed(
         var prev = 0L
         onDownload { done, total ->
             val bytesRead = (done - prev).toInt()
-            if (done == total!!) {
+            if (total != null && done == total) {
                 tracker.reset()
             } else {
                 tracker.track(bytesRead)
             }
-            l(total, done, bytesRead)
+            l(total ?: -1L, done, bytesRead)
             prev = done
         }
         timeout { reset() }

@@ -35,6 +35,7 @@
 
     <string name="text_is_empty">ข้อความห้ามเว้นว่างไว้</string>
     <string name="waring">คำเตือน</string>
+    <string name="warning">คำเตือน</string>
 
     <string name="invalid_download_location">ดูเหมือนที่อยู่ในการดาวน์โหลดนั้นไม่พร้อมใช้งาน โปรดตั้งค่าในเมนูการตั้งค่า</string>
 
@@ -59,6 +60,7 @@
     <string name="error_invalid_number">จำนวนไม่ถูกต้อง</string>
 
     <string name="app_waring">เนื้อหาภายในแอปพลิเคชั่นนี้มาจากอินเทอร์เน็ตทั้งหมด อาจมีเนื้อหาบางอย่างที่มีผลต่อร่างกายหรือจิตใจของคุณ คุณจะต้องยอมรับความเสี่ยงที่ดังกล่าว และดำเนินการต่อไป</string>
+    <string name="app_warning">เนื้อหาภายในแอปพลิเคชั่นนี้มาจากอินเทอร์เน็ตทั้งหมด อาจมีเนื้อหาบางอย่างที่มีผลต่อร่างกายหรือจิตใจของคุณ คุณจะต้องยอมรับความเสี่ยงที่ดังกล่าว และดำเนินการต่อไป</string>
     <string name="error_username_cannot_empty">ชื่อผู้ใช้ห้ามเว้นว่างไว้</string>
     <string name="error_password_cannot_empty">รหัสผ่านห้ามเว้นว่างไว้</string>
     <string name="guest_mode">ดำเนินการต่อโดยไม่ต้องลงชื่อเข้าระบบ</string>

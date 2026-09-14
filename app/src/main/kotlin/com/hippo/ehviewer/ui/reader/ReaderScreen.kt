@@ -12,8 +12,12 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -27,6 +31,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -95,6 +100,10 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.serialization.Serializable
 import moe.tarsin.string
 import okio.Path.Companion.toPath
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
 import top.yukonga.miuix.kmp.basic.SnackbarHostState
 import top.yukonga.miuix.kmp.basic.Text
@@ -131,8 +140,9 @@ fun AnimatedVisibilityScope.ReaderScreen(args: ReaderScreenArgs, navigator: Dest
         }
     }
 
+    var retryTrigger by remember { mutableIntStateOf(0) }
     Await(
-        block = asyncInVM(args) { alive ->
+        block = asyncInVM(args to retryTrigger) { alive ->
             suspendCancellableCoroutine { cont ->
                 with(alive) {
                     launchIO {
@@ -156,11 +166,30 @@ fun AnimatedVisibilityScope.ReaderScreen(args: ReaderScreenArgs, navigator: Dest
     ) { result ->
         when (result) {
             is Either.Left -> Background(readerBackground) {
-                Text(
-                    text = result.value.displayString(),
-                    color = MiuixTheme.colorScheme.error,
-                    style = MiuixTheme.textStyles.title2,
-                )
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    Text(
+                        text = result.value.displayString(),
+                        color = MiuixTheme.colorScheme.error,
+                        style = MiuixTheme.textStyles.title2,
+                        textAlign = TextAlign.Center,
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Button(
+                            onClick = { navigator.popBackStack() },
+                        ) {
+                            Text(text = stringResource(id = android.R.string.cancel))
+                        }
+                        Button(
+                            onClick = { retryTrigger++ },
+                        ) {
+                            Text(text = stringResource(id = R.string.action_retry))
+                        }
+                    }
+                }
             }
             is Either.Right -> {
                 val loader = result.value

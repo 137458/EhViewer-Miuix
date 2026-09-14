@@ -304,7 +304,7 @@ fun AnimatedVisibilityScope.GalleryDetailScreen(args: GalleryDetailScreenArgs, n
                                 }
                             },
                         ) {
-                            Icon(imageVector = MiuixIcons.More, contentDescription = null)
+                            Icon(imageVector = MiuixIcons.More, contentDescription = stringResource(R.string.more_actions))
                         }
                     },
                 )

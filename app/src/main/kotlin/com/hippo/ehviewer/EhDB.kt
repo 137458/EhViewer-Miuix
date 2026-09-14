@@ -76,23 +76,29 @@ object EhDB {
     }
 
     suspend fun putDownloadInfo(downloadInfo: DownloadInfo) {
-        putGalleryInfo(downloadInfo.galleryInfo)
-        db.downloadsDao().upsert(downloadInfo.downloadInfo)
+        db.useWriterConnection {
+            putGalleryInfo(downloadInfo.galleryInfo)
+            db.downloadsDao().upsert(downloadInfo.downloadInfo)
+        }
     }
 
     suspend fun removeDownloadInfo(downloadInfo: DownloadInfo) {
-        val dao = db.downloadsDao()
-        dao.delete(downloadInfo.downloadInfo)
-        deleteGalleryInfo(downloadInfo.galleryInfo)
+        db.useWriterConnection {
+            val dao = db.downloadsDao()
+            dao.delete(downloadInfo.downloadInfo)
+            deleteGalleryInfo(downloadInfo.galleryInfo)
+        }
     }
 
     suspend fun randomLocalFav() = db.localFavoritesDao().random()
 
     suspend fun removeDownloadInfo(downloadInfo: List<DownloadInfo>) {
-        val dao = db.downloadsDao()
-        downloadInfo.forEach {
-            dao.delete(it.downloadInfo)
-            deleteGalleryInfo(it.galleryInfo)
+        db.useWriterConnection {
+            val dao = db.downloadsDao()
+            downloadInfo.forEach {
+                dao.delete(it.downloadInfo)
+                deleteGalleryInfo(it.galleryInfo)
+            }
         }
     }
 
@@ -245,9 +251,11 @@ object EhDB {
     }
 
     suspend fun deleteHistoryInfo(galleryInfo: GalleryEntity) {
-        val dao = db.historyDao()
-        dao.deleteByKey(galleryInfo.gid)
-        deleteGalleryInfo(galleryInfo)
+        db.useWriterConnection {
+            val dao = db.historyDao()
+            dao.deleteByKey(galleryInfo.gid)
+            deleteGalleryInfo(galleryInfo)
+        }
     }
 
     suspend fun clearHistoryInfo() {

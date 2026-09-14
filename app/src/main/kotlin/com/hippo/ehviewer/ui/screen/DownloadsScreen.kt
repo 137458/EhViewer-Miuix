@@ -263,7 +263,7 @@ fun AnimatedVisibilityScope.DownloadsScreen(navigator: DestinationsNavigator) = 
                             }
                         },
                     ) {
-                        Icon(imageVector = MiuixIcons.Add, contentDescription = null)
+                        Icon(imageVector = MiuixIcons.Add, contentDescription = stringResource(R.string.new_label_title))
                     }
                     val letMeSelect = stringResource(R.string.let_me_select)
                     IconButton(
@@ -292,7 +292,7 @@ fun AnimatedVisibilityScope.DownloadsScreen(navigator: DestinationsNavigator) = 
                             }
                         },
                     ) {
-                        Icon(imageVector = MiuixIcons.Download, contentDescription = null)
+                        Icon(imageVector = MiuixIcons.Download, contentDescription = stringResource(R.string.default_download_label))
                     }
                 }
                 val custom = stringResource(R.string.select_grouping_mode_custom)
@@ -312,7 +312,7 @@ fun AnimatedVisibilityScope.DownloadsScreen(navigator: DestinationsNavigator) = 
                         }
                     },
                 ) {
-                    Icon(imageVector = MiuixIcons.Settings, contentDescription = null)
+                    Icon(imageVector = MiuixIcons.Settings, contentDescription = stringResource(R.string.select_grouping_mode))
                 }
             },
         )
@@ -324,8 +324,11 @@ fun AnimatedVisibilityScope.DownloadsScreen(navigator: DestinationsNavigator) = 
         val reorderableLabelState = rememberReorderableLazyListState(labelsListState) { from, to ->
             val fromPosition = from.index - 2
             val toPosition = to.index - 2
-            DownloadManager.labelList.apply { add(toPosition, removeAt(fromPosition)) }
-            hapticFeedback.performHapticFeedback(HapticFeedbackType.MOVE)
+            val list = DownloadManager.labelList
+            if (fromPosition in list.indices && toPosition in list.indices) {
+                list.apply { add(toPosition, removeAt(fromPosition)) }
+                hapticFeedback.performHapticFeedback(HapticFeedbackType.MOVE)
+            }
         }
         var fromIndex by remember { mutableIntStateOf(-1) }
         FastScrollLazyColumn(
@@ -553,7 +556,8 @@ fun AnimatedVisibilityScope.DownloadsScreen(navigator: DestinationsNavigator) = 
             val sideSheetState = LocalSideSheetState.current
             IconButton(onClick = { gridView = !gridView }) {
                 val icon = if (gridView) MiuixIcons.ListView else MiuixIcons.GridView
-                Icon(imageVector = icon, contentDescription = null)
+                val desc = stringResource(if (gridView) R.string.settings_eh_list_mode else R.string.settings_eh_list_mode_thumb)
+                Icon(imageVector = icon, contentDescription = desc)
             }
             val labelsStr = stringResource(id = R.string.download_labels)
             val startAllStr = stringResource(id = R.string.download_start_all)
@@ -604,7 +608,7 @@ fun AnimatedVisibilityScope.DownloadsScreen(navigator: DestinationsNavigator) = 
                 )
             }
             WindowIconDropdownMenu(entry = menuEntry) {
-                Icon(imageVector = MiuixIcons.More, contentDescription = null)
+                Icon(imageVector = MiuixIcons.More, contentDescription = stringResource(R.string.more_actions))
             }
         },
     ) { contentPadding ->
@@ -644,9 +648,22 @@ fun AnimatedVisibilityScope.DownloadsScreen(navigator: DestinationsNavigator) = 
                     horizontalArrangement = Arrangement.spacedBy(gridInterval),
                 ) {
                     items(list, key = { it.gid }) { info ->
+                        val checked = info.gid in checkedInfoMap
                         GalleryInfoGridItem(
-                            onClick = ::onItemClick.partially1(info),
-                            onLongClick = { navigate(info.galleryInfo.asDst()) },
+                            onClick = {
+                                if (selectMode) {
+                                    if (checked) {
+                                        checkedInfoMap.remove(info.gid)
+                                    } else {
+                                        checkedInfoMap[info.gid] = info
+                                    }
+                                } else {
+                                    onItemClick(info)
+                                }
+                            },
+                            onLongClick = {
+                                checkedInfoMap[info.gid] = info
+                            },
                             info = info,
                             modifier = Modifier.thenIf(animateItems) { animateItem() },
                             showLanguage = false,

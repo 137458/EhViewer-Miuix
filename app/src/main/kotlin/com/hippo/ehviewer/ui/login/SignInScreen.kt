@@ -252,13 +252,13 @@ fun AnimatedVisibilityScope.SignInScreen(navigator: DestinationsNavigator) = Scr
                             Spacer(modifier = Modifier.height(12.dp))
                             UsernameAndPasswordTextField()
                             Text(
-                                text = stringResource(id = R.string.app_waring),
+                                text = stringResource(id = R.string.app_warning),
                                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                                 style = MiuixTheme.textStyles.body2,
                                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                             )
                             Text(
-                                text = stringResource(id = R.string.app_waring_2),
+                                text = stringResource(id = R.string.app_warning_2),
                                 modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
                                 style = MiuixTheme.textStyles.title4,
                             )
@@ -337,14 +337,14 @@ fun AnimatedVisibilityScope.SignInScreen(navigator: DestinationsNavigator) = Scr
                             )
                             Spacer(modifier = Modifier.height(16.dp))
                             Text(
-                                text = stringResource(id = R.string.app_waring),
+                                text = stringResource(id = R.string.app_warning),
                                 modifier = Modifier.fillMaxWidth(),
                                 style = MiuixTheme.textStyles.body2,
                                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = stringResource(id = R.string.app_waring_2),
+                                text = stringResource(id = R.string.app_warning_2),
                                 modifier = Modifier.fillMaxWidth(),
                                 style = MiuixTheme.textStyles.title3,
                             )

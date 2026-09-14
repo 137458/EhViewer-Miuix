@@ -36,6 +36,7 @@
 
     <string name="text_is_empty">El texto está vacío</string>
     <string name="waring">Advertencia</string>
+    <string name="warning">Advertencia</string>
 
     <string name="invalid_download_location">Parece que la ubicación de descarga no está disponible. Establece la ubicación en Configuración.</string>
 
@@ -57,6 +58,7 @@
     <string name="error_invalid_number">Número invalido</string>
 
     <string name="app_waring">El contenido de esta aplicación es de Internet. Algunas de ellas pueden causarle daño psicológico. Ahora sabes los riesgos anteriormente mencionado y te gustaría asumirlos</string>
+    <string name="app_warning">El contenido de esta aplicación es de Internet. Algunas de ellas pueden causarle daño psicológico. Ahora sabes los riesgos anteriormente mencionado y te gustaría asumirlos</string>
     <string name="error_username_cannot_empty">El usuario no puede estar vacío</string>
     <string name="guest_mode">Saltar inicio de sesión</string>
     <string name="sign_in_failed">Inicio de sesión fallido</string>

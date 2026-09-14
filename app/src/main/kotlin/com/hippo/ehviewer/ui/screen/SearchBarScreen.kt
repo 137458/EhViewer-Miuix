@@ -362,7 +362,7 @@ fun SearchBarScreen(
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     if (filter != null) {
                                         IconButton(onClick = { showFilterSheet = true }) {
-                                            Icon(MiuixIcons.More, contentDescription = null)
+                                            Icon(MiuixIcons.More, contentDescription = stringResource(R.string.more_actions))
                                         }
                                     }
                                     trailingIcon()
@@ -517,7 +517,7 @@ fun SearchBarScreen(
                                 ) {
                                     Icon(
                                         imageVector = MiuixIcons.More,
-                                        contentDescription = null,
+                                        contentDescription = stringResource(R.string.more_actions),
                                     )
                                 }
                             }

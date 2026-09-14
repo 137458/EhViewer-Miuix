@@ -2,6 +2,7 @@
 <resources>
     <string name="text_is_empty">Tekst tom</string>
     <string name="waring">Advarsel</string>
+    <string name="warning">Advarsel</string>
     <string name="clipboard_gallery_url_snack_action">Vis</string>
     <string name="error_timeout">Tidsavbrudd</string>
     <string name="error_unknown_host">Ukjent vert</string>

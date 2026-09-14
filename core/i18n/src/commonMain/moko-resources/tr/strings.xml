@@ -15,6 +15,7 @@
     <string name="sign_in_via_webview">WebView aracılığıyla giriş yap</string>
     <string name="sign_in_first">Lütfen önce giriş yap</string>
     <string name="waring">Uyarı</string>
+    <string name="warning">Uyarı</string>
     <string name="invalid_download_location">İndirme konumu kullanılamıyor. Lütfen Ayarlardan ayarlayın.</string>
     <string name="clipboard_gallery_url_snack_message">Panoda galeri bağlantısı var</string>
     <string name="clipboard_gallery_url_snack_action">Görüntüle</string>
@@ -66,6 +67,8 @@
     <string name="text_is_empty">Yazı boş</string>
     <string name="error_unknown_host">Bilinmeyen host</string>
     <string name="app_waring">Bu uygulamadaki içerikler internetten alınmaktadır. Bazı içerikler fiziksel veya zihinsel olarak size zararlı gelebilir.Yukarıda, riskleri öğrendiniz ve üstleneceksiniz.
+\nKullanmaya devam ederek, yukarıdaki koşulları kabul edersiniz.</string>
+    <string name="app_warning">Bu uygulamadaki içerikler internetten alınmaktadır. Bazı içerikler fiziksel veya zihinsel olarak size zararlı gelebilir.Yukarıda, riskleri öğrendiniz ve üstleneceksiniz.
 \nKullanmaya devam ederek, yukarıdaki koşulları kabul edersiniz.</string>
     <string name="sign_in_failed_tip">Bu sorun devam ederse, \"%s\" seçeneğini deneyin.</string>
     <string name="gallery_list_search_bar_open_gallery">Galeriyi aç</string>

@@ -36,6 +36,7 @@
 
     <string name="text_is_empty">Entrez le texte.</string>
     <string name="waring">Attention</string>
+    <string name="warning">Attention</string>
 
     <string name="invalid_download_location">La location de téléchargement actuelle n\'est pas disponible. Choissez-en une à nouveau dans les Paramétres.</string>
 
@@ -57,6 +58,7 @@
     <string name="error_invalid_number">Nombre invalide</string>
 
     <string name="app_waring">Le contenu de l\'application provient de l\'Internet, dont quelque chose peut vous causer le dommage physique ou mentale. Vous l\'avez bien compris et voulez continuer quand même.</string>
+    <string name="app_warning">Le contenu de l\'application provient de l\'Internet, dont quelque chose peut vous causer le dommage physique ou mentale. Vous l\'avez bien compris et voulez continuer quand même.</string>
     <string name="error_username_cannot_empty">Nom d\'ultilisateur ne doit pas être une chaîne vide</string>
     <string name="error_password_cannot_empty">Mot de passe ne doit pas être une chaîne vide</string>
     <string name="guest_mode">Continuer sans se connecter</string>

@@ -476,15 +476,83 @@ Java_com_hippo_ehviewer_jni_ArchiveKt_archiveFdBatch(JNIEnv *env, jclass clazz, 
         archive_entry_copy_stat(entry, &st);
         archive_entry_set_perm(entry, 0644);
         archive_write_header(arc, entry);
-        size_t len;
-        do {
-            len = read(fd, buff, sizeof(buff));
-            archive_write_data(arc, buff, len);
-        } while (len > 0);
+        ssize_t len;
+        while ((len = read(fd, buff, sizeof(buff))) > 0) {
+            archive_write_data(arc, buff, (size_t)len);
+        }
         archive_write_finish_entry(arc);
         archive_entry_clear(entry);
     }
     archive_entry_free(entry);
     archive_write_close(arc);
     archive_write_free(arc);
+}
+
+typedef struct {
+    struct archive *arc;
+    struct archive_entry *entry;
+    char buff[8192];
+} archive_writer_ctx;
+
+JNIEXPORT jlong JNICALL
+Java_com_hippo_ehviewer_jni_ArchiveKt_archiveWriteOpen(JNIEnv *env, jclass clazz, jint arc_fd) {
+    EH_UNUSED(clazz);
+    EH_UNUSED(env);
+    struct archive *arc = archive_write_new();
+    if (!arc) return 0;
+    archive_write_set_format_zip(arc);
+    archive_write_zip_set_compression_store(arc);
+    if (archive_write_open_fd(arc, arc_fd) != ARCHIVE_OK) {
+        archive_write_free(arc);
+        return 0;
+    }
+    archive_writer_ctx *ctx = (archive_writer_ctx *)malloc(sizeof(archive_writer_ctx));
+    if (!ctx) {
+        archive_write_close(arc);
+        archive_write_free(arc);
+        return 0;
+    }
+    ctx->arc = arc;
+    ctx->entry = archive_entry_new();
+    return (jlong)(intptr_t)ctx;
+}
+
+JNIEXPORT void JNICALL
+Java_com_hippo_ehviewer_jni_ArchiveKt_archiveWriteEntry(JNIEnv *env, jclass clazz, jlong handle, jint fd, jstring name) {
+    EH_UNUSED(clazz);
+    archive_writer_ctx *ctx = (archive_writer_ctx *)(intptr_t)handle;
+    if (!ctx || !ctx->arc || !ctx->entry) return;
+
+    const char *cname = (*env)->GetStringUTFChars(env, name, false);
+    archive_entry_set_pathname(ctx->entry, cname);
+    (*env)->ReleaseStringUTFChars(env, name, cname);
+
+    struct stat st;
+    fstat(fd, &st);
+    archive_entry_copy_stat(ctx->entry, &st);
+    archive_entry_set_perm(ctx->entry, 0644);
+    archive_write_header(ctx->arc, ctx->entry);
+
+    ssize_t len;
+    while ((len = read(fd, ctx->buff, sizeof(ctx->buff))) > 0) {
+        archive_write_data(ctx->arc, ctx->buff, (size_t)len);
+    }
+    archive_write_finish_entry(ctx->arc);
+    archive_entry_clear(ctx->entry);
+}
+
+JNIEXPORT void JNICALL
+Java_com_hippo_ehviewer_jni_ArchiveKt_archiveWriteClose(JNIEnv *env, jclass clazz, jlong handle) {
+    EH_UNUSED(clazz);
+    EH_UNUSED(env);
+    archive_writer_ctx *ctx = (archive_writer_ctx *)(intptr_t)handle;
+    if (!ctx) return;
+    if (ctx->entry) {
+        archive_entry_free(ctx->entry);
+    }
+    if (ctx->arc) {
+        archive_write_close(ctx->arc);
+        archive_write_free(ctx->arc);
+    }
+    free(ctx);
 }

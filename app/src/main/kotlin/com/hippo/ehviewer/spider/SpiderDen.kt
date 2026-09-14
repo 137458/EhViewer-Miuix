@@ -45,7 +45,9 @@ import com.hippo.ehviewer.download.DownloadManager
 import com.hippo.ehviewer.download.downloadLocation
 import com.hippo.ehviewer.download.tempDownloadDir
 import com.hippo.ehviewer.image.PathSource
-import com.hippo.ehviewer.jni.archiveFdBatch
+import com.hippo.ehviewer.jni.archiveWriteClose
+import com.hippo.ehviewer.jni.archiveWriteEntry
+import com.hippo.ehviewer.jni.archiveWriteOpen
 import com.hippo.ehviewer.ktbuilder.diskCache
 import com.hippo.ehviewer.util.FileUtils
 import com.hippo.ehviewer.util.copyTo
@@ -313,12 +315,22 @@ class SpiderDen(val info: GalleryInfo) {
             f.openFileDescriptor("r")
         }
         val pages = info.pages
-        val (fdBatch, names) = (0 until pages).parMap { idx ->
-            val f = autoCloseable { getImageSource(idx) }
-            closeable { f.source.openFileDescriptor("r") }.fd to perFilename(idx, f.type)
-        }.run { plus(comicInfo.fd to COMIC_INFO_FILE) }.unzip()
         val arcFd = closeable { file.openFileDescriptor("rw") }
-        archiveFdBatch(fdBatch.toIntArray(), names.toTypedArray(), arcFd.fd, pages + 1)
+        val handle = archiveWriteOpen(arcFd.fd)
+        check(handle != 0L) { "Failed to open archive writer" }
+        try {
+            for (idx in 0 until pages) {
+                val f = getImageSource(idx)
+                f.use {
+                    f.source.openFileDescriptor("r").use { pfd ->
+                        archiveWriteEntry(handle, pfd.fd, perFilename(idx, f.type))
+                    }
+                }
+            }
+            archiveWriteEntry(handle, comicInfo.fd, COMIC_INFO_FILE)
+        } finally {
+            archiveWriteClose(handle)
+        }
     }
 
     suspend fun initDownloadDirIfExist() {

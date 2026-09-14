@@ -52,6 +52,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.width
@@ -247,7 +248,7 @@ class MainActivity : AppCompatActivity() {
                 if (!valid) {
                     awaitConfirmationOrCancel(
                         confirmText = R.string.open_settings,
-                        title = R.string.waring,
+                        title = R.string.warning,
                         showCancelButton = false,
                     ) {
                         Text(
@@ -440,7 +441,7 @@ class MainActivity : AppCompatActivity() {
             }
 
             val contentBackdrop = rememberBlurBackdrop()
-            val bottomBarPadding = if (isPrimaryDestination && !isWideScreen) 80.dp else 0.dp
+            val bottomBarPadding = if (isPrimaryDestination && !isWideScreen) 88.dp else 0.dp
             val effectiveFabPadding = snackbarFabPadding.coerceAtLeast(bottomBarPadding)
 
             CompositionLocalProvider(
@@ -550,7 +551,13 @@ class MainActivity : AppCompatActivity() {
                     if (isWideScreen) {
                         Row(modifier = Modifier.fillMaxSize()) {
                             NavigationRail(
-                                modifier = Modifier.fillMaxHeight(),
+                                modifier = Modifier
+                                    .fillMaxHeight()
+                                    .windowInsetsPadding(
+                                        WindowInsets.safeDrawing.only(
+                                            WindowInsetsSides.Start + WindowInsetsSides.Top + WindowInsetsSides.Bottom,
+                                        ),
+                                    ),
                             ) {
                                 Spacer(modifier = Modifier.height(16.dp))
                                 Box(

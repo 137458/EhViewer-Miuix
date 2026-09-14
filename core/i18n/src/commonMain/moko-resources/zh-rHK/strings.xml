@@ -36,6 +36,7 @@
 
     <string name="text_is_empty">文本為空</string>
     <string name="waring">警告</string>
+    <string name="warning">警告</string>
 
     <string name="invalid_download_location">似乎下載路徑不可用。請到重新設置下載路徑。</string>
 
@@ -60,6 +61,7 @@
     <string name="error_invalid_number">非法數字</string>
 
     <string name="app_waring">本應用中內容來自互聯網，部分內容可能對您的生理及心理造成難以恢復的傷害。本應用作者不會對由本應用造成的任何後果負責。\n\n未成年人應在監護人指導下使用本應用。</string>
+    <string name="app_warning">本應用中內容來自互聯網，部分內容可能對您的生理及心理造成難以恢復的傷害。本應用作者不會對由本應用造成的任何後果負責。\n\n未成年人應在監護人指導下使用本應用。</string>
     <string name="error_username_cannot_empty">用户名不可為空</string>
     <string name="error_password_cannot_empty">密碼不可為空</string>
     <string name="guest_mode">跳過登錄</string>

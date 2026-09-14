@@ -173,7 +173,7 @@ fun AnimatedVisibilityScope.DownloadScreen(navigator: DestinationsNavigator) = S
                     ) {
                         launchIO {
                             val defaultDownloadDir = AppConfig.defaultDownloadDir
-                            if (defaultDownloadDir?.delete() == false) {
+                            if (defaultDownloadDir != null && defaultDownloadDir.isDirectory && defaultDownloadDir.listFiles()?.isNotEmpty() == true) {
                                 val path = defaultDownloadDir.toOkioPath()
                                 awaitConfirmationOrCancel(
                                     confirmText = R.string.pick_new_download_location,
@@ -182,11 +182,12 @@ fun AnimatedVisibilityScope.DownloadScreen(navigator: DestinationsNavigator) = S
                                     } else {
                                         android.R.string.cancel
                                     },
-                                    title = R.string.waring,
+                                    title = R.string.warning,
                                     onCancelButtonClick = {
                                         if (downloadLocationState != path) {
+                                            val currentUri = downloadLocationState.toUri()
                                             contextOf<Context>().contentResolver.run {
-                                                persistedUriPermissions.forEach {
+                                                persistedUriPermissions.find { it.uri == currentUri }?.let {
                                                     releasePersistableUriPermission(it.uri, URI_FLAGS)
                                                 }
                                             }

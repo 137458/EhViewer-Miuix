@@ -59,10 +59,16 @@ object EhCookieStore : CookiesStorage {
     )
 
     fun clearIgneous() {
+        val exDomain = ".exhentai.org"
+        manager.setCookie(
+            urlEx,
+            Cookie(KEY_IGNEOUS, "", maxAge = 0, domain = exDomain, path = "/"),
+        )
         manager.setCookie(
             urlEx,
             Cookie(KEY_IGNEOUS, "", maxAge = 0, domain = urlEx.host, path = "/"),
         )
+        manager.flush()
     }
 
     fun getUserId() = manager.getCookies(urlE)?.get(KEY_IPB_MEMBER_ID)

@@ -31,6 +31,7 @@
     <string name="sign_in_first">Melde dich zunächst an</string>
     <string name="text_is_empty">Der Text wird nicht eingegeben</string>
     <string name="waring">Achtung</string>
+    <string name="warning">Achtung</string>
     <string name="invalid_download_location">Der Downloadpfad ist nicht verfügbar. Geh zu die Einstellungen und stelle einen neue Pfad fest.</string>
     <string name="error_timeout">Timeout</string>
     <string name="error_unknown_host">Unbekannter Hostcomputer</string>
@@ -288,6 +289,7 @@
     <string name="settings_privacy_secure">Screenshot verhindern</string>
     <string name="settings_privacy_secure_summary">Screenshots werden verhindert. Inhalt der App wird in Aktuelle Apps-Liste nicht angezeigt.</string>
     <string name="app_waring">Inhalt dieser App kommt aus dem Internet, von dem einige dir körperlichen oder emotionalen Schaden zufügen kann. Du hast es wirklich erfahrt und möchtest immer noch fortsetzen.</string>
+    <string name="app_warning">Inhalt dieser App kommt aus dem Internet, von dem einige dir körperlichen oder emotionalen Schaden zufügen kann. Du hast es wirklich erfahrt und möchtest immer noch fortsetzen.</string>
     <string name="error_username_cannot_empty">Gibt den Nutzername ein</string>
     <string name="error_password_cannot_empty">Gibt das Passwort ein</string>
     <string name="guest_mode">Anmeldung überspringen</string>

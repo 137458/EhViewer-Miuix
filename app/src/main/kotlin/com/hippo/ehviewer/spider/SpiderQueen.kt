@@ -221,14 +221,19 @@ class SpiderQueen private constructor(val galleryInfo: GalleryInfo) : CoroutineS
 
     private suspend fun doPrepare() {
         spiderDen.initDownloadDirIfExist()
-        val pages = Either.catch {
+        try {
             spiderInfo = readSpiderInfoFromLocal() ?: readSpiderInfoFromInternet()
-            spiderInfo.pages
-        }.getOrElse {
-            logcat(it)
-            galleryInfo.pages
+        } catch (t: Throwable) {
+            logcat(t)
+            if (galleryInfo.pages > 0) {
+                spiderInfo = SpiderInfo(galleryInfo.gid, galleryInfo.token, galleryInfo.pages)
+            } else {
+                notifyGetPages(0)
+                throw t
+            }
         }
-        check(pages > 0)
+        val pages = spiderInfo.pages
+        check(pages > 0) { "Gallery pages must be positive: $pages" }
         pageStates = IntArray(pages)
         notifyGetPages(pages)
     }

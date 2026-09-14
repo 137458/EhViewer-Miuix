@@ -1,5 +1,6 @@
 package com.hippo.ehviewer.util
 
+import com.hippo.ehviewer.client.exception.QuotaExceededException
 import io.ktor.client.call.body
 import io.ktor.client.statement.HttpResponse
 import io.ktor.http.HttpStatusCode
@@ -19,5 +20,10 @@ suspend fun HttpResponse.bodyAsUtf8Text(): String {
 }
 
 fun HttpStatusCode.ensureSuccess() {
-    if (!isSuccess()) throw Exception(toString())
+    if (!isSuccess()) {
+        if (value == 509) {
+            throw QuotaExceededException()
+        }
+        throw Exception(toString())
+    }
 }

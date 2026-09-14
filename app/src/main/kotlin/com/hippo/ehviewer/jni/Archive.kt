@@ -11,3 +11,6 @@ external fun needPassword(): Boolean
 external fun providePassword(str: String): Boolean
 external fun closeArchive()
 external fun archiveFdBatch(fdBatch: IntArray, names: Array<String>, arcFd: Int, size: Int)
+external fun archiveWriteOpen(arcFd: Int): Long
+external fun archiveWriteEntry(handle: Long, fd: Int, name: String)
+external fun archiveWriteClose(handle: Long)

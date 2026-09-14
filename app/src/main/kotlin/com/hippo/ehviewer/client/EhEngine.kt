@@ -43,6 +43,8 @@ import com.hippo.ehviewer.client.exception.NotLoggedInException
 import com.hippo.ehviewer.client.exception.ParseException
 import com.hippo.ehviewer.client.parser.ArchiveParser
 import com.hippo.ehviewer.client.parser.EventPaneParser
+import io.ktor.utils.io.ByteReadChannel
+import io.ktor.utils.io.readAvailable
 import com.hippo.ehviewer.client.parser.FavParserResult
 import com.hippo.ehviewer.client.parser.FavoritesParser
 import com.hippo.ehviewer.client.parser.GalleryApiParser
@@ -166,7 +168,33 @@ private fun rethrowExactly(response: HttpResponse, body: Either<String, ByteBuff
     throw e
 }
 
-private val httpContentPool = DirectByteBufferPool(8, 0x80000)
+internal const val INITIAL_BUFFER_SIZE = 0x80000 // 512KB
+internal const val MAX_BUFFER_SIZE = 16 * 1024 * 1024 // 16MB
+
+private val httpContentPool = DirectByteBufferPool(8, INITIAL_BUFFER_SIZE)
+
+internal suspend fun ByteReadChannel.readToByteBuffer(
+    initialBuffer: ByteBuffer,
+    maxSize: Int = MAX_BUFFER_SIZE,
+): ByteBuffer {
+    var buffer = initialBuffer
+    while (!isClosedForRead) {
+        if (!buffer.hasRemaining()) {
+            val currentCap = buffer.capacity()
+            if (currentCap >= maxSize) {
+                throw IllegalStateException("Response body exceeds maximum allowed buffer size of $maxSize bytes")
+            }
+            val newCap = (currentCap * 2).coerceAtMost(maxSize)
+            val newBuffer = ByteBuffer.allocateDirect(newCap)
+            buffer.flip()
+            newBuffer.put(buffer)
+            buffer = newBuffer
+        }
+        val read = readAvailable(buffer)
+        if (read == -1) break
+    }
+    return buffer
+}
 
 private suspend inline fun <T> HttpStatement.fetchUsingAsText(crossinline block: suspend String.() -> T) = executeSafely { response ->
     if (response.request.url.isLogin) throw NotLoggedInException()
@@ -180,8 +208,8 @@ private suspend inline fun <T> HttpStatement.fetchUsingAsText(crossinline block:
 
 private suspend inline fun <T> HttpStatement.fetchUsingAsByteBuffer(crossinline block: suspend ByteBuffer.() -> T) = executeSafely { response ->
     if (response.request.url.isLogin) throw NotLoggedInException()
-    httpContentPool.useInstance { buffer ->
-        with(response.bodyAsChannel()) { while (!isClosedForRead) readAvailable(buffer) }
+    httpContentPool.useInstance { poolBuffer ->
+        val buffer = response.bodyAsChannel().readToByteBuffer(poolBuffer)
         buffer.flip()
         runSuspendCatching {
             block(buffer)

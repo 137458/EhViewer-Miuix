@@ -32,6 +32,7 @@
     <string name="sign_in_first">ログインしてください</string>
     <string name="text_is_empty">テキストを入力してください</string>
     <string name="waring">警告</string>
+    <string name="warning">警告</string>
     <string name="invalid_download_location">ダウンロードパスは現在利用できません。ダウンロードパスを設定してください。</string>
     <string name="clipboard_gallery_url_snack_message">クリップボードからギャラリーの URL が検出されました。</string>
     <string name="clipboard_gallery_url_snack_action">表示</string>
@@ -52,7 +53,9 @@
     <string name="error_cant_save_image">画像を保存できませんでした</string>
     <string name="error_invalid_number">無効な数字です</string>
     <string name="app_waring">このアプリの内容はインターネットから取得したものです。その内容の一部は心身に悪影響を与える可能性があります。それでも続行しますか？</string>
+    <string name="app_warning">このアプリの内容はインターネットから取得したものです。その内容の一部は心身に悪影響を与える可能性があります。それでも続行しますか？</string>
     <string name="app_waring_2">利用を続行することにより、上記の規約に同意したものとみなされます。</string>
+    <string name="app_warning_2">利用を続行することにより、上記の規約に同意したものとみなされます。</string>
     <string name="error_username_cannot_empty">ユーザー名は空欄にできません</string>
     <string name="error_password_cannot_empty">パスワードは空欄にできません</string>
     <string name="guest_mode">ゲストモード</string>
