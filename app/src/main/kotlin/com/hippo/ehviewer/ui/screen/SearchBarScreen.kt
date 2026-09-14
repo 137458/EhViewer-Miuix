@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -50,6 +52,7 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
@@ -66,6 +69,7 @@ import com.ehviewer.core.ui.component.blurBackdropSource
 import com.ehviewer.core.ui.component.rememberBlurBackdrop
 import com.ehviewer.core.ui.icons.EhIcons
 import com.ehviewer.core.ui.icons.filled.MenuBook
+import com.ehviewer.core.ui.util.LocalBottomBarContentPadding
 import com.ehviewer.core.ui.util.ifNotNullThen
 import com.ehviewer.core.ui.util.ifTrueThen
 import com.ehviewer.core.ui.util.thenIf
@@ -282,12 +286,22 @@ fun SearchBarScreen(
                 },
                 floatingActionButton = floatingActionButton,
                 content = { paddingValues ->
+                    val bottomBarPadding = LocalBottomBarContentPadding.current
+                    val layoutDirection = LocalLayoutDirection.current
+                    val effectivePaddingValues = remember(paddingValues, bottomBarPadding, layoutDirection) {
+                        PaddingValues(
+                            start = paddingValues.calculateStartPadding(layoutDirection),
+                            top = paddingValues.calculateTopPadding(),
+                            end = paddingValues.calculateEndPadding(layoutDirection),
+                            bottom = maxOf(paddingValues.calculateBottomPadding(), bottomBarPadding),
+                        )
+                    }
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
                             .blurBackdropSource(backdrop),
                     ) {
-                        content(paddingValues)
+                        content(effectivePaddingValues)
                     }
                 },
             )

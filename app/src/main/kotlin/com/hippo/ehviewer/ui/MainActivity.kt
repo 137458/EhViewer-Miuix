@@ -45,10 +45,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
@@ -116,6 +118,8 @@ import com.ehviewer.core.ui.icons.filled.FormatListNumbered
 import com.ehviewer.core.ui.icons.filled.Home
 import com.ehviewer.core.ui.icons.filled.Subscriptions
 import com.ehviewer.core.ui.icons.filled.Whatshot
+import com.ehviewer.core.ui.util.BottomBarInsetsCalculator
+import com.ehviewer.core.ui.util.LocalBottomBarContentPadding
 import com.ehviewer.core.ui.util.LocalSnackBarFabPadding
 import com.ehviewer.core.ui.util.LocalWindowSizeClass
 import com.ehviewer.core.util.isAtLeastQ
@@ -441,6 +445,13 @@ class MainActivity : AppCompatActivity() {
             }
 
             val contentBackdrop = rememberBlurBackdrop()
+            val navBarBottomPadding = WindowInsets.navigationBars.only(WindowInsetsSides.Bottom).asPaddingValues().calculateBottomPadding()
+            val bottomPaddingValue = BottomBarInsetsCalculator.calculateBarBottomPadding(navBarBottomPadding)
+            val mainContentBottomPadding = BottomBarInsetsCalculator.calculateMainContentBottomPadding(
+                isPrimaryDestination = isPrimaryDestination,
+                isWideScreen = isWideScreen,
+                navBarBottomPadding = navBarBottomPadding,
+            )
             val bottomBarPadding = if (isPrimaryDestination && !isWideScreen) 88.dp else 0.dp
             val effectiveFabPadding = snackbarFabPadding.coerceAtLeast(bottomBarPadding)
 
@@ -449,6 +460,7 @@ class MainActivity : AppCompatActivity() {
                 LocalDrawerHandle provides drawerHandle,
                 LocalSnackBarHostState provides snackbarState,
                 LocalSnackBarFabPadding provides animateDpAsState(effectiveFabPadding, label = "SnackbarFabPadding"),
+                LocalBottomBarContentPadding provides mainContentBottomPadding,
                 LocalWindowSizeClass provides adaptiveInfo.windowSizeClass,
             ) {
                 Scaffold(
@@ -500,8 +512,7 @@ class MainActivity : AppCompatActivity() {
                                     exit = slideOutVertically { it } + fadeOut(),
                                     modifier = Modifier
                                         .align(Alignment.BottomCenter)
-                                        .navigationBarsPadding()
-                                        .padding(horizontal = 24.dp, vertical = 12.dp),
+                                        .padding(bottom = bottomPaddingValue, start = 24.dp, end = 24.dp),
                                 ) {
                                     Box(
                                         modifier = Modifier

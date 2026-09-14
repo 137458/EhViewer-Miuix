@@ -36,8 +36,8 @@ import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.navigationBarsPadding
-import com.ehviewer.core.ui.util.snackBarPadding
+import androidx.compose.foundation.layout.height
+import com.ehviewer.core.ui.util.LocalBottomBarContentPadding
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -124,7 +124,7 @@ fun AnimatedVisibilityScope.SettingsScreen(navigator: DestinationsNavigator) = S
                         navigator = navigator,
                     )
                 }
-                Spacer(modifier = Modifier.navigationBarsPadding().snackBarPadding())
+                Spacer(modifier = Modifier.height(LocalBottomBarContentPadding.current))
             }
         }
     }
