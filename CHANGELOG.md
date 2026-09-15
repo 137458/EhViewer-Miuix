@@ -4,12 +4,15 @@
 
 ### 新功能
 
+* 顶部搜索栏与分类筛选组件全面液态玻璃质感赋能：全局搜索栏（SearchBarScreen / InputField）、横向分类筛选栏（GalleryCategoryFilterStrip）、搜索筛选器（SearchFilter）与下拉筛选组件（DropdownFilterChip）全面升级为液态玻璃材质（LiquidGlassSurface），支持物理透镜折射、高光边缘与跨页面一致性设计
 * 首页交互与排布现代化重构：引入横向分类快速胶囊过滤栏（GalleryCategoryFilterStrip），支持一键快速筛选各专属分类画廊；重构悬浮操作栏为悬浮液态玻璃操作胶囊（HomeFloatingActionCapsule），整合随机漫游、极速刷新、页码与日期快速跳转等核心功能
 * 首页顶栏动态折叠与常驻筛选：画廊列表向上滑动时搜索栏平滑收缩折叠为右上角紧凑搜索图标，点击即可展开搜索；顶栏常驻“更多”筛选按钮，支持通过 WindowBottomSheet 快捷展开分类与标签筛选
 * 支持手动 Cookie 登录：新增 Cookie 登录对话框，支持剪贴板整段 Cookie 智能提取与解析（自动识别 ipb_member_id、ipb_pass_hash、igneous），支持多字段手动输入校验登录
 * 全域液态玻璃质感赋能：登录页（SignInScreen）认证卡片、阅读器底部控制栏（BottomReaderBar）与章节进度条（ChapterNavigator）全面升级为液态玻璃悬浮材质（LiquidGlassSurface），支持物理透镜折射、高光边缘与多端降级渲染
 
 ### 修复
+
+* 修复搜索页与筛选弹窗中分类标签显示不全的问题：将原单行单维滚动的 LazyRow 升级为自适应流式排布（FlowRow），完整展示全部分类标签并新增“全部”选项；修复“全部”分类与分类位掩码（bitmask）在首页胶囊与搜索筛选页之间的同步与选中高亮逻辑缺失缺陷
 
 * 修复下载调度管理器（DownloadManager）中等待队列与下载状态流转的并发竞争问题，加互斥锁保护并原子化 Spider 释放与引用计数
 * 修复画廊解析与准备阶段（SpiderQueen）发生异常时未初始化关键属性导致的后续空指针与死锁问题，补齐降级初始对象与异常向上抛出

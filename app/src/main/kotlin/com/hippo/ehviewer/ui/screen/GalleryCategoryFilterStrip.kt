@@ -54,7 +54,7 @@ fun GalleryCategoryFilterStrip(
     modifier: Modifier = Modifier,
 ) {
     val haptic = LocalHapticFeedback.current
-    val isAllSelected = selectedCategory == EhUtils.NONE || selectedCategory <= 0
+    val isAllSelected = selectedCategory == EhUtils.ALL_CATEGORY || selectedCategory == EhUtils.NONE || selectedCategory <= 0
 
     LazyRow(
         modifier = modifier.fillMaxWidth(),
@@ -67,49 +67,62 @@ fun GalleryCategoryFilterStrip(
             val allBg = if (isAllSelected) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.surfaceContainer
             val allText = if (isAllSelected) MiuixTheme.colorScheme.onPrimary else MiuixTheme.colorScheme.onSurface
 
-            Box(
-                modifier = Modifier
-                    .clip(SquircleShape(12.dp))
-                    .background(allBg)
-                    .clickable(role = Role.RadioButton) {
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        onSelectCategory(EhUtils.NONE)
-                    }
-                    .padding(horizontal = 14.dp, vertical = 6.dp),
-                contentAlignment = Alignment.Center,
+            LiquidGlassSurface(
+                shape = CircleShape,
+                containerColor = allBg,
+                elevation = if (isAllSelected) 3.dp else 1.dp,
+                refractionHeight = 8.dp,
+                refractionAmount = 8.dp,
+                modifier = Modifier.clickable(role = Role.RadioButton) {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onSelectCategory(EhUtils.ALL_CATEGORY)
+                },
             ) {
-                Text(
-                    text = stringResource(R.string.category_all),
-                    fontSize = 13.sp,
-                    fontWeight = if (isAllSelected) FontWeight.Bold else FontWeight.Normal,
-                    color = allText,
-                )
+                Box(
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = stringResource(R.string.category_all),
+                        fontSize = 13.sp,
+                        fontWeight = if (isAllSelected) FontWeight.Bold else FontWeight.Normal,
+                        color = allText,
+                    )
+                }
             }
         }
 
         // 分类胶囊列表
         items(CATEGORY_ITEMS, key = { it.first }) { (cat, stringRes) ->
-            val isSelected = selectedCategory == cat
+            val isSelected = !isAllSelected && (selectedCategory and cat != 0)
             val catColor = EhUtils.getCategoryColor(cat)
             val pillBg = if (isSelected) catColor else MiuixTheme.colorScheme.surfaceContainer
             val pillText = if (isSelected) Color.White else MiuixTheme.colorScheme.onSurface
 
-            Box(
-                modifier = Modifier
-                    .clip(SquircleShape(12.dp))
-                    .background(pillBg)
-                    .clickable(role = Role.RadioButton) {
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        if (isSelected) {
-                            onSelectCategory(EhUtils.NONE)
-                        } else {
+            LiquidGlassSurface(
+                shape = CircleShape,
+                containerColor = pillBg,
+                elevation = if (isSelected) 3.dp else 1.dp,
+                refractionHeight = 8.dp,
+                refractionAmount = 8.dp,
+                modifier = Modifier.clickable(role = Role.RadioButton) {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    if (isSelected) {
+                        val newCat = selectedCategory and cat.inv()
+                        onSelectCategory(if (newCat == 0) EhUtils.ALL_CATEGORY else newCat)
+                    } else {
+                        if (isAllSelected) {
                             onSelectCategory(cat)
+                        } else {
+                            onSelectCategory(selectedCategory or cat)
                         }
                     }
-                    .padding(horizontal = 12.dp, vertical = 6.dp),
-                contentAlignment = Alignment.Center,
+                },
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
                     if (!isSelected) {
                         Box(
                             modifier = Modifier

@@ -59,10 +59,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.coerceAtMost
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.shape.CircleShape
 import com.ehviewer.core.database.dao.SearchDao
 import com.ehviewer.core.database.model.Search
 import com.ehviewer.core.i18n.R
 import com.ehviewer.core.model.TagNamespace
+import com.ehviewer.core.ui.component.LiquidGlassSurface
 import com.ehviewer.core.ui.component.LocalBackdrop
 import com.ehviewer.core.ui.component.SquircleShape
 import com.ehviewer.core.ui.component.blurBackdropSource
@@ -336,54 +338,75 @@ fun SearchBarScreen(
                     }
                     .thenIf(expanded) { fillMaxSize() },
                 inputField = {
-                    InputField(
-                        query = query,
-                        onQueryChange = { searchFieldState.setTextAndPlaceCursorAtEnd(it) },
-                        onSearch = {
-                            hideSearchView()
-                            onApplySearch()
-                        },
-                        expanded = expanded,
-                        onExpandedChange = onExpandedChange,
-                        modifier = Modifier.widthIn(max = (maxWidth - SearchBarHorizontalPadding * 2).coerceAtMost(M3SearchBarMaxWidth)).fillMaxWidth(),
-                        label = placeholder,
-                        color = if (expanded) MiuixTheme.colorScheme.surfaceContainer else MiuixTheme.colorScheme.surfaceContainerHigh,
-                        leadingIcon = {
-                            if (expanded) {
-                                IconButton(onClick = { hideSearchView() }) {
-                                    Icon(MiuixIcons.Back, contentDescription = null)
-                                }
-                            } else {
-                                IconButton(onClick = { onExpandedChange(true) }) {
-                                    Icon(MiuixIcons.Search, contentDescription = null)
-                                }
-                            }
-                        },
-                        trailingIcon = {
-                            if (expanded) {
-                                AnimatedContent(targetState = query.isNotEmpty()) { hasText ->
-                                    if (hasText) {
-                                        IconButton(onClick = { searchFieldState.clearText() }) {
-                                            Icon(MiuixIcons.Close, contentDescription = null)
-                                        }
-                                    } else {
-                                        IconButton(onClick = { navigate(ImageSearchScreenDestination) }) {
-                                            Icon(MiuixIcons.Image, contentDescription = null)
-                                        }
+                    val inputFieldModifier = Modifier
+                        .widthIn(max = (maxWidth - SearchBarHorizontalPadding * 2).coerceAtMost(M3SearchBarMaxWidth))
+                        .fillMaxWidth()
+
+                    val inputContent = @Composable {
+                        InputField(
+                            query = query,
+                            onQueryChange = { searchFieldState.setTextAndPlaceCursorAtEnd(it) },
+                            onSearch = {
+                                hideSearchView()
+                                onApplySearch()
+                            },
+                            expanded = expanded,
+                            onExpandedChange = onExpandedChange,
+                            modifier = if (!expanded) Modifier.fillMaxWidth() else inputFieldModifier,
+                            label = placeholder,
+                            color = if (expanded) MiuixTheme.colorScheme.surfaceContainer else Color.Transparent,
+                            leadingIcon = {
+                                if (expanded) {
+                                    IconButton(onClick = { hideSearchView() }) {
+                                        Icon(MiuixIcons.Back, contentDescription = null)
+                                    }
+                                } else {
+                                    IconButton(onClick = { onExpandedChange(true) }) {
+                                        Icon(MiuixIcons.Search, contentDescription = null)
                                     }
                                 }
-                            } else {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    if (filter != null) {
-                                        IconButton(onClick = { showFilterSheet = true }) {
-                                            Icon(MiuixIcons.More, contentDescription = stringResource(R.string.more_actions))
+                            },
+                            trailingIcon = {
+                                if (expanded) {
+                                    AnimatedContent(targetState = query.isNotEmpty()) { hasText ->
+                                        if (hasText) {
+                                            IconButton(onClick = { searchFieldState.clearText() }) {
+                                                Icon(MiuixIcons.Close, contentDescription = null)
+                                            }
+                                        } else {
+                                            IconButton(onClick = { navigate(ImageSearchScreenDestination) }) {
+                                                Icon(MiuixIcons.Image, contentDescription = null)
+                                            }
                                         }
                                     }
-                                    trailingIcon()
+                                } else {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        if (filter != null) {
+                                            IconButton(onClick = { showFilterSheet = true }) {
+                                                Icon(MiuixIcons.More, contentDescription = stringResource(R.string.more_actions))
+                                            }
+                                        }
+                                        trailingIcon()
+                                    }
                                 }
-                            }
-                        },
-                    )
+                            },
+                        )
+                    }
+
+                    if (!expanded) {
+                        LiquidGlassSurface(
+                            shape = CircleShape,
+                            elevation = 4.dp,
+                            refractionHeight = 16.dp,
+                            refractionAmount = 16.dp,
+                            containerColor = MiuixTheme.colorScheme.surfaceContainerHigh,
+                            modifier = inputFieldModifier,
+                        ) {
+                            inputContent()
+                        }
+                    } else {
+                        inputContent()
+                    }
                 },
                 expanded = expanded,
                 onExpandedChange = onExpandedChange,

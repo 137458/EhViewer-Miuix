@@ -7,8 +7,10 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -16,6 +18,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -23,15 +26,21 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import arrow.core.raise.ensure
 import com.ehviewer.core.i18n.R
 import com.ehviewer.core.model.GalleryInfo.Companion.S_LANG_TAGS
 import com.ehviewer.core.ui.component.DropdownFilterChip
+import com.ehviewer.core.ui.component.LiquidGlassSurface
 import com.ehviewer.core.ui.component.SquircleShape
 import com.ehviewer.core.ui.util.thenIf
 import com.ehviewer.core.util.launch
@@ -74,23 +83,92 @@ fun SearchFilter(
     advancedOption: AdvancedSearchOption,
     onAdvancedOptionChange: (AdvancedSearchOption) -> Unit,
 ) = Column(modifier) {
-    val animateItems by Settings.animateItems.collectAsState()
-    fun isCategoryChecked(bit: Int) = category and bit != 0
-    val categories = remember(category) { categoryTable.sortedBy { !isCategoryChecked(it.first) } }
-    LazyRow(
-        contentPadding = PaddingValues(start = 8.dp, top = 8.dp, end = 16.dp),
+    val haptic = LocalHapticFeedback.current
+    val isAllSelected = category == EhUtils.ALL_CATEGORY || category == EhUtils.NONE || category <= 0
+
+    FlowRow(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        // Workaround for the first item's animation
-        // https://github.com/Calvin-LL/Reorderable/issues/4#issuecomment-1853131769
-        item {}
-        items(categories, { it.first }) {
-            SearchFilterChip(
-                selected = isCategoryChecked(it.first),
-                onClick = { onCategoryChange(category xor it.first) },
-                label = stringResource(id = it.second),
-                modifier = Modifier.thenIf(animateItems) { animateItem() },
-            )
+        // "全部" 胶囊
+        val allBg = if (isAllSelected) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.surfaceContainer
+        val allText = if (isAllSelected) MiuixTheme.colorScheme.onPrimary else MiuixTheme.colorScheme.onSurface
+
+        LiquidGlassSurface(
+            shape = CircleShape,
+            containerColor = allBg,
+            elevation = if (isAllSelected) 3.dp else 1.dp,
+            refractionHeight = 8.dp,
+            refractionAmount = 8.dp,
+            modifier = Modifier.clickable(role = Role.RadioButton) {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                onCategoryChange(EhUtils.ALL_CATEGORY)
+            },
+        ) {
+            Box(
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = stringResource(R.string.category_all),
+                    fontSize = 13.sp,
+                    fontWeight = if (isAllSelected) FontWeight.Bold else FontWeight.Normal,
+                    color = allText,
+                )
+            }
+        }
+
+        // 10 分类胶囊
+        categoryTable.forEach { (cat, stringRes) ->
+            val isSelected = !isAllSelected && (category and cat != 0)
+            val catColor = EhUtils.getCategoryColor(cat)
+            val pillBg = if (isSelected) catColor else MiuixTheme.colorScheme.surfaceContainer
+            val pillText = if (isSelected) Color.White else MiuixTheme.colorScheme.onSurface
+
+            LiquidGlassSurface(
+                shape = CircleShape,
+                containerColor = pillBg,
+                elevation = if (isSelected) 3.dp else 1.dp,
+                refractionHeight = 8.dp,
+                refractionAmount = 8.dp,
+                modifier = Modifier.clickable(role = Role.RadioButton) {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    if (isSelected) {
+                        val newCat = category and cat.inv()
+                        onCategoryChange(if (newCat == 0) EhUtils.ALL_CATEGORY else newCat)
+                    } else {
+                        if (isAllSelected) {
+                            onCategoryChange(cat)
+                        } else {
+                            onCategoryChange(category or cat)
+                        }
+                    }
+                },
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    if (!isSelected) {
+                        Box(
+                            modifier = Modifier
+                                .size(6.dp)
+                                .clip(CircleShape)
+                                .background(catColor),
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                    }
+                    Text(
+                        text = stringResource(stringRes),
+                        fontSize = 13.sp,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                        color = pillText,
+                    )
+                }
+            }
         }
     }
     Row(
@@ -262,8 +340,9 @@ private fun SearchFilterChip(
     label: String,
     modifier: Modifier = Modifier,
 ) {
+    val haptic = LocalHapticFeedback.current
     val backgroundColor = if (selected) {
-        MiuixTheme.colorScheme.primary.copy(alpha = 0.12f)
+        MiuixTheme.colorScheme.primary.copy(alpha = 0.2f)
     } else {
         MiuixTheme.colorScheme.surfaceContainer
     }
@@ -273,18 +352,27 @@ private fun SearchFilterChip(
         MiuixTheme.colorScheme.onSurface
     }
 
-    Box(
-        modifier = modifier
-            .clip(SquircleShape(8.dp))
-            .background(backgroundColor)
-            .clickable(role = Role.Checkbox, onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 6.dp),
-        contentAlignment = Alignment.Center,
+    LiquidGlassSurface(
+        shape = CircleShape,
+        containerColor = backgroundColor,
+        elevation = if (selected) 2.dp else 1.dp,
+        refractionHeight = 8.dp,
+        refractionAmount = 8.dp,
+        modifier = modifier.clickable(role = Role.Checkbox) {
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            onClick()
+        },
     ) {
-        Text(
-            text = label,
-            color = contentColor,
-            style = MiuixTheme.textStyles.body2,
-        )
+        Box(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = label,
+                color = contentColor,
+                style = MiuixTheme.textStyles.body2,
+                fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+            )
+        }
     }
 }
