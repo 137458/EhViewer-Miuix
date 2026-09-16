@@ -190,7 +190,9 @@ object DownloadManager : OnSpiderListener, CoroutineScope {
                     // Update in DB
                     EhDB.putDownloadInfo(info)
                     info
-                } else null
+                } else {
+                    null
+                }
             } else {
                 // It is new download info
                 info = DownloadInfo(galleryInfo.asEntity(), galleryInfo.downloadDirname())

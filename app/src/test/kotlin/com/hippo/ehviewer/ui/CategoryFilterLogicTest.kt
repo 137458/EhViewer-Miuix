@@ -8,11 +8,9 @@ import kotlin.test.assertTrue
 
 class CategoryFilterLogicTest {
 
-    private fun isAllSelected(category: Int): Boolean =
-        category == EhUtils.ALL_CATEGORY || category == EhUtils.NONE || category <= 0
+    private fun isAllSelected(category: Int): Boolean = category == EhUtils.ALL_CATEGORY || category == EhUtils.NONE || category <= 0
 
-    private fun isCategorySelected(currentCategory: Int, cat: Int): Boolean =
-        !isAllSelected(currentCategory) && (currentCategory and cat != 0)
+    private fun isCategorySelected(currentCategory: Int, cat: Int): Boolean = !isAllSelected(currentCategory) && (currentCategory and cat != 0)
 
     private fun toggleCategory(currentCategory: Int, cat: Int): Int {
         val allSelected = isAllSelected(currentCategory)

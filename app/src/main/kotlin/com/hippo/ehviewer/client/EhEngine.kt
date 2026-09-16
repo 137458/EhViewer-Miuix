@@ -43,8 +43,6 @@ import com.hippo.ehviewer.client.exception.NotLoggedInException
 import com.hippo.ehviewer.client.exception.ParseException
 import com.hippo.ehviewer.client.parser.ArchiveParser
 import com.hippo.ehviewer.client.parser.EventPaneParser
-import io.ktor.utils.io.ByteReadChannel
-import io.ktor.utils.io.readAvailable
 import com.hippo.ehviewer.client.parser.FavParserResult
 import com.hippo.ehviewer.client.parser.FavoritesParser
 import com.hippo.ehviewer.client.parser.GalleryApiParser
@@ -74,6 +72,7 @@ import io.ktor.client.statement.bodyAsChannel
 import io.ktor.client.statement.request
 import io.ktor.http.Url
 import io.ktor.util.moveToByteArray
+import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.pool.DirectByteBufferPool
 import io.ktor.utils.io.pool.useInstance
 import io.ktor.utils.io.readAvailable

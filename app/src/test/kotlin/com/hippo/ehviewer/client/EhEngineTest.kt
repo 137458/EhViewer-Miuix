@@ -3,11 +3,11 @@ package com.hippo.ehviewer.client
 import io.ktor.utils.io.ByteReadChannel
 import java.nio.ByteBuffer
 import java.util.Random
-import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlinx.coroutines.runBlocking
 
 class EhEngineTest {
 
