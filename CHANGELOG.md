@@ -5,6 +5,10 @@
 ### 新功能
 
 * 顶部搜索栏与分类筛选组件全面液态玻璃质感赋能：全局搜索栏（SearchBarScreen / InputField）、横向分类筛选栏（GalleryCategoryFilterStrip）、搜索筛选器（SearchFilter）与下拉筛选组件（DropdownFilterChip）全面升级为液态玻璃材质（LiquidGlassSurface），支持物理透镜折射、高光边缘与跨页面一致性设计
+* 新增检查更新页面（UpdateScreen）：深度遵循 HyperOS 3.0 与 Miuix 视觉规范，配备动态流光背景、Hero 双层发光悬浮大徽标、状态胶囊浮岛、新版特性卡片、更新设置管理与官方通道导航
+* 新增全功能版本更新弹窗（UpdateDialog）：基于 WindowDialog 构建，支持当前版本至目标版本跃迁横幅、通道与体积元信息胶囊、带重音指示条与引用块的 Markdown 日志排版、流式实时下载速率计算与平滑进度条、以及本地数据库自动备份和安装包拉起
+* 新增更新弹窗沙盒模拟测试系统：提供“测试更新弹窗”交互式沙盒入口，支持在无需远程发版的情况下全链路体验版本弹窗交互、动效、模拟下载进度与速率反馈
+* 新增版本忽略机制：新增 ignored_update_version 设置项，支持在弹窗与更新设置中便捷忽略特定版本更新并在设置中随时恢复提醒
 * 首页交互与排布现代化重构：引入横向分类快速胶囊过滤栏（GalleryCategoryFilterStrip），支持一键快速筛选各专属分类画廊；重构悬浮操作栏为悬浮液态玻璃操作胶囊（HomeFloatingActionCapsule），整合随机漫游、极速刷新、页码与日期快速跳转等核心功能
 * 首页顶栏动态折叠与常驻筛选：画廊列表向上滑动时搜索栏平滑收缩折叠为右上角紧凑搜索图标，点击即可展开搜索；顶栏常驻“更多”筛选按钮，支持通过 WindowBottomSheet 快捷展开分类与标签筛选
 * 支持手动 Cookie 登录：新增 Cookie 登录对话框，支持剪贴板整段 Cookie 智能提取与解析（自动识别 ipb_member_id、ipb_pass_hash、igneous），支持多字段手动输入校验登录

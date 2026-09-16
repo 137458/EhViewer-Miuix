@@ -39,6 +39,7 @@ import com.hippo.ehviewer.asMutableState
 import com.hippo.ehviewer.download.downloadLocation
 import com.hippo.ehviewer.ui.Screen
 import com.hippo.ehviewer.ui.destinations.LicenseScreenDestination
+import com.hippo.ehviewer.ui.destinations.UpdateScreenDestination
 import com.hippo.ehviewer.ui.main.NavigationIcon
 import com.hippo.ehviewer.ui.tools.DialogState
 import com.hippo.ehviewer.ui.tools.awaitConfirmationOrCancel
@@ -185,12 +186,11 @@ fun AnimatedVisibilityScope.AboutScreen(navigator: DestinationsNavigator) = Scre
                         entryValueRes = com.hippo.ehviewer.R.array.update_frequency_values,
                         state = Settings.updateIntervalDays.asMutableState(),
                     )
-                    WorkPreference(title = stringResource(id = R.string.settings_about_check_for_updates)) {
-                        runSuspendCatching {
-                            AppUpdater.checkForUpdate(true)?.let { showNewVersion(it) } ?: launchSnackbar(string(R.string.already_latest_version))
-                        }.onFailure {
-                            launchSnackbar(string(R.string.update_failed, it.displayString()))
-                        }
+                    Preference(
+                        title = stringResource(id = R.string.settings_about_check_for_updates),
+                        summary = stringResource(id = R.string.update_pref_manual_check_idle),
+                    ) {
+                        navigate(UpdateScreenDestination)
                     }
                 }
             }

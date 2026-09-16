@@ -149,7 +149,8 @@ import com.hippo.ehviewer.ui.destinations.WhatshotScreenDestination
 import com.hippo.ehviewer.ui.screen.asDst
 import com.hippo.ehviewer.ui.screen.asDstWith
 import com.hippo.ehviewer.ui.screen.navWithUrl
-import com.hippo.ehviewer.ui.settings.showNewVersion
+import com.hippo.ehviewer.ui.update.UpdateDialog
+import com.hippo.ehviewer.updater.Release
 import com.hippo.ehviewer.ui.tools.DialogState
 import com.hippo.ehviewer.ui.tools.awaitConfirmationOrCancel
 import com.hippo.ehviewer.ui.tools.awaitInputText
@@ -264,6 +265,9 @@ class MainActivity : AppCompatActivity() {
                 }
             }
 
+            var startupRelease by remember { mutableStateOf<Release?>(null) }
+            var showStartupDialog by remember { mutableStateOf(false) }
+
             val hasNetwork = remember { connectivityManager.activeNetwork != null }
             if (!AppConfig.isBenchmark) {
                 val noNetwork = stringResource(R.string.no_network)
@@ -273,7 +277,11 @@ class MainActivity : AppCompatActivity() {
                     if (hasNetwork) {
                         runSuspendCatching {
                             withIOContext {
-                                AppUpdater.checkForUpdate()?.let { showNewVersion(it) }
+                                val release = AppUpdater.checkForUpdate()
+                                if (release != null && release.version != Settings.ignoredUpdateVersion.value) {
+                                    startupRelease = release
+                                    showStartupDialog = true
+                                }
                             }
                         }.onFailure {
                             snackbarState.showSnackbar(getString(R.string.update_failed, it.displayString()))
@@ -614,6 +622,18 @@ class MainActivity : AppCompatActivity() {
                         }
                     }
                 }
+            }
+
+            if (showStartupDialog && startupRelease != null) {
+                UpdateDialog(
+                    show = showStartupDialog,
+                    release = startupRelease!!,
+                    onDismiss = { showStartupDialog = false },
+                    onIgnore = { version ->
+                        Settings.ignoredUpdateVersion.value = version
+                        showStartupDialog = false
+                    },
+                )
             }
         }
 
