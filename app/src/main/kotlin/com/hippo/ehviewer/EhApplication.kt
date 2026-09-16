@@ -239,9 +239,17 @@ class EhApplication : Application(), SingletonImageLoader.Factory {
         }
 
         val thumbCache by lazy {
+            val cacheSize = runCatching {
+                val freeSpace = appCtx.cacheDir.freeSpace
+                when {
+                    freeSpace > 10L * 1024 * 1024 * 1024 -> 512L * 1024 * 1024
+                    freeSpace > 2L * 1024 * 1024 * 1024 -> 256L * 1024 * 1024
+                    else -> 128L * 1024 * 1024
+                }
+            }.getOrDefault(256L * 1024 * 1024)
             diskCache {
                 directory(appCtx.cacheDir.toOkioPath() / "thumb")
-                maxSizeBytes(80L * 1024 * 1024)
+                maxSizeBytes(cacheSize)
             }
         }
 

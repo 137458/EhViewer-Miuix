@@ -95,9 +95,19 @@ suspend inline fun <R> timeoutBySpeed(
         resp.status.ensureSuccess()
         val speedWatchdog = launch {
             val timeoutSpeed = speedLevelToSpeed(Settings.timeoutSpeed.value) * 1024L
-            tracker.speedFlow().collect { speed ->
-                if (speed < timeoutSpeed) {
-                    onTimeout(LowSpeedException(url, speed))
+            if (timeoutSpeed > 0) {
+                // 3 seconds initial grace period to prevent false-positives during slow-start
+                delay(3.seconds)
+                var consecutiveLowSpeedCount = 0
+                tracker.speedFlow().collect { speed ->
+                    if (speed < timeoutSpeed) {
+                        consecutiveLowSpeedCount++
+                        if (consecutiveLowSpeedCount >= 3) {
+                            onTimeout(LowSpeedException(url, speed))
+                        }
+                    } else {
+                        consecutiveLowSpeedCount = 0
+                    }
                 }
             }
         }

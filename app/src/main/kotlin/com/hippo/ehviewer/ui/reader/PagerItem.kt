@@ -52,6 +52,7 @@ import com.hippo.ehviewer.gallery.statusObserved
 import com.hippo.ehviewer.image.Image
 import com.hippo.ehviewer.util.AdsPlaceholderFile
 import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.drop
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
@@ -136,6 +137,14 @@ fun PagerItem(
             )
         }
         is PageStatus.Error -> {
+            var autoRetried by remember { mutableStateOf(false) }
+            LaunchedEffect(state) {
+                if (!autoRetried) {
+                    autoRetried = true
+                    delay(800)
+                    pageLoader.retryPage(page.index)
+                }
+            }
             Box(modifier = modifier.fillMaxWidth().aspectRatio(DEFAULT_ASPECT)) {
                 Column(
                     modifier = Modifier.align(Alignment.Center),

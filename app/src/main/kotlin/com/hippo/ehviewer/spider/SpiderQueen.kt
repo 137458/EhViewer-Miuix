@@ -407,6 +407,7 @@ class SpiderQueen private constructor(val galleryInfo: GalleryInfo) : CoroutineS
             notifyPageFailure(index, error)
         } else if (state == STATE_FINISHED) {
             notifyPageSuccess(index)
+            notifyPageReady(index)
         }
         if (mDownloadedPages.load() == size) {
             if (mFinishedPages.load() == size) {
@@ -499,15 +500,19 @@ class SpiderQueen private constructor(val galleryInfo: GalleryInfo) : CoroutineS
             }
         }
 
-        private fun doLaunchDownloadJob(index: Int, force: Boolean, orgImg: Boolean = false) {
+        private fun doLaunchDownloadJob(index: Int, force: Boolean, orgImg: Boolean = false, isPriority: Boolean = false) {
             val currentJob = jobs[index]
             val skipHath = force && !orgImg && currentJob?.isActive == true
             if (force) currentJob?.cancel(CancellationException(FORCE_RETRY))
             if (currentJob?.isActive != true) {
                 jobs[index] = launch {
                     runCatching {
-                        semaphore.withPermit {
+                        if (isPriority) {
                             doInJob(index, force, orgImg, skipHath)
+                        } else {
+                            semaphore.withPermit {
+                                doInJob(index, force, orgImg, skipHath)
+                            }
                         }
                     }.onFailure {
                         if (it is CancellationException) {
@@ -530,7 +535,7 @@ class SpiderQueen private constructor(val galleryInfo: GalleryInfo) : CoroutineS
             val state = pageStates[index]
             if (!force && state == STATE_FINISHED) return notifyPageReady(index)
             if (!isDownloadMode) {
-                synchronized(jobs) { doLaunchDownloadJob(index, force, orgImg) }
+                synchronized(jobs) { doLaunchDownloadJob(index, force, orgImg, isPriority = true) }
             }
             launch {
                 jobs[index]?.join()
@@ -547,12 +552,12 @@ class SpiderQueen private constructor(val galleryInfo: GalleryInfo) : CoroutineS
                     // Preview size may changed, so try to get pToken twice
                     ?: getPTokenFromInternet(index)
             }
+            if (!force && index in spiderDen) {
+                return updatePageState(index, STATE_FINISHED)
+            }
             val previousPToken: String?
             val pToken: String
             pTokenLock.withLock {
-                if (!force && index in spiderDen) {
-                    return updatePageState(index, STATE_FINISHED)
-                }
                 pToken = getPToken(index) ?: return updatePageState(index, STATE_FAILED, pTokenFailedMessage)
                 previousPToken = getPToken(index - 1)
 
@@ -646,6 +651,7 @@ class SpiderQueen private constructor(val galleryInfo: GalleryInfo) : CoroutineS
                             is CancellationException, is FileNotFoundException -> throw it
                         }
                         error = it.displayString()
+                        delay((retries + 1) * 500L)
                     }
                 }
             }.onFailure {
