@@ -83,6 +83,7 @@ fun PagerItem(
         }
     }
     val defaultError = stringResource(id = R.string.decode_image_error)
+    var autoRetried by remember(page.index) { mutableStateOf(false) }
     when (val state = page.statusObserved) {
         is PageStatus.Queued, is PageStatus.Loading -> {
             Box(
@@ -137,8 +138,7 @@ fun PagerItem(
             )
         }
         is PageStatus.Error -> {
-            var autoRetried by remember { mutableStateOf(false) }
-            LaunchedEffect(state) {
+            LaunchedEffect(page.index) {
                 if (!autoRetried) {
                     autoRetried = true
                     delay(800)

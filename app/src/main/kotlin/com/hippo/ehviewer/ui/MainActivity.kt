@@ -149,12 +149,12 @@ import com.hippo.ehviewer.ui.destinations.WhatshotScreenDestination
 import com.hippo.ehviewer.ui.screen.asDst
 import com.hippo.ehviewer.ui.screen.asDstWith
 import com.hippo.ehviewer.ui.screen.navWithUrl
-import com.hippo.ehviewer.ui.update.UpdateDialog
-import com.hippo.ehviewer.updater.Release
 import com.hippo.ehviewer.ui.tools.DialogState
 import com.hippo.ehviewer.ui.tools.awaitConfirmationOrCancel
 import com.hippo.ehviewer.ui.tools.awaitInputText
+import com.hippo.ehviewer.ui.update.UpdateDialog
 import com.hippo.ehviewer.updater.AppUpdater
+import com.hippo.ehviewer.updater.Release
 import com.hippo.ehviewer.util.AppConfig
 import com.hippo.ehviewer.util.addTextToClipboard
 import com.hippo.ehviewer.util.calculateFraction

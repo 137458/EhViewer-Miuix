@@ -579,6 +579,13 @@
     <string name="update_dialog_btn_ignore">忽略此版本</string>
     <string name="update_dialog_btn_later">以后再说</string>
     <string name="update_dialog_btn_retry">重试</string>
+    <string name="update_build_version_name">版本名称</string>
+    <string name="update_build_commit_sha">Commit SHA</string>
+    <string name="update_build_time">构建时间</string>
+    <string name="update_pref_restore_summary"> (点击恢复提醒)</string>
+    <string name="update_msg_restore_alert">已恢复版本 %1$s 的更新提醒</string>
+    <string name="update_msg_ignore_alert">已忽略版本 %1$s</string>
+    <string name="update_msg_sandbox_done">沙盒模拟下载完成！</string>
     <string name="permission_denied">权限被拒</string>
     <string name="download_gallery_first">请先下载画廊！</string>
     <string name="export_as_archive">导出为归档文件</string>

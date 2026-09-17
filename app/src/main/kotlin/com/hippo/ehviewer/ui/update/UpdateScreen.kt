@@ -34,26 +34,26 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.graphics.drawable.toBitmap
 import com.ehviewer.core.i18n.R
 import com.ehviewer.core.ui.component.BlurredBar
 import com.ehviewer.core.ui.component.SquircleShape
 import com.ehviewer.core.ui.component.blurBackdropSource
 import com.ehviewer.core.ui.component.rememberBlurBackdrop
-import androidx.compose.ui.platform.LocalContext
-import androidx.core.graphics.drawable.toBitmap
-import androidx.compose.ui.graphics.asImageBitmap
+import com.ehviewer.core.ui.util.LocalBottomBarContentPadding
 import com.ehviewer.core.util.launch
 import com.hippo.ehviewer.BuildConfig
 import com.hippo.ehviewer.Settings
 import com.hippo.ehviewer.asMutableState
-import com.ehviewer.core.ui.util.LocalBottomBarContentPadding
 import com.hippo.ehviewer.ui.Screen
 import com.hippo.ehviewer.ui.component.MarkdownText
 import com.hippo.ehviewer.ui.main.NavigationIcon
@@ -519,10 +519,10 @@ fun AnimatedVisibilityScope.UpdateScreen(navigator: DestinationsNavigator) = Scr
                         if (ignored != null) {
                             Preference(
                                 title = stringResource(R.string.update_pref_ignore_title),
-                                summary = stringResource(R.string.update_pref_ignore_ignored, ignored) + " (点击恢复提醒)",
+                                summary = stringResource(R.string.update_pref_ignore_ignored, ignored) + stringResource(R.string.update_pref_restore_summary),
                                 onClick = {
                                     Settings.ignoredUpdateVersion.value = null
-                                    launchSnackbar("已恢复版本 $ignored 的更新提醒")
+                                    launchSnackbar(context.getString(R.string.update_msg_restore_alert, ignored))
                                 },
                             )
                         }
@@ -571,15 +571,15 @@ fun AnimatedVisibilityScope.UpdateScreen(navigator: DestinationsNavigator) = Scr
                             .padding(horizontal = 16.dp, vertical = 4.dp),
                     ) {
                         Preference(
-                            title = "版本名称",
+                            title = stringResource(R.string.update_build_version_name),
                             summary = "${BuildConfig.VERSION_NAME} (${BuildConfig.RAW_VERSION_NAME})",
                         )
                         Preference(
-                            title = "Commit SHA",
+                            title = stringResource(R.string.update_build_commit_sha),
                             summary = BuildConfig.COMMIT_SHA,
                         )
                         Preference(
-                            title = "构建时间",
+                            title = stringResource(R.string.update_build_time),
                             summary = AppConfig.commitTime,
                         )
                     }
@@ -589,21 +589,23 @@ fun AnimatedVisibilityScope.UpdateScreen(navigator: DestinationsNavigator) = Scr
             }
         }
 
-    // ── 挂载全功能 Miuix UpdateDialog ──
-    if (showDialog && dialogRelease != null) {
-        UpdateDialog(
-            show = showDialog,
-            release = dialogRelease!!,
-            onDismiss = { showDialog = false },
-            onIgnore = if (!isDialogSimulated) {
-                { ver ->
-                    Settings.ignoredUpdateVersion.value = ver
-                    showDialog = false
-                    launchSnackbar("已忽略版本 $ver")
-                }
-            } else null,
-            isSimulated = isDialogSimulated,
-        )
+        // ── 挂载全功能 Miuix UpdateDialog ──
+        if (showDialog && dialogRelease != null) {
+            UpdateDialog(
+                show = showDialog,
+                release = dialogRelease!!,
+                onDismiss = { showDialog = false },
+                onIgnore = if (!isDialogSimulated) {
+                    { ver ->
+                        Settings.ignoredUpdateVersion.value = ver
+                        showDialog = false
+                        launchSnackbar(context.getString(R.string.update_msg_ignore_alert, ver))
+                    }
+                } else {
+                    null
+                },
+                isSimulated = isDialogSimulated,
+            )
+        }
     }
-}
 }

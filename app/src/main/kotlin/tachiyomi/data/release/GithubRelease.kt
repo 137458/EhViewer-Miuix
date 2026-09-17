@@ -21,9 +21,7 @@ data class GithubRelease(
         return asset.url
     }
 
-    fun getMatchedAsset(): GitHubAssets? {
-        return assets.find { AppConfig.matchVariant(it.name) } ?: assets.firstOrNull()
-    }
+    fun getMatchedAsset(): GitHubAssets? = assets.find { AppConfig.matchVariant(it.name) } ?: assets.firstOrNull()
 }
 
 /**

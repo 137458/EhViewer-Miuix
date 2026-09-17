@@ -598,6 +598,13 @@
     <string name="update_dialog_btn_ignore">Ignore</string>
     <string name="update_dialog_btn_later">Later</string>
     <string name="update_dialog_btn_retry">Retry</string>
+    <string name="update_build_version_name">Version Name</string>
+    <string name="update_build_commit_sha">Commit SHA</string>
+    <string name="update_build_time">Build Time</string>
+    <string name="update_pref_restore_summary"> (Tap to restore)</string>
+    <string name="update_msg_restore_alert">Restored alerts for %1$s</string>
+    <string name="update_msg_ignore_alert">Ignored version %1$s</string>
+    <string name="update_msg_sandbox_done">Sandbox simulation completed!</string>
     <string name="permission_denied">Permission denied</string>
     <string name="download_gallery_first">Please download the gallery first!</string>
     <string name="export_as_archive">Export as archive</string>

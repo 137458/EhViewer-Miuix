@@ -87,7 +87,6 @@ fun MarkdownText(
                         )
                     }
                 }
-
                 is MarkdownBlock.Blockquote -> {
                     Row(
                         modifier = Modifier
@@ -115,7 +114,6 @@ fun MarkdownText(
                         )
                     }
                 }
-
                 is MarkdownBlock.BulletItem -> {
                     Row(
                         modifier = Modifier
@@ -140,7 +138,6 @@ fun MarkdownText(
                         )
                     }
                 }
-
                 is MarkdownBlock.NumberedItem -> {
                     Row(
                         modifier = Modifier
@@ -167,7 +164,6 @@ fun MarkdownText(
                         )
                     }
                 }
-
                 is MarkdownBlock.Paragraph -> {
                     Text(
                         text = buildAnnotatedContent(block.text),
@@ -178,7 +174,6 @@ fun MarkdownText(
                         color = MiuixTheme.colorScheme.onSurface,
                     )
                 }
-
                 is MarkdownBlock.Divider -> {
                     // 柔和向两侧渐隐的微质感渐变分割线
                     val dividerColor = MiuixTheme.colorScheme.dividerLine
@@ -243,7 +238,7 @@ fun parseMarkdownBlocks(markdown: String): List<MarkdownBlock> {
             line.startsWith("- ") || line.startsWith("* ") || line.startsWith("+ ") -> {
                 blocks.add(MarkdownBlock.BulletItem(text = line.substring(2).trim()))
             }
-            line.matches(Regex("""^\d+\.\s+.*""")) -> {
+            line.matches(NUMBERED_ITEM_REGEX) -> {
                 val num = line.substringBefore('.')
                 val content = line.substringAfter('.').trim()
                 blocks.add(MarkdownBlock.NumberedItem(number = num, text = content))
@@ -257,43 +252,43 @@ fun parseMarkdownBlocks(markdown: String): List<MarkdownBlock> {
     return blocks
 }
 
-fun buildAnnotatedContent(rawText: String): AnnotatedString {
-    return buildAnnotatedString {
-        var i = 0
-        val len = rawText.length
+fun buildAnnotatedContent(rawText: String): AnnotatedString = buildAnnotatedString {
+    var i = 0
+    val len = rawText.length
 
-        while (i < len) {
-            // **加粗**
-            if (rawText.startsWith("**", i)) {
-                val end = rawText.indexOf("**", i + 2)
-                if (end != -1) {
-                    withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
-                        append(rawText.substring(i + 2, end))
-                    }
-                    i = end + 2
-                    continue
+    while (i < len) {
+        // **加粗**
+        if (rawText.startsWith("**", i)) {
+            val end = rawText.indexOf("**", i + 2)
+            if (end != -1) {
+                withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
+                    append(rawText.substring(i + 2, end))
                 }
+                i = end + 2
+                continue
             }
-
-            // `代码`
-            if (rawText.startsWith("`", i)) {
-                val end = rawText.indexOf("`", i + 1)
-                if (end != -1) {
-                    withStyle(
-                        SpanStyle(
-                            fontFamily = FontFamily.Monospace,
-                            fontWeight = FontWeight.Medium,
-                        ),
-                    ) {
-                        append(rawText.substring(i + 1, end))
-                    }
-                    i = end + 1
-                    continue
-                }
-            }
-
-            append(rawText[i])
-            i++
         }
+
+        // `代码`
+        if (rawText.startsWith("`", i)) {
+            val end = rawText.indexOf("`", i + 1)
+            if (end != -1) {
+                withStyle(
+                    SpanStyle(
+                        fontFamily = FontFamily.Monospace,
+                        fontWeight = FontWeight.Medium,
+                    ),
+                ) {
+                    append(rawText.substring(i + 1, end))
+                }
+                i = end + 1
+                continue
+            }
+        }
+
+        append(rawText[i])
+        i++
     }
 }
+
+private val NUMBERED_ITEM_REGEX = Regex("""^\d+\.\s+.*""")

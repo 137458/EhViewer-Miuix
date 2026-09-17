@@ -71,7 +71,7 @@ object AppUpdater {
                 val description = release.info
                 val downloadUrl = release.getDownloadLink()
                 val matchedAsset = release.getMatchedAsset()
-                if (latestVersion != curVersion) {
+                if (compareVersions(latestVersion, curVersion) > 0) {
                     return Release(
                         version = latestVersion,
                         changelog = description,
@@ -115,10 +115,9 @@ object AppUpdater {
         return clean1.compareTo(clean2)
     }
 
-    fun generateMockRelease(): Release {
-        return Release(
-            version = "v2.0.0",
-            changelog = """
+    fun generateMockRelease(): Release = Release(
+        version = "v2.0.0",
+        changelog = """
                 # 🚀 HyperOS 3.0 全面视觉进化
                 
                 EhViewer-Miuix 迎来了划时代的视觉重构与流畅度飞跃！
@@ -138,15 +137,14 @@ object AppUpdater {
                 - 建议在更新前在设置中开启“更新前备份数据库”选项
                 
                 > 感谢所有社区贡献者与开发者的大力支持！
-            """.trimIndent(),
-            downloadLink = "https://github.com/${BuildConfig.REPO_NAME}/releases/download/v2.0.0/EhViewer-v2.0.0.apk",
-            releaseTitle = "v2.0.0 HyperOS 3.0 旗舰视觉重构版",
-            releaseUrl = "https://github.com/${BuildConfig.REPO_NAME}/releases",
-            apkSize = 44256789L,
-            publishedAt = "2026-09-16",
-            isCI = false,
-        )
-    }
+        """.trimIndent(),
+        downloadLink = "https://github.com/${BuildConfig.REPO_NAME}/releases/download/v2.0.0/EhViewer-v2.0.0.apk",
+        releaseTitle = "v2.0.0 HyperOS 3.0 旗舰视觉重构版",
+        releaseUrl = "https://github.com/${BuildConfig.REPO_NAME}/releases",
+        apkSize = 44256789L,
+        publishedAt = "2026-09-16",
+        isCI = false,
+    )
 
     suspend fun downloadUpdate(
         url: String,

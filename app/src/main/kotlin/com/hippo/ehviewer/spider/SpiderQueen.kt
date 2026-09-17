@@ -469,6 +469,7 @@ class SpiderQueen private constructor(val galleryInfo: GalleryInfo) : CoroutineS
     private val mWorkerScope = object {
         private val jobs = hashMapOf<Int, Job>()
         private val semaphore = Semaphore(Settings.multiThreadDownload.value)
+        private val prioritySemaphore = Semaphore(2)
         private val pTokenLock = Mutex()
         private var showKey: String? = null
         private val showKeyLock = Mutex()
@@ -508,7 +509,9 @@ class SpiderQueen private constructor(val galleryInfo: GalleryInfo) : CoroutineS
                 jobs[index] = launch {
                     runCatching {
                         if (isPriority) {
-                            doInJob(index, force, orgImg, skipHath)
+                            prioritySemaphore.withPermit {
+                                doInJob(index, force, orgImg, skipHath)
+                            }
                         } else {
                             semaphore.withPermit {
                                 doInJob(index, force, orgImg, skipHath)
@@ -651,7 +654,7 @@ class SpiderQueen private constructor(val galleryInfo: GalleryInfo) : CoroutineS
                             is CancellationException, is FileNotFoundException -> throw it
                         }
                         error = it.displayString()
-                        delay((retries + 1) * 500L)
+                        delay(calculateBackoffDelay(retries))
                     }
                 }
             }.onFailure {
@@ -667,6 +670,12 @@ class SpiderQueen private constructor(val galleryInfo: GalleryInfo) : CoroutineS
         }
     }
     private val pTokenFailedMessage = appCtx.getString(R.string.error_get_ptoken_error)
+}
+
+fun calculateBackoffDelay(retries: Int, baseDelayMs: Long = 500L, maxDelayMs: Long = 8000L): Long {
+    val safeRetries = retries.coerceAtLeast(0).coerceAtMost(5)
+    val factor = 1L shl safeRetries
+    return (baseDelayMs * factor).coerceAtMost(maxDelayMs)
 }
 
 private val Url509Regex = Regex("https://(?:ehgt\\.org/|exhentai\\.org/im)g/509s?\\.gif")

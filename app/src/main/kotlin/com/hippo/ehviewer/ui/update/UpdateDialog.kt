@@ -79,100 +79,20 @@ fun UpdateDialog(
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 
-    var downloadJob by remember { mutableStateOf<Job?>(null) }
-    var isDownloading by remember { mutableStateOf(false) }
-    var downloadProgress by remember { mutableFloatStateOf(0f) }
-    var downloadedBytes by remember { mutableLongStateOf(0L) }
-    var totalBytes by remember { mutableLongStateOf(0L) }
-    var downloadedFile by remember { mutableStateOf<File?>(null) }
-    var downloadError by remember { mutableStateOf<String?>(null) }
-
-    var downloadSpeed by remember { mutableLongStateOf(0L) }
-    var lastSpeedUpdateTime by remember { mutableLongStateOf(0L) }
-    var lastSpeedBytes by remember { mutableLongStateOf(0L) }
+    val isDownloading = UpdateDownloadManager.isDownloading
+    val downloadProgress = UpdateDownloadManager.downloadProgress
+    val downloadedBytes = UpdateDownloadManager.downloadedBytes
+    val totalBytes = UpdateDownloadManager.totalBytes
+    val downloadSpeed = UpdateDownloadManager.downloadSpeed
+    val downloadedFile = UpdateDownloadManager.downloadedFile
+    val downloadError = UpdateDownloadManager.downloadError
 
     fun cancelDownload() {
-        downloadJob?.cancel()
-        downloadJob = null
-        isDownloading = false
-        downloadProgress = 0f
-        downloadedBytes = 0L
-        downloadSpeed = 0L
+        UpdateDownloadManager.cancel()
     }
 
     fun startDownload() {
-        isDownloading = true
-        downloadError = null
-        downloadProgress = 0f
-        downloadedBytes = 0L
-        totalBytes = 0L
-        downloadSpeed = 0L
-        lastSpeedUpdateTime = System.currentTimeMillis()
-        lastSpeedBytes = 0L
-
-        downloadJob = coroutineScope.launch {
-            if (isSimulated) {
-                // ── 交互式沙盒模拟链路 ──
-                val simTotal = if (release.apkSize > 0L) release.apkSize else 44256789L
-                totalBytes = simTotal
-                val steps = 30
-                for (i in 1..steps) {
-                    delay(80)
-                    val p = i.toFloat() / steps
-                    downloadProgress = p
-                    downloadedBytes = (simTotal * p).toLong()
-                    downloadSpeed = (7_500_000L + (Math.random() * 2_500_000L).toLong())
-                }
-                isDownloading = false
-                downloadedFile = File(AppConfig.tempDir.toFile(), "ehviewer-update-simulated.apk")
-                downloadJob = null
-                Toast.makeText(context, context.getString(R.string.update_dialog_ready_install), Toast.LENGTH_SHORT).show()
-                return@launch
-            }
-            if (Settings.backupBeforeUpdate.value) {
-                runCatching {
-                    val time = ReadableTime.getFilenamableTime()
-                    EhDB.exportDB(downloadLocation / "$time.db")
-                }
-            }
-
-            val targetPath = AppConfig.tempDir / "update.apk"
-            try {
-                targetPath.delete()
-                AppUpdater.downloadUpdate(
-                    url = release.downloadLink,
-                    path = targetPath,
-                    onProgress = { progress, downloaded, total ->
-                        downloadProgress = progress
-                        downloadedBytes = downloaded
-                        totalBytes = total
-
-                        val now = System.currentTimeMillis()
-                        val dt = now - lastSpeedUpdateTime
-                        if (dt >= 400L) {
-                            val dBytes = downloaded - lastSpeedBytes
-                            if (dBytes > 0L) {
-                                val instantSpeed = (dBytes * 1000L) / dt
-                                downloadSpeed = if (downloadSpeed == 0L) instantSpeed else (downloadSpeed * 7 + instantSpeed * 3) / 10
-                            }
-                            lastSpeedUpdateTime = now
-                            lastSpeedBytes = downloaded
-                        }
-                    },
-                )
-                isDownloading = false
-                downloadJob = null
-                val file = targetPath.toFile()
-                downloadedFile = file
-                with(context) { installPackage(file) }
-            } catch (e: Exception) {
-                isDownloading = false
-                downloadJob = null
-                if (e !is CancellationException) {
-                    downloadError = e.localizedMessage ?: "Download failed"
-                }
-            }
-        }
+        UpdateDownloadManager.startDownload(release, isSimulated, context)
     }
 
     WindowDialog(
@@ -409,7 +329,7 @@ fun UpdateDialog(
                         .padding(12.dp),
                 ) {
                     Text(
-                        text = stringResource(R.string.update_dialog_download_failed, downloadError ?: ""),
+                        text = stringResource(R.string.update_dialog_download_failed, downloadError),
                         style = MiuixTheme.textStyles.body2.copy(fontSize = 12.sp, fontWeight = FontWeight.Medium),
                         color = MiuixTheme.colorScheme.error,
                     )
@@ -457,10 +377,10 @@ fun UpdateDialog(
                         Button(
                             onClick = {
                                 if (isSimulated) {
-                                    Toast.makeText(context, "Sandbox simulation completed!", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, context.getString(R.string.update_msg_sandbox_done), Toast.LENGTH_SHORT).show()
                                 } else {
                                     coroutineScope.launch {
-                                        with(context) { installPackage(downloadedFile!!) }
+                                        with(context) { installPackage(downloadedFile) }
                                     }
                                 }
                             },

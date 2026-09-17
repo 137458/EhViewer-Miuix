@@ -29,6 +29,16 @@ class UpdateLogicTest {
     }
 
     @Test
+    fun testShouldUpdate() {
+        // Local is newer than remote (e.g. nightly or dev build) -> should NOT update
+        assertTrue(AppUpdater.compareVersions("v2.1.0", "v2.2.0") < 0)
+        // Local is older than remote -> should update
+        assertTrue(AppUpdater.compareVersions("v2.2.0", "v2.1.0") > 0)
+        // Equal versions -> should NOT update
+        assertEquals(0, AppUpdater.compareVersions("v2.1.0", "v2.1.0"))
+    }
+
+    @Test
     fun testGenerateMockRelease() {
         val mock = AppUpdater.generateMockRelease()
         assertNotNull(mock)
