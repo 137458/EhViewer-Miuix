@@ -62,6 +62,7 @@ import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TopAppBar
+import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 private const val REPO_URL = "https://github.com/${BuildConfig.REPO_NAME}"
@@ -153,9 +154,10 @@ fun AnimatedVisibilityScope.AboutScreen(navigator: DestinationsNavigator) = Scre
                         title = stringResource(id = R.string.settings_about_source),
                         url = REPO_URL,
                     )
-                    Preference(title = stringResource(id = R.string.license)) {
-                        navigate(LicenseScreenDestination)
-                    }
+                    ArrowPreference(
+                        title = stringResource(id = R.string.license),
+                        onClick = { navigate(LicenseScreenDestination) },
+                    )
                     Preference(
                         title = stringResource(id = R.string.settings_about_version),
                         summary = versionCode(),
@@ -182,12 +184,11 @@ fun AnimatedVisibilityScope.AboutScreen(navigator: DestinationsNavigator) = Scre
                         entryValueRes = com.hippo.ehviewer.R.array.update_frequency_values,
                         state = Settings.updateIntervalDays.asMutableState(),
                     )
-                    Preference(
+                    ArrowPreference(
                         title = stringResource(id = R.string.settings_about_check_for_updates),
                         summary = stringResource(id = R.string.update_pref_manual_check_idle),
-                    ) {
-                        navigate(UpdateScreenDestination)
-                    }
+                        onClick = { navigate(UpdateScreenDestination) },
+                    )
                 }
             }
         }
