@@ -46,7 +46,9 @@ import com.ehviewer.core.ui.component.BlurredBar
 import com.ehviewer.core.ui.component.SquircleShape
 import com.ehviewer.core.ui.component.blurBackdropSource
 import com.ehviewer.core.ui.component.rememberBlurBackdrop
-import com.ehviewer.core.ui.effect.BgEffectBackground
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.graphics.drawable.toBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import com.ehviewer.core.util.launch
 import com.hippo.ehviewer.BuildConfig
 import com.hippo.ehviewer.Settings
@@ -99,6 +101,12 @@ fun AnimatedVisibilityScope.UpdateScreen(navigator: DestinationsNavigator) = Scr
     val scrollBehavior = MiuixScrollBehavior()
     val colorScheme = MiuixTheme.colorScheme
     val backdrop = rememberBlurBackdrop()
+    val context = LocalContext.current
+    val appIcon = remember(context) {
+        runCatching {
+            context.packageManager.getApplicationIcon(context.packageName).toBitmap().asImageBitmap()
+        }.getOrNull()
+    }
 
     fun launchSnackbar(message: String) = launch { snackbar(message) }
 
@@ -163,56 +171,53 @@ fun AnimatedVisibilityScope.UpdateScreen(navigator: DestinationsNavigator) = Scr
             }
         },
     ) { paddingValues ->
-        BgEffectBackground(
-            dynamicBackground = true,
-            isOs3Effect = true,
-            modifier = Modifier.fillMaxSize(),
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(colorScheme.surface)
+                .blurBackdropSource(backdrop),
+            contentAlignment = Alignment.TopCenter,
         ) {
-            Box(
+            Column(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .blurBackdropSource(backdrop),
-                contentAlignment = Alignment.TopCenter,
+                    .fillMaxHeight()
+                    .widthIn(max = 760.dp)
+                    .fillMaxWidth()
+                    .nestedScroll(scrollBehavior.nestedScrollConnection)
+                    .verticalScroll(rememberScrollState())
+                    .padding(paddingValues),
             ) {
+                // ── Hero 区域：发光悬浮徽标 + 状态胶囊浮岛 ──
+                Spacer(modifier = Modifier.height(24.dp))
                 Column(
                     modifier = Modifier
-                        .fillMaxHeight()
-                        .widthIn(max = 760.dp)
                         .fillMaxWidth()
-                        .nestedScroll(scrollBehavior.nestedScrollConnection)
-                        .verticalScroll(rememberScrollState())
-                        .padding(paddingValues),
+                        .padding(horizontal = 24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    // ── Hero 区域：发光悬浮徽标 + 状态胶囊浮岛 ──
-                    Spacer(modifier = Modifier.height(24.dp))
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
+                    // 双层弥散发光应用大图标
+                    Box(
+                        modifier = Modifier.size(96.dp),
+                        contentAlignment = Alignment.Center,
                     ) {
-                        // 双层弥散发光应用大图标
+                        // 底层光晕扩散层
                         Box(
-                            modifier = Modifier.size(96.dp),
+                            modifier = Modifier
+                                .size(86.dp)
+                                .shadow(elevation = 16.dp, shape = RoundedCornerShape(26.dp), spotColor = colorScheme.primary)
+                                .background(colorScheme.primary.copy(alpha = 0.18f), RoundedCornerShape(26.dp)),
+                        )
+                        // 顶层图标容器
+                        Box(
+                            modifier = Modifier
+                                .size(80.dp)
+                                .clip(SquircleShape(20.dp))
+                                .border(1.dp, colorScheme.dividerLine.copy(alpha = 0.25f), SquircleShape(20.dp)),
                             contentAlignment = Alignment.Center,
                         ) {
-                            // 底层光晕扩散层
-                            Box(
-                                modifier = Modifier
-                                    .size(86.dp)
-                                    .shadow(elevation = 16.dp, shape = RoundedCornerShape(26.dp), spotColor = colorScheme.primary)
-                                    .background(colorScheme.primary.copy(alpha = 0.18f), RoundedCornerShape(26.dp)),
-                            )
-                            // 顶层图标容器
-                            Box(
-                                modifier = Modifier
-                                    .size(80.dp)
-                                    .clip(SquircleShape(20.dp))
-                                    .border(1.dp, colorScheme.dividerLine.copy(alpha = 0.25f), SquircleShape(20.dp)),
-                                contentAlignment = Alignment.Center,
-                            ) {
+                            if (appIcon != null) {
                                 Image(
-                                    painter = painterResource(id = com.hippo.ehviewer.R.mipmap.ic_launcher),
+                                    bitmap = appIcon,
                                     contentDescription = null,
                                     contentScale = ContentScale.Fit,
                                     modifier = Modifier.fillMaxSize(),
@@ -583,7 +588,6 @@ fun AnimatedVisibilityScope.UpdateScreen(navigator: DestinationsNavigator) = Scr
                 }
             }
         }
-    }
 
     // ── 挂载全功能 Miuix UpdateDialog ──
     if (showDialog && dialogRelease != null) {
@@ -601,4 +605,5 @@ fun AnimatedVisibilityScope.UpdateScreen(navigator: DestinationsNavigator) = Scr
             isSimulated = isDialogSimulated,
         )
     }
+}
 }

@@ -137,12 +137,8 @@ fun AnimatedVisibilityScope.AboutScreen(navigator: DestinationsNavigator) = Scre
                         .padding(horizontal = 16.dp, vertical = 4.dp),
                 ) {
                     Preference(
-                        title = stringResource(id = R.string.settings_about_declaration),
-                        summary = stringResource(id = R.string.settings_about_declaration_summary),
-                        onClick = ::showDisclaimer,
-                    )
-                    Preference(
                         title = stringResource(id = R.string.settings_about_disclaimer),
+                        summary = stringResource(id = R.string.settings_about_declaration_summary),
                         onClick = ::showDisclaimer,
                     )
                     HtmlPreference(
