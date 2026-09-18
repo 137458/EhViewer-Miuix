@@ -28,6 +28,7 @@ import top.yukonga.miuix.kmp.icon.extended.Copy
 import top.yukonga.miuix.kmp.icon.extended.Download
 import top.yukonga.miuix.kmp.icon.extended.FileDownloads
 import top.yukonga.miuix.kmp.icon.extended.Refresh
+import top.yukonga.miuix.kmp.icon.extended.Search
 import top.yukonga.miuix.kmp.icon.extended.Share
 import top.yukonga.miuix.kmp.icon.extended.Show
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -40,6 +41,7 @@ fun ReaderPageSheetMeta(
     copy: () -> Unit,
     save: () -> Unit,
     saveTo: () -> Unit,
+    searchByImage: (() -> Unit)? = null,
     showAds: (() -> Unit)?,
     dismiss: () -> Unit,
 ) {
@@ -64,5 +66,6 @@ fun ReaderPageSheetMeta(
         Item(icon = MiuixIcons.Copy, text = R.string.action_copy, onClick = copy)
         Item(icon = MiuixIcons.Download, text = R.string.action_save, onClick = save)
         Item(icon = MiuixIcons.FileDownloads, text = R.string.action_save_to, onClick = saveTo)
+        searchByImage?.let { Item(icon = MiuixIcons.Search, text = R.string.image_search, onClick = it) }
     }
 }

@@ -35,6 +35,7 @@ import com.ehviewer.core.ui.icons.EhIcons
 import com.ehviewer.core.ui.icons.big.SadAndroid
 import com.ehviewer.core.ui.util.TransitionsVisibilityScope
 import com.ehviewer.core.ui.util.detailThumbGenerator
+import com.ehviewer.core.ui.util.thenIf
 import com.hippo.ehviewer.client.EhUtils
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
@@ -101,6 +102,7 @@ fun GalleryDetailHeaderCard(
     onBlockUploaderIconClick: () -> Unit,
     onCategoryChipClick: () -> Unit,
     modifier: Modifier = Modifier,
+    onCoverClick: (() -> Unit)? = null,
 ) = Card(modifier = modifier) {
     Row {
         with(detailThumbGenerator) {
@@ -109,7 +111,9 @@ fun GalleryDetailHeaderCard(
                 modifier = Modifier.size(
                     dimensionResource(id = com.hippo.ehviewer.R.dimen.gallery_detail_thumb_width),
                     dimensionResource(id = com.hippo.ehviewer.R.dimen.gallery_detail_thumb_height),
-                ),
+                ).thenIf(onCoverClick != null) {
+                    clickable(role = Role.Button, onClick = onCoverClick!!)
+                },
             )
         }
         Spacer(modifier = Modifier.weight(0.5F))

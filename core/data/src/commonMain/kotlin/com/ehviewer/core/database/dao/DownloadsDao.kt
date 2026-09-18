@@ -45,4 +45,7 @@ interface DownloadsDao {
 
     @Delete
     suspend fun delete(downloadInfo: List<DownloadEntity>)
+
+    @Query("SELECT EXISTS(SELECT * FROM DOWNLOADS WHERE GID = :gid)")
+    suspend fun contains(gid: Long): Boolean
 }

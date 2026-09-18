@@ -46,6 +46,8 @@ private val xml = XML {
     setIndent(2)
 }
 
+internal fun serializeComicInfo(info: ComicInfo): String = xml.encodeToString(ComicInfo.serializer(), info)
+
 fun GalleryInfo.getComicInfo(): ComicInfo {
     val artists = mutableListOf<String>()
     val groups = mutableListOf<String>()
@@ -95,6 +97,9 @@ fun GalleryInfo.getComicInfo(): ComicInfo {
         characters = characters.ifEmpty { null },
         teams = parodies.ifEmpty { null },
         communityRating = "%.1f".format(rating),
+        manga = "YesAndRightToLeft",
+        ageRating = "Adult",
+        summary = null,
     )
 }
 
@@ -169,6 +174,18 @@ data class ComicInfo(
     @XmlElement
     @SerialName("CommunityRating")
     val communityRating: String?,
+
+    @XmlElement
+    @SerialName("Manga")
+    val manga: String? = "YesAndRightToLeft",
+
+    @XmlElement
+    @SerialName("AgeRating")
+    val ageRating: String? = "Adult",
+
+    @XmlElement
+    @SerialName("Summary")
+    val summary: String? = null,
 ) {
     @SerialName("xmlns:xsi")
     val xmlSchemaInstance: String = "http://www.w3.org/2001/XMLSchema-instance"

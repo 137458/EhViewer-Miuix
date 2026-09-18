@@ -48,6 +48,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
@@ -59,7 +60,7 @@ import okio.Path
 import splitties.init.appCtx
 
 class SpiderQueen private constructor(val galleryInfo: GalleryInfo) : CoroutineScope {
-    override val coroutineContext = Dispatchers.IO + Job()
+    override val coroutineContext = Dispatchers.IO + SupervisorJob()
 
     @Volatile
     lateinit var pageStates: IntArray
@@ -447,21 +448,34 @@ class SpiderQueen private constructor(val galleryInfo: GalleryInfo) : CoroutineS
 
         fun obtainSpiderQueen(galleryInfo: GalleryInfo, @Mode mode: Int): SpiderQueen {
             val gid = galleryInfo.gid
-            return (sQueenMap.getOrPut(gid) { SpiderQueen(galleryInfo) }).apply {
+            val queen = synchronized(sQueenMap) {
+                val existing = sQueenMap[gid]
+                if (existing != null && existing.isActive) {
+                    existing
+                } else {
+                    SpiderQueen(galleryInfo).also { sQueenMap[gid] = it }
+                }
+            }
+            return queen.apply {
                 setMode(mode)
                 launch { updateMode() }
             }
         }
 
         fun releaseSpiderQueen(queen: SpiderQueen, @Mode mode: Int) {
-            queen.run {
-                clearMode(mode)
-                if (mReadReference == 0 && mDownloadReference == 0) {
-                    stop()
-                    sQueenMap.remove(galleryInfo.gid)
+            val shouldStop = synchronized(sQueenMap) {
+                queen.clearMode(mode)
+                if (queen.mReadReference == 0 && queen.mDownloadReference == 0) {
+                    sQueenMap.remove(queen.galleryInfo.gid)
+                    true
                 } else {
-                    launch { updateMode() }
+                    false
                 }
+            }
+            if (shouldStop) {
+                queen.stop()
+            } else {
+                queen.launch { queen.updateMode() }
             }
         }
     }

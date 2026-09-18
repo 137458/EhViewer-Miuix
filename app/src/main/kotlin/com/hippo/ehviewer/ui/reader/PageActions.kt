@@ -18,6 +18,7 @@ import com.ehviewer.core.model.GalleryInfo
 import com.ehviewer.core.util.isAtLeastQ
 import com.ehviewer.core.util.isAtLeastT
 import com.ehviewer.core.util.logcat
+import com.ehviewer.core.util.withIOContext
 import com.hippo.ehviewer.BuildConfig.APPLICATION_ID
 import com.hippo.ehviewer.client.EhUrl
 import com.hippo.ehviewer.gallery.Page
@@ -27,6 +28,7 @@ import com.hippo.ehviewer.util.FileUtils
 import com.hippo.ehviewer.util.awaitActivityResult
 import com.hippo.ehviewer.util.displayPath
 import com.hippo.ehviewer.util.requestPermission
+import com.hippo.ehviewer.util.sha1
 import java.io.File
 import kotlin.time.Clock
 import moe.tarsin.coroutines.runSuspendCatching
@@ -157,4 +159,26 @@ suspend fun saveTo(page: Page) {
         it.logcat(it)
         snackbar(string(R.string.error_cant_find_activity))
     }
+}
+
+context(_: SnackbarHostState, _: Context, loader: PageLoader)
+suspend fun searchByImage(page: Page, onSearch: suspend (String) -> Unit) {
+    val cannotSave = string(R.string.error_cant_save_image)
+    val dir = AppConfig.externalTempDir
+    if (dir == null) {
+        snackbar(cannotSave)
+        return
+    }
+    val filename = loader.getImageFilename(page.index)
+    if (filename == null) {
+        snackbar(cannotSave)
+        return
+    }
+    val file = dir / filename
+    if (!loader.save(page.index, file)) {
+        snackbar(cannotSave)
+        return
+    }
+    val hash = withIOContext { file.sha1() }
+    onSearch(hash)
 }

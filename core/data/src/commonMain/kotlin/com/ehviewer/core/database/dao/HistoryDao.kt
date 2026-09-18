@@ -34,4 +34,7 @@ interface HistoryDao {
 
     @Query("DELETE FROM HISTORY")
     suspend fun deleteAll()
+
+    @Query("SELECT EXISTS(SELECT * FROM HISTORY WHERE GID = :gid)")
+    suspend fun contains(gid: Long): Boolean
 }

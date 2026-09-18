@@ -6,6 +6,7 @@ import android.content.Intent
 import androidx.annotation.StringRes
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.MutatorMutex
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,6 +15,8 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -38,6 +41,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.LocalPinnableContainer
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
@@ -88,6 +92,7 @@ import com.ehviewer.core.util.launchUI
 import com.ehviewer.core.util.logcat
 import com.ehviewer.core.util.withIOContext
 import com.ehviewer.core.util.withUIContext
+import com.hippo.ehviewer.EhApplication
 import com.hippo.ehviewer.EhDB
 import com.hippo.ehviewer.Settings
 import com.hippo.ehviewer.client.EhEngine
@@ -101,8 +106,10 @@ import com.hippo.ehviewer.coil.PrefetchAround
 import com.hippo.ehviewer.coil.justDownload
 import com.hippo.ehviewer.collectAsState
 import com.hippo.ehviewer.download.DownloadManager
+import com.hippo.ehviewer.ktbuilder.execute
 import com.hippo.ehviewer.ktbuilder.executeIn
 import com.hippo.ehviewer.ktbuilder.imageRequest
+import com.hippo.ehviewer.util.sha1
 import com.hippo.ehviewer.ui.GalleryInfoBottomSheet
 import com.hippo.ehviewer.ui.MainActivity
 import com.hippo.ehviewer.ui.confirmRemoveDownload
@@ -229,6 +236,70 @@ fun GalleryDetailContent(
         }
     }
 
+    suspend fun searchGalleryCover(info: GalleryInfo) {
+        val key = info.thumbKey
+        if (key.isNullOrEmpty()) {
+            snackbar(string(R.string.error_cant_save_image))
+            return
+        }
+        val hash = withIOContext {
+            var snapshot = EhApplication.thumbCache.openSnapshot(key)
+            if (snapshot == null) {
+                imageRequest(info).execute()
+                snapshot = EhApplication.thumbCache.openSnapshot(key)
+            }
+            snapshot?.use { it.data.sha1() }
+        }
+        if (hash != null) {
+            withUIContext {
+                navigate(
+                    ListUrlBuilder(
+                        mode = ListUrlBuilder.MODE_IMAGE_SEARCH,
+                        hash = hash,
+                    ).asDst(),
+                )
+            }
+        } else {
+            snackbar(string(R.string.error_cant_save_image))
+        }
+    }
+
+    fun onCoverClick() {
+        launch {
+            dialog { cont ->
+                WindowBottomSheet(
+                    show = true,
+                    onDismissRequest = { cont.cancel() },
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .verticalScroll(rememberScrollState())
+                            .navigationBarsPadding(),
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(56.dp)
+                                .clickable(role = Role.Button) {
+                                    cont.resume(Unit)
+                                    launchIO {
+                                        searchGalleryCover(galleryInfo)
+                                    }
+                                }
+                                .padding(horizontal = 16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Icon(imageVector = MiuixIcons.Search, contentDescription = null, tint = MiuixTheme.colorScheme.onSurface)
+                            Spacer(modifier = Modifier.size(32.dp))
+                            Text(text = stringResource(id = R.string.image_search), style = MiuixTheme.textStyles.body1)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     val filterAdded = stringResource(R.string.filter_added)
     fun showFilterUploaderDialog(galleryInfo: GalleryInfo) {
         val uploader = galleryInfo.uploader
@@ -273,6 +344,7 @@ fun GalleryDetailContent(
                     onUploaderChipClick = ::onUploaderChipClick.partially1(galleryInfo),
                     onBlockUploaderIconClick = ::showFilterUploaderDialog.partially1(galleryInfo),
                     onCategoryChipClick = ::onCategoryChipClick,
+                    onCoverClick = ::onCoverClick,
                     modifier = Modifier.fillMaxWidth().padding(vertical = keylineMargin),
                 )
             }
@@ -336,6 +408,7 @@ fun GalleryDetailContent(
                         onUploaderChipClick = ::onUploaderChipClick.partially1(galleryInfo),
                         onBlockUploaderIconClick = ::showFilterUploaderDialog.partially1(galleryInfo),
                         onCategoryChipClick = ::onCategoryChipClick,
+                        onCoverClick = ::onCoverClick,
                         modifier = Modifier.width(dimensionResource(id = com.hippo.ehviewer.R.dimen.gallery_detail_card_landscape_width)).padding(vertical = keylineMargin),
                     )
                     Column(

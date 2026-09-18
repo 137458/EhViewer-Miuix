@@ -74,8 +74,32 @@ class SpiderDen(val info: GalleryInfo) {
     private val lock = ReentrantReadWriteLock()
 
     // Search in both directories to maintain compatibility
-    private val fileCache by lazy {
-        listOfNotNull(tempDownloadDir, downloadDir).map(Path::list).flatten().associateBy { it.name } as MutableMap
+    private val fileCache = mutableMapOf<String, Path>()
+    private var fileCacheInitialized = false
+
+    private fun ensureFileCacheInitialized() {
+        if (!fileCacheInitialized) {
+            lock.write {
+                if (!fileCacheInitialized) {
+                    listOfNotNull(tempDownloadDir, downloadDir).forEach { dir ->
+                        runCatching { dir.list() }.getOrNull()?.forEach { path ->
+                            fileCache[path.name] = path
+                        }
+                    }
+                    fileCacheInitialized = true
+                }
+            }
+        }
+    }
+
+    private fun reloadFileCache() = lock.write {
+        fileCache.clear()
+        listOfNotNull(tempDownloadDir, downloadDir).forEach { dir ->
+            runCatching { dir.list() }.getOrNull()?.forEach { path ->
+                fileCache[path.name] = path
+            }
+        }
+        fileCacheInitialized = true
     }
 
     private val imageDir
@@ -99,6 +123,7 @@ class SpiderDen(val info: GalleryInfo) {
             if (saveAsCbz && tempDownloadDir == null) {
                 tempDownloadDir = info.tempDownloadDir!!.apply { mkdirs() }
             }
+            reloadFileCache()
         }
     }
 
@@ -107,9 +132,12 @@ class SpiderDen(val info: GalleryInfo) {
         return sCache.read(key) {} != null
     }
 
-    private fun findImageFile(index: Int, temp: Boolean = false) = lock.read {
-        val head = perFilename(index)
-        fileCache.entries.firstOrNull { (name) -> name.startsWith(head) && temp == name.endsWith(TEMP_SUFFIX) }?.value
+    private fun findImageFile(index: Int, temp: Boolean = false): Path? {
+        ensureFileCacheInitialized()
+        return lock.read {
+            val head = perFilename(index)
+            fileCache.entries.firstOrNull { (name) -> name.startsWith(head) && temp == name.endsWith(TEMP_SUFFIX) }?.value
+        }
     }
 
     private fun containInDownloadDir(index: Int): Boolean = findImageFile(index) != null
@@ -336,6 +364,9 @@ class SpiderDen(val info: GalleryInfo) {
     suspend fun initDownloadDirIfExist() {
         downloadDir = getGalleryDownloadDir(info).takeIf { it.isDirectory }
         tempDownloadDir = info.tempDownloadDir?.takeIf { it.isDirectory }
+        if (downloadDir != null || tempDownloadDir != null) {
+            reloadFileCache()
+        }
     }
 
     suspend fun initDownloadDir() {

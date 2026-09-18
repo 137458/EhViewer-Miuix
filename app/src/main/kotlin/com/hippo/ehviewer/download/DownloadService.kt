@@ -22,12 +22,14 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.pm.ServiceInfo
 import android.os.Bundle
 import androidx.collection.LongSparseArray
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationChannelCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
 import androidx.savedstate.serialization.decodeFromSavedState
 import androidx.savedstate.serialization.encodeToSavedState
@@ -35,6 +37,7 @@ import com.ehviewer.core.database.model.DownloadInfo
 import com.ehviewer.core.i18n.R
 import com.ehviewer.core.model.BaseGalleryInfo
 import com.ehviewer.core.util.isAtLeastS
+import com.ehviewer.core.util.isAtLeastU
 import com.ehviewer.core.util.logcat
 import com.ehviewer.core.util.unsafeLazy
 import com.hippo.ehviewer.client.EhUtils
@@ -76,7 +79,8 @@ class DownloadService :
                 .setContentText(null)
                 .setSubText(null)
                 .setProgress(0, 0, true)
-            startForeground(ID_DOWNLOADING, build())
+            val fgType = if (isAtLeastU) ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC else 0
+            ServiceCompat.startForeground(this@DownloadService, ID_DOWNLOADING, build(), fgType)
         }.onFailure {
             if (isAtLeastS && it is ForegroundServiceStartNotAllowedException) {
                 logcat(it)
@@ -385,7 +389,18 @@ class DownloadService :
                         }
                     }
                     Ops.Cancel -> notifyManager.cancel(id)
-                    Ops.StartForeground -> service.startForeground(id, builder.build())
+                    Ops.StartForeground -> {
+                        runCatching {
+                            val fgType = if (isAtLeastU) ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC else 0
+                            ServiceCompat.startForeground(service, id, builder.build(), fgType)
+                        }.onFailure {
+                            if (isAtLeastS && it is ForegroundServiceStartNotAllowedException) {
+                                logcat(it)
+                            } else {
+                                logcat("DownloadService", it)
+                            }
+                        }
+                    }
                 }
                 delay(DELAY)
             }

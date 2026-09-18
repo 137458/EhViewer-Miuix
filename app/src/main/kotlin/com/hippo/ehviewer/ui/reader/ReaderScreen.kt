@@ -65,9 +65,12 @@ import com.ehviewer.core.ui.util.thenIf
 import com.ehviewer.core.util.launch
 import com.ehviewer.core.util.launchIO
 import com.ehviewer.core.util.unreachable
+import com.ehviewer.core.util.withUIContext
 import com.hippo.ehviewer.EhDB
 import com.hippo.ehviewer.Settings
+import com.hippo.ehviewer.client.data.ListUrlBuilder
 import com.hippo.ehviewer.collectAsState
+import com.hippo.ehviewer.ui.screen.asDst
 import com.hippo.ehviewer.download.DownloadManager
 import com.hippo.ehviewer.download.archiveFile
 import com.hippo.ehviewer.gallery.Page
@@ -203,7 +206,7 @@ fun AnimatedVisibilityScope.ReaderScreen(args: ReaderScreenArgs, navigator: Dest
 }
 
 @Composable
-context(activity: MainActivity, _: SnackbarHostState, _: DialogState, _: CoroutineScope, _: DestinationsNavigator)
+context(activity: MainActivity, _: SnackbarHostState, _: DialogState, _: CoroutineScope, nav: DestinationsNavigator)
 fun ReaderScreen(pageLoader: PageLoader, info: BaseGalleryInfo?) {
     LaunchedEffect(Unit) {
         val orientation = activity.requestedOrientation
@@ -292,6 +295,22 @@ fun ReaderScreen(pageLoader: PageLoader, info: BaseGalleryInfo?) {
                                     copy = { launchIO { with(pageLoader) { copy(page) } } },
                                     save = { launchIO { with(pageLoader) { save(page) } } },
                                     saveTo = { launchIO { with(pageLoader) { saveTo(page) } } },
+                                    searchByImage = {
+                                        launchIO {
+                                            with(pageLoader) {
+                                                searchByImage(page) { hash ->
+                                                    withUIContext {
+                                                        nav.navigate(
+                                                            ListUrlBuilder(
+                                                                mode = ListUrlBuilder.MODE_IMAGE_SEARCH,
+                                                                hash = hash,
+                                                            ).asDst(),
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    },
                                     showAds = { page.unblock() }.takeIf { blocked },
                                     dismiss = { dispose() },
                                 )

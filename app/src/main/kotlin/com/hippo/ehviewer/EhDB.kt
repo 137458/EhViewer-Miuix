@@ -51,8 +51,17 @@ object EhDB {
         db.galleryDao().upsert(galleryInfo)
     }
 
+    suspend fun cleanOrphanGallery(gid: Long) {
+        val inDownloads = db.downloadsDao().contains(gid)
+        val inLocalFav = db.localFavoritesDao().contains(gid)
+        val inHistory = db.historyDao().contains(gid)
+        if (shouldDeleteGallery(inDownloads, inLocalFav, inHistory)) {
+            runCatching { db.galleryDao().deleteByKey(gid) }
+        }
+    }
+
     private suspend fun deleteGalleryInfo(galleryInfo: GalleryEntity) {
-        runCatching { db.galleryDao().delete(galleryInfo) }
+        cleanOrphanGallery(galleryInfo.gid)
     }
 
     suspend fun updateGalleryInfo(galleryInfoList: List<GalleryEntity>) {
@@ -262,7 +271,7 @@ object EhDB {
         val dao = db.historyDao()
         val historyList = dao.list()
         dao.deleteAll()
-        historyList.forEach { runCatching { db.galleryDao().deleteByKey(it.gid) } }
+        historyList.forEach { cleanOrphanGallery(it.gid) }
     }
 
     suspend fun getAllFilter() = db.filterDao().list()
@@ -284,6 +293,13 @@ object EhDB {
 
     suspend fun updateFilter(filter: Filter) {
         db.filterDao().update(filter)
+    }
+
+    suspend fun vacuumDB() {
+        db.useWriterConnection { conn ->
+            conn.execSQL("PRAGMA wal_checkpoint(FULL)")
+            conn.execSQL("VACUUM")
+        }
     }
 
     suspend fun exportDB(file: Path) {

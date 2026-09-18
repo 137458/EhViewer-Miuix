@@ -77,10 +77,13 @@ import kotlinx.coroutines.flow.merge
 import moe.tarsin.coroutines.runSuspendCatching
 import moe.tarsin.snackbar
 import moe.tarsin.string
+import com.hippo.ehviewer.ui.tools.awaitConfirmationOrCancel
+import com.hippo.ehviewer.util.StorageCleaner
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTitle
+import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -384,6 +387,19 @@ fun AnimatedVisibilityScope.AdvancedScreen(navigator: DestinationsNavigator) = S
                     }
                     Preference(title = stringResource(id = R.string.open_by_default)) {
                         openByDefaultSettings()
+                    }
+                    WorkPreference(
+                        title = stringResource(id = R.string.settings_advanced_deep_clean),
+                        summary = stringResource(id = R.string.settings_advanced_deep_clean_summary),
+                    ) {
+                        awaitConfirmationOrCancel(
+                            confirmText = R.string.clear_all,
+                            title = R.string.settings_advanced_deep_clean,
+                        ) {
+                            Text(text = stringResource(id = R.string.settings_advanced_deep_clean_confirm))
+                        }
+                        val result = StorageCleaner.performDeepClean()
+                        launchSnackbar(string(R.string.settings_advanced_deep_clean_done, result.deadDownloadsCount))
                     }
                 }
             }

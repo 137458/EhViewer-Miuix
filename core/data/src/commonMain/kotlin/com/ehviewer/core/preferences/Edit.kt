@@ -14,10 +14,10 @@ fun <P : DataStorePreferences> P.edit(blocking: Boolean = false, block: P.(Mutab
             withMutableSnapshot { block(it) }
         }
     } else {
-        scope.launch {
+        prefScope.launch {
             withMutableSnapshot { block(it) }
         }
     }
 }
 
-private val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
+internal val prefScope = CoroutineScope(Dispatchers.Default + SupervisorJob())

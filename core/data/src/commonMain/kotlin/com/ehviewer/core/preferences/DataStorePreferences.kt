@@ -11,19 +11,34 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
+import kotlin.concurrent.Volatile
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 
 internal expect fun getDateStore(name: String?): DataStore<Preferences>
 
 abstract class DataStorePreferences(private val dataStore: DataStore<Preferences>) {
     constructor(name: String?) : this(getDateStore(name))
 
+    @Volatile
+    private var cachedSnapshot: Snapshot? = null
+
+    init {
+        prefScope.launch {
+            dataStore.data.collect {
+                cachedSnapshot = Snapshot(it)
+            }
+        }
+    }
+
     val data: Flow<Snapshot>
         get() = dataStore.data.map { Snapshot(it) }
 
-    suspend fun snapshot(): Snapshot = data.first()
+    suspend fun snapshot(): Snapshot = cachedSnapshot ?: data.first().also { cachedSnapshot = it }
+
+    fun currentSnapshot(): Snapshot? = cachedSnapshot
 
     suspend fun withMutableSnapshot(block: (MutableSnapshot) -> Unit) {
         dataStore.edit {

@@ -390,6 +390,10 @@
     <string name="settings_advanced_backup_favorite_nothing">没有可以备份的收藏列表</string>
     <string name="settings_advanced_backup_favorite_success">备份收藏列表成功</string>
     <string name="settings_advanced_backup_favorite_failed">备份收藏列表失败</string>
+    <string name="settings_advanced_deep_clean">深度存储清理</string>
+    <string name="settings_advanced_deep_clean_summary">清理缩略图与临时缓存、修复失效下载死链并压缩优化数据库</string>
+    <string name="settings_advanced_deep_clean_confirm">确定进行深度清理吗？这将清理所有缓存、移除本地文件已缺失的下载记录并整理数据库碎片。</string>
+    <string name="settings_advanced_deep_clean_done">深度清理完成，共清理 %d 个失效下载记录</string>
     <string name="settings_about">关于</string>
     <string name="settings_about_declaration_summary">EhViewer MIUIX 与 E-Hentai.org 无任何联系</string>
     <string name="settings_about_disclaimer">免责声明</string>

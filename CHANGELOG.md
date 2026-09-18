@@ -4,6 +4,9 @@
 
 ### 新功能
 
+* 支持上下文以图搜图（Contextual Reverse Image Search）：在阅读器长按页面弹出的操作底栏（Page Sheet）与画廊详情页封面（Gallery Detail Cover）中接入以图搜图入口，支持自动读取本地缓存或原图 SHA-1 哈希直接唤起以图搜图结果列表
+* 新增深度存储清理与失效下载死链消除（Storage Deep Clean）：在高级设置中引入一键深度清理，自动扫描清理缩略图磁盘缓存、临时下载残余与崩溃日志，检测并消除本地文件已缺失但数据库仍残留的失效下载记录，并执行 SQLite PRAGMA wal_checkpoint 与 VACUUM 整理数据库碎片释放磁盘空间
+* ComicInfo 元数据字段扩充支持 v2.1 规范：ComicInfo 导出新增 Manga（YesAndRightToLeft / Yes）、AgeRating（Adult 18+ 判定）与 Summary（画廊评论与副标题摘要）字段支持，深度兼容主流漫画管理与阅读工具（如 Kavita、Komga、Mihon）
 * 顶部搜索栏与分类筛选组件全面液态玻璃质感赋能：全局搜索栏（SearchBarScreen / InputField）、横向分类筛选栏（GalleryCategoryFilterStrip）、搜索筛选器（SearchFilter）与下拉筛选组件（DropdownFilterChip）全面升级为液态玻璃材质（LiquidGlassSurface），支持物理透镜折射、高光边缘与跨页面一致性设计
 * 新增检查更新页面（UpdateScreen）：深度遵循 HyperOS 3.0 与 Miuix 视觉规范，配备动态流光背景、Hero 双层发光悬浮大徽标、状态胶囊浮岛、新版特性卡片、更新设置管理与官方通道导航
 * 新增全功能版本更新弹窗（UpdateDialog）：基于 WindowDialog 构建，支持当前版本至目标版本跃迁横幅、通道与体积元信息胶囊、带重音指示条与引用块的 Markdown 日志排版、流式实时下载速率计算与平滑进度条、以及本地数据库自动备份和安装包拉起
@@ -23,6 +26,10 @@
 
 ### 修复
 
+* 修复本地画廊历史与下载记录删除时孤儿记录清理的误判隐患：优化 EhDB 级联删除检查逻辑，仅在画廊未被下载、本地收藏以及历史记录任一模块引用时执行安全删除，防止下载记录或收藏画廊被历史清理误删
+* 修复 SpiderQueen 与 SpiderDen 并发安全与缓存陈旧问题：对 sQueenMap 的获取与释放操作增加全局同步锁保护，增加协程取消态检查以防止复用已取消的爬虫实例；爬虫协程作用域切换为 SupervisorJob 避免单图任务失败导致整体作用域崩溃；修复 SpiderDen 存储模式与目录变更时未重新加载缓存目录导致的文件缓存陈旧隐患
+* 修复 Android 14+ 前台下载服务启动兼容性异常：将 DownloadService 的 startForeground 升级为 ServiceCompat.startForeground 并显式声明 FOREGROUND_SERVICE_TYPE_DATA_SYNC 类型，适配 Android 14（API 34+）前台服务强约束，并补齐 ForegroundServiceStartNotAllowedException 异常捕获以防启动崩溃
+* 修复设置项在主线程中执行阻塞 IO 引发的主线程卡顿缺陷：重构 DataStorePreferences 与 PrefDelegate，引入并发内存快照缓存与轻量异步刷新机制，彻底消除 Compose UI 阶段通过 runBlocking 读取设置项导致的掉帧与 ANR 隐患
 * 修复阅读器在缺页错误时由于状态声明位置错误导致的每 800ms 自动重试死循环问题，将自愈标记提升至页面级生命周期并支持单次静默恢复
 * 修复检查更新弹窗（UpdateDialog）点击“后台下载”后因随组件销毁导致下载任务中断的缺陷，引入全局持久下载管理器（UpdateDownloadManager）并解耦 UI 状态泥团
 * 修复检查更新生产链路未接入版本大小比对导致的预览版误报降级更新缺陷，正式接入 compareVersions 判定
