@@ -86,6 +86,8 @@ suspend inline fun <T> useArchivePageLoader(
                     return byteBufferSource(buffer) { releaseByteBuffer(buffer) }
                 }
 
+                override fun isSourceAvailable(index: Int) = true
+
                 override fun prefetchPages(pages: List<Int>, bounds: IntRange) = Unit
 
                 override fun onRequest(index: Int, force: Boolean, orgImg: Boolean) = notifySourceReady(index)

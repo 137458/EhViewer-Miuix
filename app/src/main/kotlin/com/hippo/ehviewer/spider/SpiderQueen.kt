@@ -573,15 +573,25 @@ class SpiderQueen private constructor(val galleryInfo: GalleryInfo) : CoroutineS
             if (!force && index in spiderDen) {
                 return updatePageState(index, STATE_FINISHED)
             }
-            val previousPToken: String?
-            val pToken: String
-            pTokenLock.withLock {
-                pToken = getPToken(index) ?: return updatePageState(index, STATE_FAILED, pTokenFailedMessage)
-                previousPToken = getPToken(index - 1)
+            val cachedToken = if (isReady && index in 0 until size) spiderInfo.pTokenMap[index] else null
+            val previousCachedToken = if (isReady && (index - 1) in 0 until size) spiderInfo.pTokenMap[index - 1] else null
+            val needDelay = shouldApplyTokenDelay(isTokenCached = cachedToken != null, isDownloadMode = isDownloadMode)
 
-                // The lock for delay should be acquired before anything else to maintain FIFO order
-                delay(downloadDelay - lastRequestTime.elapsedNow())
-                lastRequestTime = TimeSource.Monotonic.markNow()
+            val pToken: String
+            val previousPToken: String?
+            if (!needDelay && cachedToken != null) {
+                pToken = cachedToken
+                previousPToken = previousCachedToken ?: getPToken(index - 1)
+            } else {
+                pTokenLock.withLock {
+                    pToken = getPToken(index) ?: return updatePageState(index, STATE_FAILED, pTokenFailedMessage)
+                    previousPToken = getPToken(index - 1)
+
+                    if (needDelay) {
+                        delay(downloadDelay - lastRequestTime.elapsedNow())
+                        lastRequestTime = TimeSource.Monotonic.markNow()
+                    }
+                }
             }
             updatePageState(index, STATE_DOWNLOADING)
 
@@ -705,4 +715,9 @@ private const val WORKER_DEBUG_TAG = "SpiderQueenWorker"
 
 private fun check509(url: String) {
     if (Url509Regex.matches(url)) throw QuotaExceededException()
+}
+
+fun shouldApplyTokenDelay(isTokenCached: Boolean, isDownloadMode: Boolean): Boolean {
+    if (isDownloadMode) return true
+    return !isTokenCached
 }

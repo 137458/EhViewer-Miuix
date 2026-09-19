@@ -152,6 +152,32 @@ abstract class PageLoader(val scope: CoroutineScope, val info: GalleryInfo?, sta
         val start = if (prefetchRange.step > 0) prefetchRange.first else prefetchRange.last
         val end = if (prefetchRange.step > 0) prefetchRange.last else prefetchRange.first
         prefetchPages(pagesAbsent, start - 5..end + 5)
+
+        triggerPreDecode(index)
+    }
+
+    open fun isSourceAvailable(index: Int): Boolean = false
+
+    fun triggerPreDecode(currentIndex: Int) {
+        val targets = calculatePreDecodeRange(currentIndex, windowSize = 2, totalPages = size)
+        targets.forEach { targetIndex ->
+            if (isSourceAvailable(targetIndex)) {
+                val cached = lock.read { cache[targetIndex] }
+                if (cached == null && pages[targetIndex].status is PageStatus.Queued) {
+                    notifySourceReady(targetIndex)
+                }
+            }
+        }
+    }
+
+    fun notifyPageFinished(index: Int) {
+        val current = prevIndex.load()
+        if (isWithinPreDecodeWindow(index, current, windowSize = 2)) {
+            val cached = lock.read { cache[index] }
+            if (cached == null && pages[index].status is PageStatus.Queued) {
+                notifySourceReady(index)
+            }
+        }
     }
 
     fun cancelRequest(index: Int) {
@@ -182,4 +208,16 @@ abstract class PageLoader(val scope: CoroutineScope, val info: GalleryInfo?, sta
     }
 
     abstract fun openSource(index: Int): ImageSource
+}
+
+fun calculatePreDecodeRange(currentIndex: Int, windowSize: Int = 2, totalPages: Int): List<Int> {
+    if (currentIndex !in 0 until totalPages || windowSize <= 0) return emptyList()
+    val start = currentIndex + 1
+    val end = (currentIndex + windowSize).coerceAtMost(totalPages - 1)
+    return if (start <= end) (start..end).toList() else emptyList()
+}
+
+fun isWithinPreDecodeWindow(pageIndex: Int, currentIndex: Int, windowSize: Int = 2): Boolean {
+    if (pageIndex < 0 || currentIndex < 0 || windowSize <= 0) return false
+    return pageIndex in (currentIndex + 1)..(currentIndex + windowSize)
 }

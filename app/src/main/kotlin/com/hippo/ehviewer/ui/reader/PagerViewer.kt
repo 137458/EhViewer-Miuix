@@ -78,7 +78,7 @@ fun PagerViewer(
         VerticalPager(
             state = pagerState,
             modifier = modifier,
-            beyondViewportPageCount = 1,
+            beyondViewportPageCount = 2,
             key = { it },
         ) { index ->
             val page = items[index]
@@ -102,7 +102,7 @@ fun PagerViewer(
         HorizontalPager(
             state = pagerState,
             modifier = modifier,
-            beyondViewportPageCount = 1,
+            beyondViewportPageCount = 2,
             reverseLayout = isRtl xor isRtlLayout,
             key = { it },
         ) { index ->

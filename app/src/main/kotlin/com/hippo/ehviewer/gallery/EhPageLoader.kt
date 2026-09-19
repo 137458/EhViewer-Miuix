@@ -33,6 +33,8 @@ suspend inline fun <T> useEhPageLoader(
 
                 override fun openSource(index: Int) = queen.spiderDen.getImageSource(index)
 
+                override fun isSourceAvailable(index: Int) = index in queen.spiderDen
+
                 override fun prefetchPages(pages: List<Int>, bounds: IntRange) = queen.preloadPages(pages, bounds)
 
                 override fun onRequest(index: Int, force: Boolean, orgImg: Boolean) = queen.request(index, force, orgImg)
@@ -43,6 +45,10 @@ suspend inline fun <T> useEhPageLoader(
                     if (contentLength > 0) {
                         notifyPagePercent(index, receivedSize.toFloat() / contentLength)
                     }
+                }
+
+                override fun onPageSuccess(index: Int, finished: Int, downloaded: Int, total: Int) {
+                    notifyPageFinished(index)
                 }
 
                 override fun onPageReady(index: Int) = notifySourceReady(index)
