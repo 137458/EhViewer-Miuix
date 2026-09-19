@@ -52,7 +52,6 @@ import com.hippo.ehviewer.gallery.statusObserved
 import com.hippo.ehviewer.image.Image
 import com.hippo.ehviewer.util.AdsPlaceholderFile
 import kotlinx.coroutines.awaitCancellation
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.drop
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
@@ -83,7 +82,6 @@ fun PagerItem(
         }
     }
     val defaultError = stringResource(id = R.string.decode_image_error)
-    var autoRetried by remember(page.index) { mutableStateOf(false) }
     when (val state = page.statusObserved) {
         is PageStatus.Queued, is PageStatus.Loading -> {
             Box(
@@ -138,13 +136,6 @@ fun PagerItem(
             )
         }
         is PageStatus.Error -> {
-            LaunchedEffect(page.index) {
-                if (!autoRetried) {
-                    autoRetried = true
-                    delay(800)
-                    pageLoader.retryPage(page.index)
-                }
-            }
             Box(modifier = modifier.fillMaxWidth().aspectRatio(DEFAULT_ASPECT)) {
                 Column(
                     modifier = Modifier.align(Alignment.Center),

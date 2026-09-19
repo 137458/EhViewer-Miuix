@@ -408,7 +408,6 @@ class SpiderQueen private constructor(val galleryInfo: GalleryInfo) : CoroutineS
             notifyPageFailure(index, error)
         } else if (state == STATE_FINISHED) {
             notifyPageSuccess(index)
-            notifyPageReady(index)
         }
         if (mDownloadedPages.load() == size) {
             if (mFinishedPages.load() == size) {
@@ -483,7 +482,6 @@ class SpiderQueen private constructor(val galleryInfo: GalleryInfo) : CoroutineS
     private val mWorkerScope = object {
         private val jobs = hashMapOf<Int, Job>()
         private val semaphore = Semaphore(Settings.multiThreadDownload.value)
-        private val prioritySemaphore = Semaphore(2)
         private val pTokenLock = Mutex()
         private var showKey: String? = null
         private val showKeyLock = Mutex()
@@ -515,21 +513,15 @@ class SpiderQueen private constructor(val galleryInfo: GalleryInfo) : CoroutineS
             }
         }
 
-        private fun doLaunchDownloadJob(index: Int, force: Boolean, orgImg: Boolean = false, isPriority: Boolean = false) {
+        private fun doLaunchDownloadJob(index: Int, force: Boolean, orgImg: Boolean = false) {
             val currentJob = jobs[index]
             val skipHath = force && !orgImg && currentJob?.isActive == true
             if (force) currentJob?.cancel(CancellationException(FORCE_RETRY))
             if (currentJob?.isActive != true) {
                 jobs[index] = launch {
                     runCatching {
-                        if (isPriority) {
-                            prioritySemaphore.withPermit {
-                                doInJob(index, force, orgImg, skipHath)
-                            }
-                        } else {
-                            semaphore.withPermit {
-                                doInJob(index, force, orgImg, skipHath)
-                            }
+                        semaphore.withPermit {
+                            doInJob(index, force, orgImg, skipHath)
                         }
                     }.onFailure {
                         if (it is CancellationException) {
@@ -552,7 +544,7 @@ class SpiderQueen private constructor(val galleryInfo: GalleryInfo) : CoroutineS
             val state = pageStates[index]
             if (!force && state == STATE_FINISHED) return notifyPageReady(index)
             if (!isDownloadMode) {
-                synchronized(jobs) { doLaunchDownloadJob(index, force, orgImg, isPriority = true) }
+                synchronized(jobs) { doLaunchDownloadJob(index, force, orgImg) }
             }
             launch {
                 jobs[index]?.join()
