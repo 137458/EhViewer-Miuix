@@ -570,8 +570,8 @@ class MainActivity : AppCompatActivity() {
                         }
                     }
 
-                    if (isWideScreen) {
-                        Row(modifier = Modifier.fillMaxSize()) {
+                    Row(modifier = Modifier.fillMaxSize()) {
+                        if (isWideScreen) {
                             NavigationRail(
                                 modifier = Modifier
                                     .fillMaxHeight()
@@ -622,23 +622,19 @@ class MainActivity : AppCompatActivity() {
                                     )
                                 }
                             }
-                            Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
-                                MutableSideSheet(
-                                    drawerState = sideSheetState,
-                                    modifier = Modifier.fillMaxSize(),
-                                    enabled = drawerEnabled,
-                                ) {
-                                    MainContent()
-                                }
-                            }
                         }
-                    } else {
-                        MutableSideSheet(
-                            drawerState = sideSheetState,
-                            modifier = Modifier.fillMaxSize(),
-                            enabled = drawerEnabled,
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight(),
                         ) {
-                            MainContent()
+                            MutableSideSheet(
+                                drawerState = sideSheetState,
+                                modifier = Modifier.fillMaxSize(),
+                                enabled = drawerEnabled,
+                            ) {
+                                MainContent()
+                            }
                         }
                     }
                 }

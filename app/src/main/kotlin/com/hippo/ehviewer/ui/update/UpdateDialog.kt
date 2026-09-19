@@ -1,5 +1,6 @@
 package com.hippo.ehviewer.ui.update
 
+import android.content.res.Configuration
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -30,6 +31,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -232,10 +234,13 @@ fun UpdateDialog(
             Spacer(modifier = Modifier.height(12.dp))
 
             // ── 更新日志展示视口 ──
+            val configuration = LocalConfiguration.current
+            val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+            val changelogMaxHeight = if (isLandscape || configuration.screenHeightDp < 500) 130.dp else 230.dp
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(min = 80.dp, max = 230.dp)
+                    .heightIn(min = 60.dp, max = changelogMaxHeight)
                     .clip(RoundedCornerShape(14.dp))
                     .background(MiuixTheme.colorScheme.surfaceVariant.copy(alpha = 0.40f))
                     .border(0.5.dp, MiuixTheme.colorScheme.dividerLine.copy(alpha = 0.25f), RoundedCornerShape(14.dp))

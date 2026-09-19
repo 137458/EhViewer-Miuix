@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -198,67 +199,81 @@ fun MarkdownText(
                     )
                 }
                 is MarkdownBlock.Table -> {
-                    val scrollState = rememberScrollState()
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(MiuixTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
-                            .horizontalScroll(scrollState),
+                    BoxWithConstraints(
+                        modifier = Modifier.fillMaxWidth(),
                     ) {
-                        Column(
+                        val availableWidth = (maxWidth - 16.dp).coerceAtLeast(0.dp)
+                        val colWidths = remember(block, availableWidth) {
+                            computeTableColumnWidths(
+                                headers = block.headers,
+                                rows = block.rows,
+                                availableWidthDp = availableWidth.value,
+                                spacingDp = 8f,
+                            )
+                        }
+                        val scrollState = rememberScrollState()
+                        Box(
                             modifier = Modifier
-                                .widthIn(min = 360.dp)
-                                .padding(8.dp),
-                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(MiuixTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
+                                .horizontalScroll(scrollState),
                         ) {
-                            // 表头
-                            Row(
+                            Column(
                                 modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(6.dp))
-                                    .background(MiuixTheme.colorScheme.primary.copy(alpha = 0.12f))
-                                    .padding(horizontal = 10.dp, vertical = 8.dp),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    .padding(8.dp),
+                                verticalArrangement = Arrangement.spacedBy(4.dp),
                             ) {
-                                block.headers.forEach { header ->
-                                    Text(
-                                        text = buildAnnotatedContent(header),
-                                        style = MiuixTheme.textStyles.body2.copy(
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = baseFontSize.sp,
-                                        ),
-                                        color = MiuixTheme.colorScheme.primary,
-                                        modifier = Modifier.widthIn(min = 90.dp, max = 240.dp),
-                                    )
-                                }
-                            }
-                            // 数据行
-                            block.rows.forEachIndexed { rowIndex, row ->
-                                val rowBg = if (rowIndex % 2 == 1) {
-                                    MiuixTheme.colorScheme.surfaceVariant.copy(alpha = 0.25f)
-                                } else {
-                                    Color.Transparent
-                                }
+                                // 表头
                                 Row(
                                     modifier = Modifier
-                                        .fillMaxWidth()
                                         .clip(RoundedCornerShape(6.dp))
-                                        .background(rowBg)
+                                        .background(MiuixTheme.colorScheme.primary.copy(alpha = 0.12f))
                                         .padding(horizontal = 10.dp, vertical = 8.dp),
                                     horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
                                 ) {
-                                    block.headers.indices.forEach { colIndex ->
-                                        val cellText = row.getOrElse(colIndex) { "" }
+                                    block.headers.forEachIndexed { colIndex, header ->
+                                        val widthDp = colWidths.getOrElse(colIndex) { 100f }.dp
                                         Text(
-                                            text = buildAnnotatedContent(cellText),
+                                            text = buildAnnotatedContent(header),
                                             style = MiuixTheme.textStyles.body2.copy(
-                                                fontSize = (baseFontSize - 1).sp,
-                                                lineHeight = (baseFontSize + 5).sp,
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = baseFontSize.sp,
                                             ),
-                                            color = MiuixTheme.colorScheme.onSurface,
-                                            modifier = Modifier.widthIn(min = 90.dp, max = 240.dp),
+                                            color = MiuixTheme.colorScheme.primary,
+                                            modifier = Modifier.width(widthDp),
                                         )
+                                    }
+                                }
+                                // 数据行
+                                block.rows.forEachIndexed { rowIndex, row ->
+                                    val rowBg = if (rowIndex % 2 == 1) {
+                                        MiuixTheme.colorScheme.surfaceVariant.copy(alpha = 0.25f)
+                                    } else {
+                                        Color.Transparent
+                                    }
+                                    Row(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(6.dp))
+                                            .background(rowBg)
+                                            .padding(horizontal = 10.dp, vertical = 8.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        colWidths.indices.forEach { colIndex ->
+                                            val cellText = row.getOrElse(colIndex) { "" }
+                                            val widthDp = colWidths.getOrElse(colIndex) { 100f }.dp
+                                            Text(
+                                                text = buildAnnotatedContent(cellText),
+                                                style = MiuixTheme.textStyles.body2.copy(
+                                                    fontSize = (baseFontSize - 1).sp,
+                                                    lineHeight = (baseFontSize + 5).sp,
+                                                ),
+                                                color = MiuixTheme.colorScheme.onSurface,
+                                                modifier = Modifier.width(widthDp),
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -278,6 +293,45 @@ sealed interface MarkdownBlock {
     data class Paragraph(val text: String) : MarkdownBlock
     data object Divider : MarkdownBlock
     data class Table(val headers: List<String>, val rows: List<List<String>>) : MarkdownBlock
+}
+
+fun computeTableColumnWidths(
+    headers: List<String>,
+    rows: List<List<String>>,
+    availableWidthDp: Float,
+    spacingDp: Float = 8f,
+): List<Float> {
+    val colCount = maxOf(headers.size, rows.maxOfOrNull { it.size } ?: 0)
+    if (colCount == 0) return emptyList()
+
+    val minWidths = List(colCount) { colIndex ->
+        val header = headers.getOrElse(colIndex) { "" }
+        val maxLen = rows.fold(header.length) { max, row ->
+            maxOf(max, row.getOrElse(colIndex) { "" }.length)
+        }
+        when {
+            maxLen <= 4 -> 72f
+            maxLen <= 10 -> 100f
+            maxLen <= 20 -> 150f
+            maxLen <= 35 -> 220f
+            else -> 280f
+        }
+    }
+
+    val totalSpacing = spacingDp * (colCount - 1).coerceAtLeast(0)
+    val totalMinWidth = minWidths.sum() + totalSpacing
+
+    return if (availableWidthDp > totalMinWidth) {
+        val extraWidth = availableWidthDp - totalMinWidth
+        val weightSum = minWidths.sum()
+        if (weightSum > 0f) {
+            minWidths.map { minW -> minW + extraWidth * (minW / weightSum) }
+        } else {
+            minWidths
+        }
+    } else {
+        minWidths
+    }
 }
 
 fun parseMarkdownBlocks(markdown: String): List<MarkdownBlock> {
