@@ -104,4 +104,3 @@ class UpdateLogicTest {
         org.junit.Assert.assertFalse(currentRelease.hasUpdate)
     }
 }
-

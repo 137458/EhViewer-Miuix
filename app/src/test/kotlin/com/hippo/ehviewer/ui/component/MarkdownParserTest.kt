@@ -117,4 +117,3 @@ class MarkdownParserTest {
         assertTrue(widths[0] > widths[1])
     }
 }
-
