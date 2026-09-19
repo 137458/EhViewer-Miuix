@@ -39,7 +39,7 @@ object AppConfig {
     private const val CRASH = "crash"
     private const val TAG_TRANSLATIONS = "tag-translations"
 
-    private val abi = Build.SUPPORTED_ABIS[0].takeIf {
+    private val abi = Build.SUPPORTED_ABIS?.firstOrNull()?.takeIf {
         it in setOf("arm64-v8a", "x86_64", "armeabi-v7a")
     } ?: "universal"
 

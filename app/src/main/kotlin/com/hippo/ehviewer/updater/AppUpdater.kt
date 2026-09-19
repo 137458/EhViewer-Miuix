@@ -5,8 +5,11 @@ import com.hippo.ehviewer.BuildConfig
 import com.hippo.ehviewer.EhApplication.Companion.ktorClient
 import com.hippo.ehviewer.Settings
 import com.hippo.ehviewer.client.executeAndParseAs
-import com.hippo.ehviewer.spider.timeoutBySpeed
 import com.hippo.ehviewer.util.copyTo
+import com.hippo.ehviewer.util.ensureSuccess
+import io.ktor.client.plugins.HttpTimeoutConfig
+import io.ktor.client.plugins.onDownload
+import io.ktor.client.plugins.timeout
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.accept
 import io.ktor.client.request.bearerAuth
@@ -39,34 +42,44 @@ object AppUpdater {
             Settings.lastUpdateTime = now.epochSeconds
             if (Settings.useCIUpdateChannel.value) {
                 val curSha = BuildConfig.COMMIT_SHA
-                val branch = ghStatement(API_URL).executeAndParseAs<GithubRepo>().defaultBranch
+                val branch = runSuspendCatching {
+                    ghStatement(API_URL).executeAndParseAs<GithubRepo>().defaultBranch
+                }.getOrDefault("main")
                 val workflowRunsUrl = "$API_URL/actions/workflows/ci.yml/runs?branch=$branch&event=push&status=success&per_page=1"
-                val workflowRun = ghStatement(workflowRunsUrl).executeAndParseAs<GithubWorkflowRuns>().workflowRuns[0]
-                val shortSha = workflowRun.headSha.take(7)
-                if (shortSha != curSha) {
-                    val artifacts = ghStatement(workflowRun.artifactsUrl).executeAndParseAs<GithubArtifacts>()
-                    val archiveUrl = artifacts.getDownloadLink()
-                    val changelog = runSuspendCatching {
-                        val commitComparisonUrl = "$API_URL/compare/$curSha...$shortSha"
-                        val result = ghStatement(commitComparisonUrl).executeAndParseAs<GithubCommitComparison>()
-                        result.commits.joinToString("\n") { commit ->
-                            "- ${commit.commit.message.takeWhile { it != '\n' }} (@${commit.commit.author.name})"
-                        }
-                    }.getOrDefault(workflowRun.title)
-                    return Release(
-                        version = shortSha,
-                        changelog = changelog,
-                        downloadLink = archiveUrl,
-                        releaseTitle = workflowRun.title,
-                        releaseUrl = "https://github.com/${BuildConfig.REPO_NAME}/actions/runs/${workflowRun.headSha}",
-                        apkSize = 0L,
-                        publishedAt = "",
-                        isCI = true,
-                    )
+                val workflowRun = runSuspendCatching {
+                    ghStatement(workflowRunsUrl).executeAndParseAs<GithubWorkflowRuns>().workflowRuns.firstOrNull()
+                }.getOrNull()
+                if (workflowRun != null) {
+                    val shortSha = workflowRun.headSha.take(7)
+                    if (shortSha != curSha) {
+                        val artifacts = ghStatement(workflowRun.artifactsUrl).executeAndParseAs<GithubArtifacts>()
+                        val archiveUrl = artifacts.getDownloadLink()
+                        val changelog = runSuspendCatching {
+                            val commitComparisonUrl = "$API_URL/compare/$curSha...$shortSha"
+                            val result = ghStatement(commitComparisonUrl).executeAndParseAs<GithubCommitComparison>()
+                            result.commits.joinToString("\n") { commit ->
+                                "- ${commit.commit.message.takeWhile { it != '\n' }} (@${commit.commit.author.name})"
+                            }
+                        }.getOrDefault(workflowRun.title)
+                        return Release(
+                            version = shortSha,
+                            changelog = changelog,
+                            downloadLink = archiveUrl,
+                            releaseTitle = workflowRun.title,
+                            releaseUrl = "https://github.com/${BuildConfig.REPO_NAME}/actions/runs/${workflowRun.headSha}",
+                            apkSize = 0L,
+                            publishedAt = "",
+                            isCI = true,
+                        )
+                    }
                 }
-            } else {
-                val curVersion = BuildConfig.RAW_VERSION_NAME
-                val release = ghStatement(LATEST_RELEASE_URL).executeAndParseAs<GithubRelease>()
+            }
+
+            val curVersion = BuildConfig.RAW_VERSION_NAME
+            val release = runSuspendCatching {
+                ghStatement(LATEST_RELEASE_URL).executeAndParseAs<GithubRelease>()
+            }.getOrNull()
+            if (release != null) {
                 val latestVersion = release.version
                 val description = release.info
                 val downloadUrl = release.getDownloadLink()
@@ -152,34 +165,51 @@ object AppUpdater {
         onProgress: ((progress: Float, downloadedBytes: Long, totalBytes: Long) -> Unit)? = null,
     ) {
         val isZip = url.endsWith("zip")
-        timeoutBySpeed(
-            url,
-            {
-                ghStatement(url) {
-                    // https://docs.github.com/en/rest/releases/assets?apiVersion=2022-11-28#get-a-release-asset
-                    if (!isZip) accept(ContentType.Application.OctetStream)
-                    it()
+        val isGhApi = url.startsWith("https://api.github.com")
+        val statement = if (isGhApi) {
+            ghStatement(url) {
+                if (!isZip) accept(ContentType.Application.OctetStream)
+                timeout {
+                    requestTimeoutMillis = HttpTimeoutConfig.INFINITE_TIMEOUT_MS
+                    connectTimeoutMillis = 30_000
+                    socketTimeoutMillis = 30_000
                 }
-            },
-            { total, done, _ ->
                 if (onProgress != null) {
-                    val progress = if (total > 0L) (done.toFloat() / total).coerceIn(0f, 1f) else 0f
-                    onProgress(progress, done, total)
-                }
-            },
-            { response ->
-                if (isZip) {
-                    response.bodyAsChannel().toInputStream().use { stream ->
-                        ZipInputStream(stream).use { zip ->
-                            zip.nextEntry
-                            path.write { transferFrom(zip.asSource()) }
-                        }
+                    onDownload { done, total ->
+                        val progress = if (total != null && total > 0L) (done.toFloat() / total).coerceIn(0f, 1f) else 0f
+                        onProgress(progress, done, total ?: 0L)
                     }
-                } else {
-                    response.bodyAsChannel().copyTo(path)
                 }
-            },
-        )
+            }
+        } else {
+            ktorClient.prepareGet(url) {
+                timeout {
+                    requestTimeoutMillis = HttpTimeoutConfig.INFINITE_TIMEOUT_MS
+                    connectTimeoutMillis = 30_000
+                    socketTimeoutMillis = 30_000
+                }
+                if (onProgress != null) {
+                    onDownload { done, total ->
+                        val progress = if (total != null && total > 0L) (done.toFloat() / total).coerceIn(0f, 1f) else 0f
+                        onProgress(progress, done, total ?: 0L)
+                    }
+                }
+            }
+        }
+
+        statement.execute { response ->
+            response.status.ensureSuccess()
+            if (isZip) {
+                response.bodyAsChannel().toInputStream().use { stream ->
+                    ZipInputStream(stream).use { zip ->
+                        zip.nextEntry
+                        path.write { transferFrom(zip.asSource()) }
+                    }
+                }
+            } else {
+                response.bodyAsChannel().copyTo(path)
+            }
+        }
     }
 }
 

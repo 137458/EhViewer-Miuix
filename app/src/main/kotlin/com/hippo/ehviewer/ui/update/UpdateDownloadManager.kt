@@ -124,11 +124,11 @@ object UpdateDownloadManager {
                         }
                     },
                 )
-                isDownloading = false
-                downloadJob = null
                 val file = targetPath.toFile()
                 downloadedFile = file
-                with(context) { installPackage(file) }
+                isDownloading = false
+                downloadJob = null
+                with(context) { runCatching { installPackage(file) } }
             } catch (e: Exception) {
                 isDownloading = false
                 downloadJob = null

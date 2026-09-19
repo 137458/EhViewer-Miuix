@@ -39,14 +39,50 @@ class UpdateLogicTest {
     }
 
     @Test
-    fun testGenerateMockRelease() {
-        val mock = AppUpdater.generateMockRelease()
-        assertNotNull(mock)
-        assertTrue(mock.version.startsWith("v"))
-        assertTrue(mock.downloadLink.isNotBlank())
-        assertTrue(mock.changelog.isNotBlank())
-        assertTrue(mock.changelog.contains("###"))
-        assertTrue(mock.apkSize > 0L)
-        assertTrue(mock.releaseTitle.isNotBlank())
+    fun testVersionComparisonWithSuffixes() {
+        // Release is newer than snapshot
+        assertTrue(AppUpdater.compareVersions("1.15.0", "1.15.0-SNAPSHOT") > 0)
+        assertTrue(AppUpdater.compareVersions("1.15.0", "1.15.0-SNAPSHOT-miuix") > 0)
+        assertTrue(AppUpdater.compareVersions("v1.15.1", "1.15.0") > 0)
+        assertTrue(AppUpdater.compareVersions("1.15.0", "1.15.1") < 0)
+        // Same release version
+        assertEquals(0, AppUpdater.compareVersions("1.15.0", "1.15.0"))
+        assertEquals(0, AppUpdater.compareVersions("1.15.0-miuix", "1.15.0-miuix"))
+    }
+
+    @Test
+    fun testAssetMatchingFiltersOutNonApk() {
+        val assets = listOf(
+            tachiyomi.data.release.GitHubAssets(
+                url = "https://api.github.com/assets/1",
+                name = "EhViewer-1.15.0-default-mapping.txt",
+                browserDownloadUrl = "https://github.com/download/mapping.txt",
+            ),
+            tachiyomi.data.release.GitHubAssets(
+                url = "https://api.github.com/assets/2",
+                name = "EhViewer-1.15.0-default-arm64-v8a.apk",
+                browserDownloadUrl = "https://github.com/download/EhViewer-1.15.0-default-arm64-v8a.apk",
+            ),
+            tachiyomi.data.release.GitHubAssets(
+                url = "https://api.github.com/assets/3",
+                name = "EhViewer-1.15.0-default-universal.apk",
+                browserDownloadUrl = "https://github.com/download/EhViewer-1.15.0-default-universal.apk",
+            ),
+        )
+        val release = tachiyomi.data.release.GithubRelease(
+            version = "1.15.0",
+            info = "changelog",
+            releaseLink = "https://github.com/releases/1.15.0",
+            assets = assets,
+        )
+
+        val matched = release.getMatchedAsset()
+        assertNotNull(matched)
+        assertTrue("Matched asset must be an APK", matched!!.name.endsWith(".apk"))
+
+        val link = release.getDownloadLink()
+        assertTrue("Download link must be APK download URL", link.endsWith(".apk"))
+        assertTrue("Download link should prefer browserDownloadUrl", link.startsWith("https://github.com/download/"))
     }
 }
+

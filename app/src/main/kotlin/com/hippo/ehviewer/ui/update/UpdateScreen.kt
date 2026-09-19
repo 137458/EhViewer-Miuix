@@ -109,13 +109,13 @@ fun AnimatedVisibilityScope.UpdateScreen(navigator: DestinationsNavigator) = Scr
     var showDialog by remember { mutableStateOf(false) }
     var dialogRelease by remember { mutableStateOf<Release?>(null) }
 
-    fun performCheck(userInitiated: Boolean = false) {
+    fun performCheck(userInitiated: Boolean = false, forceCheck: Boolean = userInitiated) {
         if (isChecking) return
         isChecking = true
         launch {
             runSuspendCatching {
                 withContext(Dispatchers.IO) {
-                    AppUpdater.checkForUpdate(forceCheck = userInitiated)
+                    AppUpdater.checkForUpdate(forceCheck = forceCheck)
                 }
             }.onSuccess { release ->
                 isChecking = false
@@ -139,9 +139,7 @@ fun AnimatedVisibilityScope.UpdateScreen(navigator: DestinationsNavigator) = Scr
     }
 
     LaunchedEffect(Unit) {
-        if (Settings.updateIntervalDays.value != 0) {
-            performCheck(userInitiated = false)
-        }
+        performCheck(userInitiated = false, forceCheck = true)
     }
 
     val scrollProgress by remember {

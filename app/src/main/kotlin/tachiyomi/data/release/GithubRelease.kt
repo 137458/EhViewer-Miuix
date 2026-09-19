@@ -1,5 +1,6 @@
 package tachiyomi.data.release
 
+import com.hippo.ehviewer.BuildConfig
 import com.hippo.ehviewer.util.AppConfig
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -17,11 +18,17 @@ data class GithubRelease(
     @SerialName("assets") val assets: List<GitHubAssets> = emptyList(),
 ) {
     fun getDownloadLink(): String {
-        val asset = assets.find { AppConfig.matchVariant(it.name) } ?: assets[0]
-        return asset.url
+        val asset = getMatchedAsset() ?: assets.firstOrNull()
+        return asset?.browserDownloadUrl?.takeIf { it.isNotBlank() } ?: asset?.url.orEmpty()
     }
 
-    fun getMatchedAsset(): GitHubAssets? = assets.find { AppConfig.matchVariant(it.name) } ?: assets.firstOrNull()
+    fun getMatchedAsset(): GitHubAssets? {
+        val apkAssets = assets.filter { it.name.endsWith(".apk", ignoreCase = true) }
+        return apkAssets.find { AppConfig.matchVariant(it.name) }
+            ?: apkAssets.find { it.name.contains(BuildConfig.FLAVOR) && it.name.contains("universal", ignoreCase = true) }
+            ?: apkAssets.find { it.name.contains(BuildConfig.FLAVOR) }
+            ?: apkAssets.firstOrNull()
+    }
 }
 
 /**

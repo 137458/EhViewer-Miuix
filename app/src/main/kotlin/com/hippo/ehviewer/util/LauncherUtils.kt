@@ -88,8 +88,8 @@ suspend fun pickVisualMedia(type: VisualMediaType): Uri? = awaitActivityResult(A
 context(ctx: Context)
 suspend fun requestInstallPermission(): Boolean = with(ctx) {
     if (packageManager.canRequestPackageInstalls()) return true
-    val granted = requestPermission(Manifest.permission.REQUEST_INSTALL_PACKAGES)
-    if (!granted) {
+    val activity = runCatching { findActivity<ComponentActivity>() }.getOrNull()
+    if (activity != null) {
         awaitActivityResult(
             ActivityResultContracts.StartActivityForResult(),
             Intent(
@@ -97,15 +97,22 @@ suspend fun requestInstallPermission(): Boolean = with(ctx) {
                 "package:$packageName".toUri(),
             ),
         )
-        requestPermission(Manifest.permission.REQUEST_INSTALL_PACKAGES)
+    } else {
+        val intent = Intent(
+            Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+            "package:$packageName".toUri(),
+        ).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        startActivity(intent)
     }
     return packageManager.canRequestPackageInstalls()
 }
 
 context(ctx: Context)
 suspend fun installPackage(file: File) = with(ctx) {
-    val canInstall = !isAtLeastO || requestInstallPermission()
-    check(canInstall) { getString(R.string.permission_denied) }
+    val canInstall = !isAtLeastO || packageManager.canRequestPackageInstalls() || requestInstallPermission()
+    if (!canInstall) return@with
     val contentUri = withIOContext { FileProvider.getUriForFile(ctx, "$packageName.fileprovider", file) }
     val intent = Intent(Intent.ACTION_VIEW).apply {
         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
