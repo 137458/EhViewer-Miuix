@@ -82,17 +82,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
+import androidx.core.graphics.drawable.toBitmap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -579,18 +582,35 @@ class MainActivity : AppCompatActivity() {
                                     ),
                             ) {
                                 Spacer(modifier = Modifier.height(16.dp))
+                                val context = LocalContext.current
+                                val appIcon = remember(context) {
+                                    runCatching {
+                                        val pm = context.packageManager
+                                        val appInfo = pm.getApplicationInfo(context.packageName, 0)
+                                        pm.getApplicationIcon(appInfo).toBitmap().asImageBitmap()
+                                    }.getOrNull()
+                                }
                                 Box(
                                     modifier = Modifier
                                         .size(44.dp)
                                         .clip(SquircleShape(12.dp)),
                                     contentAlignment = Alignment.Center,
                                 ) {
-                                    Image(
-                                        painter = painterResource(id = com.hippo.ehviewer.R.mipmap.ic_launcher),
-                                        contentDescription = null,
-                                        contentScale = ContentScale.Fit,
-                                        modifier = Modifier.fillMaxSize(),
-                                    )
+                                    if (appIcon != null) {
+                                        Image(
+                                            bitmap = appIcon,
+                                            contentDescription = null,
+                                            contentScale = ContentScale.Fit,
+                                            modifier = Modifier.fillMaxSize(),
+                                        )
+                                    } else {
+                                        Image(
+                                            painter = painterResource(id = com.hippo.ehviewer.R.drawable.ic_launcher_foreground),
+                                            contentDescription = null,
+                                            contentScale = ContentScale.Fit,
+                                            modifier = Modifier.fillMaxSize(),
+                                        )
+                                    }
                                 }
                                 Spacer(modifier = Modifier.height(16.dp))
                                 navItems.forEach { (direction, stringId, icon) ->

@@ -1,6 +1,7 @@
 package com.hippo.ehviewer.ui.component
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,6 +12,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -194,6 +197,74 @@ fun MarkdownText(
                             ),
                     )
                 }
+                is MarkdownBlock.Table -> {
+                    val scrollState = rememberScrollState()
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(MiuixTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
+                            .horizontalScroll(scrollState),
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .widthIn(min = 360.dp)
+                                .padding(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                        ) {
+                            // 表头
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .background(MiuixTheme.colorScheme.primary.copy(alpha = 0.12f))
+                                    .padding(horizontal = 10.dp, vertical = 8.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                block.headers.forEach { header ->
+                                    Text(
+                                        text = buildAnnotatedContent(header),
+                                        style = MiuixTheme.textStyles.body2.copy(
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = baseFontSize.sp,
+                                        ),
+                                        color = MiuixTheme.colorScheme.primary,
+                                        modifier = Modifier.widthIn(min = 90.dp, max = 240.dp),
+                                    )
+                                }
+                            }
+                            // 数据行
+                            block.rows.forEachIndexed { rowIndex, row ->
+                                val rowBg = if (rowIndex % 2 == 1) {
+                                    MiuixTheme.colorScheme.surfaceVariant.copy(alpha = 0.25f)
+                                } else {
+                                    Color.Transparent
+                                }
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(6.dp))
+                                        .background(rowBg)
+                                        .padding(horizontal = 10.dp, vertical = 8.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                ) {
+                                    block.headers.indices.forEach { colIndex ->
+                                        val cellText = row.getOrElse(colIndex) { "" }
+                                        Text(
+                                            text = buildAnnotatedContent(cellText),
+                                            style = MiuixTheme.textStyles.body2.copy(
+                                                fontSize = (baseFontSize - 1).sp,
+                                                lineHeight = (baseFontSize + 5).sp,
+                                            ),
+                                            color = MiuixTheme.colorScheme.onSurface,
+                                            modifier = Modifier.widthIn(min = 90.dp, max = 240.dp),
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -206,15 +277,38 @@ sealed interface MarkdownBlock {
     data class NumberedItem(val number: String, val text: String) : MarkdownBlock
     data class Paragraph(val text: String) : MarkdownBlock
     data object Divider : MarkdownBlock
+    data class Table(val headers: List<String>, val rows: List<List<String>>) : MarkdownBlock
 }
 
 fun parseMarkdownBlocks(markdown: String): List<MarkdownBlock> {
     val lines = markdown.lines()
     val blocks = mutableListOf<MarkdownBlock>()
+    var idx = 0
 
-    for (rawLine in lines) {
+    while (idx < lines.size) {
+        val rawLine = lines[idx]
         val line = rawLine.trim()
-        if (line.isEmpty()) continue
+        if (line.isEmpty()) {
+            idx++
+            continue
+        }
+
+        // 判断是否为 Markdown 表格起始（包含管道符且下一行为表格分隔线）
+        if (line.contains('|') && idx + 1 < lines.size && isTableDivider(lines[idx + 1])) {
+            val headers = splitTableRow(line)
+            idx += 2
+            val rows = mutableListOf<List<String>>()
+            while (idx < lines.size) {
+                val rowLine = lines[idx].trim()
+                if (rowLine.isEmpty() || !rowLine.contains('|') || isTableDivider(rowLine)) {
+                    break
+                }
+                rows.add(splitTableRow(rowLine))
+                idx++
+            }
+            blocks.add(MarkdownBlock.Table(headers = headers, rows = rows))
+            continue
+        }
 
         when {
             line.startsWith("---") || line.startsWith("***") || line.startsWith("___") -> {
@@ -247,22 +341,36 @@ fun parseMarkdownBlocks(markdown: String): List<MarkdownBlock> {
                 blocks.add(MarkdownBlock.Paragraph(text = line))
             }
         }
+        idx++
     }
 
     return blocks
 }
 
+private val BR_REGEX = Regex("""<[bB][rR]\s*/?>""")
+private val TABLE_DIVIDER_REGEX = Regex("""^\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)+\|?\s*$""")
+
+private fun isTableDivider(line: String): Boolean = line.matches(TABLE_DIVIDER_REGEX)
+
+private fun splitTableRow(line: String): List<String> {
+    var trimmed = line.trim()
+    if (trimmed.startsWith('|')) trimmed = trimmed.substring(1)
+    if (trimmed.endsWith('|')) trimmed = trimmed.substring(0, trimmed.length - 1)
+    return trimmed.split('|').map { it.trim() }
+}
+
 fun buildAnnotatedContent(rawText: String): AnnotatedString = buildAnnotatedString {
+    val text = rawText.replace(BR_REGEX, "\n")
     var i = 0
-    val len = rawText.length
+    val len = text.length
 
     while (i < len) {
         // **加粗**
-        if (rawText.startsWith("**", i)) {
-            val end = rawText.indexOf("**", i + 2)
+        if (text.startsWith("**", i)) {
+            val end = text.indexOf("**", i + 2)
             if (end != -1) {
                 withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
-                    append(rawText.substring(i + 2, end))
+                    append(text.substring(i + 2, end))
                 }
                 i = end + 2
                 continue
@@ -270,8 +378,8 @@ fun buildAnnotatedContent(rawText: String): AnnotatedString = buildAnnotatedStri
         }
 
         // `代码`
-        if (rawText.startsWith("`", i)) {
-            val end = rawText.indexOf("`", i + 1)
+        if (text.startsWith("`", i)) {
+            val end = text.indexOf("`", i + 1)
             if (end != -1) {
                 withStyle(
                     SpanStyle(
@@ -279,14 +387,14 @@ fun buildAnnotatedContent(rawText: String): AnnotatedString = buildAnnotatedStri
                         fontWeight = FontWeight.Medium,
                     ),
                 ) {
-                    append(rawText.substring(i + 1, end))
+                    append(text.substring(i + 1, end))
                 }
                 i = end + 1
                 continue
             }
         }
 
-        append(rawText[i])
+        append(text[i])
         i++
     }
 }
