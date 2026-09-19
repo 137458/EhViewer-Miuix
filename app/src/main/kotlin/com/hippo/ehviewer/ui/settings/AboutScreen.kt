@@ -1,22 +1,18 @@
 package com.hippo.ehviewer.ui.settings
 
-import android.content.Context
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -25,37 +21,22 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.fromHtml
 import androidx.compose.ui.unit.dp
-import com.ehviewer.core.files.delete
 import com.ehviewer.core.i18n.R
 import com.ehviewer.core.ui.component.BlurredBar
 import com.ehviewer.core.ui.component.blurBackdropSource
 import com.ehviewer.core.ui.component.rememberBlurBackdrop
 import com.ehviewer.core.util.launch
-import com.ehviewer.core.util.withUIContext
 import com.hippo.ehviewer.BuildConfig
-import com.hippo.ehviewer.EhDB
-import com.hippo.ehviewer.Settings
-import com.hippo.ehviewer.asMutableState
-import com.hippo.ehviewer.download.downloadLocation
 import com.hippo.ehviewer.ui.Screen
 import com.hippo.ehviewer.ui.destinations.LicenseScreenDestination
 import com.hippo.ehviewer.ui.destinations.UpdateScreenDestination
 import com.hippo.ehviewer.ui.main.NavigationIcon
-import com.hippo.ehviewer.ui.tools.DialogState
 import com.hippo.ehviewer.ui.tools.awaitConfirmationOrCancel
-import com.hippo.ehviewer.updater.AppUpdater
-import com.hippo.ehviewer.updater.Release
 import com.hippo.ehviewer.util.AppConfig
-import com.hippo.ehviewer.util.ReadableTime
-import com.hippo.ehviewer.util.displayString
-import com.hippo.ehviewer.util.installPackage
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
-import moe.tarsin.coroutines.runSuspendCatching
 import moe.tarsin.navigate
-import moe.tarsin.snackbar
-import moe.tarsin.string
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -81,7 +62,6 @@ private fun author() = AnnotatedString.fromHtml(stringResource(R.string.settings
 fun AnimatedVisibilityScope.AboutScreen(navigator: DestinationsNavigator) = Screen(navigator) {
     val scrollBehavior = MiuixScrollBehavior()
     val colorScheme = MiuixTheme.colorScheme
-    fun launchSnackbar(message: String) = launch { snackbar(message) }
     fun showDisclaimer() = launch {
         awaitConfirmationOrCancel(
             title = R.string.settings_about_disclaimer,
@@ -170,20 +150,6 @@ fun AnimatedVisibilityScope.AboutScreen(navigator: DestinationsNavigator) = Scre
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 4.dp),
                 ) {
-                    SwitchPreference(
-                        title = stringResource(id = R.string.backup_before_update),
-                        state = Settings.backupBeforeUpdate.asMutableState(),
-                    )
-                    SwitchPreference(
-                        title = stringResource(id = R.string.use_ci_update_channel),
-                        state = Settings.useCIUpdateChannel.asMutableState(),
-                    )
-                    SimpleMenuPreferenceInt(
-                        title = stringResource(id = R.string.auto_updates),
-                        entry = com.hippo.ehviewer.R.array.update_frequency,
-                        entryValueRes = com.hippo.ehviewer.R.array.update_frequency_values,
-                        state = Settings.updateIntervalDays.asMutableState(),
-                    )
                     ArrowPreference(
                         title = stringResource(id = R.string.settings_about_check_for_updates),
                         summary = stringResource(id = R.string.update_pref_manual_check_idle),
@@ -193,31 +159,4 @@ fun AnimatedVisibilityScope.AboutScreen(navigator: DestinationsNavigator) = Scre
             }
         }
     }
-}
-
-context(_: Context, _: DialogState)
-suspend fun showNewVersion(release: Release) {
-    awaitConfirmationOrCancel(
-        confirmText = R.string.download,
-        title = R.string.new_version_available,
-    ) {
-        Column(Modifier.verticalScroll(rememberScrollState())) {
-            Text(
-                text = release.version,
-                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = release.changelog,
-            )
-        }
-    }
-    if (Settings.backupBeforeUpdate.value) {
-        val time = ReadableTime.getFilenamableTime()
-        EhDB.exportDB(downloadLocation / "$time.db")
-    }
-    // TODO: Download in the background and show progress in notification
-    val path = AppConfig.tempDir / "update.apk"
-    AppUpdater.downloadUpdate(release.downloadLink, path.apply { delete() })
-    withUIContext { installPackage(path.toFile()) }
 }
