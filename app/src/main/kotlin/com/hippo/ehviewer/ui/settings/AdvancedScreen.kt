@@ -57,10 +57,12 @@ import com.hippo.ehviewer.ktor.isCronetAvailable
 import com.hippo.ehviewer.ui.Screen
 import com.hippo.ehviewer.ui.main.NavigationIcon
 import com.hippo.ehviewer.ui.showRestartDialog
+import com.hippo.ehviewer.ui.tools.awaitConfirmationOrCancel
 import com.hippo.ehviewer.util.AdsPlaceholderFile
 import com.hippo.ehviewer.util.AppConfig
 import com.hippo.ehviewer.util.CrashHandler
 import com.hippo.ehviewer.util.ReadableTime
+import com.hippo.ehviewer.util.StorageCleaner
 import com.hippo.ehviewer.util.displayPath
 import com.hippo.ehviewer.util.getAppLanguage
 import com.hippo.ehviewer.util.getLanguages
@@ -77,8 +79,6 @@ import kotlinx.coroutines.flow.merge
 import moe.tarsin.coroutines.runSuspendCatching
 import moe.tarsin.snackbar
 import moe.tarsin.string
-import com.hippo.ehviewer.ui.tools.awaitConfirmationOrCancel
-import com.hippo.ehviewer.util.StorageCleaner
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold

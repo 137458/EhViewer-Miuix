@@ -4,6 +4,4 @@ fun shouldDeleteGallery(
     inDownloads: Boolean,
     inLocalFavorites: Boolean,
     inHistory: Boolean,
-): Boolean {
-    return !inDownloads && !inLocalFavorites && !inHistory
-}
+): Boolean = !inDownloads && !inLocalFavorites && !inHistory

@@ -70,7 +70,6 @@ import com.hippo.ehviewer.EhDB
 import com.hippo.ehviewer.Settings
 import com.hippo.ehviewer.client.data.ListUrlBuilder
 import com.hippo.ehviewer.collectAsState
-import com.hippo.ehviewer.ui.screen.asDst
 import com.hippo.ehviewer.download.DownloadManager
 import com.hippo.ehviewer.download.archiveFile
 import com.hippo.ehviewer.gallery.Page
@@ -82,6 +81,7 @@ import com.hippo.ehviewer.gallery.useArchivePageLoader
 import com.hippo.ehviewer.gallery.useEhPageLoader
 import com.hippo.ehviewer.ui.MainActivity
 import com.hippo.ehviewer.ui.Screen
+import com.hippo.ehviewer.ui.screen.asDst
 import com.hippo.ehviewer.ui.theme.EhTheme
 import com.hippo.ehviewer.ui.tools.DialogState
 import com.hippo.ehviewer.ui.tools.awaitInputText

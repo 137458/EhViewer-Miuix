@@ -166,7 +166,13 @@ fun AnimatedVisibilityScope.UpdateScreen(navigator: DestinationsNavigator) = Scr
 
     Scaffold(
         topBar = {
-            val barColor = if (backdrop != null) Color.Transparent else if (scrollProgress == 1f) colorScheme.surface else Color.Transparent
+            val barColor = if (backdrop != null) {
+                Color.Transparent
+            } else if (scrollProgress == 1f) {
+                colorScheme.surface
+            } else {
+                Color.Transparent
+            }
             val titleColor = colorScheme.onSurface.copy(
                 alpha = ((scrollProgress - 0.35f) / 0.65f).coerceIn(0f, 1f),
             )
