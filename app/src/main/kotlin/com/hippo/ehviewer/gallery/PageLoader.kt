@@ -171,7 +171,7 @@ abstract class PageLoader(val scope: CoroutineScope, val info: GalleryInfo?, sta
                     }
                 } catch (e: Throwable) {
                     if (e is CancellationException) {
-                        notifyPageFailed(index, null)
+                        notifyPageWait(index)
                         throw e
                     } else {
                         notifyPageFailed(index, e.displayString())

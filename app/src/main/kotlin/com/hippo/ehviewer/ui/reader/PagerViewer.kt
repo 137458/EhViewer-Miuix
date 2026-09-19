@@ -144,6 +144,14 @@ private fun PageContainer(
     val isRtl by rememberUpdatedState(isRtl)
     val zoomableState = rememberZoomableState(zoomSpec = PagerZoomSpec)
     val status = page.statusObserved
+    val isCurrentPage by remember(pagerState) {
+        derivedStateOf { pagerState.currentPage == page.index }
+    }
+    LaunchedEffect(isCurrentPage) {
+        if (isCurrentPage && status !is PageStatus.Ready && status !is PageStatus.Blocked) {
+            pageLoader.request(page.index)
+        }
+    }
     if (status is PageStatus.Ready && layoutSize != Size.Zero) {
         val size = status.image.intrinsicSize.toSize()
         val contentScale = ContentScale.fromPreferences(scaleType, size, layoutSize)

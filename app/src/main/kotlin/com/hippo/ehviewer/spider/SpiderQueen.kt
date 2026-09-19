@@ -481,7 +481,8 @@ class SpiderQueen private constructor(val galleryInfo: GalleryInfo) : CoroutineS
 
     private val mWorkerScope = object {
         private val jobs = hashMapOf<Int, Job>()
-        private val semaphore = Semaphore(Settings.multiThreadDownload.value)
+        private val totalSemaphore = Semaphore(Settings.multiThreadDownload.value)
+        private val preloadSemaphore = Semaphore(calculatePreloadSlots(Settings.multiThreadDownload.value))
         private val pTokenLock = Mutex()
         private var showKey: String? = null
         private val showKeyLock = Mutex()
@@ -507,28 +508,36 @@ class SpiderQueen private constructor(val galleryInfo: GalleryInfo) : CoroutineS
                 }
                 list.forEach {
                     if (pageStates[it] != STATE_FINISHED && jobs[it]?.isActive != true) {
-                        doLaunchDownloadJob(it, false)
+                        doLaunchDownloadJob(it, false, isPreload = true)
                     }
                 }
             }
         }
 
-        private fun doLaunchDownloadJob(index: Int, force: Boolean, orgImg: Boolean = false) {
+        private fun doLaunchDownloadJob(index: Int, force: Boolean, orgImg: Boolean = false, isPreload: Boolean = false) {
             val currentJob = jobs[index]
             val skipHath = force && !orgImg && currentJob?.isActive == true
             if (force) currentJob?.cancel(CancellationException(FORCE_RETRY))
             if (currentJob?.isActive != true) {
                 jobs[index] = launch {
                     runCatching {
-                        semaphore.withPermit {
-                            doInJob(index, force, orgImg, skipHath)
+                        if (isPreload) {
+                            preloadSemaphore.withPermit {
+                                totalSemaphore.withPermit {
+                                    doInJob(index, force, orgImg, skipHath)
+                                }
+                            }
+                        } else {
+                            totalSemaphore.withPermit {
+                                doInJob(index, force, orgImg, skipHath)
+                            }
                         }
                     }.onFailure {
                         if (it is CancellationException) {
                             if (mReadReference > 0) {
                                 logcat(WORKER_DEBUG_TAG) { "Download image $index cancelled" }
                                 if (it.message != FORCE_RETRY) {
-                                    updatePageState(index, STATE_FAILED, "Cancelled")
+                                    updatePageState(index, STATE_NONE)
                                 }
                             }
                             throw it
@@ -544,7 +553,7 @@ class SpiderQueen private constructor(val galleryInfo: GalleryInfo) : CoroutineS
             val state = pageStates[index]
             if (!force && state == STATE_FINISHED) return notifyPageReady(index)
             if (!isDownloadMode) {
-                synchronized(jobs) { doLaunchDownloadJob(index, force, orgImg) }
+                synchronized(jobs) { doLaunchDownloadJob(index, force, orgImg, isPreload = false) }
             }
             launch {
                 jobs[index]?.join()
@@ -683,6 +692,12 @@ fun calculateBackoffDelay(retries: Int, baseDelayMs: Long = 500L, maxDelayMs: Lo
     val factor = 1L shl safeRetries
     return (baseDelayMs * factor).coerceAtMost(maxDelayMs)
 }
+
+fun calculatePreloadSlots(maxConcurrent: Int): Int = (maxConcurrent - 1).coerceAtLeast(1)
+
+fun shouldAutoRetry(retryCount: Int, maxRetries: Int = 2): Boolean = retryCount < maxRetries
+
+fun calculateAutoRetryDelay(retryCount: Int, baseDelayMs: Long = 1000L): Long = baseDelayMs * (retryCount + 1)
 
 private val Url509Regex = Regex("https://(?:ehgt\\.org/|exhentai\\.org/im)g/509s?\\.gif")
 private const val FORCE_RETRY = "Force retry"

@@ -19,6 +19,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -50,8 +51,11 @@ import com.hippo.ehviewer.gallery.PageStatus
 import com.hippo.ehviewer.gallery.progressObserved
 import com.hippo.ehviewer.gallery.statusObserved
 import com.hippo.ehviewer.image.Image
+import com.hippo.ehviewer.spider.calculateAutoRetryDelay
+import com.hippo.ehviewer.spider.shouldAutoRetry
 import com.hippo.ehviewer.util.AdsPlaceholderFile
 import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.drop
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
@@ -67,7 +71,8 @@ fun PagerItem(
     modifier: Modifier = Modifier,
     contentModifier: Modifier = Modifier,
 ) {
-    LaunchedEffect(Unit) {
+    var autoRetryCount by remember(page.index) { mutableIntStateOf(0) }
+    LaunchedEffect(page) {
         pageLoader.request(page.index)
         // In case page loader restart
         page.statusFlow.drop(1).collect {
@@ -93,7 +98,7 @@ fun PagerItem(
         }
         is PageStatus.Ready -> {
             val image = state.image
-            var painter by remember { mutableStateOf<Painter?>(null) }
+            var painter by remember(image) { mutableStateOf<Painter?>(null) }
             LaunchedEffect(image) {
                 if (image.pin()) {
                     painter = image.toPainter()
@@ -104,6 +109,9 @@ fun PagerItem(
                             pageLoader.notifyPageWait(page.index)
                         }
                     }
+                } else {
+                    pageLoader.notifyPageWait(page.index)
+                    pageLoader.request(page.index)
                 }
             }
             painter?.let { painter ->
@@ -136,6 +144,14 @@ fun PagerItem(
             )
         }
         is PageStatus.Error -> {
+            LaunchedEffect(state) {
+                if (shouldAutoRetry(autoRetryCount)) {
+                    val delayMs = calculateAutoRetryDelay(autoRetryCount)
+                    autoRetryCount++
+                    delay(delayMs)
+                    pageLoader.retryPage(page.index)
+                }
+            }
             Box(modifier = modifier.fillMaxWidth().aspectRatio(DEFAULT_ASPECT)) {
                 Column(
                     modifier = Modifier.align(Alignment.Center),
@@ -148,7 +164,10 @@ fun PagerItem(
                         style = MiuixTheme.textStyles.body2,
                     )
                     Button(
-                        onClick = { pageLoader.retryPage(page.index) },
+                        onClick = {
+                            autoRetryCount = 0
+                            pageLoader.retryPage(page.index)
+                        },
                         colors = ButtonDefaults.buttonColorsPrimary(),
                         modifier = Modifier.padding(8.dp),
                     ) {
