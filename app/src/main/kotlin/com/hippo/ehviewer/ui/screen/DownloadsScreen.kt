@@ -72,9 +72,9 @@ import com.ehviewer.core.ui.component.dismissDeleteAction
 import com.ehviewer.core.ui.icons.EhIcons
 import com.ehviewer.core.ui.icons.big.Download
 import com.ehviewer.core.ui.icons.filled.Shuffle
-import com.ehviewer.core.ui.util.AdaptiveLayoutPolicy
 import com.ehviewer.core.ui.util.HapticFeedbackType
 import com.ehviewer.core.ui.util.LocalWindowLayout
+import com.ehviewer.core.ui.util.WindowLayout
 import com.ehviewer.core.ui.util.asyncState
 import com.ehviewer.core.ui.util.ifTrueThen
 import com.ehviewer.core.ui.util.rememberHapticFeedback
@@ -639,7 +639,7 @@ fun AnimatedVisibilityScope.DownloadsScreen(navigator: DestinationsNavigator) = 
                 val gridInterval = dimensionResource(com.hippo.ehviewer.R.dimen.gallery_grid_interval)
                 val configuredThumbColumns by Settings.thumbColumns.collectAsState()
                 // 横屏/宽屏下按可用宽度补足列数，避免固定列数把缩略图拉得过宽
-                val thumbColumns = AdaptiveLayoutPolicy.thumbGridColumns(availableWidthDp, configuredThumbColumns)
+                val thumbColumns = WindowLayout.thumbGridColumns(availableWidthDp, configuredThumbColumns)
                 FastScrollLazyVerticalStaggeredGrid(
                     columns = StaggeredGridCells.Fixed(thumbColumns),
                     modifier = Modifier.nestedScroll(searchBarConnection).fillMaxSize(),

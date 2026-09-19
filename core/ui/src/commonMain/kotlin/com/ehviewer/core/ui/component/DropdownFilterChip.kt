@@ -99,12 +99,7 @@ fun DropdownFilterChip(
 
         if (expanded) {
             // 横屏矮视口下限制下拉高度，否则长列表（如语言）会超出窗口被裁切
-            val windowLayout = LocalWindowLayout.current
-            val dropdownMaxHeight = if (windowLayout.heightDp > 0) {
-                (windowLayout.heightDp * 0.6f).dp
-            } else {
-                null
-            }
+            val dropdownMaxHeight = LocalWindowLayout.current.overlayMaxHeight
             WindowDropdownPopup(
                 entry = entry,
                 show = expanded,

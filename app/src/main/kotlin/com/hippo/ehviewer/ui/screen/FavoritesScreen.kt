@@ -1,4 +1,4 @@
-﻿package com.hippo.ehviewer.ui.screen
+package com.hippo.ehviewer.ui.screen
 
 import android.content.Context
 import android.view.ViewConfiguration

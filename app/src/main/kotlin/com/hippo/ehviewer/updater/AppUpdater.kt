@@ -85,27 +85,37 @@ object AppUpdater {
                 ghStatement(LATEST_RELEASE_URL).executeAndParseAs<GithubRelease>()
             }.getOrNull()
             if (release != null) {
-                val latestVersion = release.version
-                val description = release.info
-                val downloadUrl = release.getDownloadLink()
-                val matchedAsset = release.getMatchedAsset()
-                val hasUpdate = compareVersions(latestVersion, curVersion) > 0
-                if (hasUpdate || returnLatestIfNoUpdate) {
-                    return Release(
-                        version = latestVersion,
-                        changelog = description,
-                        downloadLink = downloadUrl,
-                        releaseTitle = release.name ?: latestVersion,
-                        releaseUrl = release.releaseLink,
-                        apkSize = matchedAsset?.size ?: 0L,
-                        publishedAt = release.publishedAt?.take(10).orEmpty(),
-                        isCI = false,
-                        hasUpdate = hasUpdate,
-                    )
-                }
+                return resolveRelease(release, curVersion, returnLatestIfNoUpdate)
             }
         }
         return null
+    }
+
+    /**
+     * 把远端 Release 与当前版本解析为待展示的 [Release]。
+     *
+     * [returnLatestIfNoUpdate] 为 true 时，即使已是最新版本也回传当前版本说明，供更新页常驻展示；
+     * 为 false 时没有新版本就返回 null。
+     */
+    fun resolveRelease(
+        release: GithubRelease,
+        curVersion: String,
+        returnLatestIfNoUpdate: Boolean,
+    ): Release? {
+        val latestVersion = release.version
+        val hasUpdate = compareVersions(latestVersion, curVersion) > 0
+        if (!hasUpdate && !returnLatestIfNoUpdate) return null
+        return Release(
+            version = latestVersion,
+            changelog = release.info,
+            downloadLink = release.getDownloadLink(),
+            releaseTitle = release.name ?: latestVersion,
+            releaseUrl = release.releaseLink,
+            apkSize = release.getMatchedAsset()?.size ?: 0L,
+            publishedAt = release.publishedAt?.take(10).orEmpty(),
+            isCI = false,
+            hasUpdate = hasUpdate,
+        )
     }
 
     fun compareVersions(v1: String, v2: String): Int {
@@ -164,6 +174,7 @@ object AppUpdater {
         apkSize = 44256789L,
         publishedAt = "2026-09-16",
         isCI = false,
+        hasUpdate = true,
     )
 
     suspend fun downloadUpdate(
@@ -244,5 +255,5 @@ data class Release(
     val apkSize: Long = 0L,
     val publishedAt: String = "",
     val isCI: Boolean = false,
-    val hasUpdate: Boolean = true,
+    val hasUpdate: Boolean,
 )

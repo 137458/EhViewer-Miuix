@@ -1,6 +1,5 @@
 package com.hippo.ehviewer.ui.update
 
-import android.content.res.Configuration
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -30,11 +29,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
@@ -42,7 +40,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.graphics.drawable.toBitmap
 import com.ehviewer.core.i18n.R
 import com.ehviewer.core.ui.component.BlurredBar
 import com.ehviewer.core.ui.component.blurBackdropSource
@@ -50,12 +47,14 @@ import com.ehviewer.core.ui.component.rememberBlurBackdrop
 import com.ehviewer.core.ui.effect.BgEffectBackground
 import com.ehviewer.core.ui.effect.isRuntimeShaderSupported
 import com.ehviewer.core.ui.util.LocalBottomBarContentPadding
+import com.ehviewer.core.ui.util.LocalWindowLayout
 import com.ehviewer.core.util.launch
 import com.hippo.ehviewer.BuildConfig
 import com.hippo.ehviewer.Settings
 import com.hippo.ehviewer.asMutableState
 import com.hippo.ehviewer.ui.Screen
 import com.hippo.ehviewer.ui.component.MarkdownText
+import com.hippo.ehviewer.ui.component.rememberAppIconBitmap
 import com.hippo.ehviewer.ui.main.NavigationIcon
 import com.hippo.ehviewer.ui.openBrowser
 import com.hippo.ehviewer.ui.settings.Preference
@@ -101,11 +100,7 @@ fun AnimatedVisibilityScope.UpdateScreen(navigator: DestinationsNavigator) = Scr
     val context = LocalContext.current
     val backdrop = rememberBlurBackdrop()
 
-    val appIcon = remember(context) {
-        runCatching {
-            context.packageManager.getApplicationIcon(context.packageName).toBitmap().asImageBitmap()
-        }.getOrNull()
-    }
+    val appIcon = rememberAppIconBitmap()
 
     fun launchSnackbar(message: String) = launch { snackbar(message) }
 
@@ -166,8 +161,8 @@ fun AnimatedVisibilityScope.UpdateScreen(navigator: DestinationsNavigator) = Scr
     val density = LocalDensity.current
     var logoHeightDp by remember { mutableStateOf(200.dp) }
     val colorScheme = MiuixTheme.colorScheme
-    val configuration = LocalConfiguration.current
-    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val windowLayout = LocalWindowLayout.current
+    val isLandscape = windowLayout.isLandscape
 
     Scaffold(
         topBar = {
@@ -224,31 +219,8 @@ fun AnimatedVisibilityScope.UpdateScreen(navigator: DestinationsNavigator) = Scr
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Center,
                     ) {
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier
-                                .size(56.dp)
-                                .graphicsLayer {
-                                    val iconProgress = ((scrollProgress - 0.35f) / 0.15f).coerceIn(0f, 1f)
-                                    clip = true
-                                    shape = RoundedCornerShape(16.dp)
-                                    alpha = 1 - iconProgress
-                                    scaleX = 1 - (iconProgress * 0.05f)
-                                    scaleY = 1 - (iconProgress * 0.05f)
-                                }
-                                .background(colorScheme.surfaceVariant),
-                        ) {
-                            if (appIcon != null) {
-                                Image(
-                                    bitmap = appIcon,
-                                    contentDescription = "EhViewer",
-                                    modifier = Modifier.size(36.dp),
-                                )
-                            }
-                        }
-
+                        UpdateHeroIcon(compact = true, appIcon = appIcon, scrollProgress = scrollProgress)
                         Spacer(modifier = Modifier.width(16.dp))
-
                         Column(
                             modifier = Modifier.graphicsLayer {
                                 val nameProgress = ((scrollProgress - 0.20f) / 0.15f).coerceIn(0f, 1f)
@@ -257,32 +229,14 @@ fun AnimatedVisibilityScope.UpdateScreen(navigator: DestinationsNavigator) = Scr
                                 scaleY = 1 - (nameProgress * 0.05f)
                             },
                         ) {
-                            Text(
-                                text = "EhViewer",
-                                style = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.Bold),
-                                color = colorScheme.onSurface,
-                            )
+                            UpdateHeroTitle(compact = true, scrollProgress = scrollProgress)
                             Spacer(modifier = Modifier.height(2.dp))
-                            if (isChecking) {
-                                Text(
-                                    text = stringResource(R.string.update_checking_hint),
-                                    color = colorScheme.onSurfaceVariantSummary,
-                                    fontSize = 12.sp,
-                                )
-                            } else if (updateRelease != null && updateRelease!!.hasUpdate) {
-                                Text(
-                                    text = stringResource(R.string.update_found_header, updateRelease!!.version, BuildConfig.RAW_VERSION_NAME),
-                                    color = colorScheme.primary,
-                                    fontWeight = FontWeight.SemiBold,
-                                    fontSize = 12.sp,
-                                )
-                            } else {
-                                Text(
-                                    text = stringResource(R.string.update_latest_header, BuildConfig.RAW_VERSION_NAME),
-                                    color = colorScheme.onSurfaceVariantSummary,
-                                    fontSize = 12.sp,
-                                )
-                            }
+                            UpdateHeroStatus(
+                                compact = true,
+                                isChecking = isChecking,
+                                updateRelease = updateRelease,
+                                scrollProgress = scrollProgress,
+                            )
                         }
                     }
                 } else {
@@ -295,87 +249,16 @@ fun AnimatedVisibilityScope.UpdateScreen(navigator: DestinationsNavigator) = Scr
                             },
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier
-                                .size(88.dp)
-                                .graphicsLayer {
-                                    val iconProgress = ((scrollProgress - 0.35f) / 0.15f).coerceIn(0f, 1f)
-                                    clip = true
-                                    shape = RoundedCornerShape(24.dp)
-                                    alpha = 1 - iconProgress
-                                    scaleX = 1 - (iconProgress * 0.05f)
-                                    scaleY = 1 - (iconProgress * 0.05f)
-                                }
-                                .background(colorScheme.surfaceVariant),
-                        ) {
-                            if (appIcon != null) {
-                                Image(
-                                    bitmap = appIcon,
-                                    contentDescription = "EhViewer",
-                                    modifier = Modifier.size(56.dp),
-                                )
-                            }
-                        }
-
+                        UpdateHeroIcon(compact = false, appIcon = appIcon, scrollProgress = scrollProgress)
                         Spacer(modifier = Modifier.height(16.dp))
-
-                        Text(
-                            text = "EhViewer",
-                            style = MiuixTheme.textStyles.title2.copy(fontWeight = FontWeight.Bold),
-                            color = colorScheme.onSurface,
-                            modifier = Modifier
-                                .graphicsLayer {
-                                    val nameProgress = ((scrollProgress - 0.20f) / 0.15f).coerceIn(0f, 1f)
-                                    alpha = 1 - nameProgress
-                                    scaleX = 1 - (nameProgress * 0.05f)
-                                    scaleY = 1 - (nameProgress * 0.05f)
-                                },
-                        )
-
+                        UpdateHeroTitle(compact = false, scrollProgress = scrollProgress)
                         Spacer(modifier = Modifier.height(6.dp))
-
-                        if (isChecking) {
-                            Text(
-                                text = stringResource(R.string.update_checking_hint),
-                                color = colorScheme.onSurfaceVariantSummary,
-                                fontSize = 14.sp,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .graphicsLayer {
-                                        val verProgress = ((scrollProgress - 0.05f) / 0.15f).coerceIn(0f, 1f)
-                                        alpha = 1 - verProgress
-                                    },
-                            )
-                        } else if (updateRelease != null && updateRelease!!.hasUpdate) {
-                            Text(
-                                text = stringResource(R.string.update_found_header, updateRelease!!.version, BuildConfig.RAW_VERSION_NAME),
-                                color = colorScheme.primary,
-                                fontWeight = FontWeight.SemiBold,
-                                fontSize = 14.sp,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .graphicsLayer {
-                                        val verProgress = ((scrollProgress - 0.05f) / 0.15f).coerceIn(0f, 1f)
-                                        alpha = 1 - verProgress
-                                    },
-                            )
-                        } else {
-                            Text(
-                                text = stringResource(R.string.update_latest_header, BuildConfig.RAW_VERSION_NAME),
-                                color = colorScheme.onSurfaceVariantSummary,
-                                fontSize = 14.sp,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .graphicsLayer {
-                                        val verProgress = ((scrollProgress - 0.05f) / 0.15f).coerceIn(0f, 1f)
-                                        alpha = 1 - verProgress
-                                    },
-                            )
-                        }
+                        UpdateHeroStatus(
+                            compact = false,
+                            isChecking = isChecking,
+                            updateRelease = updateRelease,
+                            scrollProgress = scrollProgress,
+                        )
                     }
                 }
 
@@ -567,5 +450,103 @@ fun AnimatedVisibilityScope.UpdateScreen(navigator: DestinationsNavigator) = Scr
                 },
             )
         }
+    }
+}
+
+/** Hero 图标：横屏（compact）用小尺寸与更小的圆角。 */
+@Composable
+private fun UpdateHeroIcon(compact: Boolean, appIcon: ImageBitmap?, scrollProgress: Float) {
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .size(if (compact) 56.dp else 88.dp)
+            .graphicsLayer {
+                val iconProgress = ((scrollProgress - 0.35f) / 0.15f).coerceIn(0f, 1f)
+                clip = true
+                shape = RoundedCornerShape(if (compact) 16.dp else 24.dp)
+                alpha = 1 - iconProgress
+                scaleX = 1 - (iconProgress * 0.05f)
+                scaleY = 1 - (iconProgress * 0.05f)
+            }
+            .background(MiuixTheme.colorScheme.surfaceVariant),
+    ) {
+        if (appIcon != null) {
+            Image(
+                bitmap = appIcon,
+                contentDescription = "EhViewer",
+                modifier = Modifier.size(if (compact) 36.dp else 56.dp),
+            )
+        }
+    }
+}
+
+/** Hero 标题：随滚动进度淡出并轻微收缩。 */
+@Composable
+private fun UpdateHeroTitle(compact: Boolean, scrollProgress: Float) {
+    Text(
+        text = "EhViewer",
+        style = if (compact) {
+            MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.Bold)
+        } else {
+            MiuixTheme.textStyles.title2.copy(fontWeight = FontWeight.Bold)
+        },
+        color = MiuixTheme.colorScheme.onSurface,
+        modifier = Modifier.graphicsLayer {
+            val nameProgress = ((scrollProgress - 0.20f) / 0.15f).coerceIn(0f, 1f)
+            alpha = 1 - nameProgress
+            scaleX = 1 - (nameProgress * 0.05f)
+            scaleY = 1 - (nameProgress * 0.05f)
+        },
+    )
+}
+
+/**
+ * Hero 版本状态行。
+ *
+ * 竖屏需要撑满宽度居中，并单独按滚动进度淡出；横屏由父 Column 统一淡出，因此不叠加。
+ */
+@Composable
+private fun UpdateHeroStatus(
+    compact: Boolean,
+    isChecking: Boolean,
+    updateRelease: Release?,
+    scrollProgress: Float,
+) {
+    val colorScheme = MiuixTheme.colorScheme
+    val fontSize = if (compact) 12.sp else 14.sp
+    val textAlign = if (compact) null else TextAlign.Center
+    val modifier = if (compact) {
+        Modifier
+    } else {
+        Modifier
+            .fillMaxWidth()
+            .graphicsLayer {
+                val verProgress = ((scrollProgress - 0.05f) / 0.15f).coerceIn(0f, 1f)
+                alpha = 1 - verProgress
+            }
+    }
+    when {
+        isChecking -> Text(
+            text = stringResource(R.string.update_checking_hint),
+            color = colorScheme.onSurfaceVariantSummary,
+            fontSize = fontSize,
+            textAlign = textAlign,
+            modifier = modifier,
+        )
+        updateRelease != null && updateRelease.hasUpdate -> Text(
+            text = stringResource(R.string.update_found_header, updateRelease.version, BuildConfig.RAW_VERSION_NAME),
+            color = colorScheme.primary,
+            fontWeight = FontWeight.SemiBold,
+            fontSize = fontSize,
+            textAlign = textAlign,
+            modifier = modifier,
+        )
+        else -> Text(
+            text = stringResource(R.string.update_latest_header, BuildConfig.RAW_VERSION_NAME),
+            color = colorScheme.onSurfaceVariantSummary,
+            fontSize = fontSize,
+            textAlign = textAlign,
+            modifier = modifier,
+        )
     }
 }

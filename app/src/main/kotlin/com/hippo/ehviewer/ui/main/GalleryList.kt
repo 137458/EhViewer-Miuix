@@ -48,7 +48,7 @@ import com.ehviewer.core.ui.component.FastScrollLazyVerticalGrid
 import com.ehviewer.core.ui.component.FastScrollLazyVerticalStaggeredGrid
 import com.ehviewer.core.ui.icons.EhIcons
 import com.ehviewer.core.ui.icons.big.SadAndroid
-import com.ehviewer.core.ui.util.AdaptiveLayoutPolicy
+import com.ehviewer.core.ui.util.WindowLayout
 import com.ehviewer.core.util.launch
 import com.hippo.ehviewer.Settings
 import com.hippo.ehviewer.client.exception.NoHitsFoundException
@@ -121,17 +121,20 @@ fun GalleryList(
             }
             if (listMode == 0) {
                 val configuredColumnWidth by collectDetailSizeAsState()
+                val listSpacing = dimensionResource(com.hippo.ehviewer.R.dimen.gallery_list_interval)
                 // 宽屏下压最小列宽，保证详情列表至少两列而不是被拉伸成单列满宽
-                val columnWidth = AdaptiveLayoutPolicy
-                    .detailMinColumnWidth(availableWidthDp, configuredColumnWidth.value.toInt())
-                    .dp
+                val columnWidth = WindowLayout.detailMinColumnWidth(
+                    availableWidthDp = availableWidthDp,
+                    configuredMinWidthDp = configuredColumnWidth.value.toInt(),
+                    spacingDp = listSpacing.value.roundToInt(),
+                ).dp
                 FastScrollLazyVerticalGrid(
                     columns = GridCells.Adaptive(columnWidth),
                     modifier = contentModifier.fillMaxSize(),
                     state = detailListState,
                     contentPadding = contentPadding + PaddingValues(marginH, marginV),
-                    verticalArrangement = Arrangement.spacedBy(dimensionResource(com.hippo.ehviewer.R.dimen.gallery_list_interval)),
-                    horizontalArrangement = Arrangement.spacedBy(dimensionResource(com.hippo.ehviewer.R.dimen.gallery_list_interval)),
+                    verticalArrangement = Arrangement.spacedBy(listSpacing),
+                    horizontalArrangement = Arrangement.spacedBy(listSpacing),
                 ) {
                     items(
                         count = data.itemCount,
@@ -156,7 +159,7 @@ fun GalleryList(
                 val gridInterval = dimensionResource(com.hippo.ehviewer.R.dimen.gallery_grid_interval)
                 val configuredThumbColumns by Settings.thumbColumns.collectAsState()
                 // 横屏/宽屏下按可用宽度补足列数，避免固定列数把缩略图拉得过宽
-                val thumbColumns = AdaptiveLayoutPolicy.thumbGridColumns(availableWidthDp, configuredThumbColumns)
+                val thumbColumns = WindowLayout.thumbGridColumns(availableWidthDp, configuredThumbColumns)
                 FastScrollLazyVerticalStaggeredGrid(
                     columns = StaggeredGridCells.Fixed(thumbColumns),
                     modifier = contentModifier.fillMaxSize(),

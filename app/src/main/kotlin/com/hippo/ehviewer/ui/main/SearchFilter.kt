@@ -20,7 +20,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -84,9 +83,7 @@ fun SearchFilter(
     advancedOption: AdvancedSearchOption,
     onAdvancedOptionChange: (AdvancedSearchOption) -> Unit,
 ) = Column(
-    modifier = modifier
-        .verticalScroll(rememberScrollState())
-        .padding(bottom = 8.dp),
+    modifier = modifier.padding(bottom = 8.dp),
 ) {
     val haptic = LocalHapticFeedback.current
     val isAllSelected = category == EhUtils.ALL_CATEGORY || category == EhUtils.NONE || category <= 0

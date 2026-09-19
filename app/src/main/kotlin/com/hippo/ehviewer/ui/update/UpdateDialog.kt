@@ -1,6 +1,5 @@
 package com.hippo.ehviewer.ui.update
 
-import android.content.res.Configuration
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -31,7 +30,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -40,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ehviewer.core.files.delete
 import com.ehviewer.core.i18n.R
+import com.ehviewer.core.ui.util.LocalWindowLayout
 import com.hippo.ehviewer.BuildConfig
 import com.hippo.ehviewer.EhDB
 import com.hippo.ehviewer.Settings
@@ -237,9 +236,8 @@ fun UpdateDialog(
             Spacer(modifier = Modifier.height(12.dp))
 
             // ── 更新日志展示视口 ──
-            val configuration = LocalConfiguration.current
-            val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
-            val changelogMaxHeight = if (isLandscape || configuration.screenHeightDp < 500) 130.dp else 230.dp
+            val windowLayout = LocalWindowLayout.current
+            val changelogMaxHeight = if (windowLayout.isLandscape || windowLayout.isCompactHeight) 130.dp else 230.dp
             Box(
                 modifier = Modifier
                     .fillMaxWidth()

@@ -1,4 +1,4 @@
-﻿package com.hippo.ehviewer.ui.settings
+package com.hippo.ehviewer.ui.settings
 
 import android.Manifest
 import android.content.ActivityNotFoundException

@@ -202,7 +202,9 @@ fun MarkdownText(
                     BoxWithConstraints(
                         modifier = Modifier.fillMaxWidth(),
                     ) {
-                        val availableWidth = (maxWidth - 16.dp).coerceAtLeast(0.dp)
+                        // 可用宽度必须扣掉容器与行自身的水平内边距，否则展开后的表格永远比视口宽
+                        val horizontalPadding = TableContainerPadding * 2 + TableRowHorizontalPadding * 2
+                        val availableWidth = (maxWidth - horizontalPadding).coerceAtLeast(0.dp)
                         val colWidths = remember(block, availableWidth) {
                             computeTableColumnWidths(
                                 headers = block.headers,
@@ -221,7 +223,7 @@ fun MarkdownText(
                         ) {
                             Column(
                                 modifier = Modifier
-                                    .padding(8.dp),
+                                    .padding(TableContainerPadding),
                                 verticalArrangement = Arrangement.spacedBy(4.dp),
                             ) {
                                 // 表头
@@ -229,7 +231,7 @@ fun MarkdownText(
                                     modifier = Modifier
                                         .clip(RoundedCornerShape(6.dp))
                                         .background(MiuixTheme.colorScheme.primary.copy(alpha = 0.12f))
-                                        .padding(horizontal = 10.dp, vertical = 8.dp),
+                                        .padding(horizontal = TableRowHorizontalPadding, vertical = 8.dp),
                                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                                     verticalAlignment = Alignment.CenterVertically,
                                 ) {
@@ -257,7 +259,7 @@ fun MarkdownText(
                                         modifier = Modifier
                                             .clip(RoundedCornerShape(6.dp))
                                             .background(rowBg)
-                                            .padding(horizontal = 10.dp, vertical = 8.dp),
+                                            .padding(horizontal = TableRowHorizontalPadding, vertical = 8.dp),
                                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                                         verticalAlignment = Alignment.CenterVertically,
                                     ) {
@@ -400,6 +402,12 @@ fun parseMarkdownBlocks(markdown: String): List<MarkdownBlock> {
 
     return blocks
 }
+
+/** 表格容器（外层 Column）的水平内边距，单侧。 */
+private val TableContainerPadding = 8.dp
+
+/** 表格每一行（表头与数据行）的水平内边距，单侧。 */
+private val TableRowHorizontalPadding = 10.dp
 
 private val BR_REGEX = Regex("""<[bB][rR]\s*/?>""")
 private val TABLE_DIVIDER_REGEX = Regex("""^\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)+\|?\s*$""")

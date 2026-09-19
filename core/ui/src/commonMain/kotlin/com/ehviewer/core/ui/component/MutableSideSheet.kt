@@ -60,6 +60,8 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
+import com.ehviewer.core.ui.util.AdaptiveBreakpoints
+import com.ehviewer.core.ui.util.WindowLayout
 import com.ehviewer.core.ui.util.animateFloatMergeOneWayPredictiveBackAsState
 import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
@@ -179,8 +181,9 @@ fun MutableSideSheet(
     val height = with(density) { windowInfo.containerSize.height.toDp() }
     val maxSheetWidth = (width - 112.dp).coerceAtLeast(280.dp)
     // 横屏矮视口下 width-112dp 会占掉近乎整屏，侧栏按固定上限收窄
-    val effectiveSheetWidth = if (height < 600.dp && width > height) {
-        maxSheetWidth.coerceAtMost(420.dp)
+    val windowLayout = WindowLayout(width.value.roundToInt(), height.value.roundToInt())
+    val effectiveSheetWidth = if (windowLayout.isShortLandscape) {
+        maxSheetWidth.coerceAtMost(AdaptiveBreakpoints.SHEET_COMPACT_MAX_WIDTH_DP.dp)
     } else {
         maxSheetWidth
     }

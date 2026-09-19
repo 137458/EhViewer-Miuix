@@ -67,7 +67,7 @@ fun BoxScope.ReaderAppBars(
     ) {
         val windowLayout = LocalWindowLayout.current
         // 横屏/宽屏用更宽松的左右内边距；矮视口收紧纵向间距，避免 chrome 吃掉近半屏高
-        val horizontalPadding = if (windowLayout.widthDp >= 840) 32.dp else 16.dp
+        val horizontalPadding = if (windowLayout.isWide) 32.dp else 16.dp
         val verticalPadding = if (windowLayout.isShortLandscape) 6.dp else 12.dp
         Column(
             modifier = Modifier

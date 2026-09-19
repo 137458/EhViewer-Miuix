@@ -31,11 +31,13 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.clearText
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -580,7 +582,13 @@ fun SearchBarScreen(
                     onDismissRequest = { showFilterSheet = false },
                 ) {
                     CompositionLocalProvider(LocalBackdrop provides null) {
-                        Box(modifier = Modifier.padding(bottom = 16.dp)) {
+                        Box(
+                            modifier = Modifier
+                                .padding(bottom = 16.dp)
+                                // 滚动兜底只能加在弹层这一侧：同一个 filter() 也会作为 LazyColumn 的
+                                // item 渲染，在 item 内嵌 verticalScroll 会因无限高度约束直接抛异常
+                                .verticalScroll(rememberScrollState()),
+                        ) {
                             filter()
                         }
                     }

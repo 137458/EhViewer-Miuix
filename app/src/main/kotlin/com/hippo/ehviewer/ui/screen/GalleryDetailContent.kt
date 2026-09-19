@@ -10,6 +10,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -80,10 +81,9 @@ import com.ehviewer.core.ui.component.GalleryDetailRating
 import com.ehviewer.core.ui.component.GalleryRatingBar
 import com.ehviewer.core.ui.icons.EhIcons
 import com.ehviewer.core.ui.icons.filled.Magnet
-import com.ehviewer.core.ui.util.AdaptiveLayoutPolicy
-import com.ehviewer.core.ui.util.LocalWindowLayout
 import com.ehviewer.core.ui.util.LocalWindowSizeClass
 import com.ehviewer.core.ui.util.TransitionsVisibilityScope
+import com.ehviewer.core.ui.util.WindowLayout
 import com.ehviewer.core.ui.util.flattenForEach
 import com.ehviewer.core.ui.util.isExpanded
 import com.ehviewer.core.ui.util.rememberInVM
@@ -183,14 +183,7 @@ fun GalleryDetailContent(
     val keylineMargin = dimensionResource(com.hippo.ehviewer.R.dimen.keyline_margin)
     val galleryDetail = galleryInfo.asGalleryDetail()
     val windowSizeClass = LocalWindowSizeClass.current
-    val windowLayout = LocalWindowLayout.current
-    val availableWidthDp = windowLayout.widthDp
     val thumbColumns by Settings.thumbColumns.collectAsState()
-    // 预览网格的最小列宽：宽屏下压到可用宽度的一半，保证排两列而不是单列满宽
-    val previewColumnMinWidth = AdaptiveLayoutPolicy.detailMinColumnWidth(
-        availableWidthDp = availableWidthDp,
-        configuredMinWidthDp = (availableWidthDp / thumbColumns.coerceAtLeast(1)).coerceAtLeast(1),
-    )
     val readText = stringResource(R.string.read)
     val startPage by rememberInVM {
         EhDB.getReadProgressFlow(galleryInfo.gid)
@@ -398,77 +391,85 @@ fun GalleryDetailContent(
                 galleryPreview(galleryDetail, previews) { navToReader(galleryDetail.galleryInfo, it) }
             }
         }
-        else -> FastScrollLazyVerticalGrid(
-            // 宽屏分支必须真的按可用宽度排更多列，否则与竖屏分支没有区别
-            columns = GridCells.Adaptive(
-                AdaptiveLayoutPolicy.detailMinColumnWidth(availableWidthDp, previewColumnMinWidth).dp,
-            ),
-            contentPadding = contentPadding,
-            modifier = modifier.padding(horizontal = keylineMargin),
-            horizontalArrangement = Arrangement.spacedBy(dimensionResource(id = com.hippo.ehviewer.R.dimen.strip_item_padding)),
-            verticalArrangement = Arrangement.spacedBy(dimensionResource(id = com.hippo.ehviewer.R.dimen.strip_item_padding_v)),
-        ) {
-            item(
-                key = "header",
-                span = { GridItemSpan(maxCurrentLineSpan) },
-                contentType = "header",
+        else -> BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+            // 列宽必须按网格自身的可用宽度算：用窗口宽度会把列宽算大，宽屏反而退化成单列满宽
+            val stripSpacing = dimensionResource(id = com.hippo.ehviewer.R.dimen.strip_item_padding)
+            val gridWidthDp = (maxWidth - keylineMargin * 2).value.roundToInt().coerceAtLeast(1)
+            val previewColumnMinWidth = WindowLayout.detailMinColumnWidth(
+                availableWidthDp = gridWidthDp,
+                configuredMinWidthDp = (gridWidthDp / thumbColumns.coerceAtLeast(1)).coerceAtLeast(1),
+                spacingDp = stripSpacing.value.roundToInt(),
+            )
+            FastScrollLazyVerticalGrid(
+                // 宽屏分支必须真的按可用宽度排更多列，否则与竖屏分支没有区别
+                columns = GridCells.Adaptive(previewColumnMinWidth.dp),
+                contentPadding = contentPadding,
+                modifier = modifier.padding(horizontal = keylineMargin),
+                horizontalArrangement = Arrangement.spacedBy(stripSpacing),
+                verticalArrangement = Arrangement.spacedBy(dimensionResource(id = com.hippo.ehviewer.R.dimen.strip_item_padding_v)),
             ) {
-                Row(modifier = Modifier.fillMaxWidth()) {
-                    GalleryDetailHeaderCard(
-                        info = galleryInfo,
-                        onInfoCardClick = ::onGalleryInfoCardClick,
-                        onUploaderChipClick = ::onUploaderChipClick.partially1(galleryInfo),
-                        onBlockUploaderIconClick = ::showFilterUploaderDialog.partially1(galleryInfo),
-                        onCategoryChipClick = ::onCategoryChipClick,
-                        onCoverClick = ::onCoverClick,
-                        modifier = Modifier.width(dimensionResource(id = com.hippo.ehviewer.R.dimen.gallery_detail_card_landscape_width)).padding(vertical = keylineMargin),
-                    )
-                    Column(
-                        modifier = Modifier.fillMaxSize(),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        Spacer(modifier = modifier.height(16.dp))
-                        Button(
-                            onClick = ::onReadButtonClick,
-                            colors = ButtonDefaults.buttonColorsPrimary(),
-                            modifier = Modifier.height(56.dp).padding(horizontal = 16.dp).width(192.dp),
+                item(
+                    key = "header",
+                    span = { GridItemSpan(maxCurrentLineSpan) },
+                    contentType = "header",
+                ) {
+                    Row(modifier = Modifier.fillMaxWidth()) {
+                        GalleryDetailHeaderCard(
+                            info = galleryInfo,
+                            onInfoCardClick = ::onGalleryInfoCardClick,
+                            onUploaderChipClick = ::onUploaderChipClick.partially1(galleryInfo),
+                            onBlockUploaderIconClick = ::showFilterUploaderDialog.partially1(galleryInfo),
+                            onCategoryChipClick = ::onCategoryChipClick,
+                            onCoverClick = ::onCoverClick,
+                            modifier = Modifier.width(dimensionResource(id = com.hippo.ehviewer.R.dimen.gallery_detail_card_landscape_width)).padding(vertical = keylineMargin),
+                        )
+                        Column(
+                            modifier = Modifier.fillMaxSize(),
+                            horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
-                            Text(text = readButtonText, overflow = TextOverflow.Ellipsis, maxLines = 1)
-                        }
-                        Spacer(modifier = modifier.height(24.dp))
-                        Button(
-                            onClick = ::onDownloadButtonClick,
-                            colors = ButtonDefaults.buttonColors(),
-                            modifier = Modifier.height(56.dp).padding(horizontal = 16.dp).width(192.dp),
-                        ) {
-                            Text(text = downloadButtonText, overflow = TextOverflow.Ellipsis, maxLines = 1)
+                            Spacer(modifier = modifier.height(16.dp))
+                            Button(
+                                onClick = ::onReadButtonClick,
+                                colors = ButtonDefaults.buttonColorsPrimary(),
+                                modifier = Modifier.height(56.dp).padding(horizontal = 16.dp).width(192.dp),
+                            ) {
+                                Text(text = readButtonText, overflow = TextOverflow.Ellipsis, maxLines = 1)
+                            }
+                            Spacer(modifier = modifier.height(24.dp))
+                            Button(
+                                onClick = ::onDownloadButtonClick,
+                                colors = ButtonDefaults.buttonColors(),
+                                modifier = Modifier.height(56.dp).padding(horizontal = 16.dp).width(192.dp),
+                            ) {
+                                Text(text = downloadButtonText, overflow = TextOverflow.Ellipsis, maxLines = 1)
+                            }
                         }
                     }
                 }
-            }
-            item(
-                key = "body",
-                span = { GridItemSpan(maxCurrentLineSpan) },
-                contentType = "body",
-            ) {
-                LocalPinnableContainer.current!!.run { remember { pin() } }
-                Column {
-                    if (getDetailError.isNotBlank()) {
-                        GalleryDetailErrorTip(error = getDetailError, onClick = onRetry)
-                    } else if (galleryDetail != null) {
-                        BelowHeader(galleryDetail, voteTag)
-                    } else {
-                        Box(
-                            modifier = Modifier.fillMaxSize().padding(keylineMargin),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            InfiniteProgressIndicator()
+                item(
+                    key = "body",
+                    span = { GridItemSpan(maxCurrentLineSpan) },
+                    contentType = "body",
+                ) {
+                    LocalPinnableContainer.current!!.run { remember { pin() } }
+                    Column {
+                        if (getDetailError.isNotBlank()) {
+                            GalleryDetailErrorTip(error = getDetailError, onClick = onRetry)
+                        } else if (galleryDetail != null) {
+                            BelowHeader(galleryDetail, voteTag)
+                        } else {
+                            Box(
+                                modifier = Modifier.fillMaxSize().padding(keylineMargin),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                InfiniteProgressIndicator()
+                            }
                         }
                     }
                 }
-            }
-            if (galleryDetail != null && previews != null) {
-                galleryPreview(galleryDetail, previews) { navToReader(galleryDetail.galleryInfo, it) }
+                if (galleryDetail != null && previews != null) {
+                    galleryPreview(galleryDetail, previews) { navToReader(galleryDetail.galleryInfo, it) }
+                }
             }
         }
     }

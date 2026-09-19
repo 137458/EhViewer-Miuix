@@ -82,13 +82,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
@@ -99,7 +97,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
-import androidx.core.graphics.drawable.toBitmap
 import androidx.core.net.toUri
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.LifecycleResumeEffect
@@ -140,6 +137,7 @@ import com.hippo.ehviewer.client.parser.GalleryPageUrlParser
 import com.hippo.ehviewer.collectAsState
 import com.hippo.ehviewer.download.DownloadService
 import com.hippo.ehviewer.download.downloadLocation
+import com.hippo.ehviewer.ui.component.rememberAppIconBitmap
 import com.hippo.ehviewer.ui.destinations.DownloadScreenDestination
 import com.hippo.ehviewer.ui.destinations.DownloadsScreenDestination
 import com.hippo.ehviewer.ui.destinations.FavouritesScreenDestination
@@ -594,14 +592,7 @@ class MainActivity : AppCompatActivity() {
                                 // 侧栏条目多于可用高度时可滚动，避免条目被裁切后无法点击
                                 scrollState = rememberScrollState(),
                                 header = {
-                                    val context = LocalContext.current
-                                    val appIcon = remember(context) {
-                                        runCatching {
-                                            val pm = context.packageManager
-                                            val appInfo = pm.getApplicationInfo(context.packageName, 0)
-                                            pm.getApplicationIcon(appInfo).toBitmap().asImageBitmap()
-                                        }.getOrNull()
-                                    }
+                                    val appIcon = rememberAppIconBitmap()
                                     Box(
                                         modifier = Modifier
                                             .padding(vertical = 16.dp)

@@ -2,7 +2,9 @@ package com.hippo.ehviewer.ui
 
 import com.hippo.ehviewer.updater.AppUpdater
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -86,21 +88,64 @@ class UpdateLogicTest {
     }
 
     @Test
-    fun testReleaseHasUpdateState() {
-        val updateRelease = com.hippo.ehviewer.updater.Release(
-            version = "1.16.0",
-            changelog = "new version changelog",
-            downloadLink = "https://github.com/download/EhViewer-1.16.0.apk",
-            hasUpdate = true,
+    fun resolveReleaseReportsUpdateWhenRemoteVersionIsNewer() {
+        val resolved = AppUpdater.resolveRelease(
+            release = remoteRelease("1.16.0"),
+            curVersion = "1.15.0",
+            returnLatestIfNoUpdate = false,
         )
-        assertTrue(updateRelease.hasUpdate)
-
-        val currentRelease = com.hippo.ehviewer.updater.Release(
-            version = "1.15.0",
-            changelog = "current version changelog",
-            downloadLink = "https://github.com/download/EhViewer-1.15.0.apk",
-            hasUpdate = false,
-        )
-        org.junit.Assert.assertFalse(currentRelease.hasUpdate)
+        assertNotNull(resolved)
+        assertEquals("1.16.0", resolved!!.version)
+        assertTrue("远端更新时必须标记为有更新", resolved.hasUpdate)
+        assertEquals("1.16.0 更新日志", resolved.changelog)
     }
+
+    @Test
+    fun resolveReleaseReturnsCurrentNotesWhenAlreadyLatestAndRequested() {
+        val resolved = AppUpdater.resolveRelease(
+            release = remoteRelease("1.15.0"),
+            curVersion = "1.15.0",
+            returnLatestIfNoUpdate = true,
+        )
+        assertNotNull("已是最新版本时仍需回传版本说明供更新页常驻展示", resolved)
+        assertEquals("1.15.0", resolved!!.version)
+        assertFalse("已是最新版本时不得标记为有更新", resolved.hasUpdate)
+        assertEquals("1.15.0 更新日志", resolved.changelog)
+    }
+
+    @Test
+    fun resolveReleaseSkipsWhenAlreadyLatestAndNotRequested() {
+        assertNull(
+            AppUpdater.resolveRelease(
+                release = remoteRelease("1.15.0"),
+                curVersion = "1.15.0",
+                returnLatestIfNoUpdate = false,
+            ),
+        )
+    }
+
+    @Test
+    fun resolveReleaseSkipsWhenLocalBuildIsNewerThanRemote() {
+        assertNull(
+            AppUpdater.resolveRelease(
+                release = remoteRelease("1.14.0"),
+                curVersion = "1.15.0",
+                returnLatestIfNoUpdate = false,
+            ),
+        )
+    }
+
+    private fun remoteRelease(version: String) = tachiyomi.data.release.GithubRelease(
+        version = version,
+        info = "$version 更新日志",
+        releaseLink = "https://github.com/releases/$version",
+        assets = listOf(
+            tachiyomi.data.release.GitHubAssets(
+                url = "https://api.github.com/assets/1",
+                name = "EhViewer-$version-default-arm64-v8a.apk",
+                size = 1234L,
+                browserDownloadUrl = "https://github.com/download/EhViewer-$version-default-arm64-v8a.apk",
+            ),
+        ),
+    )
 }

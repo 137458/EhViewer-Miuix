@@ -54,7 +54,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.state.ToggleableState
@@ -72,7 +71,7 @@ import com.ehviewer.core.i18n.R
 import com.ehviewer.core.ui.component.FastScrollLazyColumn
 import com.ehviewer.core.ui.component.LabeledCheckbox
 import com.ehviewer.core.ui.component.SquircleShape
-import com.ehviewer.core.ui.util.AdaptiveLayoutPolicy
+import com.ehviewer.core.ui.util.LocalWindowLayout
 import com.ehviewer.core.ui.util.ifNotNullThen
 import com.ehviewer.core.ui.util.ifTrueThen
 import com.hippo.ehviewer.client.EhTagDatabase
@@ -113,10 +112,7 @@ fun interface ActionScope {
  * 下不受限，过高的内容会被窗口直接裁切。
  */
 @Composable
-private fun isCompactDialogLayout(): Boolean {
-    val configuration = LocalConfiguration.current
-    return AdaptiveLayoutPolicy.isShortLandscape(configuration.screenWidthDp, configuration.screenHeightDp)
-}
+private fun isCompactDialogLayout(): Boolean = LocalWindowLayout.current.isShortLandscape
 
 interface DialogScope<R> {
     var expectedValue: R

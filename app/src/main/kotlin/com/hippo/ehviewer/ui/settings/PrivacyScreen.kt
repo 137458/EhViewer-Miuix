@@ -1,4 +1,4 @@
-﻿package com.hippo.ehviewer.ui.settings
+package com.hippo.ehviewer.ui.settings
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
