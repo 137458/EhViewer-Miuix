@@ -39,6 +39,7 @@ import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.compositionLocalOf
@@ -54,6 +55,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.state.ToggleableState
@@ -61,8 +63,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.DialogProperties
-import androidx.compose.ui.window.SecureFlagPolicy
+import androidx.compose.ui.window.DialogWindowProvider
 import arrow.core.Either
 import arrow.core.raise.Raise
 import arrow.core.raise.either
@@ -76,6 +77,7 @@ import com.ehviewer.core.ui.util.ifNotNullThen
 import com.ehviewer.core.ui.util.ifTrueThen
 import com.hippo.ehviewer.client.EhTagDatabase
 import com.hippo.ehviewer.client.EhTagDatabase.suggestion
+import eu.kanade.tachiyomi.util.view.setSecureScreen
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.resume
 import kotlinx.coroutines.CancellableContinuation
@@ -515,6 +517,9 @@ suspend fun awaitConfirmationOrCancel(
         onDismissRequest = { cont.cancel() },
         title = title?.let { stringResource(id = it) },
     ) {
+        if (secure) {
+            SecureDialogWindow()
+        }
         Column(modifier = Modifier.fillMaxWidth()) {
             if (text != null) {
                 Box(modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)) {
@@ -826,6 +831,7 @@ suspend fun awaitSelectItemWithIconAndTextField(
     initialNote: String,
     maxChar: Int,
 ): Pair<Int, String> = showNoButton(false) {
+    val note = rememberTextFieldState(initialNote)
     Column {
         MiuixText(
             text = stringResource(id = title),
@@ -839,7 +845,6 @@ suspend fun awaitSelectItemWithIconAndTextField(
                 .aspectRatio(1F),
             placeFirstItemInCenter = true,
         ) {
-            val note = rememberTextFieldState(initialNote)
             MiuixTextField(
                 state = note,
                 modifier = Modifier.fillMaxWidth(0.45F).aspectRatio(1F),
@@ -874,6 +879,13 @@ suspend fun awaitSelectItemWithIconAndTextField(
                 }
             }
         }
+        // 收藏备注有长度上限，必须显示已用字节数，否则超限时用户不知道原因
+        MiuixText(
+            text = "${note.text.toString().toByteArray().size} / $maxChar",
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+            textAlign = TextAlign.End,
+            style = MiuixTheme.textStyles.footnote1,
+        )
     }
 }
 
@@ -901,6 +913,21 @@ private fun CheckableItem(text: String, checked: Boolean, modifier: Modifier = M
 }
 
 private val IconWithTextCorner = RoundedCornerShape(8.dp)
-private val DatePickerTitlePadding = PaddingValues(start = 24.dp, end = 12.dp, top = 16.dp)
+
+/**
+ * 给当前弹窗所在的窗口加上 FLAG_SECURE，禁止截图与录屏。
+ *
+ * Miuix 的 WindowDialog 不接受 DialogProperties，只能在内容里拿到弹窗自己的窗口。
+ * 用于展示身份 Cookie 的弹窗，避免凭据通过截图泄露。
+ */
+@Composable
+private fun SecureDialogWindow() {
+    val view = LocalView.current
+    DisposableEffect(view) {
+        val window = (view.parent as? DialogWindowProvider)?.window
+        window?.setSecureScreen(true)
+        onDispose { window?.setSecureScreen(false) }
+    }
+} private val DatePickerTitlePadding = PaddingValues(start = 24.dp, end = 12.dp, top = 16.dp)
 
 val LocalGlobalDialogState = compositionLocalOf<DialogState> { error("CompositionLocal LocalDialogState not present!") }

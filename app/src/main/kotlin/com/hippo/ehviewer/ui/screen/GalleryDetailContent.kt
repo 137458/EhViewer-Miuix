@@ -395,14 +395,11 @@ fun GalleryDetailContent(
             // 列宽必须按网格自身的可用宽度算：用窗口宽度会把列宽算大，宽屏反而退化成单列满宽
             val stripSpacing = dimensionResource(id = com.hippo.ehviewer.R.dimen.strip_item_padding)
             val gridWidthDp = (maxWidth - keylineMargin * 2).value.roundToInt().coerceAtLeast(1)
-            val previewColumnMinWidth = WindowLayout.detailMinColumnWidth(
-                availableWidthDp = gridWidthDp,
-                configuredMinWidthDp = (gridWidthDp / thumbColumns.coerceAtLeast(1)).coerceAtLeast(1),
-                spacingDp = stripSpacing.value.roundToInt(),
-            )
+            // 用固定列数而不是 GridCells.Adaptive：Adaptive 按 (可用宽 + 间距) / (最小列宽 + 间距) 取整，
+            // 按可用宽度反推最小列宽时容易少排一列，宽屏下反而比竖屏列数还少。
+            val previewColumns = WindowLayout.thumbGridColumns(gridWidthDp, thumbColumns)
             FastScrollLazyVerticalGrid(
-                // 宽屏分支必须真的按可用宽度排更多列，否则与竖屏分支没有区别
-                columns = GridCells.Adaptive(previewColumnMinWidth.dp),
+                columns = GridCells.Fixed(previewColumns),
                 contentPadding = contentPadding,
                 modifier = modifier.padding(horizontal = keylineMargin),
                 horizontalArrangement = Arrangement.spacedBy(stripSpacing),
@@ -569,7 +566,7 @@ fun BelowHeader(galleryDetail: GalleryDetail, voteTag: VoteTag) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             val removeSucceed = stringResource(R.string.remove_from_favorite_success)
             val addSucceed = stringResource(R.string.add_to_favorite_success)
-            // val removeFailed = stringResource(R.string.remove_from_favorite_failure)
+            val removeFailed = stringResource(R.string.remove_from_favorite_failure)
             val addFailed = stringResource(R.string.add_to_favorite_failure)
             FilledTertiaryIconToggleButton(
                 checked = favSlot != NOT_FAVORITED,
@@ -585,8 +582,8 @@ fun BelowHeader(galleryDetail: GalleryDetail, voteTag: VoteTag) {
                                     snackbar(removeSucceed)
                                 }
                             }.onFailure {
-                                // TODO: We don't know if it's add or remove
-                                snackbar(addFailed)
+                                // Use the operation that was attempted so removal failures are not reported as additions.
+                                snackbar(if (favSlot != NOT_FAVORITED) removeFailed else addFailed)
                             }
                         }
                     }

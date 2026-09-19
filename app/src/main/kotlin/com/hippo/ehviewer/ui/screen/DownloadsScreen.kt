@@ -99,6 +99,7 @@ import com.hippo.ehviewer.download.SortMode
 import com.hippo.ehviewer.ui.DrawerHandle
 import com.hippo.ehviewer.ui.Screen
 import com.hippo.ehviewer.ui.confirmRemoveDownloadRange
+import com.hippo.ehviewer.ui.destinations.HistoryScreenDestination
 import com.hippo.ehviewer.ui.main.DownloadCard
 import com.hippo.ehviewer.ui.main.GalleryInfoGridItem
 import com.hippo.ehviewer.ui.navToReader
@@ -477,7 +478,7 @@ fun AnimatedVisibilityScope.DownloadsScreen(navigator: DestinationsNavigator) = 
                                                 when {
                                                     text.isBlank() -> raise(labelEmpty)
                                                     text == defaultName -> raise(defaultInvalid)
-                                                    DownloadManager.containLabel(text) -> raise(labelExists)
+                                                    text != item && DownloadManager.containLabel(text) -> raise(labelExists)
                                                 }
                                             }
                                             DownloadManager.renameLabel(item, new)
@@ -562,6 +563,7 @@ fun AnimatedVisibilityScope.DownloadsScreen(navigator: DestinationsNavigator) = 
             val resetProgressStr = stringResource(id = R.string.download_reset_reading_progress)
             val resetProgressMsg = stringResource(id = R.string.reset_reading_progress_message)
             val startAllReversedStr = stringResource(id = R.string.download_start_all_reversed)
+            val historyStr = stringResource(id = R.string.history)
 
             val menuEntry = remember(sideSheetState, list) {
                 DropdownEntry(
@@ -600,6 +602,11 @@ fun AnimatedVisibilityScope.DownloadsScreen(navigator: DestinationsNavigator) = 
                                 val gidList = list.filter { it.state != DownloadInfo.STATE_FINISH }.asReversed().mapToLongArray(DownloadInfo::gid)
                                 DownloadService.startRangeDownload(gidList)
                             },
+                        ),
+                        // 手机端底部栏只有 6 项，历史记录没有入口，这里补一个
+                        DropdownItem(
+                            text = historyStr,
+                            onClick = { navigator.navigate(HistoryScreenDestination) },
                         ),
                     ),
                 )
@@ -649,26 +656,36 @@ fun AnimatedVisibilityScope.DownloadsScreen(navigator: DestinationsNavigator) = 
                 ) {
                     items(list, key = { it.gid }) { info ->
                         val checked = info.gid in checkedInfoMap
-                        GalleryInfoGridItem(
-                            onClick = {
-                                if (selectMode) {
-                                    if (checked) {
-                                        checkedInfoMap.remove(info.gid)
-                                    } else {
-                                        checkedInfoMap[info.gid] = info
-                                    }
-                                } else {
-                                    onItemClick(info)
-                                }
-                            },
-                            onLongClick = {
-                                checkedInfoMap[info.gid] = info
-                            },
-                            info = info,
+                        CheckableItem(
+                            checked = checked,
                             modifier = Modifier.thenIf(animateItems) { animateItem() },
-                            showLanguage = false,
-                            showProgress = showProgress,
-                        )
+                        ) { interactionSource ->
+                            GalleryInfoGridItem(
+                                onClick = {
+                                    if (selectMode) {
+                                        if (checked) {
+                                            checkedInfoMap.remove(info.gid)
+                                        } else {
+                                            checkedInfoMap[info.gid] = info
+                                        }
+                                    } else {
+                                        onItemClick(info)
+                                    }
+                                },
+                                onLongClick = {
+                                    checkedInfoMap[info.gid] = info
+                                },
+                                info = info,
+                                onThumbClick = if (selectMode) {
+                                    null
+                                } else {
+                                    { navigate(info.galleryInfo.asDst()) }
+                                },
+                                showLanguage = false,
+                                showProgress = showProgress,
+                                interactionSource = interactionSource,
+                            )
+                        }
                     }
                 }
             } else {

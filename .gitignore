@@ -1,4 +1,6 @@
 .gradle
+.gradle-local
+.gradle-local2
 /local.properties
 .DS_Store
 build

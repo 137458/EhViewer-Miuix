@@ -390,14 +390,15 @@ class DownloadService :
                     }
                     Ops.Cancel -> notifyManager.cancel(id)
                     Ops.StartForeground -> {
-                        runCatching {
+                        // 只吞掉系统禁止前台服务这一种预期失败，其他异常必须暴露出来
+                        try {
                             val fgType = if (isAtLeastU) ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC else 0
                             ServiceCompat.startForeground(service, id, builder.build(), fgType)
-                        }.onFailure {
-                            if (isAtLeastS && it is ForegroundServiceStartNotAllowedException) {
-                                logcat(it)
+                        } catch (e: Exception) {
+                            if (isAtLeastS && e is ForegroundServiceStartNotAllowedException) {
+                                logcat(e)
                             } else {
-                                logcat("DownloadService", it)
+                                throw e
                             }
                         }
                     }

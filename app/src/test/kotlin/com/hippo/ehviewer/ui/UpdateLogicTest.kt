@@ -88,6 +88,23 @@ class UpdateLogicTest {
     }
 
     @Test
+    fun emptyCiArtifactsDoNotProduceDownloadLink() {
+        val artifacts = tachiyomi.data.release.GithubArtifacts(emptyList())
+        assertEquals("", artifacts.getDownloadLink())
+    }
+
+    @Test
+    fun ciArtifactsIgnoreMappingAndSymbolArchives() {
+        val artifacts = tachiyomi.data.release.GithubArtifacts(
+            listOf(
+                tachiyomi.data.release.GithubArtifact("default-mapping", "https://example/mapping"),
+                tachiyomi.data.release.GithubArtifact("default-native-debug-symbols", "https://example/symbols"),
+            ),
+        )
+        assertEquals("", artifacts.getDownloadLink())
+    }
+
+    @Test
     fun resolveReleaseReportsUpdateWhenRemoteVersionIsNewer() {
         val resolved = AppUpdater.resolveRelease(
             release = remoteRelease("1.16.0"),
@@ -133,6 +150,38 @@ class UpdateLogicTest {
                 returnLatestIfNoUpdate = false,
             ),
         )
+    }
+
+    @Test
+    fun resolveReleaseSkipsUpdateWhenReleaseHasNoApkAsset() {
+        val release = tachiyomi.data.release.GithubRelease(
+            version = "1.16.0",
+            info = "无安装包的发布",
+            releaseLink = "https://github.com/releases/1.16.0",
+            assets = listOf(
+                tachiyomi.data.release.GitHubAssets(
+                    url = "https://api.github.com/assets/1",
+                    name = "EhViewer-1.16.0-default-mapping.txt",
+                ),
+            ),
+        )
+        assertNull(
+            "没有可用安装包时不能宣称有更新，否则点下载会拿到空 URL",
+            AppUpdater.resolveRelease(release, curVersion = "1.15.0", returnLatestIfNoUpdate = false),
+        )
+    }
+
+    @Test
+    fun resolveReleaseStillReturnsNotesWhenLatestReleaseHasNoApkAsset() {
+        val release = tachiyomi.data.release.GithubRelease(
+            version = "1.15.0",
+            info = "1.15.0 更新日志",
+            releaseLink = "https://github.com/releases/1.15.0",
+            assets = emptyList(),
+        )
+        val resolved = AppUpdater.resolveRelease(release, curVersion = "1.15.0", returnLatestIfNoUpdate = true)
+        assertNotNull("已是最新版本时仍需回传版本说明", resolved)
+        assertFalse("不得标记为有更新", resolved!!.hasUpdate)
     }
 
     private fun remoteRelease(version: String) = tachiyomi.data.release.GithubRelease(

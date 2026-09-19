@@ -709,8 +709,9 @@ object DownloadManager : OnSpiderListener, CoroutineScope {
             finishedInfo?.let { info ->
                 mDownloadListener?.onFinish(info)
                 mutableNotifyFlow.emit(info)
+                // 只有真的结束了一个任务才推进等待队列
+                ensureDownload()
             }
-            ensureDownload()
         }
     }
 

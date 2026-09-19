@@ -22,13 +22,21 @@ import okio.IOException
 import okio.Path
 import okio.Sink
 import okio.Source
+import okio.sink
+import okio.source
 
 class AndroidFileSystem(context: Context) : FileSystem() {
     private val contentResolver = context.contentResolver
     private val physicalFileSystem = SYSTEM
 
     override fun appendingSink(file: Path, mustExist: Boolean): Sink {
-        TODO("Not yet implemented")
+        if (file.isPhysicalFile()) {
+            return physicalFileSystem.appendingSink(file, mustExist)
+        }
+        if (mustExist && !exists(file)) {
+            throw FileNotFoundException("$file does not exist")
+        }
+        return ParcelFileDescriptor.AutoCloseOutputStream(openFileDescriptor(file, "wa")).sink()
     }
 
     override fun atomicMove(source: Path, target: Path) {
@@ -47,9 +55,7 @@ class AndroidFileSystem(context: Context) : FileSystem() {
         }
     }
 
-    override fun canonicalize(path: Path): Path {
-        TODO("Not yet implemented")
-    }
+    override fun canonicalize(path: Path): Path = if (path.isPhysicalFile()) physicalFileSystem.canonicalize(path) else path
 
     override fun copy(source: Path, target: Path) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
@@ -91,7 +97,10 @@ class AndroidFileSystem(context: Context) : FileSystem() {
     }
 
     override fun createSymlink(source: Path, target: Path) {
-        TODO("Not yet implemented")
+        if (source.isPhysicalFile() && target.isPhysicalFile()) {
+            return physicalFileSystem.createSymlink(source, target)
+        }
+        throw IOException("Symbolic links are not supported for document URIs")
     }
 
     override fun delete(path: Path, mustExist: Boolean) {
@@ -192,19 +201,72 @@ class AndroidFileSystem(context: Context) : FileSystem() {
     }
 
     override fun openReadOnly(file: Path): FileHandle {
-        TODO("Not yet implemented")
+        if (file.isPhysicalFile()) return physicalFileSystem.openReadOnly(file)
+        return openHandle(file, readWrite = false)
     }
 
     override fun openReadWrite(file: Path, mustCreate: Boolean, mustExist: Boolean): FileHandle {
-        TODO("Not yet implemented")
+        if (file.isPhysicalFile()) {
+            return physicalFileSystem.openReadWrite(file, mustCreate, mustExist)
+        }
+        val present = exists(file)
+        if (present && mustCreate) throw IOException("$file already exists")
+        if (!present && mustExist) throw FileNotFoundException("$file does not exist")
+        return openHandle(file, readWrite = true)
     }
 
     override fun sink(file: Path, mustCreate: Boolean): Sink {
-        TODO("Not yet implemented")
+        if (file.isPhysicalFile()) return physicalFileSystem.sink(file, mustCreate)
+        if (mustCreate && exists(file)) throw IOException("$file already exists")
+        return ParcelFileDescriptor.AutoCloseOutputStream(openFileDescriptor(file, "wt")).sink()
     }
 
     override fun source(file: Path): Source {
-        TODO("Not yet implemented")
+        if (file.isPhysicalFile()) return physicalFileSystem.source(file)
+        return ParcelFileDescriptor.AutoCloseInputStream(openFileDescriptor(file, "r")).source()
+    }
+
+    private fun openHandle(
+        file: Path,
+        readWrite: Boolean,
+    ): FileHandle {
+        val descriptor = openFileDescriptor(file, if (readWrite) "rw" else "r")
+        val fd = descriptor.fileDescriptor
+        return object : FileHandle(readWrite) {
+            override fun protectedRead(fileOffset: Long, array: ByteArray, arrayOffset: Int, byteCount: Int): Int {
+                // Okio's FileHandle contract reports end-of-file as -1, while pread(2) reports it
+                // as 0. Returning 0 makes FileHandle.read loop forever without consuming input.
+                val read = Os.pread(fd, array, arrayOffset, byteCount, fileOffset)
+                return if (read == 0 && byteCount > 0) -1 else read
+            }
+
+            override fun protectedWrite(fileOffset: Long, array: ByteArray, arrayOffset: Int, byteCount: Int) {
+                check(readWrite)
+                // pread/pwrite may transfer fewer bytes than requested; Okio cannot retry because
+                // its contract returns Unit, so a short write has to be completed here.
+                var written = 0
+                while (written < byteCount) {
+                    val count = Os.pwrite(fd, array, arrayOffset + written, byteCount - written, fileOffset + written)
+                    if (count <= 0) throw IOException("Short write to $file: $written of $byteCount bytes")
+                    written += count
+                }
+            }
+
+            override fun protectedFlush() {
+                if (readWrite) Os.fsync(fd)
+            }
+
+            override fun protectedResize(size: Long) {
+                check(readWrite)
+                Os.ftruncate(fd, size)
+            }
+
+            override fun protectedSize(): Long = Os.fstat(fd).st_size
+
+            override fun protectedClose() {
+                descriptor.close()
+            }
+        }
     }
 
     fun rawSink(file: Path) = file.outputStream().asSink()
@@ -217,14 +279,17 @@ class AndroidFileSystem(context: Context) : FileSystem() {
         }
 
         return runCatching {
-            if ('w' in mode && !exists(path)) {
+            val uri = if ('w' in mode && !exists(path)) {
                 val parent = path.parent ?: return@runCatching null
                 val displayName = path.name
                 val extension = displayName.substringAfterLast('.', "").ifEmpty { null }?.lowercase()
                 val mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension) ?: "application/octet-stream"
                 DocumentsContract.createDocument(contentResolver, parent.toUri(), mimeType, displayName)
+                    ?: return@runCatching null
+            } else {
+                path.toUri()
             }
-            contentResolver.openFileDescriptor(path.toUri(), mode)
+            contentResolver.openFileDescriptor(uri, mode)
         }.getOrNull() ?: throw FileNotFoundException("Failed to open file: $path")
     }
 

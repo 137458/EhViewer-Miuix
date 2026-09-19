@@ -28,8 +28,18 @@ class PrefDelegate<T> internal constructor(
     var value: T
         @Suppress("UNCHECKED_CAST")
         get() {
+            // 写入是异步的，快照会晚一拍才更新。本地缓存必须优先于快照，否则同帧内
+            // 「写入后立刻读取」仍然会读到旧值；等快照追上后再丢弃缓存，保证之后能读到外部变更。
+            if (hasLocalCache) {
+                val cached = localCachedValue as T
+                if (preferences.currentSnapshot()?.get(this) == cached) {
+                    hasLocalCache = false
+                    localCachedValue = null
+                } else {
+                    return cached
+                }
+            }
             preferences.currentSnapshot()?.let { return it[this] }
-            if (hasLocalCache) return localCachedValue as T
             val v = runBlocking { preferences.snapshot() }[this]
             localCachedValue = v
             hasLocalCache = true

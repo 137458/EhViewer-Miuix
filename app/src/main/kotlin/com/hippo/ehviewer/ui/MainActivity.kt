@@ -411,6 +411,9 @@ class MainActivity : AppCompatActivity() {
             val adaptiveInfo = currentWindowAdaptiveInfoV2()
             val needSignIn by Settings.needSignIn.collectAsState()
             val launchPage by Settings.launchPage.collectAsState()
+            // Preferences may contain values from an older build or manual backup. Keep an
+            // invalid launch-page value from crashing startup when indexing navItems.
+            val safeLaunchPage = launchPage.coerceIn(0, 3)
 
             val windowLayout = WindowLayout(
                 widthDp = configuration.screenWidthDp,
@@ -454,7 +457,7 @@ class MainActivity : AppCompatActivity() {
 
             LaunchedEffect(needSignIn) {
                 if (!needSignIn && (currentDestination === SignInScreenDestination || currentDestination === WebViewSignInScreenDestination)) {
-                    val target = if (hasNetwork) navItems[launchPage].first else DownloadsScreenDestination
+                    val target = if (hasNetwork) navItems[safeLaunchPage].first else DownloadsScreenDestination
                     navigator.navigate(target) {
                         popUpTo(SignInScreenDestination) { inclusive = true }
                     }
@@ -510,7 +513,7 @@ class MainActivity : AppCompatActivity() {
                                     CompositionLocalProvider(LocalSharedTransitionScope provides this) {
                                         val start = when {
                                             needSignIn -> SignInScreenDestination
-                                            hasNetwork -> navItems[launchPage].first
+                                            hasNetwork -> navItems[safeLaunchPage].first
                                             else -> DownloadsScreenDestination
                                         }
                                         DestinationsNavHost(

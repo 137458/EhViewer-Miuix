@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
@@ -37,6 +38,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -59,6 +61,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.fromHtml
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.max
@@ -112,6 +115,7 @@ import kotlin.math.roundToInt
 import moe.tarsin.coroutines.runSuspendCatching
 import moe.tarsin.navigate
 import moe.tarsin.snackbar
+import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.FloatingActionButton
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -215,18 +219,24 @@ fun AnimatedVisibilityScope.GalleryCommentsScreen(
     val animateItems by Settings.animateItems.collectAsState()
 
     var recoveredDetail by remember { mutableStateOf<GalleryDetail?>(null) }
+    var fetchError by remember(gid) { mutableStateOf<String?>(null) }
+    var fetchAttempt by remember(gid) { mutableIntStateOf(0) }
     val rawCachedDetail = detailCache[gid] ?: recoveredDetail
     val commentsState = remember(gid, detailToken, rawCachedDetail) {
         resolveGalleryCommentsState(gid, detailToken, rawCachedDetail)
     }
 
-    LaunchedEffect(commentsState) {
+    LaunchedEffect(commentsState, fetchAttempt) {
         if (commentsState is GalleryCommentsState.NeedsFetch) {
+            fetchError = null
             runCatching {
                 val url = EhUrl.getGalleryDetailUrl(commentsState.gid, commentsState.token)
                 val fetched = EhEngine.getGalleryDetail(url)
                 detailCache.put(fetched.gid, fetched)
                 recoveredDetail = fetched
+            }.onFailure {
+                // 保留失败原因，否则页面会永远停在加载指示器上
+                fetchError = it.displayString()
             }
         }
     }
@@ -254,13 +264,22 @@ fun AnimatedVisibilityScope.GalleryCommentsScreen(
                     .padding(paddingValues),
                 contentAlignment = Alignment.Center,
             ) {
-                if (commentsState is GalleryCommentsState.NeedsFetch) {
+                if (commentsState is GalleryCommentsState.NeedsFetch && fetchError == null) {
                     InfiniteProgressIndicator()
                 } else {
-                    Text(
-                        text = stringResource(id = R.string.error_something_wrong_happened),
-                        style = MiuixTheme.textStyles.body1,
-                    )
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = fetchError ?: stringResource(id = R.string.error_something_wrong_happened),
+                            style = MiuixTheme.textStyles.body1,
+                            textAlign = TextAlign.Center,
+                        )
+                        if (commentsState is GalleryCommentsState.NeedsFetch) {
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Button(onClick = { fetchAttempt++ }) {
+                                Text(text = stringResource(id = R.string.action_retry))
+                            }
+                        }
+                    }
                 }
             }
         }

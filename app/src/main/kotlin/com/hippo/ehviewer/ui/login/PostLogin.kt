@@ -24,6 +24,9 @@ suspend fun CoroutineScope.refreshAccountInfo() = catch {
 
 @OptIn(DelicateCoroutinesApi::class)
 fun postLogin() = GlobalScope.async(Dispatchers.IO) {
+    // 登录成功后立即把身份 Cookie 同步到 exhentai
+    EhCookieStore.syncExCookies()
+
     launch { refreshAccountInfo() }
 
     // For the `star` cookie

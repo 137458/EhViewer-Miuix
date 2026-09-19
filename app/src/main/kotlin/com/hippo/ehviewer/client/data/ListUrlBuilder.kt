@@ -155,7 +155,10 @@ data class ListUrlBuilder(
                 addQueryParameter("f_cats", "${EhUtils.invCategory(category)}")
             }
             val query = keyword?.let { keyword ->
-                if (language == -1 || "gid:" in keyword || "l:" in keyword || "language:" in keyword) {
+                // Preferences can outlive the language table (or be restored from an older
+                // version). Treat an invalid index as no language filter instead of crashing
+                // while indexing S_LANG_TAGS below.
+                if (language !in GalleryInfo.S_LANG_TAGS.indices || "gid:" in keyword || "l:" in keyword || "language:" in keyword) {
                     keyword
                 } else {
                     val tag = GalleryInfo.S_LANG_TAGS[language]

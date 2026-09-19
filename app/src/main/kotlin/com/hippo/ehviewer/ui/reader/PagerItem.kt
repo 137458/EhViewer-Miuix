@@ -76,8 +76,14 @@ fun PagerItem(
         pageLoader.request(page.index)
         // In case page loader restart
         page.statusFlow.drop(1).collect {
-            if (page.statusFlow.value == PageStatus.Queued) {
-                pageLoader.request(page.index)
+            when (page.statusFlow.value) {
+                // 页面被重新排入队列或已就绪，说明这次是外部重新请求/自愈，自动重试额度要恢复
+                PageStatus.Queued -> {
+                    autoRetryCount = 0
+                    pageLoader.request(page.index)
+                }
+                is PageStatus.Ready -> autoRetryCount = 0
+                else -> Unit
             }
         }
     }

@@ -112,7 +112,8 @@ suspend fun requestInstallPermission(): Boolean = with(ctx) {
 context(ctx: Context)
 suspend fun installPackage(file: File) = with(ctx) {
     val canInstall = !isAtLeastO || packageManager.canRequestPackageInstalls() || requestInstallPermission()
-    if (!canInstall) return@with
+    // 不能静默返回：调用方拿不到任何信号，用户点「安装」会毫无反应
+    check(canInstall) { getString(R.string.permission_denied) }
     val contentUri = withIOContext { FileProvider.getUriForFile(ctx, "$packageName.fileprovider", file) }
     val intent = Intent(Intent.ACTION_VIEW).apply {
         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)

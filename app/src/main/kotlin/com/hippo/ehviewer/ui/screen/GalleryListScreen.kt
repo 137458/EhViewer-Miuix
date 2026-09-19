@@ -74,6 +74,7 @@ import com.ehviewer.core.ui.component.SquircleShape
 import com.ehviewer.core.ui.component.dismissDeleteAction
 import com.ehviewer.core.ui.icons.EhIcons
 import com.ehviewer.core.ui.icons.filled.Bookmarks
+import com.ehviewer.core.ui.icons.filled.FormatListNumbered
 import com.ehviewer.core.ui.icons.filled.GoTo
 import com.ehviewer.core.ui.icons.filled.LastPage
 import com.ehviewer.core.ui.icons.filled.Shuffle
@@ -106,6 +107,7 @@ import com.hippo.ehviewer.ui.DrawerHandle
 import com.hippo.ehviewer.ui.Screen
 import com.hippo.ehviewer.ui.awaitSelectDate
 import com.hippo.ehviewer.ui.destinations.ProgressScreenDestination
+import com.hippo.ehviewer.ui.destinations.ToplistScreenDestination
 import com.hippo.ehviewer.ui.doGalleryInfoAction
 import com.hippo.ehviewer.ui.main.AdvancedSearchOption
 import com.hippo.ehviewer.ui.main.AvatarIcon
@@ -293,11 +295,15 @@ fun AnimatedVisibilityScope.GalleryListScreen(
                                 if (urlBuilder.mode == MODE_IMAGE_SEARCH) {
                                     snackbar(invalidImageQuickSearch)
                                 } else {
-                                    // itemCount == 0 is treated as error, so no need to check here
-                                    val firstItem = data.itemSnapshotList.items[getFirstVisibleItemIndex()]
-                                    val next = firstItem.gid + 1
+                                    // A refresh can temporarily expose an empty snapshot even when the
+                                    // load state is idle (for example after a failed/empty search). Do
+                                    // not index into it; quick-search names can still be created without
+                                    // the optional progress suffix.
+                                    val firstItem = data.itemSnapshotList.items
+                                        .getOrNull(getFirstVisibleItemIndex())
+                                    val next = firstItem?.gid?.plus(1)
                                     quickSearchList.fastForEach { q ->
-                                        if (urlBuilder.equalsQuickSearch(q)) {
+                                        if (next != null && urlBuilder.equalsQuickSearch(q)) {
                                             val nextStr = q.name.substringAfterLast('@', "")
                                             if (nextStr.toLongOrNull() == next) {
                                                 snackbar(string(R.string.duplicate_quick_search, q.name))
@@ -314,7 +320,7 @@ fun AnimatedVisibilityScope.GalleryListScreen(
                                     ) { input, checked ->
                                         var text = input.trim()
                                         ensure(text.isNotBlank()) { nameEmpty }
-                                        if (checked) text += "@$next"
+                                        if (checked && next != null) text += "@$next"
                                         ensure(quickSearchList.none { it.name == text }) { dupName }
                                         val quickSearch = urlBuilder.toQuickSearch(text)
                                         quickSearch.position = quickSearchList.size
@@ -530,6 +536,12 @@ fun AnimatedVisibilityScope.GalleryListScreen(
             IconButton(onClick = { launch { sheetState.open() } }) {
                 Icon(imageVector = EhIcons.Default.Bookmarks, contentDescription = stringResource(id = R.string.quick_search))
             }
+            // 手机端底部栏只有 6 项，排行榜没有入口，在热门页补一个
+            if (urlBuilder.mode == MODE_WHATS_HOT) {
+                IconButton(onClick = { navigate(ToplistScreenDestination) }) {
+                    Icon(imageVector = EhIcons.Default.FormatListNumbered, contentDescription = stringResource(id = R.string.toplist))
+                }
+            }
             AvatarIcon()
         },
         subHeader = if (urlBuilder.mode == MODE_NORMAL) {
@@ -538,6 +550,8 @@ fun AnimatedVisibilityScope.GalleryListScreen(
                     selectedCategory = category,
                     onSelectCategory = { newCat ->
                         category = newCat
+                        // Category changes start a new query; discard the previous paging cursor.
+                        urlBuilder.setRange(0)
                         urlBuilder.category = newCat
                         data.refresh()
                     },

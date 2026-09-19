@@ -41,6 +41,7 @@ import coil3.util.DebugLogger
 import com.ehviewer.core.database.SearchDatabase
 import com.ehviewer.core.database.roomDb
 import com.ehviewer.core.files.deleteContent
+import com.ehviewer.core.network.EhCookieStore
 import com.ehviewer.core.ui.util.initSETConnection
 import com.ehviewer.core.util.isAtLeastO
 import com.ehviewer.core.util.isAtLeastP
@@ -122,6 +123,11 @@ class EhApplication : Application(), SingletonImageLoader.Factory {
         }
         launchIO {
             EhTagDatabase.launchUpdate()
+            // 已登录时把 e-hentai 的身份 Cookie 同步到 exhentai（原先藏在 hasSignedIn() 的副作用里，
+            // 会在 Settings 初始化时于调用线程同步写盘）
+            if (Settings.hasSignedIn.value) {
+                launch { EhCookieStore.syncExCookies() }
+            }
             @Suppress("UNUSED_EXPRESSION")
             launch { EhDB }
             launch { dataStateFlow.value }

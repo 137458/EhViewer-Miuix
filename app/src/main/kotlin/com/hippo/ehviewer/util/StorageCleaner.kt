@@ -67,7 +67,8 @@ object StorageCleaner {
                 conn.execSQL("VACUUM")
             }
         }.isSuccess
-        r1 || r2
+        // 两个数据库都必须整理成功才算成功，否则其中一个的失败会被另一个掩盖
+        r1 && r2
     }
 
     suspend fun performDeepClean(): CleanResult = withIOContext {

@@ -197,7 +197,9 @@ fun SearchFilter(
         DropdownFilterChip(
             label = languageStr,
             menuItems = languages,
-            selectedItemIndex = language + 1,
+            // Clamp restored preference values so a removed/unknown language cannot make
+            // the dropdown index invalid during composition.
+            selectedItemIndex = (language + 1).coerceIn(0, languages.lastIndex),
             onSelectedItemIndexChange = { onLanguageChange(it - 1) },
         )
         val minRatingItems = stringArrayResource(id = com.hippo.ehviewer.R.array.search_min_rating)

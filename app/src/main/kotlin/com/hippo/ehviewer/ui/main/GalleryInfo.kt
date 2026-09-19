@@ -2,6 +2,7 @@ package com.hippo.ehviewer.ui.main
 
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -176,6 +177,7 @@ fun GalleryInfoGridItem(
     onLongClick: () -> Unit,
     info: GalleryInfo,
     modifier: Modifier = Modifier,
+    onThumbClick: (() -> Unit)? = null,
     showLanguage: Boolean = true,
     showPages: Boolean = true,
     showProgress: Boolean = true,
@@ -187,7 +189,13 @@ fun GalleryInfoGridItem(
     onLongClick = onLongClick,
     interactionSource = interactionSource,
 ) {
-    Box {
+    Box(
+        modifier = if (onThumbClick != null) {
+            Modifier.clickable(onClick = onThumbClick)
+        } else {
+            Modifier
+        },
+    ) {
         with(listThumbGenerator) {
             SharedElementBox(key = "${info.gid}", shape = SquircleShape(12.dp)) {
                 var ratio by remember(info) {

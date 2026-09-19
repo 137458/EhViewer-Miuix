@@ -95,6 +95,9 @@ fun GalleryList(
     PullToRefresh(
         isRefreshing = isRefreshing,
         onRefresh = {
+            // Miuix PullToRefresh has no enabled parameter, so ignore the gesture while a
+            // refresh is already running instead of queueing another one.
+            if (isRefreshing || data.loadState.refresh is LoadState.Loading) return@PullToRefresh
             isRefreshing = true
             launch {
                 if (data.loadState.prepend.endOfPaginationReached) {
@@ -255,14 +258,10 @@ fun ErrorTip(
                 textAlign = TextAlign.Center,
             )
             if (onRetry != null) {
-                var retrying by remember(text) { mutableStateOf(false) }
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(
-                    enabled = enabled && !retrying,
-                    onClick = {
-                        retrying = true
-                        onRetry()
-                    },
+                    enabled = enabled,
+                    onClick = onRetry,
                 ) {
                     Text(text = stringResource(id = R.string.action_retry))
                 }

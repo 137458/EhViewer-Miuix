@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
@@ -327,8 +328,9 @@ fun ReaderScreen(pageLoader: PageLoader, info: BaseGalleryInfo?) {
                 EhTheme(useDarkTheme = !readerBackground.isLight) {
                     val insets = if (fullscreen) {
                         if (cutoutShort) {
-                            // 横屏时刘海在侧边，零 inset 会让页面铺到刘海/侧边导航栏下面
-                            WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal)
+                            // 「在刘海屏区域显示内容」要求内容铺到刘海下，所以不能用 displayCutout；
+                            // 但横屏时仍需避开侧边导航栏，否则页面会铺到导航栏下面。
+                            WindowInsets.navigationBars.only(WindowInsetsSides.Horizontal)
                         } else {
                             WindowInsets.displayCutout
                         }

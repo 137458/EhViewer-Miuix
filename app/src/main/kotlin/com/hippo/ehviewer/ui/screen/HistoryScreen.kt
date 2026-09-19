@@ -118,6 +118,9 @@ fun AnimatedVisibilityScope.HistoryScreen(navigator: DestinationsNavigator) = Sc
                             text = { Text(text = stringResource(id = R.string.clear_all_history)) },
                         )
                         EhDB.clearHistoryInfo()
+                        // Explicitly refresh after a bulk delete so an in-flight pager load
+                        // cannot leave stale rows visible.
+                        historyData.refresh()
                     }
                 },
             ) {

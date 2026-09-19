@@ -5,8 +5,10 @@ import androidx.activity.result.contract.ActivityResultContract
 import androidx.annotation.ArrayRes
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -86,13 +88,18 @@ fun IntSliderPreference(
     enabled: Boolean = true,
     display: (Int) -> Int = { it },
 ) {
+    // 拖动过程中只更新本地状态，松手时才写回偏好设置，避免每帧写一次 DataStore
+    var sliderValue by remember { mutableFloatStateOf(state.value.toFloat()) }
+    LaunchedEffect(state.value) { sliderValue = state.value.toFloat() }
     SliderPreference(
-        value = state.value.toFloat(),
-        onValueChange = { state.value = it.toInt() },
+        value = sliderValue,
+        onValueChange = { sliderValue = it },
+        onValueChangeFinished = { state.value = sliderValue.toInt() },
         title = title,
         summary = summary,
         valueRange = minValue.toFloat()..maxValue.toFloat(),
-        valueText = "${display(state.value)}",
+        steps = step,
+        valueText = "${display(sliderValue.toInt())}",
         enabled = enabled,
     )
 }
@@ -132,6 +139,8 @@ fun SimpleMenuPreferenceInt(
         summary = summary,
         items = entryArray.toList(),
         selectedIndex = selectedIndex,
+        // 未显式给出说明时必须展示当前选中项，否则用户看不到自己选了什么
+        showValue = true,
         onSelectedIndexChange = { index ->
             if (index in valuesArray.indices) {
                 state.value = valuesArray[index]

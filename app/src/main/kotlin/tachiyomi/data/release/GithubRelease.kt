@@ -18,7 +18,9 @@ data class GithubRelease(
     @SerialName("assets") val assets: List<GitHubAssets> = emptyList(),
 ) {
     fun getDownloadLink(): String {
-        val asset = getMatchedAsset() ?: assets.firstOrNull()
+        // 只能回落到 APK 资源：发布页同时挂着 mapping/符号表等文件，
+        // 回落到 assets.firstOrNull() 会把它们当成安装包。
+        val asset = getMatchedAsset()
         return asset?.browserDownloadUrl?.takeIf { it.isNotBlank() } ?: asset?.url.orEmpty()
     }
 

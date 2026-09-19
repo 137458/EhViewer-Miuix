@@ -13,15 +13,9 @@ object EhCookieStore : CookiesStorage {
 
     fun removeAllCookies() = manager.removeAllCookies()
 
-    fun hasSignedIn(): Boolean {
-        val signedIn = manager.getCookies(urlE)?.run {
-            containsKey(KEY_IPB_MEMBER_ID) && containsKey(KEY_IPB_PASS_HASH)
-        } == true
-        if (signedIn) {
-            syncExCookies()
-        }
-        return signedIn
-    }
+    fun hasSignedIn(): Boolean = manager.getCookies(urlE)?.run {
+        containsKey(KEY_IPB_MEMBER_ID) && containsKey(KEY_IPB_PASS_HASH)
+    } == true
 
     fun setIdentityCookies(memberId: String, passHash: String, igneous: String? = null) {
         val eDomain = ".e-hentai.org"

@@ -11,8 +11,10 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
+import com.ehviewer.core.util.logcat
 import kotlin.concurrent.Volatile
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -27,9 +29,13 @@ abstract class DataStorePreferences(private val dataStore: DataStore<Preferences
 
     init {
         prefScope.launch {
-            dataStore.data.collect {
-                cachedSnapshot = Snapshot(it)
-            }
+            dataStore.data
+                // 偏好文件损坏或不可读时 DataStore 会抛异常。收集器一旦崩掉，cachedSnapshot
+                // 会永远停留在旧值，之后所有读取都会拿到过期数据。
+                .catch { logcat("DataStorePreferences", it) }
+                .collect {
+                    cachedSnapshot = Snapshot(it)
+                }
         }
     }
 

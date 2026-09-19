@@ -12,7 +12,6 @@ import io.ktor.client.plugins.onDownload
 import io.ktor.client.plugins.timeout
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.accept
-import io.ktor.client.request.bearerAuth
 import io.ktor.client.request.prepareGet
 import io.ktor.client.statement.bodyAsChannel
 import io.ktor.http.ContentType
@@ -56,37 +55,42 @@ object AppUpdater {
                     val shortSha = workflowRun.headSha.take(7)
                     val hasCIUpdate = shortSha != curSha
                     if (hasCIUpdate || returnLatestIfNoUpdate) {
-                        val artifacts = ghStatement(workflowRun.artifactsUrl).executeAndParseAs<GithubArtifacts>()
-                        val archiveUrl = artifacts.getDownloadLink()
-                        val changelog = runSuspendCatching {
-                            val commitComparisonUrl = "$API_URL/compare/$curSha...$shortSha"
-                            val result = ghStatement(commitComparisonUrl).executeAndParseAs<GithubCommitComparison>()
-                            result.commits.joinToString("\n") { commit ->
-                                "- ${commit.commit.message.takeWhile { it != '\n' }} (@${commit.commit.author.name})"
-                            }
-                        }.getOrDefault(workflowRun.title)
-                        return Release(
-                            version = shortSha,
-                            changelog = changelog,
-                            downloadLink = archiveUrl,
-                            releaseTitle = workflowRun.title,
-                            releaseUrl = "https://github.com/${BuildConfig.REPO_NAME}/actions/runs/${workflowRun.headSha}",
-                            apkSize = 0L,
-                            publishedAt = "",
-                            isCI = true,
-                            hasUpdate = hasCIUpdate,
-                        )
+                        val archiveUrl = runSuspendCatching {
+                            ghStatement(workflowRun.artifactsUrl)
+                                .executeAndParseAs<GithubArtifacts>()
+                                .getDownloadLink()
+                        }.getOrDefault("")
+                        // A successful workflow may publish no artifact. Let the release
+                        // channel fallback handle that case instead of returning a broken URL.
+                        if (archiveUrl.isNotBlank()) {
+                            val changelog = runSuspendCatching {
+                                val commitComparisonUrl = "$API_URL/compare/$curSha...$shortSha"
+                                val result = ghStatement(commitComparisonUrl).executeAndParseAs<GithubCommitComparison>()
+                                result.commits.joinToString("\n") { commit ->
+                                    "- ${commit.commit.message.takeWhile { it != '\n' }} (@${commit.commit.author.name})"
+                                }
+                            }.getOrDefault(workflowRun.title)
+                            return Release(
+                                version = shortSha,
+                                changelog = changelog,
+                                downloadLink = archiveUrl,
+                                releaseTitle = workflowRun.title,
+                                releaseUrl = workflowRun.htmlUrl
+                                    ?: "https://github.com/${BuildConfig.REPO_NAME}/actions/runs/${workflowRun.id}",
+                                apkSize = 0L,
+                                publishedAt = "",
+                                isCI = true,
+                                hasUpdate = hasCIUpdate,
+                            )
+                        }
                     }
                 }
             }
 
             val curVersion = BuildConfig.RAW_VERSION_NAME
-            val release = runSuspendCatching {
-                ghStatement(LATEST_RELEASE_URL).executeAndParseAs<GithubRelease>()
-            }.getOrNull()
-            if (release != null) {
-                return resolveRelease(release, curVersion, returnLatestIfNoUpdate)
-            }
+            // 不能吞掉异常：否则限流/网络失败会被当成「已是最新版本」，用户也看不到失败提示
+            val release = ghStatement(LATEST_RELEASE_URL).executeAndParseAs<GithubRelease>()
+            return resolveRelease(release, curVersion, returnLatestIfNoUpdate)
         }
         return null
     }
@@ -105,10 +109,13 @@ object AppUpdater {
         val latestVersion = release.version
         val hasUpdate = compareVersions(latestVersion, curVersion) > 0
         if (!hasUpdate && !returnLatestIfNoUpdate) return null
+        val downloadLink = release.getDownloadLink()
+        // 没有可用安装包时不能宣称有更新，否则用户点下载会拿到一个空 URL
+        if (hasUpdate && downloadLink.isBlank()) return null
         return Release(
             version = latestVersion,
             changelog = release.info,
-            downloadLink = release.getDownloadLink(),
+            downloadLink = downloadLink,
             releaseTitle = release.name ?: latestVersion,
             releaseUrl = release.releaseLink,
             apkSize = release.getMatchedAsset()?.size ?: 0L,
@@ -234,17 +241,7 @@ object AppUpdater {
 private suspend inline fun ghStatement(
     url: String,
     builder: HttpRequestBuilder.() -> Unit = {},
-) = ktorClient.prepareGet(url) {
-    bearerAuth(GithubTokenParts.joinToString("_"))
-    apply(builder)
-}
-
-private val GithubTokenParts = arrayOf(
-    "github",
-    "pat",
-    "11A4H2ACI0iGDuL1O6wPYW",
-    "OTFg8xaCNUwR1NHaJE1AT3LoYPfz6bouI7E7ReLf8GjIRFHCL5UsHL9EnWP",
-)
+) = ktorClient.prepareGet(url) { apply(builder) }
 
 data class Release(
     val version: String,
