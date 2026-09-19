@@ -97,10 +97,13 @@ Kotlin Multiplatform と Jetpack Compose を基盤とし、`top.yukonga.miuix.km
 
 [GitHub Releases](https://github.com/137458/EhViewer-Miuix/releases) ページより最新のビルドパッケージをダウンロードしてください：
 
-| フレーバー (Flavor) | 最小 Android バージョン | アーキテクチャ | 特徴 |
+| 配布ファイル | 対応システム | アーキテクチャ | 説明と推奨 |
 |:---|:---|:---|:---|
-| **Default** | Android 8.0 (API 26) | arm64-v8a / Universal | MIUIX デザインシステムおよびシェーダーパイプラインを完全サポート（推奨） |
-| **Marshmallow** | Android 6.0 (API 23) | 汎用アーキテクチャ | 旧端末互換用ビルド、一部の高度なアニメーションは自動的にフォールバック |
+| `EhViewer-*-default-arm64-v8a.apk` | Android 8.0+ (API 26+) | 64-bit ARM | **主流端末推奨**。パッケージ末尾 `.miuix`、不要な互換層を含まない最適化ビルド |
+| `EhViewer-*-default-universal.apk` | Android 8.0+ (API 26+) | 汎用アーキテクチャ | 汎用フォールバックパッケージ。本プロジェクトでは arm64-v8a とバイナリ同一 |
+| `EhViewer-*-marshmallow-arm64-v8a.apk` | Android 6.0 ~ 7.1 (API 23+) | 64-bit ARM | **旧端末互換版**。パッケージ末尾 `.m`、脱糖および下位互換ランタイムを同梱 |
+| `EhViewer-*-marshmallow-universal.apk` | Android 6.0 ~ 7.1 (API 23+) | 汎用アーキテクチャ | 旧端末用汎用フォールバックパッケージ |
+| `EhViewer-*-mapping.txt` | 全環境共通 | シンボル表 | **インストール不可**。クラッシュログ解析用の R8 難読化マッピングファイル |
 
 ### インストールと設定のアドバイス
 

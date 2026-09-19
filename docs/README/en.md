@@ -97,10 +97,13 @@ Powered by Kotlin Multiplatform and Jetpack Compose, the application integrates 
 
 Download the latest distribution package from [GitHub Releases](https://github.com/137458/EhViewer-Miuix/releases) page:
 
-| Flavor | Minimum Android Version | Target Architecture | Description |
+| Artifact File | OS Target | Architecture | Notes & Guidance |
 |:---|:---|:---|:---|
-| **Default** | Android 8.0 (API 26) | arm64-v8a / Universal | Full MIUIX design system and shader visual pipeline (Recommended) |
-| **Marshmallow** | Android 6.0 (API 23) | Universal | Legacy compatibility build with graceful visual fallbacks |
+| `EhViewer-*-default-arm64-v8a.apk` | Android 8.0+ (API 26+) | 64-bit ARM | **Recommended for modern devices**. Package suffix `.miuix`, streamlined without legacy compat layers |
+| `EhViewer-*-default-universal.apk` | Android 8.0+ (API 26+) | Universal | Universal fallback package, binary-identical to arm64-v8a in this project |
+| `EhViewer-*-marshmallow-arm64-v8a.apk` | Android 6.0 ~ 7.1 (API 23+) | 64-bit ARM | **Legacy fallback build**. Package suffix `.m`, bundles desugaring and backward compat support |
+| `EhViewer-*-marshmallow-universal.apk` | Android 6.0 ~ 7.1 (API 23+) | Universal | Legacy universal fallback package |
+| `EhViewer-*-mapping.txt` | Universal | Symbols | **Not an APK**. R8 ProGuard de-obfuscation mapping table for developers to analyze crash stacks |
 
 ### Installation Tips
 

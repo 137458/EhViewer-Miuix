@@ -97,10 +97,13 @@
 
 请前往 [GitHub Releases](https://github.com/137458/EhViewer-Miuix/releases) 页面下载最新构建安装包：
 
-| 变种版本 (Flavor) | 最低 Android 版本 | 架构说明 | 特性支持 |
+| 产物文件 | 适用系统 | 架构类型 | 说明与选择建议 |
 |:---|:---|:---|:---|
-| **Default** | Android 8.0 (API 26) | arm64-v8a / Universal | 完整支持 MIUIX 设计系统与物理视觉管线（推荐） |
-| **Marshmallow** | Android 6.0 (API 23) | 通用架构 | 历史设备兼容版本，部分高级动效自动平滑降级 |
+| `EhViewer-*-default-arm64-v8a.apk` | Android 8.0+ (API 26+) | 64 位 ARM | **主流机型推荐**。包名后缀 `.miuix`，原生优化无冗余兼容垫片 |
+| `EhViewer-*-default-universal.apk` | Android 8.0+ (API 26+) | 通用架构 | 通用兜底包，当前工程下与 arm64-v8a 二进制及体积完全一致 |
+| `EhViewer-*-marshmallow-arm64-v8a.apk` | Android 6.0 ~ 7.1 (API 23+) | 64 位 ARM | **老旧机型兼容版**。包名后缀 `.m`，内建脱糖支持与向后兼容层 |
+| `EhViewer-*-marshmallow-universal.apk` | Android 6.0 ~ 7.1 (API 23+) | 通用架构 | 老旧系统通用兜底包 |
+| `EhViewer-*-mapping.txt` | 全平台通用 | 符号表 | **非安装包**。R8 混淆映射表，仅供开发者排查崩溃堆栈，用户无需下载 |
 
 ### 安装与配置建议
 
