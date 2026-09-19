@@ -2,7 +2,11 @@ package com.hippo.ehviewer.ui.reader
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
@@ -18,7 +22,10 @@ import com.hippo.ehviewer.Settings
 import com.hippo.ehviewer.asMutableState
 
 @Composable
-fun ReaderGeneralSetting() = Column(modifier = Modifier.verticalScroll(rememberScrollState()).navigationBarsPadding()) {
+fun ReaderGeneralSetting() = Column(
+    // 只消费底部 inset：横向 inset 由外层 sheet 统一处理，否则横屏三键导航时每页左右不对称
+    modifier = Modifier.verticalScroll(rememberScrollState()).windowInsetsPadding(WindowInsets.navigationBars.only(WindowInsetsSides.Bottom)),
+) {
     SpinnerChoice(
         title = stringResource(id = R.string.pref_reader_theme),
         entries = stringArrayResource(id = com.hippo.ehviewer.R.array.reader_themes),

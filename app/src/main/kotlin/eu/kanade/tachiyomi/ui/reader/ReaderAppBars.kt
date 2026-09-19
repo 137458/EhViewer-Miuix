@@ -22,8 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import com.ehviewer.core.ui.util.LocalWindowSizeClass
-import com.ehviewer.core.ui.util.isExpanded
+import com.ehviewer.core.ui.util.LocalWindowLayout
 import com.hippo.ehviewer.ui.main.NavigationIcon
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import top.yukonga.miuix.kmp.basic.SmallTopAppBar
@@ -66,15 +65,17 @@ fun BoxScope.ReaderAppBars(
         enter = slideInVertically(initialOffsetY = { it }, animationSpec = animationSpec),
         exit = slideOutVertically(targetOffsetY = { it }, animationSpec = animationSpec),
     ) {
-        val windowSizeClass = LocalWindowSizeClass.current
-        val horizontalPadding = if (windowSizeClass.isExpanded) 32.dp else 16.dp
+        val windowLayout = LocalWindowLayout.current
+        // 横屏/宽屏用更宽松的左右内边距；矮视口收紧纵向间距，避免 chrome 吃掉近半屏高
+        val horizontalPadding = if (windowLayout.widthDp >= 840) 32.dp else 16.dp
+        val verticalPadding = if (windowLayout.isShortLandscape) 6.dp else 12.dp
         Column(
             modifier = Modifier
                 .navigationBarsPadding()
-                .padding(horizontal = horizontalPadding, vertical = 12.dp)
+                .padding(horizontal = horizontalPadding, vertical = verticalPadding)
                 .widthIn(max = 600.dp)
                 .fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+            verticalArrangement = Arrangement.spacedBy(if (windowLayout.isShortLandscape) 4.dp else 10.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             if (showSeekBar && totalPages > 1) {

@@ -95,11 +95,11 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
-import androidx.core.graphics.drawable.toBitmap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
+import androidx.core.graphics.drawable.toBitmap
 import androidx.core.net.toUri
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.LifecycleResumeEffect
@@ -124,7 +124,10 @@ import com.ehviewer.core.ui.icons.filled.Whatshot
 import com.ehviewer.core.ui.util.BottomBarInsetsCalculator
 import com.ehviewer.core.ui.util.LocalBottomBarContentPadding
 import com.ehviewer.core.ui.util.LocalSnackBarFabPadding
+import com.ehviewer.core.ui.util.LocalWindowLayout
 import com.ehviewer.core.ui.util.LocalWindowSizeClass
+import com.ehviewer.core.ui.util.NavigationChrome
+import com.ehviewer.core.ui.util.WindowLayout
 import com.ehviewer.core.util.isAtLeastQ
 import com.ehviewer.core.util.isAtLeastR
 import com.ehviewer.core.util.isAtLeastS
@@ -411,7 +414,12 @@ class MainActivity : AppCompatActivity() {
             val needSignIn by Settings.needSignIn.collectAsState()
             val launchPage by Settings.launchPage.collectAsState()
 
-            val isWideScreen = configuration.screenWidthDp >= 600
+            val windowLayout = WindowLayout(
+                widthDp = configuration.screenWidthDp,
+                heightDp = configuration.screenHeightDp,
+            )
+            val navigationChrome = windowLayout.navigationChrome
+            val showNavigationRail = navigationChrome == NavigationChrome.Rail
             val primaryNavItems = remember {
                 listOf(
                     Triple(HomePageScreenDestination, R.string.homepage, EhIcons.Default.Home),
@@ -460,10 +468,10 @@ class MainActivity : AppCompatActivity() {
             val bottomPaddingValue = BottomBarInsetsCalculator.calculateBarBottomPadding(navBarBottomPadding)
             val mainContentBottomPadding = BottomBarInsetsCalculator.calculateMainContentBottomPadding(
                 isPrimaryDestination = isPrimaryDestination,
-                isWideScreen = isWideScreen,
+                navigationChrome = navigationChrome,
                 navBarBottomPadding = navBarBottomPadding,
             )
-            val bottomBarPadding = if (isPrimaryDestination && !isWideScreen) 88.dp else 0.dp
+            val bottomBarPadding = if (isPrimaryDestination && !showNavigationRail) 88.dp else 0.dp
             val effectiveFabPadding = snackbarFabPadding.coerceAtLeast(bottomBarPadding)
 
             CompositionLocalProvider(
@@ -473,6 +481,7 @@ class MainActivity : AppCompatActivity() {
                 LocalSnackBarFabPadding provides animateDpAsState(effectiveFabPadding, label = "SnackbarFabPadding"),
                 LocalBottomBarContentPadding provides mainContentBottomPadding,
                 LocalWindowSizeClass provides adaptiveInfo.windowSizeClass,
+                LocalWindowLayout provides windowLayout,
             ) {
                 Scaffold(
                     snackbarHost = {
@@ -516,7 +525,7 @@ class MainActivity : AppCompatActivity() {
                                 }
                             }
 
-                            if (!isWideScreen) {
+                            if (!showNavigationRail) {
                                 AnimatedVisibility(
                                     visible = isPrimaryDestination,
                                     enter = slideInVertically { it } + fadeIn(),
@@ -571,8 +580,9 @@ class MainActivity : AppCompatActivity() {
                     }
 
                     Row(modifier = Modifier.fillMaxSize()) {
-                        if (isWideScreen) {
+                        if (showNavigationRail) {
                             NavigationRail(
+                                state = null,
                                 modifier = Modifier
                                     .fillMaxHeight()
                                     .windowInsetsPadding(
@@ -580,39 +590,43 @@ class MainActivity : AppCompatActivity() {
                                             WindowInsetsSides.Start + WindowInsetsSides.Top + WindowInsetsSides.Bottom,
                                         ),
                                     ),
-                            ) {
-                                Spacer(modifier = Modifier.height(16.dp))
-                                val context = LocalContext.current
-                                val appIcon = remember(context) {
-                                    runCatching {
-                                        val pm = context.packageManager
-                                        val appInfo = pm.getApplicationInfo(context.packageName, 0)
-                                        pm.getApplicationIcon(appInfo).toBitmap().asImageBitmap()
-                                    }.getOrNull()
-                                }
-                                Box(
-                                    modifier = Modifier
-                                        .size(44.dp)
-                                        .clip(SquircleShape(12.dp)),
-                                    contentAlignment = Alignment.Center,
-                                ) {
-                                    if (appIcon != null) {
-                                        Image(
-                                            bitmap = appIcon,
-                                            contentDescription = null,
-                                            contentScale = ContentScale.Fit,
-                                            modifier = Modifier.fillMaxSize(),
-                                        )
-                                    } else {
-                                        Image(
-                                            painter = painterResource(id = com.hippo.ehviewer.R.drawable.ic_launcher_foreground),
-                                            contentDescription = null,
-                                            contentScale = ContentScale.Fit,
-                                            modifier = Modifier.fillMaxSize(),
-                                        )
+                                defaultWindowInsetsPadding = false,
+                                // 侧栏条目多于可用高度时可滚动，避免条目被裁切后无法点击
+                                scrollState = rememberScrollState(),
+                                header = {
+                                    val context = LocalContext.current
+                                    val appIcon = remember(context) {
+                                        runCatching {
+                                            val pm = context.packageManager
+                                            val appInfo = pm.getApplicationInfo(context.packageName, 0)
+                                            pm.getApplicationIcon(appInfo).toBitmap().asImageBitmap()
+                                        }.getOrNull()
                                     }
-                                }
-                                Spacer(modifier = Modifier.height(16.dp))
+                                    Box(
+                                        modifier = Modifier
+                                            .padding(vertical = 16.dp)
+                                            .size(44.dp)
+                                            .clip(SquircleShape(12.dp)),
+                                        contentAlignment = Alignment.Center,
+                                    ) {
+                                        if (appIcon != null) {
+                                            Image(
+                                                bitmap = appIcon,
+                                                contentDescription = null,
+                                                contentScale = ContentScale.Fit,
+                                                modifier = Modifier.fillMaxSize(),
+                                            )
+                                        } else {
+                                            Image(
+                                                painter = painterResource(id = com.hippo.ehviewer.R.drawable.ic_launcher_foreground),
+                                                contentDescription = null,
+                                                contentScale = ContentScale.Fit,
+                                                modifier = Modifier.fillMaxSize(),
+                                            )
+                                        }
+                                    }
+                                },
+                            ) {
                                 navItems.forEach { (direction, stringId, icon) ->
                                     NavigationRailItem(
                                         selected = currentDestination?.route == direction.route,

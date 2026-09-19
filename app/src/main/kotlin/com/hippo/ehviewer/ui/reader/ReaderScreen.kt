@@ -327,7 +327,8 @@ fun ReaderScreen(pageLoader: PageLoader, info: BaseGalleryInfo?) {
                 EhTheme(useDarkTheme = !readerBackground.isLight) {
                     val insets = if (fullscreen) {
                         if (cutoutShort) {
-                            WindowInsets()
+                            // 横屏时刘海在侧边，零 inset 会让页面铺到刘海/侧边导航栏下面
+                            WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal)
                         } else {
                             WindowInsets.displayCutout
                         }
@@ -385,7 +386,11 @@ fun ReaderScreen(pageLoader: PageLoader, info: BaseGalleryInfo?) {
                 PageIndicatorText(
                     currentPage = syncState.sliderValue,
                     totalPages = pageLoader.size,
-                    modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding(),
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        // 横屏三键导航时 bottom inset 为 0，保留最小留白避免贴到屏幕下沿
+                        .padding(bottom = 8.dp)
+                        .navigationBarsPadding(),
                 )
             }
             ReaderAppBars(

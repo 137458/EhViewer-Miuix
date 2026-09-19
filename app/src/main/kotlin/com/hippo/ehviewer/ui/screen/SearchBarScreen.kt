@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
+import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -246,7 +247,8 @@ fun SearchBarScreen(
             val subHeaderHeight = if (subHeader != null) 40.dp else 0.dp
             val compactBarHeight = 48.dp
             val fullBarHeight = SearchBarDefaults.InputFieldMinHeight + 16.dp + subHeaderHeight
-            val collapseThresholdPx = with(density) { (SearchBarDefaults.InputFieldMinHeight + 16.dp).toPx() }
+            // 折叠阈值必须与顶栏完整高度同口径，否则带分类条时折叠进度永远到不了终态
+            val collapseThresholdPx = with(density) { fullBarHeight.toPx() }
             val collapseProgress = if (expanded) 0f else (-searchBarOffsetY().toFloat() / collapseThresholdPx).coerceIn(0f, 1f)
 
             Scaffold(
@@ -494,6 +496,9 @@ fun SearchBarScreen(
                     modifier = Modifier
                         .align(Alignment.TopCenter)
                         .windowInsetsPadding(WindowInsets.statusBars)
+                        // 横屏时缺口/导航栏 insets 在左右，分类条必须与搜索栏用同一组水平 insets
+                        .windowInsetsPadding(WindowInsets.navigationBars.only(WindowInsetsSides.Horizontal))
+                        .windowInsetsPadding(WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal))
                         .offset {
                             val inputFieldOffset = with(density) { (SearchBarDefaults.InputFieldMinHeight + 16.dp).roundToPx() }
                             IntOffset(0, searchBarOffsetY() + inputFieldOffset)

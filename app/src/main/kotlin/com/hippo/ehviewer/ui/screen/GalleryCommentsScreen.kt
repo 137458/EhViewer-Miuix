@@ -76,6 +76,7 @@ import com.ehviewer.core.ui.component.BlurredBar
 import com.ehviewer.core.ui.component.blurBackdropSource
 import com.ehviewer.core.ui.component.rememberBlurBackdrop
 import com.ehviewer.core.ui.util.animateFloatMergePredictiveBackAsState
+import com.ehviewer.core.ui.util.readableWidth
 import com.ehviewer.core.ui.util.snackBarPadding
 import com.ehviewer.core.ui.util.thenIf
 import com.ehviewer.core.util.isAtLeastP
@@ -440,7 +441,7 @@ fun AnimatedVisibilityScope.GalleryCommentsScreen(
                     val layoutDirection = LocalLayoutDirection.current
                     val lazyListState = rememberLazyListState()
                     LazyColumn(
-                        modifier = Modifier.fillMaxSize().padding(horizontal = keylineMargin),
+                        modifier = Modifier.readableWidth().fillMaxSize().padding(horizontal = keylineMargin),
                         state = lazyListState,
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                         contentPadding = PaddingValues(

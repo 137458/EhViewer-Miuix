@@ -3,6 +3,7 @@ package com.hippo.ehviewer.ui.main
 import android.content.Context
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
@@ -47,6 +48,7 @@ import com.ehviewer.core.ui.component.FastScrollLazyVerticalGrid
 import com.ehviewer.core.ui.component.FastScrollLazyVerticalStaggeredGrid
 import com.ehviewer.core.ui.icons.EhIcons
 import com.ehviewer.core.ui.icons.big.SadAndroid
+import com.ehviewer.core.ui.util.AdaptiveLayoutPolicy
 import com.ehviewer.core.util.launch
 import com.hippo.ehviewer.Settings
 import com.hippo.ehviewer.client.exception.NoHitsFoundException
@@ -55,6 +57,7 @@ import com.hippo.ehviewer.collectAsState
 import com.hippo.ehviewer.ktbuilder.imageRequest
 import com.hippo.ehviewer.ui.screen.collectDetailSizeAsState
 import com.hippo.ehviewer.util.displayString
+import kotlin.math.roundToInt
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
@@ -109,14 +112,19 @@ fun GalleryList(
         modifier = modifier,
         contentPadding = contentPadding,
     ) {
-        Box(modifier = Modifier.fillMaxSize()) {
+        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+            val availableWidthDp = maxWidth.value.roundToInt()
             val showLoadStateIndicator = when (val state = data.loadState.append) {
                 LoadState.Loading -> true
                 is LoadState.Error -> state.error !is NoHitsFoundException
                 is LoadState.NotLoading -> false
             }
             if (listMode == 0) {
-                val columnWidth by collectDetailSizeAsState()
+                val configuredColumnWidth by collectDetailSizeAsState()
+                // 宽屏下压最小列宽，保证详情列表至少两列而不是被拉伸成单列满宽
+                val columnWidth = AdaptiveLayoutPolicy
+                    .detailMinColumnWidth(availableWidthDp, configuredColumnWidth.value.toInt())
+                    .dp
                 FastScrollLazyVerticalGrid(
                     columns = GridCells.Adaptive(columnWidth),
                     modifier = contentModifier.fillMaxSize(),
@@ -146,7 +154,9 @@ fun GalleryList(
                 }
             } else {
                 val gridInterval = dimensionResource(com.hippo.ehviewer.R.dimen.gallery_grid_interval)
-                val thumbColumns by Settings.thumbColumns.collectAsState()
+                val configuredThumbColumns by Settings.thumbColumns.collectAsState()
+                // 横屏/宽屏下按可用宽度补足列数，避免固定列数把缩略图拉得过宽
+                val thumbColumns = AdaptiveLayoutPolicy.thumbGridColumns(availableWidthDp, configuredThumbColumns)
                 FastScrollLazyVerticalStaggeredGrid(
                     columns = StaggeredGridCells.Fixed(thumbColumns),
                     modifier = contentModifier.fillMaxSize(),

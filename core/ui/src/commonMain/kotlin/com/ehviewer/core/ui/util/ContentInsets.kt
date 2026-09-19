@@ -15,9 +15,9 @@ object BottomBarInsetsCalculator {
 
     fun calculateMainContentBottomPadding(
         isPrimaryDestination: Boolean,
-        isWideScreen: Boolean,
+        navigationChrome: NavigationChrome,
         navBarBottomPadding: Dp,
-    ): Dp = if (isPrimaryDestination && !isWideScreen) {
+    ): Dp = if (isPrimaryDestination && navigationChrome == NavigationChrome.BottomBar) {
         val bottomPaddingValue = calculateBarBottomPadding(navBarBottomPadding)
         64.dp + bottomPaddingValue + 16.dp
     } else {

@@ -1,4 +1,4 @@
-package com.hippo.ehviewer.ui.screen
+﻿package com.hippo.ehviewer.ui.screen
 
 import android.content.Context
 import android.view.ViewConfiguration
@@ -7,14 +7,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.systemBars
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.verticalScroll
@@ -160,8 +156,7 @@ fun AnimatedVisibilityScope.FavouritesScreen(navigator: DestinationsNavigator, v
             arrayOf(localFav)
         }
         Column(
-            modifier = Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 4.dp)
-                .windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Bottom)),
+            modifier = Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 4.dp),
         ) {
             faves.forEachIndexed { index, (name, count) ->
                 val isSelected = urlBuilder.favCat == index - 2

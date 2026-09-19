@@ -34,6 +34,7 @@ import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDefaults
 import androidx.compose.material3.DisplayMode
 import androidx.compose.material3.SelectableDates
+import androidx.compose.material3.TimeInput
 import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
@@ -53,6 +54,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.state.ToggleableState
@@ -70,6 +72,7 @@ import com.ehviewer.core.i18n.R
 import com.ehviewer.core.ui.component.FastScrollLazyColumn
 import com.ehviewer.core.ui.component.LabeledCheckbox
 import com.ehviewer.core.ui.component.SquircleShape
+import com.ehviewer.core.ui.util.AdaptiveLayoutPolicy
 import com.ehviewer.core.ui.util.ifNotNullThen
 import com.ehviewer.core.ui.util.ifTrueThen
 import com.hippo.ehviewer.client.EhTagDatabase
@@ -101,6 +104,18 @@ import top.yukonga.miuix.kmp.window.WindowDialog
 
 fun interface ActionScope {
     fun onSelect(action: String, that: suspend () -> Unit)
+}
+
+/**
+ * 弹层是否必须走紧凑形态。
+ *
+ * Miuix 的弹层只在「宽 ≥840dp 且高 ≥480dp」时限制内容高度，横屏手机（如 800x412dp）
+ * 下不受限，过高的内容会被窗口直接裁切。
+ */
+@Composable
+private fun isCompactDialogLayout(): Boolean {
+    val configuration = LocalConfiguration.current
+    return AdaptiveLayoutPolicy.isShortLandscape(configuration.screenWidthDp, configuration.screenHeightDp)
 }
 
 interface DialogScope<R> {
@@ -550,11 +565,13 @@ suspend fun awaitSelectDate(
     selectableDates: SelectableDates = DatePickerDefaults.AllDates,
     showModeToggle: Boolean = true,
 ): Long = dialog { cont ->
+    // 横屏矮视口放不下 568dp 高的日历选择器，改用紧凑的输入模式避免被窗口裁切
+    val displayMode = if (isCompactDialogLayout()) DisplayMode.Input else initialDisplayMode
     val state = rememberDatePickerState(
         initialSelectedDateMillis,
         initialDisplayedMonthMillis,
         yearRange,
-        initialDisplayMode,
+        displayMode,
         selectableDates,
     )
     WindowDialog(
@@ -624,7 +641,12 @@ suspend fun awaitSelectTime(
                 text = title,
                 style = MiuixTheme.textStyles.title4,
             )
-            TimePicker(state = state)
+            // 横屏矮视口放不下表盘时钟，改用紧凑的输入模式
+            if (isCompactDialogLayout()) {
+                TimeInput(state = state)
+            } else {
+                TimePicker(state = state)
+            }
             Spacer(modifier = Modifier.height(16.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -814,8 +836,11 @@ suspend fun awaitSelectItemWithIconAndTextField(
             modifier = Modifier.padding(horizontal = 16.dp).padding(top = 16.dp),
             style = MiuixTheme.textStyles.title4,
         )
+        // 圆形布局是正方形，横屏矮视口下按窗口高度收缩，避免超出窗口被裁切
         CircularLayout(
-            modifier = Modifier.fillMaxWidth().aspectRatio(1F),
+            modifier = Modifier
+                .fillMaxWidth(if (isCompactDialogLayout()) 0.5F else 1F)
+                .aspectRatio(1F),
             placeFirstItemInCenter = true,
         ) {
             val note = rememberTextFieldState(initialNote)

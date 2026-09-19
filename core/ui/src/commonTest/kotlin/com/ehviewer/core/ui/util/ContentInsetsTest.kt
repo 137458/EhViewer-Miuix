@@ -26,7 +26,7 @@ class ContentInsetsTest {
         // Standard gesture bar (16.dp navBar): 64.dp + (8.dp + 16.dp) + 16.dp = 104.dp
         val paddingWithGesture = BottomBarInsetsCalculator.calculateMainContentBottomPadding(
             isPrimaryDestination = true,
-            isWideScreen = false,
+            navigationChrome = NavigationChrome.BottomBar,
             navBarBottomPadding = 16.dp,
         )
         assertEquals(104.dp, paddingWithGesture)
@@ -34,7 +34,7 @@ class ContentInsetsTest {
         // Hidden nav bar (0.dp navBar): 64.dp + 20.dp + 16.dp = 100.dp (matching pixez spec)
         val paddingZeroNav = BottomBarInsetsCalculator.calculateMainContentBottomPadding(
             isPrimaryDestination = true,
-            isWideScreen = false,
+            navigationChrome = NavigationChrome.BottomBar,
             navBarBottomPadding = 0.dp,
         )
         assertEquals(100.dp, paddingZeroNav)
@@ -42,7 +42,7 @@ class ContentInsetsTest {
         // 3-button nav bar (48.dp navBar): 64.dp + (8.dp + 48.dp) + 16.dp = 136.dp
         val paddingThreeButton = BottomBarInsetsCalculator.calculateMainContentBottomPadding(
             isPrimaryDestination = true,
-            isWideScreen = false,
+            navigationChrome = NavigationChrome.BottomBar,
             navBarBottomPadding = 48.dp,
         )
         assertEquals(136.dp, paddingThreeButton)
@@ -52,14 +52,14 @@ class ContentInsetsTest {
     fun calculateMainContentBottomPaddingOnWideScreenOrSecondaryScreen() {
         val paddingWideScreen = BottomBarInsetsCalculator.calculateMainContentBottomPadding(
             isPrimaryDestination = true,
-            isWideScreen = true,
+            navigationChrome = NavigationChrome.Rail,
             navBarBottomPadding = 16.dp,
         )
         assertEquals(32.dp, paddingWideScreen)
 
         val paddingSecondary = BottomBarInsetsCalculator.calculateMainContentBottomPadding(
             isPrimaryDestination = false,
-            isWideScreen = false,
+            navigationChrome = NavigationChrome.BottomBar,
             navBarBottomPadding = 20.dp,
         )
         assertEquals(36.dp, paddingSecondary)

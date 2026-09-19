@@ -1,4 +1,4 @@
-package com.hippo.ehviewer.ui.settings
+﻿package com.hippo.ehviewer.ui.settings
 
 import android.Manifest
 import android.content.ActivityNotFoundException
@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -49,6 +48,7 @@ import com.ehviewer.core.model.GalleryInfo
 import com.ehviewer.core.ui.component.BlurredBar
 import com.ehviewer.core.ui.component.blurBackdropSource
 import com.ehviewer.core.ui.component.rememberBlurBackdrop
+import com.ehviewer.core.ui.util.readableWidth
 import com.ehviewer.core.util.isAtLeastQ
 import com.ehviewer.core.util.launch
 import com.ehviewer.core.util.launchIO
@@ -133,7 +133,7 @@ fun AnimatedVisibilityScope.DownloadScreen(navigator: DestinationsNavigator) = S
             Column(
                 modifier = Modifier
                     .fillMaxHeight()
-                    .widthIn(max = 760.dp)
+                    .readableWidth()
                     .fillMaxWidth()
                     .nestedScroll(scrollBehavior.nestedScrollConnection)
                     .verticalScroll(rememberScrollState())

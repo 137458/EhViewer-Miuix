@@ -43,6 +43,7 @@ import com.ehviewer.core.i18n.R
 import com.ehviewer.core.network.EhCookieStore
 import com.ehviewer.core.ui.component.LiquidGlassSurface
 import com.ehviewer.core.ui.component.SquircleShape
+import com.ehviewer.core.ui.util.LocalWindowLayout
 import com.ehviewer.core.ui.util.LocalWindowSizeClass
 import com.ehviewer.core.ui.util.isExpanded
 import com.ehviewer.core.util.launchIO
@@ -79,6 +80,10 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 @Composable
 fun AnimatedVisibilityScope.SignInScreen(navigator: DestinationsNavigator) = Screen(navigator) {
     val windowSizeClass = LocalWindowSizeClass.current
+    val windowLayout = LocalWindowLayout.current
+    // 横屏/宽屏下 260dp 的单列卡会让两侧各留出近 270dp 空白，改用统一的可读宽度档
+    val cardMaxWidth = windowLayout.contentMaxWidth
+        ?: dimensionResource(id = com.hippo.ehviewer.R.dimen.single_max_width)
     val focusManager = LocalFocusManager.current
     var isProgressIndicatorVisible by rememberSaveable { mutableStateOf(false) }
     var showUsernameError by rememberSaveable { mutableStateOf(false) }
@@ -233,7 +238,7 @@ fun AnimatedVisibilityScope.SignInScreen(navigator: DestinationsNavigator) = Scr
                 ) {
                     LiquidGlassSurface(
                         modifier = Modifier
-                            .widthIn(max = dimensionResource(id = com.hippo.ehviewer.R.dimen.single_max_width))
+                            .widthIn(max = cardMaxWidth)
                             .fillMaxWidth(),
                         shape = SquircleShape(24.dp),
                         elevation = 8.dp,
@@ -319,7 +324,9 @@ fun AnimatedVisibilityScope.SignInScreen(navigator: DestinationsNavigator) = Scr
                 ) {
                     LiquidGlassSurface(
                         modifier = Modifier
-                            .width(dimensionResource(id = com.hippo.ehviewer.R.dimen.signinscreen_landscape_caption_frame_width))
+                            // 两栏都按可用宽度均分并设上限，避免 480dp 说明栏 + 表单在中等宽屏下横向溢出
+                            .weight(1f, fill = false)
+                            .widthIn(max = dimensionResource(id = com.hippo.ehviewer.R.dimen.signinscreen_landscape_caption_frame_width))
                             .padding(end = 16.dp),
                         shape = SquircleShape(24.dp),
                         elevation = 8.dp,
@@ -352,7 +359,8 @@ fun AnimatedVisibilityScope.SignInScreen(navigator: DestinationsNavigator) = Scr
                     }
                     LiquidGlassSurface(
                         modifier = Modifier
-                            .widthIn(max = dimensionResource(id = com.hippo.ehviewer.R.dimen.single_max_width))
+                            .weight(1f, fill = false)
+                            .widthIn(max = cardMaxWidth)
                             .fillMaxWidth(),
                         shape = SquircleShape(24.dp),
                         elevation = 8.dp,

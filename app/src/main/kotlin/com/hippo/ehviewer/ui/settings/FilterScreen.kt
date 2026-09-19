@@ -1,4 +1,4 @@
-package com.hippo.ehviewer.ui.settings
+﻿package com.hippo.ehviewer.ui.settings
 
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.foundation.background
@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.selection.triStateToggleable
@@ -44,6 +43,7 @@ import com.ehviewer.core.ui.component.DropdownFilterChip
 import com.ehviewer.core.ui.component.blurBackdropSource
 import com.ehviewer.core.ui.component.rememberBlurBackdrop
 import com.ehviewer.core.ui.util.Await
+import com.ehviewer.core.ui.util.readableWidth
 import com.ehviewer.core.ui.util.thenIf
 import com.ehviewer.core.util.async
 import com.ehviewer.core.util.launch
@@ -227,7 +227,7 @@ fun AnimatedVisibilityScope.FilterScreen(navigator: DestinationsNavigator) = Scr
             Await({ allFilterMap.await() }) { filters ->
                 LazyColumn(
                     modifier = Modifier
-                        .widthIn(max = 760.dp)
+                        .readableWidth()
                         .fillMaxHeight()
                         .nestedScroll(scrollBehavior.nestedScrollConnection),
                     contentPadding = paddingValues,

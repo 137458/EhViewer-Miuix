@@ -20,6 +20,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.ehviewer.core.ui.util.LocalWindowLayout
 import top.yukonga.miuix.kmp.basic.DropdownDefaults
 import top.yukonga.miuix.kmp.basic.DropdownEntry
 import top.yukonga.miuix.kmp.basic.DropdownItem
@@ -97,12 +98,19 @@ fun DropdownFilterChip(
         }
 
         if (expanded) {
+            // 横屏矮视口下限制下拉高度，否则长列表（如语言）会超出窗口被裁切
+            val windowLayout = LocalWindowLayout.current
+            val dropdownMaxHeight = if (windowLayout.heightDp > 0) {
+                (windowLayout.heightDp * 0.6f).dp
+            } else {
+                null
+            }
             WindowDropdownPopup(
                 entry = entry,
                 show = expanded,
                 onDismiss = { expanded = false },
                 onDismissFinished = {},
-                maxHeight = null,
+                maxHeight = dropdownMaxHeight,
                 dropdownColors = DropdownDefaults.dropdownColors(),
             )
         }

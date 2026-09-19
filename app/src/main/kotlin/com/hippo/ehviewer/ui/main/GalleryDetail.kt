@@ -33,6 +33,8 @@ import com.ehviewer.core.model.GalleryInfo
 import com.ehviewer.core.ui.component.SquircleShape
 import com.ehviewer.core.ui.icons.EhIcons
 import com.ehviewer.core.ui.icons.big.SadAndroid
+import com.ehviewer.core.ui.util.AdaptiveLayoutPolicy
+import com.ehviewer.core.ui.util.LocalWindowLayout
 import com.ehviewer.core.ui.util.TransitionsVisibilityScope
 import com.ehviewer.core.ui.util.detailThumbGenerator
 import com.ehviewer.core.ui.util.thenIf
@@ -116,7 +118,12 @@ fun GalleryDetailHeaderCard(
                 },
             )
         }
-        Spacer(modifier = Modifier.weight(0.5F))
+        // 宽屏（横屏/平板）下用固定间距，避免弹性间隔把信息列推到最右侧留下大片空白
+        if (LocalWindowLayout.current.widthDp >= AdaptiveLayoutPolicy.CONTENT_MAX_WIDTH_MIN_DP) {
+            Spacer(modifier = Modifier.width(dimensionResource(id = com.hippo.ehviewer.R.dimen.keyline_margin)))
+        } else {
+            Spacer(modifier = Modifier.weight(0.5F))
+        }
         Column(
             modifier = Modifier.height(dimensionResource(id = com.hippo.ehviewer.R.dimen.gallery_detail_thumb_height)),
             horizontalAlignment = Alignment.End,

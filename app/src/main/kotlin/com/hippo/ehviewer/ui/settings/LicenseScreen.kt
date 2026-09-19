@@ -25,6 +25,7 @@ import com.ehviewer.core.i18n.R
 import com.ehviewer.core.ui.component.BlurredBar
 import com.ehviewer.core.ui.component.blurBackdropSource
 import com.ehviewer.core.ui.component.rememberBlurBackdrop
+import com.ehviewer.core.ui.util.readableWidth
 import com.hippo.ehviewer.ui.Screen
 import com.hippo.ehviewer.ui.main.NavigationIcon
 import com.hippo.ehviewer.ui.openBrowser
@@ -78,6 +79,7 @@ fun AnimatedVisibilityScope.LicenseScreen(navigator: DestinationsNavigator) = Sc
             } else {
                 LazyColumn(
                     modifier = Modifier
+                        .readableWidth()
                         .fillMaxSize()
                         .nestedScroll(scrollBehavior.nestedScrollConnection),
                     contentPadding = paddingValues,

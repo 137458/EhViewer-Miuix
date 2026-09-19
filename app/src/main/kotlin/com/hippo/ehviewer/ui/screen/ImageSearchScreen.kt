@@ -12,7 +12,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.plus
-import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -30,6 +31,7 @@ import com.ehviewer.core.i18n.R
 import com.ehviewer.core.ui.component.BlurredBar
 import com.ehviewer.core.ui.component.blurBackdropSource
 import com.ehviewer.core.ui.component.rememberBlurBackdrop
+import com.ehviewer.core.ui.util.readableWidth
 import com.ehviewer.core.ui.util.snackBarPadding
 import com.ehviewer.core.util.launch
 import com.ehviewer.core.util.launchUI
@@ -110,7 +112,8 @@ fun AnimatedVisibilityScope.ImageSearchScreen(navigator: DestinationsNavigator) 
         ) {
             Card(
                 modifier = Modifier
-                    .widthIn(max = 760.dp)
+                    .readableWidth()
+                    .verticalScroll(rememberScrollState())
                     .padding(
                         paddingValues = contentPadding + PaddingValues(marginH, marginV),
                     ).padding(

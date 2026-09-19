@@ -179,7 +179,8 @@ private fun PageContainer(
             zoomableState.setContentLocation(contentLocation)
         }
         if (landscapeZoom && contentScale == ContentScale.Fit && size.width > size.height) {
-            LaunchedEffect(alignment) {
+            // 视口尺寸变化（旋转/分屏）后必须重算，否则会沿用旋转前的缩放
+            LaunchedEffect(alignment, size, layoutSize) {
                 val zoomFraction = snapshotFlow { zoomableState.zoomFraction }.first { it != null }
                 if (zoomFraction == 0f) {
                     delay(500)

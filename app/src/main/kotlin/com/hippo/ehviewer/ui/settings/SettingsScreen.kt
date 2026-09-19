@@ -1,4 +1,4 @@
-package com.hippo.ehviewer.ui.settings
+﻿package com.hippo.ehviewer.ui.settings
 
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.foundation.background
@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
@@ -28,6 +27,7 @@ import com.ehviewer.core.ui.component.rememberBlurBackdrop
 import com.ehviewer.core.ui.icons.EhIcons
 import com.ehviewer.core.ui.icons.filled.SadPanda
 import com.ehviewer.core.ui.util.LocalBottomBarContentPadding
+import com.ehviewer.core.ui.util.readableWidth
 import com.hippo.ehviewer.ui.Screen
 import com.hippo.ehviewer.ui.destinations.AboutScreenDestination
 import com.hippo.ehviewer.ui.destinations.AdvancedScreenDestination
@@ -82,7 +82,7 @@ fun AnimatedVisibilityScope.SettingsScreen(navigator: DestinationsNavigator) = S
             Column(
                 modifier = Modifier
                     .fillMaxHeight()
-                    .widthIn(max = 760.dp)
+                    .readableWidth()
                     .fillMaxWidth()
                     .padding(paddingValues)
                     .nestedScroll(scrollBehavior.nestedScrollConnection)

@@ -43,6 +43,7 @@ import com.ehviewer.core.ui.component.dismissDeleteAction
 import com.ehviewer.core.ui.icons.EhIcons
 import com.ehviewer.core.ui.icons.big.History
 import com.ehviewer.core.ui.util.Await
+import com.ehviewer.core.ui.util.readableWidth
 import com.ehviewer.core.ui.util.rememberInVM
 import com.ehviewer.core.ui.util.thenIf
 import com.ehviewer.core.util.launch
@@ -139,7 +140,7 @@ fun AnimatedVisibilityScope.HistoryScreen(navigator: DestinationsNavigator) = Sc
         val showPages by Settings.showGalleryPages.collectAsState()
         val showProgress by Settings.showReadingProgress.collectAsState()
         FastScrollLazyColumn(
-            modifier = Modifier.nestedScroll(searchBarConnection).fillMaxSize(),
+            modifier = Modifier.nestedScroll(searchBarConnection).readableWidth().fillMaxSize(),
             contentPadding = paddingValues,
             verticalArrangement = Arrangement.spacedBy(dimensionResource(com.hippo.ehviewer.R.dimen.gallery_list_interval)),
         ) {

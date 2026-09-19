@@ -107,7 +107,10 @@ fun UpdateDialog(
         },
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                // 横屏矮视口下弹层内容总高会超过窗口，整体可滚动避免被裁切
+                .verticalScroll(rememberScrollState()),
         ) {
             // ── 顶部：版本跃迁横幅 ──
             Row(

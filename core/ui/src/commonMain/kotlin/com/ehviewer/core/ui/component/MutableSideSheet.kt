@@ -176,7 +176,14 @@ fun MutableSideSheet(
     val scope = rememberCoroutineScope()
     val windowInfo = LocalWindowInfo.current
     val width = with(density) { windowInfo.containerSize.width.toDp() }
+    val height = with(density) { windowInfo.containerSize.height.toDp() }
     val maxSheetWidth = (width - 112.dp).coerceAtLeast(280.dp)
+    // 横屏矮视口下 width-112dp 会占掉近乎整屏，侧栏按固定上限收窄
+    val effectiveSheetWidth = if (height < 600.dp && width > height) {
+        maxSheetWidth.coerceAtMost(420.dp)
+    } else {
+        maxSheetWidth
+    }
     var maxValue by remember { mutableFloatStateOf(with(density) { 360.dp.toPx() }) }
     val minValue = 0f
     val gesturesEnabled = f != null && enabled
@@ -289,7 +296,7 @@ fun MutableSideSheet(
                         }
                         .align(Alignment.CenterEnd)
                         .then(predictiveModifier)
-                        .widthIn(max = maxSheetWidth)
+                        .widthIn(max = effectiveSheetWidth)
                         .fillMaxHeight()
                         .background(
                             color = MiuixTheme.colorScheme.surface,
