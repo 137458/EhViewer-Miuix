@@ -115,12 +115,12 @@ fun AnimatedVisibilityScope.UpdateScreen(navigator: DestinationsNavigator) = Scr
         launch {
             runSuspendCatching {
                 withContext(Dispatchers.IO) {
-                    AppUpdater.checkForUpdate(forceCheck = forceCheck)
+                    AppUpdater.checkForUpdate(forceCheck = forceCheck, returnLatestIfNoUpdate = true)
                 }
             }.onSuccess { release ->
                 isChecking = false
                 updateRelease = release
-                if (release != null) {
+                if (release != null && release.hasUpdate) {
                     val ignored = Settings.ignoredUpdateVersion.value
                     if (userInitiated || release.version != ignored) {
                         dialogRelease = release
@@ -264,7 +264,7 @@ fun AnimatedVisibilityScope.UpdateScreen(navigator: DestinationsNavigator) = Scr
                                     alpha = 1 - verProgress
                                 },
                         )
-                    } else if (updateRelease != null) {
+                    } else if (updateRelease != null && updateRelease!!.hasUpdate) {
                         Text(
                             text = stringResource(R.string.update_found_header, updateRelease!!.version, BuildConfig.RAW_VERSION_NAME),
                             color = colorScheme.primary,
@@ -315,11 +315,16 @@ fun AnimatedVisibilityScope.UpdateScreen(navigator: DestinationsNavigator) = Scr
                         )
                     }
 
-                    // ── 更新日志卡片（检出新版本时常驻展示） ──
+                    // ── 更新日志卡片（无论是否有新版本均展示更新日志） ──
                     if (updateRelease != null) {
                         val rel = updateRelease!!
                         item(key = "changelog") {
-                            SmallTitle(text = stringResource(R.string.update_changelog_title_new, rel.version))
+                            val cardTitle = if (rel.hasUpdate) {
+                                stringResource(R.string.update_changelog_title_new, rel.version)
+                            } else {
+                                stringResource(R.string.update_changelog_title_current, rel.version)
+                            }
+                            SmallTitle(text = cardTitle)
                             Card(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -337,16 +342,18 @@ fun AnimatedVisibilityScope.UpdateScreen(navigator: DestinationsNavigator) = Scr
                                         modifier = Modifier.fillMaxWidth(),
                                         baseFontSize = 14,
                                     )
-                                    Spacer(modifier = Modifier.height(16.dp))
-                                    TextButton(
-                                        text = stringResource(R.string.update_btn_download_now),
-                                        onClick = {
-                                            dialogRelease = rel
-                                            showDialog = true
-                                        },
-                                        colors = ButtonDefaults.textButtonColorsPrimary(),
-                                        modifier = Modifier.fillMaxWidth(),
-                                    )
+                                    if (rel.hasUpdate) {
+                                        Spacer(modifier = Modifier.height(16.dp))
+                                        TextButton(
+                                            text = stringResource(R.string.update_btn_download_now),
+                                            onClick = {
+                                                dialogRelease = rel
+                                                showDialog = true
+                                            },
+                                            colors = ButtonDefaults.textButtonColorsPrimary(),
+                                            modifier = Modifier.fillMaxWidth(),
+                                        )
+                                    }
                                 }
                             }
                             Spacer(modifier = Modifier.height(12.dp))

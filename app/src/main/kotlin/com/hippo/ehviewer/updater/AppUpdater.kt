@@ -34,7 +34,10 @@ private const val API_URL = "https://api.github.com/repos/${BuildConfig.REPO_NAM
 private const val LATEST_RELEASE_URL = "$API_URL/releases/latest"
 
 object AppUpdater {
-    suspend fun checkForUpdate(forceCheck: Boolean = false): Release? {
+    suspend fun checkForUpdate(
+        forceCheck: Boolean = false,
+        returnLatestIfNoUpdate: Boolean = false,
+    ): Release? {
         val now = Clock.System.now()
         val last = Instant.fromEpochSeconds(Settings.lastUpdateTime)
         val interval = Settings.updateIntervalDays.value
@@ -51,7 +54,8 @@ object AppUpdater {
                 }.getOrNull()
                 if (workflowRun != null) {
                     val shortSha = workflowRun.headSha.take(7)
-                    if (shortSha != curSha) {
+                    val hasCIUpdate = shortSha != curSha
+                    if (hasCIUpdate || returnLatestIfNoUpdate) {
                         val artifacts = ghStatement(workflowRun.artifactsUrl).executeAndParseAs<GithubArtifacts>()
                         val archiveUrl = artifacts.getDownloadLink()
                         val changelog = runSuspendCatching {
@@ -70,6 +74,7 @@ object AppUpdater {
                             apkSize = 0L,
                             publishedAt = "",
                             isCI = true,
+                            hasUpdate = hasCIUpdate,
                         )
                     }
                 }
@@ -84,7 +89,8 @@ object AppUpdater {
                 val description = release.info
                 val downloadUrl = release.getDownloadLink()
                 val matchedAsset = release.getMatchedAsset()
-                if (compareVersions(latestVersion, curVersion) > 0) {
+                val hasUpdate = compareVersions(latestVersion, curVersion) > 0
+                if (hasUpdate || returnLatestIfNoUpdate) {
                     return Release(
                         version = latestVersion,
                         changelog = description,
@@ -94,6 +100,7 @@ object AppUpdater {
                         apkSize = matchedAsset?.size ?: 0L,
                         publishedAt = release.publishedAt?.take(10).orEmpty(),
                         isCI = false,
+                        hasUpdate = hasUpdate,
                     )
                 }
             }
@@ -237,4 +244,5 @@ data class Release(
     val apkSize: Long = 0L,
     val publishedAt: String = "",
     val isCI: Boolean = false,
+    val hasUpdate: Boolean = true,
 )

@@ -84,5 +84,24 @@ class UpdateLogicTest {
         assertTrue("Download link must be APK download URL", link.endsWith(".apk"))
         assertTrue("Download link should prefer browserDownloadUrl", link.startsWith("https://github.com/download/"))
     }
+
+    @Test
+    fun testReleaseHasUpdateState() {
+        val updateRelease = com.hippo.ehviewer.updater.Release(
+            version = "1.16.0",
+            changelog = "new version changelog",
+            downloadLink = "https://github.com/download/EhViewer-1.16.0.apk",
+            hasUpdate = true,
+        )
+        assertTrue(updateRelease.hasUpdate)
+
+        val currentRelease = com.hippo.ehviewer.updater.Release(
+            version = "1.15.0",
+            changelog = "current version changelog",
+            downloadLink = "https://github.com/download/EhViewer-1.15.0.apk",
+            hasUpdate = false,
+        )
+        org.junit.Assert.assertFalse(currentRelease.hasUpdate)
+    }
 }
 
