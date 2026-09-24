@@ -583,7 +583,7 @@ class MainActivity : AppCompatActivity() {
                     Row(modifier = Modifier.fillMaxSize()) {
                         if (showNavigationRail) {
                             NavigationRail(
-                                state = null,
+                                expanded = false,
                                 modifier = Modifier
                                     .fillMaxHeight()
                                     .windowInsetsPadding(
