@@ -74,6 +74,18 @@
         <item>1</item>
     </integer-array>
 
+    <string-array name="gallery_detail_layout_entries" translatable="false">
+        <item>@string/settings_eh_detail_layout_auto</item>
+        <item>@string/settings_eh_detail_layout_single</item>
+        <item>@string/settings_eh_detail_layout_dual</item>
+    </string-array>
+
+    <integer-array name="gallery_detail_layout_entry_values" translatable="false">
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
+    </integer-array>
+
     <string-array name="search_min_rating" translatable="false">
         <item>@string/any</item>
         <item>@string/star_2</item>

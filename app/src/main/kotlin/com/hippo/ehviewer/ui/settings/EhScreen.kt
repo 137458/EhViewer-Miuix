@@ -229,6 +229,19 @@ fun AnimatedVisibilityScope.EhScreen(navigator: DestinationsNavigator) = Screen(
                         title = stringResource(id = R.string.settings_eh_thumb_columns),
                         state = Settings.thumbColumns.asMutableState(),
                     )
+                    IntSliderPreference(
+                        maxValue = 10,
+                        minValue = 0,
+                        title = stringResource(id = R.string.settings_eh_thumb_columns_land),
+                        summary = stringResource(id = R.string.settings_eh_thumb_columns_land_summary),
+                        state = Settings.thumbColumnsLand.asMutableState(),
+                    )
+                    SimpleMenuPreferenceInt(
+                        title = stringResource(id = R.string.settings_eh_detail_layout),
+                        entry = com.hippo.ehviewer.R.array.gallery_detail_layout_entries,
+                        entryValueRes = com.hippo.ehviewer.R.array.gallery_detail_layout_entry_values,
+                        state = Settings.galleryDetailLayout.asMutableState(),
+                    )
                     SwitchPreference(
                         title = stringResource(id = R.string.settings_eh_show_gallery_pages),
                         summary = stringResource(id = R.string.settings_eh_show_gallery_pages_summary),

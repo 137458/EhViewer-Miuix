@@ -80,6 +80,15 @@ object Settings : DataStorePreferences(null) {
     val listThumbSize = intPref("list_tile_size", 40)
     val detailSize = intPref("detail_size_2", 0)
     val thumbColumns = intPref("thumb_columns", 3)
+
+    /** 横屏下缩略图列数；0 表示未单独设置，回退 [thumbColumns]。 */
+    val thumbColumnsLand = intPref("thumb_columns_land", 0)
+
+    /** 画廊详情布局：0=跟随方向 / 1=单列 / 2=双栏。 */
+    val galleryDetailLayout = intPref("gallery_detail_layout", 0)
+
+    /** 画廊详情双栏中预览列的宽度百分比（%），拖拽分隔条后记忆。 */
+    val galleryDetailSplitPercent = intPref("gallery_detail_split_percent", 60)
     val showGalleryPages = boolPref("show_gallery_pages", true)
     val showReadingProgress = boolPref("show_reading_progress", false)
     val showVoteStatus = boolPref("show_vote_status", false)

@@ -6,7 +6,11 @@ import android.content.Intent
 import androidx.annotation.StringRes
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.MutatorMutex
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,6 +20,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -27,10 +32,12 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridScope
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -38,8 +45,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.LocalPinnableContainer
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -81,6 +90,7 @@ import com.ehviewer.core.ui.component.GalleryDetailRating
 import com.ehviewer.core.ui.component.GalleryRatingBar
 import com.ehviewer.core.ui.icons.EhIcons
 import com.ehviewer.core.ui.icons.filled.Magnet
+import com.ehviewer.core.ui.util.LocalWindowLayout
 import com.ehviewer.core.ui.util.LocalWindowSizeClass
 import com.ehviewer.core.ui.util.TransitionsVisibilityScope
 import com.ehviewer.core.ui.util.WindowLayout
@@ -114,6 +124,7 @@ import com.hippo.ehviewer.ktbuilder.imageRequest
 import com.hippo.ehviewer.ui.GalleryInfoBottomSheet
 import com.hippo.ehviewer.ui.MainActivity
 import com.hippo.ehviewer.ui.confirmRemoveDownload
+import com.hippo.ehviewer.ui.collectConfiguredThumbColumns
 import com.hippo.ehviewer.ui.destinations.GalleryCommentsScreenDestination
 import com.hippo.ehviewer.ui.getFavoriteIcon
 import com.hippo.ehviewer.ui.jumpToReaderByPage
@@ -170,6 +181,24 @@ import top.yukonga.miuix.kmp.icon.extended.Search
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.window.WindowBottomSheet
 
+/** 画廊详情布局模式：跟随方向。 */
+const val GALLERY_DETAIL_LAYOUT_AUTO = 0
+
+/** 画廊详情布局模式：强制单列。 */
+const val GALLERY_DETAIL_LAYOUT_SINGLE_COLUMN = 1
+
+/** 画廊详情布局模式：强制双栏。 */
+const val GALLERY_DETAIL_LAYOUT_DUAL_PANE = 2
+
+/** 双栏中单侧的最小宽度，避免任一栏被拖得不可用（借鉴 PixEz illust_row_page 的 atLeastWidth）。 */
+private const val DUAL_PANE_MIN_WIDTH_DP = 320
+
+/** 双栏分隔条的触摸区宽度。 */
+private const val DUAL_PANE_DIVIDER_WIDTH_DP = 28
+
+/** 分隔位置（百分比）的持久化范围。 */
+private val DUAL_PANE_SPLIT_PERCENT_RANGE = 20..80
+
 @Composable
 context(_: CoroutineScope, _: DestinationsNavigator, _: DialogState, _: MainActivity, _: SnackbarHostState, _: SharedTransitionScope, _: TransitionsVisibilityScope)
 fun GalleryDetailContent(
@@ -183,7 +212,7 @@ fun GalleryDetailContent(
     val keylineMargin = dimensionResource(com.hippo.ehviewer.R.dimen.keyline_margin)
     val galleryDetail = galleryInfo.asGalleryDetail()
     val windowSizeClass = LocalWindowSizeClass.current
-    val thumbColumns by Settings.thumbColumns.collectAsState()
+    val thumbColumns = collectConfiguredThumbColumns()
     val readText = stringResource(R.string.read)
     val startPage by rememberInVM {
         EhDB.getReadProgressFlow(galleryInfo.gid)
@@ -327,7 +356,114 @@ fun GalleryDetailContent(
     }
 
     val previews = galleryDetail?.collectPreviewItems()
+    val windowLayout = LocalWindowLayout.current
+    val detailLayoutMode by Settings.galleryDetailLayout.collectAsState()
+    val useDualPane = when (detailLayoutMode) {
+        GALLERY_DETAIL_LAYOUT_SINGLE_COLUMN -> false
+        GALLERY_DETAIL_LAYOUT_DUAL_PANE -> true
+        else -> windowLayout.isLargeLandscape
+    }
     when {
+        useDualPane -> BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+            val stripSpacing = dimensionResource(id = com.hippo.ehviewer.R.dimen.strip_item_padding)
+            val verticalSpacing = dimensionResource(id = com.hippo.ehviewer.R.dimen.strip_item_padding_v)
+            val density = LocalDensity.current
+            val totalWidthPx = with(density) { maxWidth.toPx() }
+            val minPaneFraction = if (maxWidth > DUAL_PANE_MIN_WIDTH_DP.dp * 2) {
+                DUAL_PANE_MIN_WIDTH_DP.dp / maxWidth
+            } else {
+                0.5f
+            }
+            var splitFraction by remember { mutableFloatStateOf(Settings.galleryDetailSplitPercent.value / 100f) }
+            val paneFraction = splitFraction.coerceIn(minPaneFraction, 1f - minPaneFraction)
+            Row(modifier = Modifier.fillMaxSize()) {
+                BoxWithConstraints(modifier = Modifier.weight(paneFraction).fillMaxHeight()) {
+                    val leftWidthDp = maxWidth.value.roundToInt().coerceAtLeast(1)
+                    FastScrollLazyVerticalGrid(
+                        columns = GridCells.Fixed(WindowLayout.thumbGridColumns(leftWidthDp, thumbColumns)),
+                        contentPadding = contentPadding,
+                        modifier = Modifier.fillMaxSize().padding(horizontal = keylineMargin),
+                        horizontalArrangement = Arrangement.spacedBy(stripSpacing),
+                        verticalArrangement = Arrangement.spacedBy(verticalSpacing),
+                    ) {
+                        if (galleryDetail != null && previews != null) {
+                            galleryPreview(galleryDetail, previews) { navToReader(galleryDetail.galleryInfo, it) }
+                        }
+                    }
+                }
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .width(DUAL_PANE_DIVIDER_WIDTH_DP.dp)
+                        .draggable(
+                            orientation = Orientation.Horizontal,
+                            state = rememberDraggableState { delta ->
+                                if (totalWidthPx > 0f) splitFraction += delta / totalWidthPx
+                            },
+                            onDragStopped = {
+                                Settings.galleryDetailSplitPercent.value =
+                                    (paneFraction * 100).roundToInt().coerceIn(DUAL_PANE_SPLIT_PERCENT_RANGE)
+                            },
+                        ),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .width(4.dp)
+                            .height(48.dp)
+                            .clip(RoundedCornerShape(2.dp))
+                            .background(MiuixTheme.colorScheme.onSurface.copy(alpha = 0.2f)),
+                    )
+                }
+                Column(
+                    modifier = Modifier
+                        .weight(1f - paneFraction)
+                        .fillMaxHeight()
+                        .padding(contentPadding)
+                        .verticalScroll(rememberScrollState()),
+                ) {
+                    Column(modifier = Modifier.padding(horizontal = keylineMargin)) {
+                        GalleryDetailHeaderCard(
+                            info = galleryInfo,
+                            onInfoCardClick = ::onGalleryInfoCardClick,
+                            onUploaderChipClick = ::onUploaderChipClick.partially1(galleryInfo),
+                            onBlockUploaderIconClick = ::showFilterUploaderDialog.partially1(galleryInfo),
+                            onCategoryChipClick = ::onCategoryChipClick,
+                            onCoverClick = ::onCoverClick,
+                            modifier = Modifier.fillMaxWidth().padding(vertical = keylineMargin),
+                        )
+                        Row {
+                            Button(
+                                onClick = ::onDownloadButtonClick,
+                                colors = ButtonDefaults.buttonColors(),
+                                modifier = Modifier.padding(horizontal = 4.dp).weight(1F),
+                            ) {
+                                Text(text = downloadButtonText, overflow = TextOverflow.Ellipsis, maxLines = 1)
+                            }
+                            Button(
+                                onClick = ::onReadButtonClick,
+                                colors = ButtonDefaults.buttonColorsPrimary(),
+                                modifier = Modifier.padding(horizontal = 4.dp).weight(1F),
+                            ) {
+                                Text(text = readButtonText, overflow = TextOverflow.Ellipsis, maxLines = 1)
+                            }
+                        }
+                        if (getDetailError.isNotBlank()) {
+                            GalleryDetailErrorTip(error = getDetailError, onClick = onRetry)
+                        } else if (galleryDetail != null) {
+                            BelowHeader(galleryDetail, voteTag)
+                        } else {
+                            Box(
+                                modifier = Modifier.fillMaxWidth().padding(keylineMargin),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                InfiniteProgressIndicator()
+                            }
+                        }
+                    }
+                }
+            }
+        }
         !windowSizeClass.isExpanded -> BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
             // 横屏手机/窄平板同样要按可用宽度补足列数，否则固定列数会把预览图拉得过宽
             val stripSpacing = dimensionResource(id = com.hippo.ehviewer.R.dimen.strip_item_padding)

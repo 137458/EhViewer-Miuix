@@ -101,6 +101,7 @@ import com.hippo.ehviewer.download.DownloadsFilterMode
 import com.hippo.ehviewer.download.SortMode
 import com.hippo.ehviewer.ui.DrawerHandle
 import com.hippo.ehviewer.ui.Screen
+import com.hippo.ehviewer.ui.collectConfiguredThumbColumns
 import com.hippo.ehviewer.ui.confirmRemoveDownloadRange
 import com.hippo.ehviewer.ui.destinations.HistoryScreenDestination
 import com.hippo.ehviewer.ui.main.DownloadCard
@@ -650,7 +651,7 @@ fun AnimatedVisibilityScope.DownloadsScreen(navigator: DestinationsNavigator) = 
             Crossfade(targetState = gridView, label = "Downloads") { showGridView ->
                 if (showGridView) {
                     val gridInterval = dimensionResource(com.hippo.ehviewer.R.dimen.gallery_grid_interval)
-                    val configuredThumbColumns by Settings.thumbColumns.collectAsState()
+                    val configuredThumbColumns = collectConfiguredThumbColumns()
                     // 横屏/宽屏下按可用宽度补足列数，避免固定列数把缩略图拉得过宽
                     val thumbColumns = WindowLayout.thumbGridColumns(availableWidthDp, configuredThumbColumns)
                     FastScrollLazyVerticalStaggeredGrid(

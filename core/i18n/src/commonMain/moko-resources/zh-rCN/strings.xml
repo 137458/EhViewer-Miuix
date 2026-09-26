@@ -314,6 +314,12 @@
     <string name="settings_eh_detail_size_long">长</string>
     <string name="settings_eh_detail_size_short">短</string>
     <string name="settings_eh_thumb_columns">缩略图列数</string>
+    <string name="settings_eh_thumb_columns_land">横屏缩略图列数</string>
+    <string name="settings_eh_thumb_columns_land_summary">0 = 跟随竖屏设置</string>
+    <string name="settings_eh_detail_layout">画廊详情布局</string>
+    <string name="settings_eh_detail_layout_auto">跟随方向</string>
+    <string name="settings_eh_detail_layout_single">单列</string>
+    <string name="settings_eh_detail_layout_dual">双栏</string>
     <string name="settings_eh_show_jpn_title">显示日文标题</string>
     <string name="settings_eh_show_jpn_title_summary">需同时在 EHentai 网站设置中启用 Japanese Title</string>
     <string name="settings_eh_show_gallery_pages">显示画廊页数</string>

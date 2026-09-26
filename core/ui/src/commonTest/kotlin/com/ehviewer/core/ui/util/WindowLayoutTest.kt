@@ -50,6 +50,21 @@ class WindowLayoutTest {
     }
 
     @Test
+    fun largeLandscapeRequiresLandscapeOrientationAndWidthFloor() {
+        // 横屏手机 800x412dp：双栏详情的目标场景
+        assertTrue(WindowLayout(800, 412).isLargeLandscape)
+        assertTrue(WindowLayout(1280, 800).isLargeLandscape)
+        // 宽度恰好在断点上
+        assertTrue(WindowLayout(600, 500).isLargeLandscape)
+        // 折叠屏外屏横屏（344x208dp）：宽度不足，双栏放不下
+        assertFalse(WindowLayout(344, 208).isLargeLandscape)
+        assertFalse(WindowLayout(599, 500).isLargeLandscape)
+        // 竖屏窗口（含竖屏平板）：不启用双栏
+        assertFalse(WindowLayout(800, 1280).isLargeLandscape)
+        assertFalse(WindowLayout(412, 892).isLargeLandscape)
+    }
+
+    @Test
     fun shortLandscapeOnlyMatchesLowHeightLandscapeWindows() {
         assertTrue(WindowLayout(800, 412).isShortLandscape)
         assertFalse(WindowLayout(1280, 800).isShortLandscape)

@@ -50,11 +50,10 @@ import com.ehviewer.core.ui.icons.EhIcons
 import com.ehviewer.core.ui.icons.big.SadAndroid
 import com.ehviewer.core.ui.util.WindowLayout
 import com.ehviewer.core.util.launch
-import com.hippo.ehviewer.Settings
 import com.hippo.ehviewer.client.exception.NoHitsFoundException
 import com.hippo.ehviewer.coil.PrefetchAround
-import com.hippo.ehviewer.collectAsState
 import com.hippo.ehviewer.ktbuilder.imageRequest
+import com.hippo.ehviewer.ui.collectConfiguredThumbColumns
 import com.hippo.ehviewer.ui.screen.collectDetailSizeAsState
 import com.hippo.ehviewer.util.displayString
 import kotlin.math.roundToInt
@@ -160,7 +159,7 @@ fun GalleryList(
                 }
             } else {
                 val gridInterval = dimensionResource(com.hippo.ehviewer.R.dimen.gallery_grid_interval)
-                val configuredThumbColumns by Settings.thumbColumns.collectAsState()
+                val configuredThumbColumns = collectConfiguredThumbColumns()
                 // 横屏/宽屏下按可用宽度补足列数，避免固定列数把缩略图拉得过宽
                 val thumbColumns = WindowLayout.thumbGridColumns(availableWidthDp, configuredThumbColumns)
                 FastScrollLazyVerticalStaggeredGrid(

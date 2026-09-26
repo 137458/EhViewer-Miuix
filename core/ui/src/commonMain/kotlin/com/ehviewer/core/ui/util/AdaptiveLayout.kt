@@ -44,6 +44,9 @@ object AdaptiveBreakpoints {
     /** 横屏矮视口下侧栏抽屉的宽度上限。 */
     const val SHEET_COMPACT_MAX_WIDTH_DP = 420
 
+    /** 阅读器底部工具栏的宽度上限。 */
+    const val READER_BAR_MAX_WIDTH_DP = 600
+
     /** 弹层高度占可用窗口高度的上限比例。 */
     const val OVERLAY_MAX_HEIGHT_RATIO = 0.6f
 
@@ -83,6 +86,15 @@ data class WindowLayout(
      */
     val isShortLandscape: Boolean
         get() = isLandscape && heightDp < AdaptiveBreakpoints.RAIL_MIN_HEIGHT_DP
+
+    /**
+     * 大横屏：横屏且宽度达到侧栏断点。
+     *
+     * 画廊详情双栏的启用条件：宽度足够同时放下预览列与信息列；
+     * 折叠屏外屏这类窄横屏不满足。
+     */
+    val isLargeLandscape: Boolean
+        get() = isLandscape && widthDp >= AdaptiveBreakpoints.RAIL_MIN_WIDTH_DP
 
     /** 矮视口（横屏手机、分屏等）：弹层与更新日志视口需要收紧。 */
     val isCompactHeight: Boolean get() = heightDp < AdaptiveBreakpoints.COMPACT_HEIGHT_MIN_DP

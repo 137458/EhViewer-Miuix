@@ -330,6 +330,12 @@
     <string name="settings_eh_detail_size_long">Long</string>
     <string name="settings_eh_detail_size_short">Short</string>
     <string name="settings_eh_thumb_columns">Thumb columns</string>
+    <string name="settings_eh_thumb_columns_land">Landscape thumb columns</string>
+    <string name="settings_eh_thumb_columns_land_summary">0 = follow portrait setting</string>
+    <string name="settings_eh_detail_layout">Gallery detail layout</string>
+    <string name="settings_eh_detail_layout_auto">Follow orientation</string>
+    <string name="settings_eh_detail_layout_single">Single column</string>
+    <string name="settings_eh_detail_layout_dual">Dual pane</string>
     <string name="settings_eh_show_jpn_title">Show Japanese title</string>
     <string name="settings_eh_show_jpn_title_summary">Require enabling Japanese Title in Settings on EHentai website</string>
     <string name="settings_eh_show_gallery_pages">Show gallery pages</string>
