@@ -135,7 +135,17 @@ class AndroidFileSystem(context: Context) : FileSystem() {
                 physicalFileSystem.delete(fileOrDirectory, mustExist)
             }
         } else {
-            delete(fileOrDirectory, mustExist)
+            val metadata = metadataOrNull(fileOrDirectory)
+            if (metadata == null) {
+                if (mustExist) throw FileNotFoundException("$fileOrDirectory does not exist")
+                return
+            }
+            if (metadata.isDirectory) {
+                list(fileOrDirectory).forEach { child ->
+                    deleteRecursively(child, mustExist = true)
+                }
+            }
+            delete(fileOrDirectory, mustExist = true)
         }
     }
 
