@@ -67,6 +67,7 @@ import com.hippo.ehviewer.ktor.Cronet
 import com.hippo.ehviewer.ktor.configureClient
 import com.hippo.ehviewer.ktor.configureCommon
 import com.hippo.ehviewer.ktor.isCronetAvailable
+import com.hippo.ehviewer.shortcuts.updateDownloadShortcuts
 import com.hippo.ehviewer.ui.keepNoMediaFileStatus
 import com.hippo.ehviewer.ui.screen.detailCache
 import com.hippo.ehviewer.ui.tools.dataStateFlow
@@ -122,6 +123,7 @@ class EhApplication : Application(), SingletonImageLoader.Factory {
             }
         }
         launchIO {
+            this@EhApplication.updateDownloadShortcuts()
             EhTagDatabase.launchUpdate()
             // 已登录时把 e-hentai 的身份 Cookie 同步到 exhentai（原先藏在 hasSignedIn() 的副作用里，
             // 会在 Settings 初始化时于调用线程同步写盘）

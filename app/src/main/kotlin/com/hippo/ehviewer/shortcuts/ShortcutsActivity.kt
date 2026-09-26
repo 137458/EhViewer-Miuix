@@ -17,6 +17,7 @@ package com.hippo.ehviewer.shortcuts
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.pm.ShortcutManagerCompat
 import com.hippo.ehviewer.download.DownloadService
 
 /**
@@ -26,7 +27,10 @@ class ShortcutsActivity : AppCompatActivity() {
     public override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         when (val action = intent?.action) {
-            DownloadService.ACTION_START_ALL, DownloadService.ACTION_STOP_ALL -> DownloadService.startService(action)
+            DownloadService.ACTION_START_ALL, DownloadService.ACTION_STOP_ALL -> {
+                shortcutIds[action]?.let { ShortcutManagerCompat.reportShortcutUsed(this, it) }
+                DownloadService.startService(action)
+            }
         }
         finish()
     }
