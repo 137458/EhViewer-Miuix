@@ -18,8 +18,10 @@ import com.hippo.ehviewer.util.AppConfig
 import com.hippo.ehviewer.util.ReadableTime
 import com.hippo.ehviewer.util.installPackage
 import java.io.File
+import java.util.concurrent.atomic.AtomicLong
 import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
@@ -34,6 +36,7 @@ import splitties.init.appCtx
  */
 object UpdateDownloadManager {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val generation = AtomicLong()
     private var downloadJob: Job? = null
 
     var isDownloading by mutableStateOf(false)
@@ -52,6 +55,7 @@ object UpdateDownloadManager {
         private set
 
     fun cancel() {
+        generation.incrementAndGet()
         downloadJob?.cancel()
         downloadJob = null
         isDownloading = false
@@ -62,6 +66,7 @@ object UpdateDownloadManager {
 
     fun startDownload(release: Release, isSimulated: Boolean, context: Context = appCtx) {
         cancel()
+        val downloadGeneration = generation.incrementAndGet()
         isDownloading = true
         downloadError = null
         downloadedFile = null
@@ -73,40 +78,45 @@ object UpdateDownloadManager {
         var lastSpeedUpdateTime = System.currentTimeMillis()
         var lastSpeedBytes = 0L
 
-        downloadJob = scope.launch {
-            if (isSimulated) {
-                // ── 交互式沙盒模拟链路 ──
-                val simTotal = if (release.apkSize > 0L) release.apkSize else 44256789L
-                totalBytes = simTotal
-                val steps = 30
-                for (i in 1..steps) {
-                    delay(80)
-                    val p = i.toFloat() / steps
-                    downloadProgress = p
-                    downloadedBytes = (simTotal * p).toLong()
-                    downloadSpeed = (7_500_000L + (Math.random() * 2_500_000L).toLong())
-                }
-                isDownloading = false
-                downloadedFile = File(AppConfig.tempDir.toFile(), "ehviewer-update-simulated.apk")
-                downloadJob = null
-                Toast.makeText(context, context.getString(R.string.update_dialog_ready_install), Toast.LENGTH_SHORT).show()
-                return@launch
-            }
-
-            if (Settings.backupBeforeUpdate.value) {
-                runCatching {
-                    val time = ReadableTime.getFilenamableTime()
-                    EhDB.exportDB(downloadLocation / "$time.db")
-                }
-            }
-
-            val targetPath = AppConfig.tempDir / "update.apk"
+        val job = scope.launch(start = CoroutineStart.LAZY) {
             try {
+                if (isSimulated) {
+                    // ── 交互式沙盒模拟链路 ──
+                    val simTotal = if (release.apkSize > 0L) release.apkSize else 44256789L
+                    if (generation.get() != downloadGeneration) return@launch
+                    totalBytes = simTotal
+                    val steps = 30
+                    for (i in 1..steps) {
+                        delay(80)
+                        if (generation.get() != downloadGeneration) return@launch
+                        val p = i.toFloat() / steps
+                        downloadProgress = p
+                        downloadedBytes = (simTotal * p).toLong()
+                        downloadSpeed = (7_500_000L + (Math.random() * 2_500_000L).toLong())
+                    }
+                    if (generation.get() == downloadGeneration) {
+                        isDownloading = false
+                        downloadedFile = File(AppConfig.tempDir.toFile(), "ehviewer-update-simulated.apk")
+                        downloadJob = null
+                        Toast.makeText(context, context.getString(R.string.update_dialog_ready_install), Toast.LENGTH_SHORT).show()
+                    }
+                    return@launch
+                }
+
+                if (Settings.backupBeforeUpdate.value) {
+                    runCatching {
+                        val time = ReadableTime.getFilenamableTime()
+                        EhDB.exportDB(downloadLocation / "$time.db")
+                    }
+                }
+
+                val targetPath = AppConfig.tempDir / "update.apk"
                 targetPath.delete()
                 AppUpdater.downloadUpdate(
                     url = release.downloadLink,
                     path = targetPath,
                     onProgress = { progress, downloaded, total ->
+                        if (generation.get() != downloadGeneration) return@downloadUpdate
                         downloadProgress = progress
                         downloadedBytes = downloaded
                         totalBytes = total
@@ -125,17 +135,23 @@ object UpdateDownloadManager {
                     },
                 )
                 val file = targetPath.toFile()
-                downloadedFile = file
-                isDownloading = false
-                downloadJob = null
-                with(context) { runCatching { installPackage(file) } }
+                if (generation.get() == downloadGeneration) {
+                    downloadedFile = file
+                    isDownloading = false
+                    downloadJob = null
+                    with(context) { runCatching { installPackage(file) } }
+                }
             } catch (e: Exception) {
-                isDownloading = false
-                downloadJob = null
-                if (e !is CancellationException) {
-                    downloadError = e.localizedMessage ?: "Download failed"
+                if (generation.get() == downloadGeneration) {
+                    isDownloading = false
+                    downloadJob = null
+                    if (e !is CancellationException) {
+                        downloadError = e.localizedMessage ?: "Download failed"
+                    }
                 }
             }
         }
+        downloadJob = job
+        job.start()
     }
 }

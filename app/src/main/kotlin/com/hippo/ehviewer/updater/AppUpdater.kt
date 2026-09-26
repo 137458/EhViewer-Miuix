@@ -41,7 +41,6 @@ object AppUpdater {
         val last = Instant.fromEpochSeconds(Settings.lastUpdateTime)
         val interval = Settings.updateIntervalDays.value
         if (forceCheck || interval != 0 && now > last + interval.days) {
-            Settings.lastUpdateTime = now.epochSeconds
             if (Settings.useCIUpdateChannel.value) {
                 val curSha = BuildConfig.COMMIT_SHA
                 val branch = runSuspendCatching {
@@ -63,6 +62,8 @@ object AppUpdater {
                         // A successful workflow may publish no artifact. Let the release
                         // channel fallback handle that case instead of returning a broken URL.
                         if (archiveUrl.isNotBlank()) {
+                            // A successful check is throttled; failed checks remain retryable.
+                            Settings.lastUpdateTime = now.epochSeconds
                             val changelog = runSuspendCatching {
                                 val commitComparisonUrl = "$API_URL/compare/$curSha...$shortSha"
                                 val result = ghStatement(commitComparisonUrl).executeAndParseAs<GithubCommitComparison>()
@@ -90,6 +91,8 @@ object AppUpdater {
             val curVersion = BuildConfig.RAW_VERSION_NAME
             // 不能吞掉异常：否则限流/网络失败会被当成「已是最新版本」，用户也看不到失败提示
             val release = ghStatement(LATEST_RELEASE_URL).executeAndParseAs<GithubRelease>()
+            // Persist the throttle timestamp only after the response has been parsed.
+            Settings.lastUpdateTime = now.epochSeconds
             return resolveRelease(release, curVersion, returnLatestIfNoUpdate)
         }
         return null
