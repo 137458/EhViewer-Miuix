@@ -48,6 +48,7 @@ import com.ehviewer.core.ui.effect.BgEffectBackground
 import com.ehviewer.core.ui.effect.isRuntimeShaderSupported
 import com.ehviewer.core.ui.util.LocalBottomBarContentPadding
 import com.ehviewer.core.ui.util.LocalWindowLayout
+import com.ehviewer.core.ui.util.readableWidth
 import com.ehviewer.core.util.launch
 import com.hippo.ehviewer.BuildConfig
 import com.hippo.ehviewer.Settings
@@ -267,7 +268,7 @@ fun AnimatedVisibilityScope.UpdateScreen(navigator: DestinationsNavigator) = Scr
                     state = lazyListState,
                     modifier = Modifier
                         .fillMaxSize()
-                        .widthIn(max = 760.dp)
+                        .readableWidth()
                         .nestedScroll(topAppBarScrollBehavior.nestedScrollConnection),
                     contentPadding = PaddingValues(
                         top = innerPadding.calculateTopPadding(),

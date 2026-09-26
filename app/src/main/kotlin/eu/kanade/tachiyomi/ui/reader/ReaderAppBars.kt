@@ -22,6 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import com.ehviewer.core.ui.util.AdaptiveBreakpoints
 import com.ehviewer.core.ui.util.LocalWindowLayout
 import com.hippo.ehviewer.ui.main.NavigationIcon
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
@@ -73,7 +74,7 @@ fun BoxScope.ReaderAppBars(
             modifier = Modifier
                 .navigationBarsPadding()
                 .padding(horizontal = horizontalPadding, vertical = verticalPadding)
-                .widthIn(max = 600.dp)
+                .widthIn(max = AdaptiveBreakpoints.READER_BAR_MAX_WIDTH_DP.dp)
                 .fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(if (windowLayout.isShortLandscape) 4.dp else 10.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
