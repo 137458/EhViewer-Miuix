@@ -108,6 +108,15 @@ class DownloadService :
         return START_STICKY
     }
 
+    // Android 15 起 dataSync 类型前台服务有 24 小时内的累计时长上限，超时后系统回调此处，
+    // 必须尽快 stopSelf，否则按 ANR 处理。下载进度已持久化，用户可稍后手动恢复。
+    override fun onTimeout(startId: Int, fgsType: Int) {
+        launch {
+            deferredMgr.await().stopAllDownload()
+            stopSelf()
+        }
+    }
+
     private suspend fun handleIntent(intent: Intent?) {
         when (intent?.action) {
             ACTION_START -> {
