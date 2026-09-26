@@ -328,67 +328,73 @@ fun GalleryDetailContent(
 
     val previews = galleryDetail?.collectPreviewItems()
     when {
-        !windowSizeClass.isExpanded -> FastScrollLazyVerticalGrid(
-            columns = GridCells.Fixed(thumbColumns),
-            contentPadding = contentPadding,
-            modifier = modifier.padding(horizontal = keylineMargin),
-            horizontalArrangement = Arrangement.spacedBy(dimensionResource(id = com.hippo.ehviewer.R.dimen.strip_item_padding)),
-            verticalArrangement = Arrangement.spacedBy(dimensionResource(id = com.hippo.ehviewer.R.dimen.strip_item_padding_v)),
-        ) {
-            item(
-                key = "header",
-                span = { GridItemSpan(maxCurrentLineSpan) },
-                contentType = "header",
+        !windowSizeClass.isExpanded -> BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+            // 横屏手机/窄平板同样要按可用宽度补足列数，否则固定列数会把预览图拉得过宽
+            val stripSpacing = dimensionResource(id = com.hippo.ehviewer.R.dimen.strip_item_padding)
+            val gridWidthDp = (maxWidth - keylineMargin * 2).value.roundToInt().coerceAtLeast(1)
+            val previewColumns = WindowLayout.thumbGridColumns(gridWidthDp, thumbColumns)
+            FastScrollLazyVerticalGrid(
+                columns = GridCells.Fixed(previewColumns),
+                contentPadding = contentPadding,
+                modifier = modifier.padding(horizontal = keylineMargin),
+                horizontalArrangement = Arrangement.spacedBy(stripSpacing),
+                verticalArrangement = Arrangement.spacedBy(dimensionResource(id = com.hippo.ehviewer.R.dimen.strip_item_padding_v)),
             ) {
-                GalleryDetailHeaderCard(
-                    info = galleryInfo,
-                    onInfoCardClick = ::onGalleryInfoCardClick,
-                    onUploaderChipClick = ::onUploaderChipClick.partially1(galleryInfo),
-                    onBlockUploaderIconClick = ::showFilterUploaderDialog.partially1(galleryInfo),
-                    onCategoryChipClick = ::onCategoryChipClick,
-                    onCoverClick = ::onCoverClick,
-                    modifier = Modifier.fillMaxWidth().padding(vertical = keylineMargin),
-                )
-            }
-            item(
-                key = "body",
-                span = { GridItemSpan(maxCurrentLineSpan) },
-                contentType = "body",
-            ) {
-                LocalPinnableContainer.current!!.run { remember { pin() } }
-                Column {
-                    Row {
-                        Button(
-                            onClick = ::onDownloadButtonClick,
-                            colors = ButtonDefaults.buttonColors(),
-                            modifier = Modifier.padding(horizontal = 4.dp).weight(1F),
-                        ) {
-                            Text(text = downloadButtonText, overflow = TextOverflow.Ellipsis, maxLines = 1)
+                item(
+                    key = "header",
+                    span = { GridItemSpan(maxCurrentLineSpan) },
+                    contentType = "header",
+                ) {
+                    GalleryDetailHeaderCard(
+                        info = galleryInfo,
+                        onInfoCardClick = ::onGalleryInfoCardClick,
+                        onUploaderChipClick = ::onUploaderChipClick.partially1(galleryInfo),
+                        onBlockUploaderIconClick = ::showFilterUploaderDialog.partially1(galleryInfo),
+                        onCategoryChipClick = ::onCategoryChipClick,
+                        onCoverClick = ::onCoverClick,
+                        modifier = Modifier.fillMaxWidth().padding(vertical = keylineMargin),
+                    )
+                }
+                item(
+                    key = "body",
+                    span = { GridItemSpan(maxCurrentLineSpan) },
+                    contentType = "body",
+                ) {
+                    LocalPinnableContainer.current!!.run { remember { pin() } }
+                    Column {
+                        Row {
+                            Button(
+                                onClick = ::onDownloadButtonClick,
+                                colors = ButtonDefaults.buttonColors(),
+                                modifier = Modifier.padding(horizontal = 4.dp).weight(1F),
+                            ) {
+                                Text(text = downloadButtonText, overflow = TextOverflow.Ellipsis, maxLines = 1)
+                            }
+                            Button(
+                                onClick = ::onReadButtonClick,
+                                colors = ButtonDefaults.buttonColorsPrimary(),
+                                modifier = Modifier.padding(horizontal = 4.dp).weight(1F),
+                            ) {
+                                Text(text = readButtonText, overflow = TextOverflow.Ellipsis, maxLines = 1)
+                            }
                         }
-                        Button(
-                            onClick = ::onReadButtonClick,
-                            colors = ButtonDefaults.buttonColorsPrimary(),
-                            modifier = Modifier.padding(horizontal = 4.dp).weight(1F),
-                        ) {
-                            Text(text = readButtonText, overflow = TextOverflow.Ellipsis, maxLines = 1)
-                        }
-                    }
-                    if (getDetailError.isNotBlank()) {
-                        GalleryDetailErrorTip(error = getDetailError, onClick = onRetry)
-                    } else if (galleryDetail != null) {
-                        BelowHeader(galleryDetail, voteTag)
-                    } else {
-                        Box(
-                            modifier = Modifier.fillMaxSize().padding(keylineMargin),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            InfiniteProgressIndicator()
+                        if (getDetailError.isNotBlank()) {
+                            GalleryDetailErrorTip(error = getDetailError, onClick = onRetry)
+                        } else if (galleryDetail != null) {
+                            BelowHeader(galleryDetail, voteTag)
+                        } else {
+                            Box(
+                                modifier = Modifier.fillMaxSize().padding(keylineMargin),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                InfiniteProgressIndicator()
+                            }
                         }
                     }
                 }
-            }
-            if (galleryDetail != null && previews != null) {
-                galleryPreview(galleryDetail, previews) { navToReader(galleryDetail.galleryInfo, it) }
+                if (galleryDetail != null && previews != null) {
+                    galleryPreview(galleryDetail, previews) { navToReader(galleryDetail.galleryInfo, it) }
+                }
             }
         }
         else -> BoxWithConstraints(modifier = Modifier.fillMaxSize()) {

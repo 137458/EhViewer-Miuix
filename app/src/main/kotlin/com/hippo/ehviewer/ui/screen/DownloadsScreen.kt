@@ -9,6 +9,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -17,6 +18,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.plus
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -64,6 +67,7 @@ import com.ehviewer.core.ui.component.DismissDeleteBackground
 import com.ehviewer.core.ui.component.FAB_ANIMATE_TIME
 import com.ehviewer.core.ui.component.FabLayout
 import com.ehviewer.core.ui.component.FastScrollLazyColumn
+import com.ehviewer.core.ui.component.FastScrollLazyVerticalGrid
 import com.ehviewer.core.ui.component.FastScrollLazyVerticalStaggeredGrid
 import com.ehviewer.core.ui.component.LocalSideSheetState
 import com.ehviewer.core.ui.component.ProvideSideSheetContent
@@ -73,7 +77,6 @@ import com.ehviewer.core.ui.icons.EhIcons
 import com.ehviewer.core.ui.icons.big.Download
 import com.ehviewer.core.ui.icons.filled.Shuffle
 import com.ehviewer.core.ui.util.HapticFeedbackType
-import com.ehviewer.core.ui.util.LocalWindowLayout
 import com.ehviewer.core.ui.util.WindowLayout
 import com.ehviewer.core.ui.util.asyncState
 import com.ehviewer.core.ui.util.ifTrueThen
@@ -617,8 +620,8 @@ fun AnimatedVisibilityScope.DownloadsScreen(navigator: DestinationsNavigator) = 
         },
     ) { contentPadding ->
         val height by collectListThumbSizeAsState()
-        val availableWidthDp = LocalWindowLayout.current.widthDp
-        val realPadding = contentPadding + PaddingValues(dimensionResource(id = com.hippo.ehviewer.R.dimen.gallery_list_margin_h), dimensionResource(id = com.hippo.ehviewer.R.dimen.gallery_list_margin_v))
+        val marginH = dimensionResource(id = com.hippo.ehviewer.R.dimen.gallery_list_margin_h)
+        val realPadding = contentPadding + PaddingValues(marginH, dimensionResource(id = com.hippo.ehviewer.R.dimen.gallery_list_margin_v))
         val searchBarConnection = remember {
             val slop = ViewConfiguration.get(contextOf<Context>()).scaledTouchSlop
             val topPaddingPx = with(density) { contentPadding.calculateTopPadding().roundToPx() }
@@ -641,93 +644,107 @@ fun AnimatedVisibilityScope.DownloadsScreen(navigator: DestinationsNavigator) = 
             navToReader(info.galleryInfo)
         }
 
-        Crossfade(targetState = gridView, label = "Downloads") { showGridView ->
-            if (showGridView) {
-                val gridInterval = dimensionResource(com.hippo.ehviewer.R.dimen.gallery_grid_interval)
-                val configuredThumbColumns by Settings.thumbColumns.collectAsState()
-                // 横屏/宽屏下按可用宽度补足列数，避免固定列数把缩略图拉得过宽
-                val thumbColumns = WindowLayout.thumbGridColumns(availableWidthDp, configuredThumbColumns)
-                FastScrollLazyVerticalStaggeredGrid(
-                    columns = StaggeredGridCells.Fixed(thumbColumns),
-                    modifier = Modifier.nestedScroll(searchBarConnection).fillMaxSize(),
-                    contentPadding = realPadding,
-                    verticalItemSpacing = gridInterval,
-                    horizontalArrangement = Arrangement.spacedBy(gridInterval),
-                ) {
-                    items(list, key = { it.gid }) { info ->
-                        val checked = info.gid in checkedInfoMap
-                        CheckableItem(
-                            checked = checked,
-                            modifier = Modifier.thenIf(animateItems) { animateItem() },
-                        ) { interactionSource ->
-                            GalleryInfoGridItem(
-                                onClick = {
-                                    if (selectMode) {
-                                        if (checked) {
-                                            checkedInfoMap.remove(info.gid)
+        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+            // 列宽按网格自身可用宽度算：窗口宽度会把侧边导航栏与外边距也算进去，宽屏下列数偏多
+            val availableWidthDp = (maxWidth - marginH * 2).value.roundToInt().coerceAtLeast(1)
+            Crossfade(targetState = gridView, label = "Downloads") { showGridView ->
+                if (showGridView) {
+                    val gridInterval = dimensionResource(com.hippo.ehviewer.R.dimen.gallery_grid_interval)
+                    val configuredThumbColumns by Settings.thumbColumns.collectAsState()
+                    // 横屏/宽屏下按可用宽度补足列数，避免固定列数把缩略图拉得过宽
+                    val thumbColumns = WindowLayout.thumbGridColumns(availableWidthDp, configuredThumbColumns)
+                    FastScrollLazyVerticalStaggeredGrid(
+                        columns = StaggeredGridCells.Fixed(thumbColumns),
+                        modifier = Modifier.nestedScroll(searchBarConnection).fillMaxSize(),
+                        contentPadding = realPadding,
+                        verticalItemSpacing = gridInterval,
+                        horizontalArrangement = Arrangement.spacedBy(gridInterval),
+                    ) {
+                        items(list, key = { it.gid }) { info ->
+                            val checked = info.gid in checkedInfoMap
+                            CheckableItem(
+                                checked = checked,
+                                modifier = Modifier.thenIf(animateItems) { animateItem() },
+                            ) { interactionSource ->
+                                GalleryInfoGridItem(
+                                    onClick = {
+                                        if (selectMode) {
+                                            if (checked) {
+                                                checkedInfoMap.remove(info.gid)
+                                            } else {
+                                                checkedInfoMap[info.gid] = info
+                                            }
                                         } else {
-                                            checkedInfoMap[info.gid] = info
+                                            onItemClick(info)
                                         }
+                                    },
+                                    onLongClick = {
+                                        checkedInfoMap[info.gid] = info
+                                    },
+                                    info = info,
+                                    onThumbClick = if (selectMode) {
+                                        null
                                     } else {
-                                        onItemClick(info)
-                                    }
-                                },
-                                onLongClick = {
-                                    checkedInfoMap[info.gid] = info
-                                },
-                                info = info,
-                                onThumbClick = if (selectMode) {
-                                    null
-                                } else {
-                                    { navigate(info.galleryInfo.asDst()) }
-                                },
-                                showLanguage = false,
-                                showProgress = showProgress,
-                                interactionSource = interactionSource,
-                            )
+                                        { navigate(info.galleryInfo.asDst()) }
+                                    },
+                                    showLanguage = false,
+                                    showProgress = showProgress,
+                                    interactionSource = interactionSource,
+                                )
+                            }
                         }
                     }
-                }
-            } else {
-                FastScrollLazyColumn(
-                    modifier = Modifier.nestedScroll(searchBarConnection).fillMaxSize(),
-                    contentPadding = realPadding,
-                    verticalArrangement = Arrangement.spacedBy(dimensionResource(com.hippo.ehviewer.R.dimen.gallery_list_interval)),
-                ) {
-                    items(list, key = { it.gid }) { info ->
-                        val checked = info.gid in checkedInfoMap
-                        CheckableItem(
-                            checked = checked,
-                            modifier = Modifier.thenIf(animateItems) { animateItem() },
-                        ) { interactionSource ->
-                            DownloadCard(
-                                onClick = {
-                                    if (selectMode) {
-                                        if (checked) {
-                                            checkedInfoMap.remove(info.gid)
+                } else {
+                    val listSpacing = dimensionResource(com.hippo.ehviewer.R.dimen.gallery_list_interval)
+                    val configuredColumnWidth by collectDetailSizeAsState()
+                    // 宽屏下压最小列宽，保证下载列表至少两列而不是把卡片拉伸成满宽
+                    val columnWidth = WindowLayout.detailMinColumnWidth(
+                        availableWidthDp = availableWidthDp,
+                        configuredMinWidthDp = configuredColumnWidth.value.toInt(),
+                        spacingDp = listSpacing.value.roundToInt(),
+                    ).dp
+                    FastScrollLazyVerticalGrid(
+                        columns = GridCells.Adaptive(columnWidth),
+                        modifier = Modifier.nestedScroll(searchBarConnection).fillMaxSize(),
+                        contentPadding = realPadding,
+                        verticalArrangement = Arrangement.spacedBy(listSpacing),
+                        horizontalArrangement = Arrangement.spacedBy(listSpacing),
+                    ) {
+                        items(list, key = { it.gid }) { info ->
+                            val checked = info.gid in checkedInfoMap
+                            CheckableItem(
+                                checked = checked,
+                                modifier = Modifier.thenIf(animateItems) { animateItem() },
+                            ) { interactionSource ->
+                                DownloadCard(
+                                    onClick = {
+                                        if (selectMode) {
+                                            if (checked) {
+                                                checkedInfoMap.remove(info.gid)
+                                            } else {
+                                                checkedInfoMap[info.gid] = info
+                                            }
                                         } else {
-                                            checkedInfoMap[info.gid] = info
+                                            onItemClick(info)
                                         }
-                                    } else {
-                                        onItemClick(info)
-                                    }
-                                },
-                                onThumbClick = {
-                                    navigate(info.galleryInfo.asDst())
-                                },
-                                onLongClick = {
-                                    checkedInfoMap[info.gid] = info
-                                },
-                                onStart = {
-                                    DownloadService.startDownload(info.galleryInfo)
-                                },
-                                onStop = { launchIO { DownloadManager.stopDownload(info.gid) } },
-                                info = info,
-                                selectMode = selectMode,
-                                showProgress = showProgress,
-                                modifier = Modifier.height(height),
-                                interactionSource = interactionSource,
-                            )
+                                    },
+                                    onThumbClick = {
+                                        navigate(info.galleryInfo.asDst())
+                                    },
+                                    onLongClick = {
+                                        checkedInfoMap[info.gid] = info
+                                    },
+                                    onStart = {
+                                        DownloadService.startDownload(info.galleryInfo)
+                                    },
+                                    onStop = { launchIO { DownloadManager.stopDownload(info.gid) } },
+                                    info = info,
+                                    selectMode = selectMode,
+                                    showProgress = showProgress,
+                                    modifier = Modifier.height(height),
+                                    interactionSource = interactionSource,
+                                )
+                            }
                         }
                     }
                 }

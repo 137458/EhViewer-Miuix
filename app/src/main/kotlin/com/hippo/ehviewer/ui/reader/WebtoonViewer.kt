@@ -16,6 +16,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import com.ehviewer.core.ui.util.AdaptiveBreakpoints
 import com.hippo.ehviewer.Settings
 import com.hippo.ehviewer.collectAsState
 import com.hippo.ehviewer.gallery.Page
@@ -48,7 +49,11 @@ fun WebtoonViewer(
     val sidePadding by remember(density) {
         snapshotFlow {
             with(density) {
-                (lazyListState.layoutInfo.viewportSize.width * paddingPercent / 100f).toDp()
+                val viewportWidth = lazyListState.layoutInfo.viewportSize.width
+                val configured = viewportWidth * paddingPercent / 100f
+                // 宽屏下限宽居中：用留白而不是约束列表宽度，点击导航区域才能继续覆盖全屏
+                val capped = (viewportWidth - AdaptiveBreakpoints.READING_MAX_WIDTH.toPx()) / 2f
+                maxOf(configured, capped).coerceAtLeast(0f).toDp()
             }
         }
     }.collectAsState(0.dp)

@@ -52,6 +52,14 @@ object AdaptiveBreakpoints {
 
     /** 单栏内容最大宽度（横屏手机/窄平板这类 600~839dp 窗口）。 */
     val CONTENT_MAX_WIDTH_COMPACT = 640.dp
+
+    /**
+     * 条漫单页的最大阅读宽度。
+     *
+     * 条漫按视口宽度铺满，宽屏下会把画面拉到整屏宽、单屏只能看到很少的内容，
+     * 因此窗口比它宽时转为左右留白并居中。窗口比它窄时该上限自然不生效。
+     */
+    val READING_MAX_WIDTH = 640.dp
 }
 
 /**
