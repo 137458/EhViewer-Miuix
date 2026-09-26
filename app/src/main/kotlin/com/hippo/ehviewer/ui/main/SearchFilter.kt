@@ -207,7 +207,7 @@ fun SearchFilter(
         DropdownFilterChip(
             label = minRatingStr,
             menuItems = minRatingItems.asList(),
-            selectedItemIndex = (advancedOption.minRating - 1).coerceAtLeast(0),
+            selectedItemIndex = (advancedOption.minRating - 1).coerceIn(0, minRatingItems.lastIndex),
             onSelectedItemIndexChange = {
                 onAdvancedOptionChange(advancedOption.copy(minRating = if (it == 0) 0 else it + 1))
             },
