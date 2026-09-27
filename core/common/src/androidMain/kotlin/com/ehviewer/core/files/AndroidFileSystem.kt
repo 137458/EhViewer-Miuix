@@ -107,24 +107,7 @@ class AndroidFileSystem(context: Context) : FileSystem() {
         if (path.isPhysicalFile()) {
             return physicalFileSystem.delete(path, mustExist)
         }
-
-        val metadata = metadataOrNull(path)
-
-        if (metadata != null) {
-            var uri = path.toUri()
-            if (uri.isCifsDocument() && metadata.isDirectory) {
-                uri = DocumentsContract.buildDocumentUriUsingTree(uri, DocumentsContract.getDocumentId(uri) + '/')
-            }
-
-            val deleted = runCatching {
-                DocumentsContract.deleteDocument(contentResolver, uri)
-            }.getOrDefault(false)
-            if (!deleted) {
-                throw IOException("Failed to delete $path")
-            }
-        } else if (mustExist) {
-            throw FileNotFoundException("$path does not exist")
-        }
+        deleteDocument(path, metadataOrNull(path), mustExist)
     }
 
     override fun deleteRecursively(fileOrDirectory: Path, mustExist: Boolean) {
@@ -135,17 +118,34 @@ class AndroidFileSystem(context: Context) : FileSystem() {
                 physicalFileSystem.delete(fileOrDirectory, mustExist)
             }
         } else {
+            // 部分提供器拒绝删除非空目录，故先逐项清空子节点；metadata 在此处取得后直接传入删除逻辑，
+            // 避免 SAF 下每个节点重复一次跨进程查询
             val metadata = metadataOrNull(fileOrDirectory)
-            if (metadata == null) {
-                if (mustExist) throw FileNotFoundException("$fileOrDirectory does not exist")
-                return
-            }
-            if (metadata.isDirectory) {
+            if (metadata?.isDirectory == true) {
                 list(fileOrDirectory).forEach { child ->
-                    deleteRecursively(child, mustExist = true)
+                    deleteRecursively(child, mustExist)
                 }
             }
-            delete(fileOrDirectory, mustExist = true)
+            deleteDocument(fileOrDirectory, metadata, mustExist)
+        }
+    }
+
+    private fun deleteDocument(path: Path, metadata: FileMetadata?, mustExist: Boolean) {
+        if (metadata == null) {
+            if (mustExist) throw FileNotFoundException("$path does not exist")
+            return
+        }
+
+        var uri = path.toUri()
+        if (uri.isCifsDocument() && metadata.isDirectory) {
+            uri = DocumentsContract.buildDocumentUriUsingTree(uri, DocumentsContract.getDocumentId(uri) + '/')
+        }
+
+        val deleted = runCatching {
+            DocumentsContract.deleteDocument(contentResolver, uri)
+        }.getOrDefault(false)
+        if (!deleted) {
+            throw IOException("Failed to delete $path")
         }
     }
 
