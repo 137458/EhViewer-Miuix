@@ -30,6 +30,7 @@ import com.ehviewer.core.network.EhCookieStore
 import com.ehviewer.core.ui.component.BlurredBar
 import com.ehviewer.core.ui.component.blurBackdropSource
 import com.ehviewer.core.ui.component.rememberBlurBackdrop
+import com.ehviewer.core.ui.util.AdaptiveBreakpoints
 import com.ehviewer.core.ui.util.readableWidth
 import com.ehviewer.core.util.isAtLeastT
 import com.ehviewer.core.util.launch
@@ -217,6 +218,7 @@ fun AnimatedVisibilityScope.EhScreen(navigator: DestinationsNavigator) = Screen(
                             )
                             SimpleMenuPreferenceInt(
                                 title = stringResource(id = R.string.settings_eh_detail_size),
+                                summary = stringResource(id = R.string.settings_eh_detail_size_summary),
                                 entry = com.hippo.ehviewer.R.array.detail_size_entries,
                                 entryValueRes = com.hippo.ehviewer.R.array.detail_size_entry_values,
                                 state = Settings.detailSize.asMutableState(),
@@ -224,13 +226,13 @@ fun AnimatedVisibilityScope.EhScreen(navigator: DestinationsNavigator) = Screen(
                         }
                     }
                     IntSliderPreference(
-                        maxValue = 10,
+                        maxValue = AdaptiveBreakpoints.THUMB_COLUMNS_MAX,
                         minValue = 1,
                         title = stringResource(id = R.string.settings_eh_thumb_columns),
                         state = Settings.thumbColumns.asMutableState(),
                     )
                     IntSliderPreference(
-                        maxValue = 10,
+                        maxValue = AdaptiveBreakpoints.THUMB_COLUMNS_MAX,
                         minValue = 0,
                         title = stringResource(id = R.string.settings_eh_thumb_columns_land),
                         summary = stringResource(id = R.string.settings_eh_thumb_columns_land_summary),

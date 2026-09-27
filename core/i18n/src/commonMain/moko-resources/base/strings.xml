@@ -327,6 +327,7 @@
     <string name="settings_eh_list_mode_detail">Detail</string>
     <string name="settings_eh_list_mode_thumb">Thumb</string>
     <string name="settings_eh_detail_size">Detail width</string>
+    <string name="settings_eh_detail_size_summary">Card width in the gallery detail list and the downloads list</string>
     <string name="settings_eh_detail_size_long">Long</string>
     <string name="settings_eh_detail_size_short">Short</string>
     <string name="settings_eh_thumb_columns">Thumb columns</string>

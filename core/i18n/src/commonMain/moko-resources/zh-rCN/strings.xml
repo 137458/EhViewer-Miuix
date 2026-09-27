@@ -311,6 +311,7 @@
     <string name="settings_eh_list_mode_detail">详情</string>
     <string name="settings_eh_list_mode_thumb">缩略图</string>
     <string name="settings_eh_detail_size">详情宽度</string>
+    <string name="settings_eh_detail_size_summary">画廊详情列表与下载页列表的卡片宽度</string>
     <string name="settings_eh_detail_size_long">长</string>
     <string name="settings_eh_detail_size_short">短</string>
     <string name="settings_eh_thumb_columns">缩略图列数</string>
