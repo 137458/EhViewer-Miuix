@@ -38,8 +38,26 @@ object AdaptiveBreakpoints {
     /** 弹层需要走紧凑形态的最大窗口高度。 */
     const val COMPACT_HEIGHT_MIN_DP = 500
 
+    /** 更新日志视口在常规窗口下的最大高度。 */
+    const val UPDATE_CHANGELOG_MAX_HEIGHT_DP = 230
+
+    /** 更新日志视口在横屏或矮视口下的紧凑最大高度。 */
+    const val UPDATE_CHANGELOG_MAX_HEIGHT_COMPACT_DP = 130
+
+    /** 画廊详情双栏中单侧的最小宽度，避免任一栏被拖到不可用。 */
+    const val GALLERY_DUAL_PANE_MIN_WIDTH_DP = 320
+
+    /** 画廊详情双栏分隔条的触摸区宽度。 */
+    const val GALLERY_DETAIL_DIVIDER_WIDTH_DP = 28
+
+    /** 画廊详情分隔位置（百分比）的持久化范围。 */
+    val GALLERY_DETAIL_SPLIT_PERCENT_RANGE = 20..80
+
     /** 缩略图瀑布流单列的最小宽度。 */
     const val THUMB_MIN_COLUMN_WIDTH_DP = 200
+
+    /** 缩略图列数配置的上限（横屏配置里的 0 表示「未单独设置」，不在本范围内）。 */
+    const val THUMB_COLUMNS_MAX = 10
 
     /** 横屏矮视口下侧栏抽屉的宽度上限。 */
     const val SHEET_COMPACT_MAX_WIDTH_DP = 420

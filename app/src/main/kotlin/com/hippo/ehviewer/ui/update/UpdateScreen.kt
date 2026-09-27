@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -277,6 +276,8 @@ fun AnimatedVisibilityScope.UpdateScreen(navigator: DestinationsNavigator) = Scr
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     item(key = "logoSpacer") {
+                        // 占位要补齐 Hero 悬浮层的实际排版高度：横屏紧凑 Row 比竖屏 Column 矮，
+                        // 差值随本页 Hero 尺寸变化，不是设备断点，故保留页内取值。
                         val spacerExtra = if (isLandscape) 12.dp else 48.dp
                         Box(
                             modifier = Modifier

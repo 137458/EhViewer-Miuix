@@ -2,6 +2,7 @@ package com.hippo.ehviewer.ui
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import com.ehviewer.core.ui.util.AdaptiveBreakpoints
 import com.ehviewer.core.ui.util.LocalWindowLayout
 import com.hippo.ehviewer.Settings
 import com.hippo.ehviewer.collectAsState
@@ -16,5 +17,6 @@ fun collectConfiguredThumbColumns(): Int {
     val isLandscape = LocalWindowLayout.current.isLandscape
     val portrait by Settings.thumbColumns.collectAsState()
     val landscape by Settings.thumbColumnsLand.collectAsState()
-    return if (isLandscape && landscape in 1..10) landscape else portrait
+    // 下限固定为 1：0 是「未单独设置横屏列数」的哨兵值，必须回退竖屏配置
+    return if (isLandscape && landscape in 1..AdaptiveBreakpoints.THUMB_COLUMNS_MAX) landscape else portrait
 }

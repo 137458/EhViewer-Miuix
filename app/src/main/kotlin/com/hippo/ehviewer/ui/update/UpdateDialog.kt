@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ehviewer.core.files.delete
 import com.ehviewer.core.i18n.R
+import com.ehviewer.core.ui.util.AdaptiveBreakpoints
 import com.ehviewer.core.ui.util.LocalWindowLayout
 import com.hippo.ehviewer.BuildConfig
 import com.hippo.ehviewer.EhDB
@@ -237,7 +238,13 @@ fun UpdateDialog(
 
             // ── 更新日志展示视口 ──
             val windowLayout = LocalWindowLayout.current
-            val changelogMaxHeight = if (windowLayout.isLandscape || windowLayout.isCompactHeight) 130.dp else 230.dp
+            // 矮视口下弹层整体要挤进窗口，日志视口收紧后操作按钮才能留在首屏；
+            // 两档高度与其余弹层阈值同源，收敛到 AdaptiveBreakpoints。
+            val changelogMaxHeight = if (windowLayout.isLandscape || windowLayout.isCompactHeight) {
+                AdaptiveBreakpoints.UPDATE_CHANGELOG_MAX_HEIGHT_COMPACT_DP.dp
+            } else {
+                AdaptiveBreakpoints.UPDATE_CHANGELOG_MAX_HEIGHT_DP.dp
+            }
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
