@@ -54,10 +54,30 @@ object UpdateDownloadManager {
     var downloadError by mutableStateOf<String?>(null)
         private set
 
-    fun cancel() {
-        generation.incrementAndGet()
+    /**
+     * 代际判定的唯一出口：任务被取消或被新任务取代后 generation 已经推进，
+     * 旧协程回飞的进度、模拟步进、完成与失败回调一律作废。
+     */
+    private fun stale(gen: Long) = generation.get() != gen
+
+    /** 把「判定 + 写状态」绑成一个动作，新增写入点时无需再手写守卫。 */
+    private inline fun ifFresh(gen: Long, block: () -> Unit) {
+        if (!stale(gen)) block()
+    }
+
+    /**
+     * 推进代际并停止当前 Job。先自增再 cancel，可让取消期间仍在回飞的旧回调立刻失效。
+     * 返回的新代际交给紧接着发起的新任务认领，避免「取消 + 发起」自增两次。
+     */
+    private fun stopCurrentTask(): Long {
+        val gen = generation.incrementAndGet()
         downloadJob?.cancel()
         downloadJob = null
+        return gen
+    }
+
+    fun cancel() {
+        stopCurrentTask()
         isDownloading = false
         downloadProgress = 0f
         downloadedBytes = 0L
@@ -65,8 +85,7 @@ object UpdateDownloadManager {
     }
 
     fun startDownload(release: Release, isSimulated: Boolean, context: Context = appCtx) {
-        cancel()
-        val downloadGeneration = generation.incrementAndGet()
+        val downloadGeneration = stopCurrentTask()
         isDownloading = true
         downloadError = null
         downloadedFile = null
@@ -83,18 +102,18 @@ object UpdateDownloadManager {
                 if (isSimulated) {
                     // ── 交互式沙盒模拟链路 ──
                     val simTotal = if (release.apkSize > 0L) release.apkSize else 44256789L
-                    if (generation.get() != downloadGeneration) return@launch
+                    if (stale(downloadGeneration)) return@launch
                     totalBytes = simTotal
                     val steps = 30
                     for (i in 1..steps) {
                         delay(80)
-                        if (generation.get() != downloadGeneration) return@launch
+                        if (stale(downloadGeneration)) return@launch
                         val p = i.toFloat() / steps
                         downloadProgress = p
                         downloadedBytes = (simTotal * p).toLong()
                         downloadSpeed = (7_500_000L + (Math.random() * 2_500_000L).toLong())
                     }
-                    if (generation.get() == downloadGeneration) {
+                    ifFresh(downloadGeneration) {
                         isDownloading = false
                         downloadedFile = File(AppConfig.tempDir.toFile(), "ehviewer-update-simulated.apk")
                         downloadJob = null
@@ -116,7 +135,7 @@ object UpdateDownloadManager {
                     url = release.downloadLink,
                     path = targetPath,
                     onProgress = { progress, downloaded, total ->
-                        if (generation.get() != downloadGeneration) return@downloadUpdate
+                        if (stale(downloadGeneration)) return@downloadUpdate
                         downloadProgress = progress
                         downloadedBytes = downloaded
                         totalBytes = total
@@ -135,14 +154,14 @@ object UpdateDownloadManager {
                     },
                 )
                 val file = targetPath.toFile()
-                if (generation.get() == downloadGeneration) {
+                ifFresh(downloadGeneration) {
                     downloadedFile = file
                     isDownloading = false
                     downloadJob = null
                     with(context) { runCatching { installPackage(file) } }
                 }
             } catch (e: Exception) {
-                if (generation.get() == downloadGeneration) {
+                ifFresh(downloadGeneration) {
                     isDownloading = false
                     downloadJob = null
                     if (e !is CancellationException) {
