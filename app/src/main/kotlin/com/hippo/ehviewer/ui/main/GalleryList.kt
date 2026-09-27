@@ -115,7 +115,9 @@ fun GalleryList(
         contentPadding = contentPadding,
     ) {
         BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-            val availableWidthDp = maxWidth.value.roundToInt()
+            // 列宽按网格自身可用宽度算：网格的 contentPadding 还叠加了左右外边距，容器宽度会把这段留白也算进列数，宽屏下列数偏多
+            // 侧边导航栏已由父级 Row(weight) 排除在容器之外，此处不能再扣一次
+            val availableWidthDp = (maxWidth - marginH * 2).value.roundToInt().coerceAtLeast(1)
             val showLoadStateIndicator = when (val state = data.loadState.append) {
                 LoadState.Loading -> true
                 is LoadState.Error -> state.error !is NoHitsFoundException

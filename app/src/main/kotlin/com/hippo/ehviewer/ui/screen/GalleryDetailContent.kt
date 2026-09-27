@@ -90,6 +90,7 @@ import com.ehviewer.core.ui.component.GalleryDetailRating
 import com.ehviewer.core.ui.component.GalleryRatingBar
 import com.ehviewer.core.ui.icons.EhIcons
 import com.ehviewer.core.ui.icons.filled.Magnet
+import com.ehviewer.core.ui.util.AdaptiveBreakpoints
 import com.ehviewer.core.ui.util.LocalWindowLayout
 import com.ehviewer.core.ui.util.LocalWindowSizeClass
 import com.ehviewer.core.ui.util.TransitionsVisibilityScope
@@ -123,8 +124,8 @@ import com.hippo.ehviewer.ktbuilder.executeIn
 import com.hippo.ehviewer.ktbuilder.imageRequest
 import com.hippo.ehviewer.ui.GalleryInfoBottomSheet
 import com.hippo.ehviewer.ui.MainActivity
-import com.hippo.ehviewer.ui.confirmRemoveDownload
 import com.hippo.ehviewer.ui.collectConfiguredThumbColumns
+import com.hippo.ehviewer.ui.confirmRemoveDownload
 import com.hippo.ehviewer.ui.destinations.GalleryCommentsScreenDestination
 import com.hippo.ehviewer.ui.getFavoriteIcon
 import com.hippo.ehviewer.ui.jumpToReaderByPage
@@ -189,15 +190,6 @@ const val GALLERY_DETAIL_LAYOUT_SINGLE_COLUMN = 1
 
 /** 画廊详情布局模式：强制双栏。 */
 const val GALLERY_DETAIL_LAYOUT_DUAL_PANE = 2
-
-/** 双栏中单侧的最小宽度，避免任一栏被拖得不可用（借鉴 PixEz illust_row_page 的 atLeastWidth）。 */
-private const val DUAL_PANE_MIN_WIDTH_DP = 320
-
-/** 双栏分隔条的触摸区宽度。 */
-private const val DUAL_PANE_DIVIDER_WIDTH_DP = 28
-
-/** 分隔位置（百分比）的持久化范围。 */
-private val DUAL_PANE_SPLIT_PERCENT_RANGE = 20..80
 
 @Composable
 context(_: CoroutineScope, _: DestinationsNavigator, _: DialogState, _: MainActivity, _: SnackbarHostState, _: SharedTransitionScope, _: TransitionsVisibilityScope)
@@ -369,16 +361,23 @@ fun GalleryDetailContent(
             val verticalSpacing = dimensionResource(id = com.hippo.ehviewer.R.dimen.strip_item_padding_v)
             val density = LocalDensity.current
             val totalWidthPx = with(density) { maxWidth.toPx() }
-            val minPaneFraction = if (maxWidth > DUAL_PANE_MIN_WIDTH_DP.dp * 2) {
-                DUAL_PANE_MIN_WIDTH_DP.dp / maxWidth
+            // 单侧下限借鉴 PixEz illust_row_page 的 atLeastWidth；窗口窄到放不下两个下限时段位只能退化成均分，
+            // 因为「强制双栏」在这种宽度下无法按用户的偏好比例呈现。
+            val minPaneFraction = if (maxWidth > AdaptiveBreakpoints.GALLERY_DUAL_PANE_MIN_WIDTH_DP.dp * 2) {
+                AdaptiveBreakpoints.GALLERY_DUAL_PANE_MIN_WIDTH_DP.dp / maxWidth
             } else {
                 0.5f
             }
-            var splitFraction by remember { mutableFloatStateOf(Settings.galleryDetailSplitPercent.value / 100f) }
+            var splitFraction by remember {
+                mutableFloatStateOf(
+                    Settings.galleryDetailSplitPercent.value.coerceIn(AdaptiveBreakpoints.GALLERY_DETAIL_SPLIT_PERCENT_RANGE) / 100f,
+                )
+            }
             val paneFraction = splitFraction.coerceIn(minPaneFraction, 1f - minPaneFraction)
             Row(modifier = Modifier.fillMaxSize()) {
                 BoxWithConstraints(modifier = Modifier.weight(paneFraction).fillMaxHeight()) {
-                    val leftWidthDp = maxWidth.value.roundToInt().coerceAtLeast(1)
+                    // 列数必须按网格自身的可用宽度算，否则会把两侧 keyline 内边距也算成可排布宽度、多补一列
+                    val leftWidthDp = (maxWidth - keylineMargin * 2).value.roundToInt().coerceAtLeast(1)
                     FastScrollLazyVerticalGrid(
                         columns = GridCells.Fixed(WindowLayout.thumbGridColumns(leftWidthDp, thumbColumns)),
                         contentPadding = contentPadding,
@@ -394,15 +393,21 @@ fun GalleryDetailContent(
                 Box(
                     modifier = Modifier
                         .fillMaxHeight()
-                        .width(DUAL_PANE_DIVIDER_WIDTH_DP.dp)
+                        .width(AdaptiveBreakpoints.GALLERY_DETAIL_DIVIDER_WIDTH_DP.dp)
                         .draggable(
                             orientation = Orientation.Horizontal,
                             state = rememberDraggableState { delta ->
-                                if (totalWidthPx > 0f) splitFraction += delta / totalWidthPx
+                                if (totalWidthPx > 0f) {
+                                    splitFraction = (splitFraction + delta / totalWidthPx).coerceIn(
+                                        AdaptiveBreakpoints.GALLERY_DETAIL_SPLIT_PERCENT_RANGE.first / 100f,
+                                        AdaptiveBreakpoints.GALLERY_DETAIL_SPLIT_PERCENT_RANGE.last / 100f,
+                                    )
+                                }
                             },
                             onDragStopped = {
-                                Settings.galleryDetailSplitPercent.value =
-                                    (paneFraction * 100).roundToInt().coerceIn(DUAL_PANE_SPLIT_PERCENT_RANGE)
+                                // 存的是拖拽意图 splitFraction，而非被窗口宽度钳制过的 paneFraction：
+                                // 窄窗口下后者恒为 0.5，写回会把用户偏好的比例抹掉且窗口变宽后无法恢复。
+                                Settings.galleryDetailSplitPercent.value = (splitFraction * 100).roundToInt()
                             },
                         ),
                     contentAlignment = Alignment.Center,
@@ -415,6 +420,9 @@ fun GalleryDetailContent(
                             .background(MiuixTheme.colorScheme.onSurface.copy(alpha = 0.2f)),
                     )
                 }
+                // 信息栏不需要单栏分支那句 LocalPinnableContainer pin：pin 只在懒加载 item 作用域里存在
+                // （这里取 current 只会拿到 null），用途是阻止 item 滚出视口后被回收；信息栏是常驻组合的
+                // verticalScroll 容器，本来就没有会被回收的内容。
                 Column(
                     modifier = Modifier
                         .weight(1f - paneFraction)
