@@ -1,5 +1,7 @@
 package com.ehviewer.desktop
 
+import androidx.compose.foundation.ContextMenuArea
+import androidx.compose.foundation.ContextMenuItem
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,6 +15,8 @@ import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.isCtrlPressed
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.FrameWindowScope
 import androidx.compose.ui.window.MenuBar
@@ -57,8 +61,19 @@ fun main() = application {
         SaveWindowSize(windowState)
         val darkTheme = isSystemInDarkTheme()
         MiuixTheme(colors = if (darkTheme) miuixDarkColorScheme() else miuixLightColorScheme()) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("EhViewer Desktop", color = MiuixTheme.colorScheme.primary)
+            val clipboard = LocalClipboardManager.current
+            ContextMenuArea(
+                items = {
+                    listOf(
+                        ContextMenuItem("Copy") {
+                            clipboard.setText(AnnotatedString("EhViewer Desktop"))
+                        },
+                    )
+                },
+            ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("EhViewer Desktop", color = MiuixTheme.colorScheme.primary)
+                }
             }
         }
     }
