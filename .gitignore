@@ -12,3 +12,5 @@ build
 /captures
 app/src/main/jniLibs/
 .zcode/
+hs_err_pid*.log
+replay_pid*.log
