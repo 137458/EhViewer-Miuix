@@ -102,9 +102,7 @@ fun main() = application {
                         )
                     },
                 ) {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("EhViewer Desktop", color = MiuixTheme.colorScheme.primary)
-                    }
+                    LibraryScreen()
                 }
             }
         }
