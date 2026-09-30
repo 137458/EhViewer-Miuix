@@ -6,4 +6,7 @@ import com.ehviewer.core.preferences.DataStorePreferences
 object DesktopSettings : DataStorePreferences("desktop") {
     var windowWidth by intPref("window_width", 1280)
     var windowHeight by intPref("window_height", 800)
+
+    // 0 = 跟随系统，1 = 浅色，2 = 深色；以 delegate 暴露供响应式消费（与 app Settings 惯例一致）
+    val themeMode = intPref("theme_mode", 0)
 }

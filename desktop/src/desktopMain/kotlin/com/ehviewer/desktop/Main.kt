@@ -8,12 +8,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.snapshotFlow
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.key.Key
@@ -42,11 +43,12 @@ import top.yukonga.miuix.kmp.theme.lightColorScheme as miuixLightColorScheme
 // 桌面壳骨架：Miuix 主题跟随系统深浅色 + 平台菜单栏 + Ctrl+Q + 多窗口 + 尺寸记忆；
 // 功能接线（路由/网络/设置界面）由后续轮次逐步迁入。
 
-private data class ShellWindow(val id: Long)
+private data class ShellWindow(val id: Long, val isSettings: Boolean = false)
 
 fun main() = application {
     val windows = remember { mutableStateListOf(ShellWindow(0)) }
     var nextWindowId by remember { mutableStateOf(1L) }
+    val themeMode by DesktopSettings.themeMode.valueFlow().collectAsState(DesktopSettings.themeMode.value)
 
     windows.forEach { window ->
         val windowState = rememberWindowState(
@@ -61,7 +63,7 @@ fun main() = application {
                 }
             },
             state = windowState,
-            title = "EhViewer",
+            title = if (window.isSettings) "EhViewer Settings" else "EhViewer",
             onKeyEvent = { event ->
                 if (event.type == androidx.compose.ui.input.key.KeyEventType.KeyDown &&
                     event.isCtrlPressed &&
@@ -79,18 +81,25 @@ fun main() = application {
         ) {
             AppMenus(
                 onNewWindow = { windows.add(ShellWindow(nextWindowId++)) },
+                onOpenSettings = { windows.add(ShellWindow(nextWindowId++, isSettings = true)) },
                 onExit = {
                     windows.clear()
                     exitApplication()
                 },
             )
-            SaveWindowSize(windowState)
-            LaunchedEffect(Unit) {
-                logcat("Shell", LogPriority.INFO) {
-                    "SHELL_STARTED width=${DesktopSettings.windowWidth} height=${DesktopSettings.windowHeight}"
+            if (!window.isSettings) {
+                SaveWindowSize(windowState)
+                LaunchedEffect(Unit) {
+                    logcat("Shell", LogPriority.INFO) {
+                        "SHELL_STARTED width=${DesktopSettings.windowWidth} height=${DesktopSettings.windowHeight}"
+                    }
                 }
             }
-            val darkTheme = isSystemInDarkTheme()
+            val darkTheme = when (themeMode) {
+                1 -> false
+                2 -> true
+                else -> isSystemInDarkTheme()
+            }
             MiuixTheme(colors = if (darkTheme) miuixDarkColorScheme() else miuixLightColorScheme()) {
                 val clipboard = LocalClipboardManager.current
                 ContextMenuArea(
@@ -102,7 +111,11 @@ fun main() = application {
                         )
                     },
                 ) {
-                    LibraryScreen()
+                    if (window.isSettings) {
+                        SettingsScreen()
+                    } else {
+                        LibraryScreen()
+                    }
                 }
             }
         }
@@ -124,9 +137,12 @@ private fun SaveWindowSize(windowState: androidx.compose.ui.window.WindowState) 
 }
 
 @Composable
-private fun FrameWindowScope.AppMenus(onNewWindow: () -> Unit, onExit: () -> Unit) = MenuBar {
+private fun FrameWindowScope.AppMenus(onNewWindow: () -> Unit, onOpenSettings: () -> Unit, onExit: () -> Unit) = MenuBar {
     Menu(stringResource(MR.strings.menu_file)) {
         Item(stringResource(MR.strings.menu_new_window), onClick = onNewWindow)
+    }
+    Menu(stringResource(MR.strings.menu_settings)) {
+        Item(stringResource(MR.strings.menu_settings), onClick = onOpenSettings)
         Item(stringResource(MR.strings.menu_exit), onClick = onExit)
     }
 }
