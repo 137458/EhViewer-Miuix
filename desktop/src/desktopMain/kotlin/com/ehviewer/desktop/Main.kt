@@ -29,6 +29,8 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import com.ehviewer.core.i18n.MR
+import com.ehviewer.core.util.LogPriority
+import com.ehviewer.core.util.logcat
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.debounce
@@ -83,6 +85,11 @@ fun main() = application {
                 },
             )
             SaveWindowSize(windowState)
+            LaunchedEffect(Unit) {
+                logcat("Shell", LogPriority.INFO) {
+                    "SHELL_STARTED width=${DesktopSettings.windowWidth} height=${DesktopSettings.windowHeight}"
+                }
+            }
             val darkTheme = isSystemInDarkTheme()
             MiuixTheme(colors = if (darkTheme) miuixDarkColorScheme() else miuixLightColorScheme()) {
                 val clipboard = LocalClipboardManager.current
