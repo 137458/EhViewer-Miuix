@@ -7,8 +7,8 @@
 - 为 core:i18n 与 core:common 启用 JVM desktop 编译目标：日志出口改为平台无关的 LogPriority 枚举加 expect/actual（Android 侧继续走 logcat，桌面侧输出到标准错误流），文件系统的 SystemFileSystem 与 Path.read/write 补充桌面 actual，为桌面端奠定编译基础。
 - 为 core:ui 启用 JVM desktop 编译目标，共享 UI 层可完整参与桌面构建：触感反馈、系统栏控制器、RuntimeShader、手势排除区提供桌面 actual（空实现或不支持降级），预测性返回统一走多平台 backhandler，Android 行为不变。
 - 为 core:data 启用 JVM desktop 编译目标，数据层桌面侧落地：Room 走 BundledSQLiteDriver（数据目录 Windows 取 %APPDATA%，回退用户主目录）、DataStore 偏好落盘同目录、Cookie 管理基于 java.net.CookieManager、主线程判定对齐 AWT 事件分发线程；Android 侧路径与行为不变。
-- 桌面端登录态持久化：桌面 Cookie 变更时同步落盘并在启动时恢复，重启不再丢失登录状态，文件损坏时安全回退至未登录。
-- 新增 :desktop Compose Desktop 壳模块：Miuix 主题跟随系统深浅色、文件菜单、Ctrl+Q 退出、右键菜单、窗口尺寸记忆（经共享偏好层持久化）。
+- 桌面端登录态持久化：桌面 Cookie 变更时同步落盘并在启动时恢复，重启不再丢失登录状态，文件损坏时安全回退至未登录；域与路径匹配对齐标准 Cookie 语义，子域请求可见域 Cookie。
+- 新增 :desktop Compose Desktop 壳模块：Miuix 主题跟随系统深浅色并支持三态切换（独立设置窗口即时生效）、文件/设置菜单、Ctrl+Q 退出、右键菜单、多窗口、窗口尺寸记忆（经共享偏好层持久化）；本地库概览接入共享 Room 响应链，网络栈经 okhttp 引擎与 EhCookieStore 注入完成连接诊断。
 - CI 新增 desktop 任务：共享逻辑桌面侧测试（Room/DataStore/Cookie/文件系统冒烟）与桌面构建门禁。
 
 ### 新增
