@@ -14,6 +14,10 @@ interface HistoryDao {
     @Query("SELECT HISTORY.* FROM HISTORY JOIN GALLERIES USING(GID) ORDER BY TIME")
     suspend fun list(): List<HistoryInfo>
 
+    // 桌面等无 Paging 环境的一次性历史画廊快照（带标题等画廊字段）
+    @Query("SELECT GALLERIES.* FROM HISTORY JOIN GALLERIES USING(GID) ORDER BY TIME DESC")
+    suspend fun listGalleries(): List<GalleryEntity>
+
     @Query("SELECT GALLERIES.* FROM HISTORY JOIN GALLERIES USING(GID) ORDER BY TIME DESC")
     fun joinListLazy(): PagingSource<Int, GalleryEntity>
 
