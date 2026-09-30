@@ -51,6 +51,32 @@ jobs:
       - name: Lint Check
         run: ./gradlew lintMarshmallowRelease
 
+  desktop:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version-file: .java-version
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-read-only: true
+
+      - name: Desktop tests
+        run: ./gradlew :core:common:desktopTest :core:data:desktopTest :core:ui:desktopTest
+
+      - name: Desktop build
+        run: ./gradlew :desktop:compileKotlinDesktop :desktop:desktopJar
+
   default:
     runs-on: ubuntu-latest
     steps:
