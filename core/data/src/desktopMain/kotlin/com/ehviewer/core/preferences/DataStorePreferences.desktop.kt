@@ -3,7 +3,7 @@ package com.ehviewer.core.preferences
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
-import okio.Path.Companion.toPath
+import com.ehviewer.core.DesktopDirs
 
 internal actual fun getDateStore(name: String?): DataStore<Preferences> {
     val actualName = name ?: "ehviewer_preferences"
@@ -12,6 +12,5 @@ internal actual fun getDateStore(name: String?): DataStore<Preferences> {
     }
 }
 
-// 与 Room.desktop.kt 的数据目录约定保持一致
-internal fun preferencesPath(name: String) = "${System.getenv("APPDATA")?.replace('\\', '/') ?: (System.getProperty("user.home") + "/.ehviewer")}/EhViewer/files/$name.preferences_pb"
-    .toPath()
+// 偏好落盘位置与 Room/Cookie 同源（DesktopDirs.filesDir）
+internal fun preferencesPath(name: String) = DesktopDirs.filesDir / "$name.preferences_pb"

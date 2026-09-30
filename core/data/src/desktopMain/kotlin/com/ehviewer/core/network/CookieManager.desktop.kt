@@ -1,30 +1,20 @@
 package com.ehviewer.core.network
 
+import com.ehviewer.core.DesktopDirs
 import io.ktor.http.Cookie
 import io.ktor.http.Url
-import java.io.FileInputStream
-import java.io.FileOutputStream
-import java.io.ObjectInputStream
-import java.io.ObjectOutputStream
 import java.net.CookieStore
 import java.net.HttpCookie
 import java.net.URI
-import okio.FileSystem
-import okio.Path
-import okio.Path.Companion.toPath
-
-// Cookie 落盘目录与 DataStore 偏好同约定（%APPDATA%/EhViewer/files）
-private val cookieStorePath: Path by lazy {
-    val base = System.getenv("APPDATA")?.replace('\\', '/')
-        ?: (System.getProperty("user.home") + "/.ehviewer")
-    "$base/EhViewer/files/cookies.dat".toPath()
-}
 
 // 内存 cookie 在桌面重启即丢登录态；getCookieManager() 每次调用返回新 CookieManager，
 // store 必须全局单例，否则多实例各自持内存态会互相覆盖
 private object PersistentCookieStore : CookieStore {
     private val entries = LinkedHashMap<URI, MutableList<HttpCookie>>()
-    private val fs = FileSystem.SYSTEM
+
+    // 每次按当前数据根构造（无状态轻对象），保证测试重定向 ehviewer.data.dir 即时生效
+    private val persistence: CookiePersistence
+        get() = CookiePersistence(DesktopDirs.filesDir / "cookies.dat")
 
     init {
         load()
@@ -39,10 +29,19 @@ private object PersistentCookieStore : CookieStore {
     }
 
     override fun get(uri: URI): List<HttpCookie> = synchronized(this) {
+        val host = uri.host?.lowercase()
+        if (host.isNullOrEmpty()) {
+            return@synchronized emptyList()
+        }
+        val path = uri.path?.ifEmpty { "/" } ?: "/"
         entries.entries
-            .filter { (key, _) -> hostMatches(uri, key) }
-            .flatMap { it.value }
-            .filter { !it.hasExpired() }
+            .flatMap { (storedUri, cookies) -> cookies.map { storedUri to it } }
+            .filter { (_, cookie) -> !cookie.hasExpired() }
+            .filter { (storedUri, cookie) ->
+                val domain = (cookie.domain ?: storedUri.host)?.lowercase()
+                domain != null && HttpCookie.domainMatches(domain, host) && pathMatches(path, cookie.path)
+            }
+            .map { (_, cookie) -> cookie }
     }
 
     override fun getCookies(): List<HttpCookie> = synchronized(this) {
@@ -66,59 +65,29 @@ private object PersistentCookieStore : CookieStore {
 
     private fun entryFor(uri: URI): MutableList<HttpCookie> = entries.getOrPut(uri) { mutableListOf() }
 
-    private fun hostMatches(requested: URI, stored: URI): Boolean = requested.host?.removePrefix(".") == stored.host?.removePrefix(".")
+    // RFC 6265 路径匹配的简化实现：请求路径须落在 Cookie 路径子树内
+    private fun pathMatches(requestPath: String, cookiePath: String?): Boolean {
+        val path = cookiePath?.ifEmpty { "/" } ?: "/"
+        if (path == "/" || requestPath == path) return true
+        return requestPath.startsWith(path) && (path.endsWith("/") || requestPath[path.length] == '/')
+    }
 
     private fun save() {
-        runCatching {
-            cookieStorePath.parent?.let { fs.createDirectories(it) }
-            val records = synchronizedEntries().flatMap { (uri, cookies) ->
-                cookies.map { c ->
-                    CookieRecord(uri, c.getName(), c.getValue(), c.getDomain(), c.getPath(), c.secure)
-                }
-            }
-            ObjectOutputStream(FileOutputStream(cookieStorePath.toString())).use { out ->
-                out.writeObject(records)
-            }
-        }
+        persistence.save(entries.toMap())
     }
 
-    @Suppress("UNCHECKED_CAST")
     private fun load() {
-        if (!fs.exists(cookieStorePath)) return
-        runCatching {
-            ObjectInputStream(FileInputStream(cookieStorePath.toString())).use { input ->
-                val records = input.readObject() as List<CookieRecord>
-                synchronized(this) {
-                    entries.clear()
-                    records.forEach { r ->
-                        entries.getOrPut(r.uri) { mutableListOf() }.add(r.toHttpCookie())
-                    }
-                }
-            }
-        }.onFailure {
-            // 文件损坏时丢弃会话副本，等价于未登录状态，不阻塞启动
+        val restored = persistence.load()
+        synchronized(this) {
             entries.clear()
+            restored.forEach { (uri, cookies) ->
+                entries.getOrPut(uri) { mutableListOf() }.addAll(cookies)
+            }
         }
     }
 
-    private fun synchronizedEntries(): List<Pair<URI, List<HttpCookie>>> = synchronized(this) {
-        entries.map { (uri, cookies) -> uri to cookies.toList() }
-    }
-}
-
-// HttpCookie 不可序列化，落盘用自有 DTO；会话 cookie 重启后转为持久，保证桌面端登录态延续
-private data class CookieRecord(
-    val uri: URI,
-    val name: String,
-    val value: String,
-    val domain: String?,
-    val path: String?,
-    val secure: Boolean,
-) : java.io.Serializable {
-    fun toHttpCookie() = HttpCookie(name, value).apply {
-        domain = this@CookieRecord.domain
-        path = this@CookieRecord.path?.ifEmpty { "/" } ?: "/"
-        setSecure(secure)
+    private fun synchronizedEntries(): Map<URI, List<HttpCookie>> = synchronized(this) {
+        entries.toMap()
     }
 }
 

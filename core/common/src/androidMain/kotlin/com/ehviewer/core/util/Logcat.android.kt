@@ -3,8 +3,8 @@ package com.ehviewer.core.util
 import logcat.LogPriority as LibPriority
 import logcat.logcat
 
-actual fun platformLog(tag: String, priority: LogPriority, message: String) {
-    logcat(tag, priority.toLibPriority()) { message }
+actual fun platformLog(tag: String, priority: LogPriority, message: () -> String) {
+    logcat(tag, priority.toLibPriority(), message)
 }
 
 private fun LogPriority.toLibPriority(): LibPriority = when (this) {

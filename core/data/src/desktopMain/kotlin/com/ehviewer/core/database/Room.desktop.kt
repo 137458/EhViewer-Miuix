@@ -3,16 +3,12 @@ package com.ehviewer.core.database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
+import com.ehviewer.core.DesktopDirs
 import okio.Path
-import okio.Path.Companion.toPath
 
-// 桌面端数据目录：优先 Windows %APPDATA%，回退 ~/.ehviewer
+// 桌面端数据库目录与偏好/Cookie 同源（DesktopDirs）
 @PublishedApi
-internal val databasesDir: Path by lazy {
-    val base = System.getenv("APPDATA")?.replace('\\', '/')
-        ?: (System.getProperty("user.home") + "/.ehviewer")
-    "$base/EhViewer/databases".toPath()
-}
+internal val databasesDir: Path get() = DesktopDirs.databasesDir
 
 actual fun getDatabasePath(name: String): Path = databasesDir / name
 
