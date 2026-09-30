@@ -9,4 +9,7 @@ object DesktopSettings : DataStorePreferences("desktop") {
 
     // 0 = 跟随系统，1 = 浅色，2 = 深色；以 delegate 暴露供响应式消费（与 app Settings 惯例一致）
     val themeMode = intPref("theme_mode", 0)
+
+    // HTTP 代理，格式 host:port，空 = 直连（无系统代理自动探测）
+    val proxy = stringOrNullPref("proxy")
 }

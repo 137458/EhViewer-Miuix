@@ -15,11 +15,13 @@ kotlin {
         val desktopMain by getting {
             dependencies {
                 implementation(compose.desktop.currentOs)
+                implementation(libs.ktor.client.core)
+                implementation(libs.ktor.client.okhttp)
+                implementation(libs.moko.resources.compose)
                 implementation(projects.core.common)
                 implementation(projects.core.data)
                 implementation(projects.core.i18n)
                 implementation(projects.core.ui)
-                implementation(libs.moko.resources.compose)
             }
         }
     }
