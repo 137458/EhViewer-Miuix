@@ -113,6 +113,7 @@ ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "kto
 logcat = "com.squareup.logcat:logcat:0.4"
 
 moko-resources = { module = "dev.icerock.moko:resources", version.ref = "moko-resources" }
+moko-resources-compose = { module = "dev.icerock.moko:resources-compose", version.ref = "moko-resources" }
 
 okio = { module = "com.squareup.okio:okio", version.ref = "okio" }
 

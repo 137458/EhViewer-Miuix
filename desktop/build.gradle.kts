@@ -19,6 +19,7 @@ kotlin {
                 implementation(projects.core.data)
                 implementation(projects.core.i18n)
                 implementation(projects.core.ui)
+                implementation(libs.moko.resources.compose)
             }
         }
     }
