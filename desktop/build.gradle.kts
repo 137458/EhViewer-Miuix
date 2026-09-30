@@ -1,9 +1,23 @@
+import com.diffplug.gradle.spotless.SpotlessExtension
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.compose.multiplatform)
     alias(libs.plugins.compose.compiler)
+    alias(libs.plugins.spotless)
+}
+
+configure<SpotlessExtension> {
+    val ktlintVersion = libs.ktlint.get().version
+    kotlin {
+        // https://github.com/diffplug/spotless/issues/111
+        target("src/**/*.kt")
+        ktlint(ktlintVersion)
+    }
+    kotlinGradle {
+        ktlint(ktlintVersion)
+    }
 }
 
 kotlin {
@@ -12,7 +26,7 @@ kotlin {
     jvmToolchain(libs.versions.java.get().toInt())
 
     sourceSets {
-        val desktopMain by getting {
+        getByName("desktopMain") {
             dependencies {
                 implementation(compose.desktop.currentOs)
                 implementation(libs.ktor.client.core)
