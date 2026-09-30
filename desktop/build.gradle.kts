@@ -44,6 +44,7 @@ kotlin {
 compose.desktop {
     application {
         mainClass = "com.ehviewer.desktop.MainKt"
+        jvmArgs("-Xmx512m")
 
         nativeDistributions {
             targetFormats(TargetFormat.Msi, TargetFormat.Exe)
