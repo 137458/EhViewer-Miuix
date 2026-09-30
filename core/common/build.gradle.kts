@@ -26,5 +26,10 @@ kotlin {
                 implementation(libs.androidx.core)
             }
         }
+        commonTest {
+            dependencies {
+                implementation(kotlin("test"))
+            }
+        }
     }
 }
