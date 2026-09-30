@@ -11,7 +11,6 @@ import androidx.compose.foundation.scrollbar.ScrollbarAdapter
 import androidx.compose.foundation.scrollbar.ScrollbarStyle
 import androidx.compose.foundation.scrollbar.VerticalScrollbar
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.systemGestureExclusion
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -22,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
+import com.ehviewer.core.ui.util.excludeSystemGesture
 import kotlinx.coroutines.flow.collectLatest
 
 @Composable
@@ -47,7 +47,7 @@ fun VerticalScrollbar(
         }
     }
     val scrollbarModifier = if (scrollbarAlpha.value > 0f && !isDragged && !isScrollInProgress) {
-        modifier.systemGestureExclusion()
+        modifier.excludeSystemGesture()
     } else {
         modifier
     }

@@ -1,6 +1,5 @@
 package com.ehviewer.core.ui.util
 
-import androidx.activity.BackEventCompat
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.AnimationSpec
 import androidx.compose.animation.core.CubicBezierEasing
@@ -22,6 +21,10 @@ import com.ehviewer.core.util.withNonCancellableContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
+
+// BackEventCompat 在 Android 侧是 internal typealias，不能按名引用其常量；
+// 取值与 androidx.activity.BackEventCompat.EDGE_LEFT 对齐。
+private const val EDGE_LEFT = 0
 
 val PredictiveBackEasing = CubicBezierEasing(0.1f, 0.1f, 0f, 1f)
 
@@ -97,7 +100,7 @@ fun animateFloatMergeOneWayPredictiveBackAsState(
     PredictiveBackHandler(enable) { progress ->
         try {
             progress.collect {
-                val isEdgeStart = (it.swipeEdge == BackEventCompat.EDGE_LEFT).xor(isRtl)
+                val isEdgeStart = (it.swipeEdge == EDGE_LEFT).xor(isRtl)
                 val transformed = predictiveBackInterpolator.transform(it.progress)
                 animatable.snapTo(if (isEdgeStart) transformed else -transformed)
             }
