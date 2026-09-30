@@ -1,21 +1,30 @@
 package com.ehviewer.core.util
 
-import logcat.LogPriority
-import logcat.asLog
-import logcat.logcat as logcatImpl
+// 优先级枚举与平台无关的日志出口：logcat 库为 Android 专属，
+// 桌面目标由各平台 actual 提供实现。
+enum class LogPriority {
+    VERBOSE,
+    DEBUG,
+    INFO,
+    WARN,
+    ERROR,
+    ASSERT,
+}
+
+expect fun platformLog(tag: String, priority: LogPriority, message: String)
 
 inline fun logcat(tag: String, priority: LogPriority = LogPriority.DEBUG, crossinline message: () -> String) {
-    logcatImpl(tag, priority, message)
+    platformLog(tag, priority, message())
 }
 
 inline fun Any.logcat(priority: LogPriority = LogPriority.DEBUG, crossinline message: () -> String) {
-    logcatImpl(priority, message = message)
+    platformLog(this::class.simpleName ?: "Unknown", priority, message())
 }
 
 fun logcat(tag: String, throwable: Throwable) {
-    logcatImpl(tag, LogPriority.ERROR) { throwable.asLog() }
+    platformLog(tag, LogPriority.ERROR, throwable.stackTraceToString())
 }
 
 fun Any.logcat(throwable: Throwable) {
-    logcatImpl(LogPriority.ERROR) { throwable.asLog() }
+    platformLog(this::class.simpleName ?: "Unknown", LogPriority.ERROR, throwable.stackTraceToString())
 }

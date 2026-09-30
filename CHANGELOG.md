@@ -4,6 +4,10 @@
 
 ### 新增
 
+- 为 core:i18n 与 core:common 启用 JVM desktop 编译目标：日志出口改为平台无关的 LogPriority 枚举加 expect/actual（Android 侧继续走 logcat，桌面侧输出到标准错误流），文件系统的 SystemFileSystem 与 Path.read/write 补充桌面 actual，为桌面端奠定编译基础。
+
+### 新增
+
 - 支持了画廊详情横屏双栏布局：借鉴 PixEz 的平板适配方案，大横屏下预览网格与画廊信息左右分栏、独立滚动，分隔条可拖拽且记忆位置，并可在设置中切换跟随方向 / 强制单列 / 强制双栏。
 - 支持了横屏独立缩略图列数：横屏下列数可与竖屏分开设置，未单独设置时自动跟随竖屏配置。
 

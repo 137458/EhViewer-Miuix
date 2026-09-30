@@ -4,6 +4,8 @@ plugins {
 }
 
 kotlin {
+    jvm("desktop")
+
     sourceSets {
         commonMain {
             dependencies {

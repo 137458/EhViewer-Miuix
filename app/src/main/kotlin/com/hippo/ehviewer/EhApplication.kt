@@ -43,6 +43,7 @@ import com.ehviewer.core.database.roomDb
 import com.ehviewer.core.files.deleteContent
 import com.ehviewer.core.network.EhCookieStore
 import com.ehviewer.core.ui.util.initSETConnection
+import com.ehviewer.core.util.LogPriority
 import com.ehviewer.core.util.isAtLeastO
 import com.ehviewer.core.util.isAtLeastP
 import com.ehviewer.core.util.isAtLeastS
@@ -81,7 +82,7 @@ import io.ktor.client.engine.okhttp.OkHttp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import logcat.AndroidLogcatLogger
-import logcat.LogPriority
+import logcat.LogPriority as LibLogPriority
 import logcat.LogcatLogger
 import logcat.asLog
 import okio.Path.Companion.toOkioPath
@@ -101,7 +102,7 @@ class EhApplication : Application(), SingletonImageLoader.Factory {
                     AppCompatDelegate.setDefaultNightMode(mode)
                 }
             }
-            LogcatLogger.loggers += AndroidLogcatLogger(LogPriority.VERBOSE)
+            LogcatLogger.loggers += AndroidLogcatLogger(LibLogPriority.VERBOSE)
             Settings.saveCrashLog.valueFlow().collect {
                 if (it) {
                     LogcatLogger.install()

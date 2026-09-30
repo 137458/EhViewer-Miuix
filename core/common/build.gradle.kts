@@ -4,6 +4,8 @@ plugins {
 }
 
 kotlin {
+    jvm("desktop")
+
     sourceSets {
         commonMain {
             dependencies {
@@ -12,7 +14,6 @@ kotlin {
                 api(libs.kotlinx.io)
                 api(libs.okio)
                 api(libs.serialization.cbor)
-                api(libs.logcat)
                 api(project.dependencies.platform(libs.arrow.stack))
                 api(libs.bundles.arrow)
             }
@@ -21,6 +22,7 @@ kotlin {
             dependencies {
                 api(libs.kotlinx.coroutines.android)
                 api(libs.splitties.appctx)
+                api(libs.logcat)
                 implementation(libs.androidx.core)
             }
         }
