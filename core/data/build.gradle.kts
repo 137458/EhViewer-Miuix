@@ -32,6 +32,7 @@ kotlin {
 
 dependencies {
     add("desktopMainImplementation", "androidx.sqlite:sqlite-bundled-jvm:2.7.1")
+    add("desktopMainImplementation", libs.ktor.client.okhttp)
     add("kspAndroid", libs.androidx.room.compiler)
     add("kspDesktop", libs.androidx.room.compiler)
 }
