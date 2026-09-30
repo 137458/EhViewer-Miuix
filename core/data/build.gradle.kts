@@ -5,6 +5,8 @@ plugins {
 }
 
 kotlin {
+    jvm("desktop")
+
     sourceSets {
         commonMain {
             dependencies {
@@ -24,7 +26,9 @@ kotlin {
 }
 
 dependencies {
+    add("desktopMainImplementation", "androidx.sqlite:sqlite-bundled-jvm:2.7.1")
     add("kspAndroid", libs.androidx.room.compiler)
+    add("kspDesktop", libs.androidx.room.compiler)
 }
 
 room {

@@ -6,6 +6,7 @@
 
 - 为 core:i18n 与 core:common 启用 JVM desktop 编译目标：日志出口改为平台无关的 LogPriority 枚举加 expect/actual（Android 侧继续走 logcat，桌面侧输出到标准错误流），文件系统的 SystemFileSystem 与 Path.read/write 补充桌面 actual，为桌面端奠定编译基础。
 - 为 core:ui 启用 JVM desktop 编译目标，共享 UI 层可完整参与桌面构建：触感反馈、系统栏控制器、RuntimeShader、手势排除区提供桌面 actual（空实现或不支持降级），预测性返回统一走多平台 backhandler，Android 行为不变。
+- 为 core:data 启用 JVM desktop 编译目标，数据层桌面侧落地：Room 走 BundledSQLiteDriver（数据目录 Windows 取 %APPDATA%，回退用户主目录）、DataStore 偏好落盘同目录、Cookie 管理基于 java.net.CookieManager、主线程判定对齐 AWT 事件分发线程；Android 侧路径与行为不变。
 
 ### 新增
 
