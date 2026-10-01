@@ -427,6 +427,10 @@ private fun GalleryDetailWindowContent(
                 // 回写 windows 列表：原生窗口标题与多窗口防重判定随真实元数据更新
                 onGalleryUpdated?.invoke(fetched)
                 logcat("DetailWindow", LogPriority.INFO) { "Hydrated gallery ${fetched.gid}" }
+            } else {
+                logcat("DetailWindow", LogPriority.WARN) {
+                    "Hydration unavailable ${currentGallery.gid} (offline / network error / parse failure)"
+                }
             }
         }
         // 记录阅读历史：HISTORY 表经 GID 与 GALLERIES 联表，须先确保画廊行存在（HISTORY JOIN GALLERIES 语义）。
@@ -436,6 +440,8 @@ private fun GalleryDetailWindowContent(
                 runCatching {
                     DesktopDatabase.eh.galleryDao().upsert(DesktopFavoritesState.toGalleryEntity(currentGallery))
                     DesktopDatabase.eh.historyDao().upsert(HistoryInfo(currentGallery.gid))
+                }.onFailure {
+                    logcat("DetailWindow", LogPriority.WARN) { "History record failed ${currentGallery.gid}: $it" }
                 }
             }
         }
