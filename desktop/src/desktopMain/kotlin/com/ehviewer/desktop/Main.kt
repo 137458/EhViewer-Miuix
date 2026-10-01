@@ -293,55 +293,24 @@ private fun FrameWindowScope.AppMenus(
 
 @Composable
 private fun ShortcutsHelpDialog(onDismiss: () -> Unit) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.5f))
-            .clickable(onClick = onDismiss),
-        contentAlignment = Alignment.Center,
+    DesktopModalCard(
+        title = stringResource(MR.strings.menu_keyboard_shortcuts),
+        onDismiss = onDismiss,
     ) {
-        Column(
-            modifier = Modifier
-                .width(420.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(MiuixTheme.colorScheme.surface)
-                .clickable(enabled = false) {}
-                .padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
+        DesktopShortcuts.defaultEntries().forEach { entry ->
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = stringResource(MR.strings.menu_keyboard_shortcuts),
+                    text = entry.keyCombination,
                     color = MiuixTheme.colorScheme.primary,
                 )
                 Text(
-                    text = "✕",
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    modifier = Modifier
-                        .pointerHoverIcon(PointerIcon.Hand)
-                        .clickable(onClick = onDismiss),
+                    text = entry.description,
+                    color = MiuixTheme.colorScheme.onSurface,
                 )
-            }
-            HorizontalDivider()
-            DesktopShortcuts.defaultEntries().forEach { entry ->
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = entry.keyCombination,
-                        color = MiuixTheme.colorScheme.primary,
-                    )
-                    Text(
-                        text = entry.description,
-                        color = MiuixTheme.colorScheme.onSurface,
-                    )
-                }
             }
         }
     }

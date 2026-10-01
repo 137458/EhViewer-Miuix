@@ -963,71 +963,58 @@ private fun OpenGalleryDialog(
     val cancelLabel = stringResource(MR.strings.desktop_action_cancel)
     val openLabel = stringResource(MR.strings.desktop_open_gallery_action_open)
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.5f))
-            .clickable(onClick = onDismiss),
-        contentAlignment = Alignment.Center,
+    DesktopModalCard(
+        title = title,
+        onDismiss = onDismiss,
+        cardWidth = 440.dp,
     ) {
-        Column(
-            modifier = Modifier
-                .width(440.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(MiuixTheme.colorScheme.surface)
-                .clickable(enabled = false) {}
-                .padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Text(text = title, color = MiuixTheme.colorScheme.primary)
-            OutlinedTextField(
-                value = input,
-                onValueChange = {
-                    input = it
-                    attempted = false
+        OutlinedTextField(
+            value = input,
+            onValueChange = {
+                input = it
+                attempted = false
+            },
+            placeholder = { Text(hint) },
+            singleLine = true,
+            isError = errorText != null,
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+            keyboardActions = KeyboardActions(
+                onDone = {
+                    if (target != null) onOpen(target) else attempted = true
                 },
-                placeholder = { Text(hint) },
-                singleLine = true,
-                isError = errorText != null,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                keyboardActions = KeyboardActions(
-                    onDone = {
-                        if (target != null) onOpen(target) else attempted = true
-                    },
-                ),
-                modifier = Modifier.fillMaxWidth(),
+            ),
+            modifier = Modifier.fillMaxWidth(),
+        )
+        if (errorText != null) {
+            Text(
+                text = errorText,
+                color = MiuixTheme.colorScheme.error,
+                fontSize = 12.sp,
             )
-            if (errorText != null) {
-                Text(
-                    text = errorText,
-                    color = MiuixTheme.colorScheme.error,
-                    fontSize = 12.sp,
-                )
-            }
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = cancelLabel,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    modifier = Modifier
-                        .pointerHoverIcon(PointerIcon.Hand)
-                        .clickable(onClick = onDismiss)
-                        .padding(horizontal = 12.dp, vertical = 6.dp),
-                )
-                Text(
-                    text = openLabel,
-                    color = if (target != null) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    modifier = Modifier
-                        .pointerHoverIcon(PointerIcon.Hand)
-                        .clickable {
-                            if (target != null) onOpen(target) else attempted = true
-                        }
-                        .padding(horizontal = 12.dp, vertical = 6.dp),
-                )
-            }
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.End,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = cancelLabel,
+                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                modifier = Modifier
+                    .pointerHoverIcon(PointerIcon.Hand)
+                    .clickable(onClick = onDismiss)
+                    .padding(horizontal = 12.dp, vertical = 6.dp),
+            )
+            Text(
+                text = openLabel,
+                color = if (target != null) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                modifier = Modifier
+                    .pointerHoverIcon(PointerIcon.Hand)
+                    .clickable {
+                        if (target != null) onOpen(target) else attempted = true
+                    }
+                    .padding(horizontal = 12.dp, vertical = 6.dp),
+            )
         }
     }
 }
