@@ -30,6 +30,7 @@ kotlin {
             dependencies {
                 implementation(compose.desktop.currentOs)
                 implementation(libs.ktor.client.core)
+                implementation(libs.ktor.client.cio)
                 implementation(libs.ktor.client.okhttp)
                 implementation(libs.moko.resources.compose)
                 implementation(projects.core.common)

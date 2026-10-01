@@ -33,9 +33,6 @@ import com.ehviewer.core.database.model.GalleryEntity
 import com.ehviewer.core.network.EhCookieStore
 import com.ehviewer.core.util.LogPriority
 import com.ehviewer.core.util.logcat
-import io.ktor.client.request.get
-import io.ktor.client.statement.HttpResponse
-import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -52,7 +49,7 @@ fun LibraryScreen() {
         .collectAsState(initial = 0)
     var history by remember { mutableStateOf<List<GalleryEntity>>(emptyList()) }
     var selected by remember { mutableStateOf<GalleryEntity?>(null) }
-    var httpStatus by remember { mutableStateOf<HttpStatusCode?>(null) }
+    var httpStatusCode by remember { mutableStateOf<Int?>(null) }
     var connectionError by remember { mutableStateOf<String?>(null) }
     var updateInfo by remember { mutableStateOf<UpdateInfo?>(null) }
     val clipboard = LocalClipboardManager.current
@@ -63,10 +60,11 @@ fun LibraryScreen() {
         }
         runCatching {
             withContext(Dispatchers.IO) {
-                acquireClient().get("https://e-hentai.org/home.php")
+                desktopGet("https://e-hentai.org/home.php")
             }
-        }.onSuccess { response: HttpResponse ->
-            httpStatus = response.status
+        }.onSuccess { response ->
+            connectionError = null
+            httpStatusCode = response.status
             logcat("Connection", LogPriority.INFO) { "EH_HOME status=${response.status}" }
         }.onFailure { e ->
             connectionError = e.message ?: e::class.simpleName
@@ -83,13 +81,12 @@ fun LibraryScreen() {
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        val status = httpStatus
         val info = updateInfo
         Text(
             text = buildString {
                 append(
                     "e-hentai: " + when {
-                        status != null -> "HTTP ${status.value}"
+                        httpStatusCode != null -> "HTTP $httpStatusCode"
                         connectionError != null -> "offline"
                         else -> "checking..."
                     },
