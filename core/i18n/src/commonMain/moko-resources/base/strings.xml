@@ -640,6 +640,7 @@
     <string name="shortcut_jump_first_last">Jump to first / last gallery</string>
     <string name="shortcut_open_selected">Open selected gallery in standalone window</string>
     <string name="shortcut_open_gallery">Open gallery in standalone window</string>
+    <string name="shortcut_drop_link">Drop a gallery link onto the window</string>
     <string name="shortcut_context_menu">Context menu (copy, open browser, delete)</string>
     <string name="shortcut_show_help">Show keyboard shortcuts</string>
     <string name="settings_restore_session">Restore last session windows</string>
