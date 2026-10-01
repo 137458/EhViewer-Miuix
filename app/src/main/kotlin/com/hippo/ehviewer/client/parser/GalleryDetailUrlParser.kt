@@ -21,10 +21,8 @@ import com.ehviewer.core.database.client.GalleryDetailUrlParser as CoreGalleryDe
  * Like http://exhentai.org/g/1234567/a1b2c3d4e5<br></br>
  */
 object GalleryDetailUrlParser {
-    fun parse(url: String?, strict: Boolean = true): Result? {
-        return CoreGalleryDetailUrlParser.parse(url, strict)?.let {
-            Result(it.gid, it.token)
-        }
+    fun parse(url: String?, strict: Boolean = true): Result? = CoreGalleryDetailUrlParser.parse(url, strict)?.let {
+        Result(it.gid, it.token)
     }
 
     data class Result(val gid: Long, val token: String)
