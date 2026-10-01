@@ -361,13 +361,6 @@ private fun GalleryDetailWindowContent(gallery: com.ehviewer.core.model.BaseGall
         isFavorite = withContext(Dispatchers.IO) {
             DesktopDatabase.eh.localFavoritesDao().contains(gallery.gid)
         }
-        // 记录阅读历史：HISTORY 表经 GID 与 GALLERIES 联表，须先确保画廊行存在（HISTORY JOIN GALLERIES 语义）
-        withContext(Dispatchers.IO) {
-            runCatching {
-                DesktopDatabase.eh.galleryDao().upsert(DesktopFavoritesState.toGalleryEntity(gallery))
-                DesktopDatabase.eh.historyDao().upsert(HistoryInfo(gallery.gid))
-            }
-        }
     }
 
     LaunchedEffect(currentGallery.gid) {
@@ -378,6 +371,16 @@ private fun GalleryDetailWindowContent(gallery: com.ehviewer.core.model.BaseGall
             if (fetched != null) {
                 currentGallery = fetched
                 logcat("DetailWindow", LogPriority.INFO) { "Hydrated gallery ${fetched.gid}" }
+            }
+        }
+        // 记录阅读历史：HISTORY 表经 GID 与 GALLERIES 联表，须先确保画廊行存在（HISTORY JOIN GALLERIES 语义）。
+        // 仅以真实元数据入库（Android 侧同为详情加载成功才记录），元数据不可得（离线）时不落假数据。
+        if (!DesktopGalleryHydrator.needsHydration(currentGallery)) {
+            withContext(Dispatchers.IO) {
+                runCatching {
+                    DesktopDatabase.eh.galleryDao().upsert(DesktopFavoritesState.toGalleryEntity(currentGallery))
+                    DesktopDatabase.eh.historyDao().upsert(HistoryInfo(currentGallery.gid))
+                }
             }
         }
     }
