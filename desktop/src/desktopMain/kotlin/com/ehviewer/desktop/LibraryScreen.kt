@@ -22,10 +22,16 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.isCtrlPressed
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
@@ -39,6 +45,7 @@ import com.hippo.ehviewer.client.parser.GalleryListParserKtProbe
 import com.hippo.ehviewer.client.parser.parseGalleryList
 import java.nio.ByteBuffer
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -69,8 +76,9 @@ fun LibraryScreen() {
     var connectionError by remember { mutableStateOf<String?>(null) }
     var updateInfo by remember { mutableStateOf<UpdateInfo?>(null) }
     val clipboard = LocalClipboardManager.current
+    val coroutineScope = rememberCoroutineScope()
 
-    LaunchedEffect(Unit) {
+    suspend fun refreshGalleries() {
         history = withContext(Dispatchers.IO) {
             DesktopDatabase.eh.historyDao().listGalleries()
         }
@@ -101,6 +109,10 @@ fun LibraryScreen() {
             connectionError = e.message ?: e::class.simpleName
             logcat("Connection", LogPriority.WARN) { "EH_HOME failed: $connectionError" }
         }
+    }
+
+    LaunchedEffect(Unit) {
+        refreshGalleries()
         checkLatestRelease()?.let { info ->
             if (isNewer(info.tag, DESKTOP_VERSION)) {
                 updateInfo = info
@@ -111,7 +123,29 @@ fun LibraryScreen() {
         }
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .onPreviewKeyEvent { event ->
+                val action = resolveKeyAction(
+                    isKeyDown = event.type == KeyEventType.KeyDown,
+                    isCtrlPressed = event.isCtrlPressed,
+                    key = event.key,
+                    hasSelection = selected != null,
+                )
+                when (action) {
+                    DesktopKeyAction.ClearSelection -> {
+                        selected = null
+                        true
+                    }
+                    DesktopKeyAction.Refresh -> {
+                        coroutineScope.launch { refreshGalleries() }
+                        true
+                    }
+                    else -> false
+                }
+            },
+    ) {
         val info = updateInfo
         Text(
             text = buildString {

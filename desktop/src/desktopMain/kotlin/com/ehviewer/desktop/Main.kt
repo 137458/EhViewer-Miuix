@@ -68,17 +68,21 @@ fun main() = application {
                 state = windowState,
                 title = if (window.isSettings) "EhViewer Settings" else "EhViewer",
                 onKeyEvent = { event ->
-                    if (event.type == androidx.compose.ui.input.key.KeyEventType.KeyDown &&
-                        event.isCtrlPressed &&
-                        event.key == Key.Q
-                    ) {
-                        windows.remove(window)
-                        if (windows.isEmpty()) {
-                            exitApplication()
+                    val action = resolveKeyAction(
+                        isKeyDown = event.type == androidx.compose.ui.input.key.KeyEventType.KeyDown,
+                        isCtrlPressed = event.isCtrlPressed,
+                        key = event.key,
+                        hasSelection = false,
+                    )
+                    when (action) {
+                        DesktopKeyAction.CloseWindow -> {
+                            windows.remove(window)
+                            if (windows.isEmpty()) {
+                                exitApplication()
+                            }
+                            true
                         }
-                        true
-                    } else {
-                        false
+                        else -> false
                     }
                 },
             ) {
