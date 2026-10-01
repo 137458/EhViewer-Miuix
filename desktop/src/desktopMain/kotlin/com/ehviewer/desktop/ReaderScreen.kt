@@ -21,6 +21,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.layout.ContentScale
@@ -93,7 +98,29 @@ fun ReaderScreen(
         }
     }
 
-    Column(modifier = Modifier.fillMaxSize().background(MiuixTheme.colorScheme.background)) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MiuixTheme.colorScheme.background)
+            .onPreviewKeyEvent { event ->
+                // 阅读器键盘翻页：←/→（仅 KeyDown 响应一次）
+                if (event.type == KeyEventType.KeyDown) {
+                    when (event.key) {
+                        Key.DirectionRight -> {
+                            if (page < pageLinks.size) page += 1
+                            true
+                        }
+                        Key.DirectionLeft -> {
+                            if (page > 1) page -= 1
+                            true
+                        }
+                        else -> false
+                    }
+                } else {
+                    false
+                }
+            },
+    ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
