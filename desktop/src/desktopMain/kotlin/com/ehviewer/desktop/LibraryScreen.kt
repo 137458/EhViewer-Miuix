@@ -37,6 +37,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -122,6 +123,8 @@ fun LibraryScreen(
     val viewModeOrdinal by DesktopSettings.viewMode.valueFlow().collectAsState(DesktopSettings.viewMode.value)
     val viewMode = DesktopViewMode.fromOrdinal(viewModeOrdinal)
     var currentTab by remember { mutableStateOf(LibraryTab.fromName(DesktopSettings.lastTab.value)) }
+    var searchPage by remember { mutableIntStateOf(0) }
+    var remoteSearchQuery by remember { mutableStateOf("") }
 
     fun switchTab(tab: LibraryTab) {
         currentTab = tab
@@ -189,8 +192,10 @@ fun LibraryScreen(
         DesktopSettings.searchHistory.value = DesktopSearchHistory.encode(updated)
     }
 
-    fun remoteSearch(query: String) {
-        val url = DesktopSearchUrl.build(query) ?: return
+    fun remoteSearch(query: String, page: Int = 0) {
+        val url = DesktopSearchUrl.build(query, page = page) ?: return
+        searchPage = page
+        remoteSearchQuery = query
         coroutineScope.launch {
             online = emptyList()
             connectionStatus = DesktopConnectionStatus.Checking
@@ -204,7 +209,7 @@ fun LibraryScreen(
                         parseGalleryList(buffer).galleryInfoList.toList()
                     }.onSuccess { list ->
                         online = list
-                        logcat("Library", LogPriority.INFO) { "ONLINE_SEARCH parsed=${list.size} q=$query" }
+                        logcat("Library", LogPriority.INFO) { "ONLINE_SEARCH parsed=${list.size} q=$query p=$page" }
                     }.onFailure { e ->
                         logcat("Library", LogPriority.WARN) { "ONLINE_SEARCH parse failed: $e" }
                     }
@@ -225,7 +230,7 @@ fun LibraryScreen(
         if (q.isEmpty()) return
         recordSearch(q)
         if (currentTab == LibraryTab.Online) {
-            remoteSearch(q)
+            remoteSearch(q, page = 0)
         }
     }
 
@@ -689,6 +694,42 @@ fun LibraryScreen(
                                     fontSize = 11.sp,
                                 )
                             }
+                        }
+                    }
+                    if (currentTab == LibraryTab.Online && remoteSearchQuery.isNotBlank()) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 8.dp, vertical = 4.dp),
+                            horizontalArrangement = Arrangement.spacedBy(16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                text = "◀ Prev",
+                                color = if (searchPage > 0) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                modifier = Modifier
+                                    .pointerHoverIcon(PointerIcon.Hand)
+                                    .clickable(enabled = searchPage > 0) {
+                                        remoteSearch(remoteSearchQuery, page = searchPage - 1)
+                                    }
+                                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                            )
+                            Text(
+                                text = "Page ${searchPage + 1}",
+                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                fontSize = 11.sp,
+                            )
+                            Box(modifier = Modifier.weight(1f))
+                            Text(
+                                text = "Next ▶",
+                                color = if (online.isNotEmpty()) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                modifier = Modifier
+                                    .pointerHoverIcon(PointerIcon.Hand)
+                                    .clickable(enabled = online.isNotEmpty()) {
+                                        remoteSearch(remoteSearchQuery, page = searchPage + 1)
+                                    }
+                                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                            )
                         }
                     }
                     HorizontalDivider()

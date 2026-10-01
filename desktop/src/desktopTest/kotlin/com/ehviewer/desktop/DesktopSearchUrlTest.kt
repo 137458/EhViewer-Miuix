@@ -36,4 +36,26 @@ class DesktopSearchUrlTest {
         assertEquals(null, DesktopSearchUrl.build(""))
         assertEquals(null, DesktopSearchUrl.build("   "))
     }
+
+    @Test
+    fun buildWithPageAppendsPageParameter() {
+        // 第一页（0）不带 page 参数，与既有行为兼容
+        assertEquals(
+            "https://e-hentai.org/?f_search=touhou",
+            DesktopSearchUrl.build("touhou", page = 0),
+        )
+        assertEquals(
+            "https://e-hentai.org/?f_search=touhou&page=1",
+            DesktopSearchUrl.build("touhou", page = 1),
+        )
+        assertEquals(
+            "https://e-hentai.org/?f_search=%E6%9D%B1%E6%96%B9&page=3",
+            DesktopSearchUrl.build("東方", page = 3),
+        )
+        // 负页码视为第一页
+        assertEquals(
+            "https://e-hentai.org/?f_search=touhou",
+            DesktopSearchUrl.build("touhou", page = -1),
+        )
+    }
 }
