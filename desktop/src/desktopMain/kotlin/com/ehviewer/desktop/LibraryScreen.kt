@@ -5,6 +5,7 @@ import androidx.compose.foundation.ContextMenuItem
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -41,6 +42,15 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
+fun galleryWebUrl(gid: Long, token: String): String = "https://e-hentai.org/g/$gid/$token/"
+
+fun galleryDisplayTitle(title: String?, gid: Long): String = title?.trim()?.takeIf { it.isNotEmpty() } ?: gid.toString()
+
+enum class LibraryTab {
+    History,
+    Online,
+}
+
 // 本地库：历史列表(左) + 选中画廊详情(右) 主从双栏（桌面大屏习惯）+ 连接诊断行。
 // 在线画廊列表需 HTML 解析下沉（Rust 专项），由后续轮次接入。
 @Composable
@@ -51,9 +61,10 @@ fun LibraryScreen() {
     val favoriteCount by DesktopDatabase.eh.localFavoritesDao()
         .count()
         .collectAsState(initial = 0)
+    var currentTab by remember { mutableStateOf(LibraryTab.History) }
     var history by remember { mutableStateOf<List<GalleryEntity>>(emptyList()) }
     var online by remember { mutableStateOf<List<BaseGalleryInfo>>(emptyList()) }
-    var selected by remember { mutableStateOf<GalleryEntity?>(null) }
+    var selected by remember { mutableStateOf<BaseGalleryInfo?>(null) }
     var httpStatusCode by remember { mutableStateOf<Int?>(null) }
     var connectionError by remember { mutableStateOf<String?>(null) }
     var updateInfo by remember { mutableStateOf<UpdateInfo?>(null) }
@@ -124,48 +135,86 @@ fun LibraryScreen() {
         HorizontalDivider()
         Row(modifier = Modifier.fillMaxSize()) {
             Column(modifier = Modifier.width(320.dp).fillMaxHeight()) {
-                Text(
-                    "History (${history.size})",
-                    color = MiuixTheme.colorScheme.primary,
-                    modifier = Modifier.padding(8.dp),
-                )
-                LazyColumn(modifier = Modifier.fillMaxSize()) {
-                    items(history.size) { index ->
-                        val gallery = history[index]
-                        val title = gallery.title.orEmpty().ifEmpty { gallery.gid.toString() }
-                        ContextMenuArea(
-                            items = {
-                                listOf(
-                                    ContextMenuItem("Copy title") {
-                                        clipboard.setText(AnnotatedString(title))
-                                    },
-                                )
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text(
+                        text = "History (${history.size})",
+                        color = if (currentTab == LibraryTab.History) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        modifier = Modifier
+                            .clickable { currentTab = LibraryTab.History }
+                            .padding(vertical = 4.dp, horizontal = 4.dp),
+                    )
+                    Text(
+                        text = "Online (${online.size})",
+                        color = if (currentTab == LibraryTab.Online) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        modifier = Modifier
+                            .clickable { currentTab = LibraryTab.Online }
+                            .padding(vertical = 4.dp, horizontal = 4.dp),
+                    )
+                }
+                HorizontalDivider()
+                val currentItems: List<BaseGalleryInfo> = if (currentTab == LibraryTab.History) history else online
+                if (currentItems.isEmpty()) {
+                    Box(modifier = Modifier.fillMaxSize().padding(16.dp), contentAlignment = Alignment.Center) {
+                        Text(
+                            text = if (currentTab == LibraryTab.History) {
+                                "No history recorded"
+                            } else if (connectionError != null) {
+                                "Offline: $connectionError"
+                            } else {
+                                "Loading online galleries..."
                             },
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth()
-                                    .clickable { selected = gallery }
-                                    .background(
-                                        if (selected?.gid == gallery.gid) {
-                                            MiuixTheme.colorScheme.secondaryContainer
-                                        } else {
-                                            Color.Unspecified
+                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        )
+                    }
+                } else {
+                    LazyColumn(modifier = Modifier.fillMaxSize()) {
+                        items(currentItems.size) { index ->
+                            val gallery = currentItems[index]
+                            val title = galleryDisplayTitle(gallery.title, gallery.gid)
+                            val link = galleryWebUrl(gallery.gid, gallery.token)
+                            ContextMenuArea(
+                                items = {
+                                    listOf(
+                                        ContextMenuItem("Copy title") {
+                                            clipboard.setText(AnnotatedString(title))
+                                        },
+                                        ContextMenuItem("Copy link") {
+                                            clipboard.setText(AnnotatedString(link))
+                                        },
+                                        ContextMenuItem("Open in browser") {
+                                            openBrowser(link)
                                         },
                                     )
-                                    .padding(horizontal = 8.dp, vertical = 6.dp),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                },
                             ) {
-                                Text(
-                                    text = title,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                    modifier = Modifier.weight(1f),
-                                    color = MiuixTheme.colorScheme.onBackground,
-                                )
-                                Text(
-                                    text = gallery.category.toString(),
-                                    color = MiuixTheme.colorScheme.onBackground,
-                                )
+                                Row(
+                                    modifier = Modifier.fillMaxWidth()
+                                        .clickable { selected = gallery }
+                                        .background(
+                                            if (selected?.gid == gallery.gid) {
+                                                MiuixTheme.colorScheme.secondaryContainer
+                                            } else {
+                                                Color.Unspecified
+                                            },
+                                        )
+                                        .padding(horizontal = 8.dp, vertical = 6.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                ) {
+                                    Text(
+                                        text = title,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        modifier = Modifier.weight(1f),
+                                        color = MiuixTheme.colorScheme.onBackground,
+                                    )
+                                    Text(
+                                        text = gallery.category.toString(),
+                                        color = MiuixTheme.colorScheme.onBackground,
+                                    )
+                                }
                             }
                         }
                     }
@@ -186,13 +235,15 @@ fun LibraryScreen() {
 }
 
 @Composable
-private fun GalleryDetailPane(gallery: GalleryEntity, onCopy: (value: String, label: String) -> Unit) {
+private fun GalleryDetailPane(gallery: BaseGalleryInfo, onCopy: (value: String, label: String) -> Unit) {
     Column(
         modifier = Modifier.fillMaxSize().padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
+        val displayTitle = galleryDisplayTitle(gallery.title, gallery.gid)
+        val link = galleryWebUrl(gallery.gid, gallery.token)
         Text(
-            text = gallery.title.orEmpty().ifEmpty { "Untitled" },
+            text = displayTitle,
             color = MiuixTheme.colorScheme.primary,
         )
         gallery.titleJpn?.takeIf { it.isNotEmpty() }?.let {
@@ -206,6 +257,7 @@ private fun GalleryDetailPane(gallery: GalleryEntity, onCopy: (value: String, la
         DetailRow(label = "Pages", value = gallery.pages.toString(), onCopy = onCopy)
         DetailRow(label = "Rating", value = gallery.rating.toString(), onCopy = onCopy)
         gallery.simpleLanguage?.let { DetailRow(label = "Language", value = it, onCopy = onCopy) }
+        DetailRow(label = "Link", value = link, onCopy = onCopy)
         gallery.simpleTags?.takeIf { it.isNotEmpty() }?.let { tags ->
             Text(
                 text = tags.joinToString(", "),
