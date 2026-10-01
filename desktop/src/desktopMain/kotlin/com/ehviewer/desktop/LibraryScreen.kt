@@ -1070,6 +1070,17 @@ fun LibraryScreen(
                                                             overflow = TextOverflow.Ellipsis,
                                                         )
                                                     }
+                                                    if (currentTab == LibraryTab.Online) {
+                                                        gallery.posted?.take(10)?.let { postedDate ->
+                                                            Text(
+                                                                text = postedDate,
+                                                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                                                fontSize = 11.sp,
+                                                                maxLines = 1,
+                                                                overflow = TextOverflow.Ellipsis,
+                                                            )
+                                                        }
+                                                    }
                                                 }
                                             }
                                         }
