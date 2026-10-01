@@ -124,4 +124,22 @@ class DesktopSortOrderTest {
         assertEquals(DesktopSortDirection.Ascending, DesktopSortDirection.Descending.toggle())
         assertEquals(DesktopSortDirection.Descending, DesktopSortDirection.Ascending.toggle())
     }
+
+    @Test
+    fun encodeDecodeRoundTripsSortConfig() {
+        val config = DesktopSortConfig(DesktopSortField.Title, DesktopSortDirection.Ascending)
+        assertEquals("Title:Ascending", config.encode())
+        assertEquals(config, DesktopSortConfig.decode(config.encode()))
+        // 默认值往返
+        assertEquals(DesktopSortConfig(), DesktopSortConfig.decode(DesktopSortConfig().encode()))
+    }
+
+    @Test
+    fun decodeInvalidOrBlankFallsBackToDefault() {
+        assertEquals(DesktopSortConfig(), DesktopSortConfig.decode(null))
+        assertEquals(DesktopSortConfig(), DesktopSortConfig.decode(""))
+        assertEquals(DesktopSortConfig(), DesktopSortConfig.decode("garbage"))
+        assertEquals(DesktopSortConfig(), DesktopSortConfig.decode("RATING")) // 缺方向
+        assertEquals(DesktopSortConfig(), DesktopSortConfig.decode("NOPE:ASCENDING")) // 未知字段
+    }
 }

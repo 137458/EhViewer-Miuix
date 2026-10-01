@@ -53,6 +53,19 @@ data class DesktopSortConfig(
             DesktopSortField.Title -> if (direction == DesktopSortDirection.Descending) "A-Z↓" else "A-Z↑"
         }
 
+    // 会话间持久化编码（FIELD:DIRECTION）
+    fun encode(): String = "${field.name}:${direction.name}"
+
+    companion object {
+        fun decode(raw: String?): DesktopSortConfig = runCatching {
+            val (field, direction) = raw!!.split(":")
+            DesktopSortConfig(
+                field = DesktopSortField.valueOf(field),
+                direction = DesktopSortDirection.valueOf(direction),
+            )
+        }.getOrDefault(DesktopSortConfig())
+    }
+
     fun sort(galleries: List<BaseGalleryInfo>): List<BaseGalleryInfo> {
         if (galleries.size <= 1 || field == DesktopSortField.Default) {
             return galleries

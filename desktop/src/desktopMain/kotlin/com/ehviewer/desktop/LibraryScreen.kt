@@ -133,7 +133,9 @@ fun LibraryScreen(
     var connectionStatus by remember { mutableStateOf<DesktopConnectionStatus>(DesktopConnectionStatus.Checking) }
     var updateInfo by remember { mutableStateOf<UpdateInfo?>(null) }
     var searchQuery by remember { mutableStateOf("") }
-    var sortConfig by remember { mutableStateOf(DesktopSortConfig()) }
+    var sortConfig by remember {
+        mutableStateOf(DesktopSortConfig.decode(DesktopSettings.sortConfig.value))
+    }
     val searchHistoryRaw by DesktopSettings.searchHistory.valueFlow()
         .collectAsState(DesktopSettings.searchHistory.value)
     val searchHistoryList = remember(searchHistoryRaw) {
@@ -535,7 +537,11 @@ fun LibraryScreen(
                             color = if (sortConfig.field == DesktopSortField.Default) MiuixTheme.colorScheme.onSurfaceVariantSummary else MiuixTheme.colorScheme.primary,
                             modifier = Modifier
                                 .pointerHoverIcon(PointerIcon.Hand)
-                                .clickable { sortConfig = sortConfig.cycle() }
+                                .clickable {
+                                    sortConfig = sortConfig.cycle().also {
+                                        DesktopSettings.sortConfig.value = it.encode()
+                                    }
+                                }
                                 .padding(horizontal = 4.dp, vertical = 4.dp),
                         )
                         Text(
