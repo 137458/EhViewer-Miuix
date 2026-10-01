@@ -1,5 +1,7 @@
 package com.ehviewer.desktop
 
+import androidx.compose.foundation.ContextMenuArea
+import androidx.compose.foundation.ContextMenuItem
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -16,6 +18,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.ehviewer.core.database.model.GalleryEntity
@@ -42,6 +46,7 @@ fun LibraryScreen() {
     var history by remember { mutableStateOf<List<GalleryEntity>>(emptyList()) }
     var httpStatus by remember { mutableStateOf<HttpStatusCode?>(null) }
     var connectionError by remember { mutableStateOf<String?>(null) }
+    val clipboard = LocalClipboardManager.current
 
     LaunchedEffect(Unit) {
         history = withContext(Dispatchers.IO) {
@@ -84,21 +89,31 @@ fun LibraryScreen() {
             items(history.size) { index ->
                 val gallery = history[index]
                 val title = gallery.title.orEmpty().ifEmpty { gallery.gid.toString() }
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ContextMenuArea(
+                    items = {
+                        listOf(
+                            ContextMenuItem("Copy title") {
+                                clipboard.setText(AnnotatedString(title))
+                            },
+                        )
+                    },
                 ) {
-                    Text(
-                        text = title,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f),
-                        color = MiuixTheme.colorScheme.onBackground,
-                    )
-                    Text(
-                        text = gallery.category.toString(),
-                        color = MiuixTheme.colorScheme.onBackground,
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Text(
+                            text = title,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f),
+                            color = MiuixTheme.colorScheme.onBackground,
+                        )
+                        Text(
+                            text = gallery.category.toString(),
+                            color = MiuixTheme.colorScheme.onBackground,
+                        )
+                    }
                 }
             }
         }
