@@ -12,6 +12,12 @@ object DesktopFavoritesState {
         currentFavorites + gid
     }
 
+    fun toggleFavorite(currentFavorites: Set<Long>, gid: Long): Pair<Set<Long>, Boolean> {
+        val isFav = gid in currentFavorites
+        val updated = if (isFav) currentFavorites - gid else currentFavorites + gid
+        return Pair(updated, !isFav)
+    }
+
     fun filterFavorites(
         allGalleries: List<BaseGalleryInfo>,
         favoriteGids: Set<Long>,

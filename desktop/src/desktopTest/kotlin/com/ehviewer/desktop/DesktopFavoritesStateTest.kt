@@ -57,6 +57,27 @@ class DesktopFavoritesStateTest {
     }
 
     @Test
+    fun toggleFavorite_returnsUpdatedSetAndNewStatus() {
+        val initial = setOf(101L, 102L)
+        val (addedSet, isFavAfterAdd) = DesktopFavoritesState.toggleFavorite(initial, 103L)
+        assertEquals(setOf(101L, 102L, 103L), addedSet)
+        assertTrue(isFavAfterAdd)
+
+        val (removedSet, isFavAfterRemove) = DesktopFavoritesState.toggleFavorite(addedSet, 101L)
+        assertEquals(setOf(102L, 103L), removedSet)
+        assertFalse(isFavAfterRemove)
+
+        // 三角验证：空集合添加与单元素移除至空
+        val (fromEmptySet, fromEmptyStatus) = DesktopFavoritesState.toggleFavorite(emptySet(), 500L)
+        assertEquals(setOf(500L), fromEmptySet)
+        assertTrue(fromEmptyStatus)
+
+        val (toEmptySet, toEmptyStatus) = DesktopFavoritesState.toggleFavorite(fromEmptySet, 500L)
+        assertEquals(emptySet(), toEmptySet)
+        assertFalse(toEmptyStatus)
+    }
+
+    @Test
     fun filterFavorites_retainsOnlyFavoritedGalleriesInOrder() {
         val g1 = createGallery(101L)
         val g2 = createGallery(102L)

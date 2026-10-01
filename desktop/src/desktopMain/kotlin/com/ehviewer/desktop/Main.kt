@@ -22,6 +22,7 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -46,15 +47,19 @@ import androidx.compose.ui.window.Tray
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
+import com.ehviewer.core.database.model.LocalFavoriteInfo
 import com.ehviewer.core.i18n.MR
 import com.ehviewer.core.util.LogPriority
 import com.ehviewer.core.util.logcat
 import dev.icerock.moko.resources.compose.stringResource
 import java.util.concurrent.atomic.AtomicLong
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.darkColorScheme as miuixDarkColorScheme
 import top.yukonga.miuix.kmp.theme.lightColorScheme as miuixLightColorScheme
@@ -311,6 +316,15 @@ private fun GalleryDetailWindowContent(gallery: com.ehviewer.core.model.BaseGall
     var notifications by remember { mutableStateOf<List<DesktopNotification>>(emptyList()) }
     val nextNotificationId = remember { AtomicLong(1L) }
     val clipboard = LocalClipboardManager.current
+    var previewCoverUrl by remember { mutableStateOf<String?>(null) }
+    var isFavorite by remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
+
+    LaunchedEffect(gallery.gid) {
+        isFavorite = withContext(Dispatchers.IO) {
+            DesktopDatabase.eh.localFavoritesDao().contains(gallery.gid)
+        }
+    }
 
     fun showNotification(message: String) {
         val now = System.currentTimeMillis()
@@ -333,6 +347,23 @@ private fun GalleryDetailWindowContent(gallery: com.ehviewer.core.model.BaseGall
         }
     }
 
+    fun toggleFavorite() {
+        coroutineScope.launch {
+            val nextState = !isFavorite
+            withContext(Dispatchers.IO) {
+                if (nextState) {
+                    val entity = DesktopFavoritesState.toGalleryEntity(gallery)
+                    DesktopDatabase.eh.galleryDao().upsert(entity)
+                    DesktopDatabase.eh.localFavoritesDao().upsert(LocalFavoriteInfo(gallery.gid))
+                } else {
+                    DesktopDatabase.eh.localFavoritesDao().deleteByKey(gallery.gid)
+                }
+            }
+            isFavorite = nextState
+            showNotification(if (nextState) "Added to favorites" else "Removed from favorites")
+        }
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -340,6 +371,8 @@ private fun GalleryDetailWindowContent(gallery: com.ehviewer.core.model.BaseGall
     ) {
         GalleryDetailPane(
             gallery = gallery,
+            isFavorite = isFavorite,
+            onToggleFavorite = { toggleFavorite() },
             onCopy = { value, label ->
                 clipboard.setText(AnnotatedString(value))
                 showNotification("Copied $label")
@@ -350,6 +383,11 @@ private fun GalleryDetailWindowContent(gallery: com.ehviewer.core.model.BaseGall
                     showNotification("Failed to open browser")
                 }
             },
+            onSearchTag = { tag ->
+                clipboard.setText(AnnotatedString(tag))
+                showNotification("Copied tag: $tag")
+            },
+            onPreviewCover = { url -> previewCoverUrl = url },
         )
         if (notifications.isNotEmpty()) {
             Column(
@@ -377,6 +415,13 @@ private fun GalleryDetailWindowContent(gallery: com.ehviewer.core.model.BaseGall
                     }
                 }
             }
+        }
+
+        previewCoverUrl?.let { coverUrl ->
+            CoverPreviewDialog(
+                imageUrl = coverUrl,
+                onDismiss = { previewCoverUrl = null },
+            )
         }
     }
 }

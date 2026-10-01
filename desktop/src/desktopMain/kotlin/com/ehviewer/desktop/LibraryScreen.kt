@@ -1000,7 +1000,7 @@ private fun openBrowser(url: String) {
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun CoverPreviewDialog(
+internal fun CoverPreviewDialog(
     imageUrl: String,
     onDismiss: () -> Unit,
 ) {
