@@ -2,6 +2,8 @@ package com.ehviewer.desktop
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,13 +16,16 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
@@ -28,6 +33,7 @@ import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -174,11 +180,32 @@ fun ReaderScreen(
         }
         HorizontalDivider()
 
+        // 图片手势状态：捏合缩放（1x-5x）+ 拖拽平移；双击重置；翻页自动重置
+        var scale by remember { mutableFloatStateOf(1f) }
+        var offset by remember { mutableStateOf(Offset.Zero) }
+        LaunchedEffect(page) {
+            scale = 1f
+            offset = Offset.Zero
+        }
         Box(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
-                .background(Color.Black),
+                .background(Color.Black)
+                .pointerInput(Unit) {
+                    detectTransformGestures { _, pan, zoom, _ ->
+                        scale = (scale * zoom).coerceIn(1f, 5f)
+                        offset = if (scale > 1f) offset + pan else Offset.Zero
+                    }
+                }
+                .pointerInput(Unit) {
+                    detectTapGestures(
+                        onDoubleTap = {
+                            scale = if (scale > 1f) 1f else 2.5f
+                            offset = Offset.Zero
+                        },
+                    )
+                },
             contentAlignment = Alignment.Center,
         ) {
             val url = imageUrl
@@ -186,7 +213,14 @@ fun ReaderScreen(
                 url != null -> AsyncImage(
                     model = url,
                     contentDescription = displayTitle,
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .graphicsLayer {
+                            scaleX = scale
+                            scaleY = scale
+                            translationX = offset.x
+                            translationY = offset.y
+                        },
                     contentScale = ContentScale.Fit,
                 )
                 imageState != null -> Text(
