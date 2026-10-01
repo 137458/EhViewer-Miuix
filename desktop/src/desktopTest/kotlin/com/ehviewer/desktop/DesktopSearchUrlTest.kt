@@ -38,24 +38,38 @@ class DesktopSearchUrlTest {
     }
 
     @Test
-    fun buildWithPageAppendsPageParameter() {
-        // 第一页（0）不带 page 参数，与既有行为兼容
+    fun buildWithCursorAppendsNextParameter() {
+        // 第一页（无游标）不带参数，与既有行为兼容
         assertEquals(
             "https://e-hentai.org/?f_search=touhou",
-            DesktopSearchUrl.build("touhou", page = 0),
+            DesktopSearchUrl.build("touhou"),
+        )
+        // 站点分页是游标式：next = 当前结果最后一项的 gid
+        assertEquals(
+            "https://e-hentai.org/?f_search=touhou&next=4221532",
+            DesktopSearchUrl.build("touhou", nextGid = 4221532L),
         )
         assertEquals(
-            "https://e-hentai.org/?f_search=touhou&page=1",
-            DesktopSearchUrl.build("touhou", page = 1),
+            "https://e-hentai.org/?f_search=%E6%9D%B1%E6%96%B9&next=42",
+            DesktopSearchUrl.build("東方", nextGid = 42L),
         )
-        assertEquals(
-            "https://e-hentai.org/?f_search=%E6%9D%B1%E6%96%B9&page=3",
-            DesktopSearchUrl.build("東方", page = 3),
-        )
-        // 负页码视为第一页
+        // 负值视为无游标
         assertEquals(
             "https://e-hentai.org/?f_search=touhou",
-            DesktopSearchUrl.build("touhou", page = -1),
+            DesktopSearchUrl.build("touhou", nextGid = -1L),
+        )
+    }
+
+    @Test
+    fun buildFirstPageUsesPrevParameter() {
+        // 站点 &prev=1 语义为回到第一页
+        assertEquals(
+            "https://e-hentai.org/?f_search=touhou&prev=1",
+            DesktopSearchUrl.buildFirstPage("touhou"),
+        )
+        assertEquals(
+            "https://e-hentai.org/?f_search=%E6%9D%B1%E6%96%B9&prev=1",
+            DesktopSearchUrl.buildFirstPage("東方"),
         )
     }
 }

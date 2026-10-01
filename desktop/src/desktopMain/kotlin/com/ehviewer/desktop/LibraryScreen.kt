@@ -192,9 +192,8 @@ fun LibraryScreen(
         DesktopSettings.searchHistory.value = DesktopSearchHistory.encode(updated)
     }
 
-    fun remoteSearch(query: String, page: Int = 0) {
-        val url = DesktopSearchUrl.build(query, page = page) ?: return
-        searchPage = page
+    fun remoteSearch(query: String, nextGid: Long? = null) {
+        val url = DesktopSearchUrl.build(query, nextGid = nextGid) ?: return
         remoteSearchQuery = query
         // 列表即将被新页替换，清除跨页残留的选中态
         selected = null
@@ -211,7 +210,7 @@ fun LibraryScreen(
                         parseGalleryList(buffer).galleryInfoList.toList()
                     }.onSuccess { list ->
                         online = list
-                        logcat("Library", LogPriority.INFO) { "ONLINE_SEARCH parsed=${list.size} q=$query p=$page" }
+                        logcat("Library", LogPriority.INFO) { "ONLINE_SEARCH parsed=${list.size} q=$query next=$nextGid" }
                     }.onFailure { e ->
                         logcat("Library", LogPriority.WARN) { "ONLINE_SEARCH parse failed: $e" }
                     }
@@ -291,7 +290,7 @@ fun LibraryScreen(
         }
         recordSearch(q)
         if (currentTab == LibraryTab.Online) {
-            remoteSearch(q, page = 0)
+            remoteSearch(q)
         }
     }
 
@@ -740,7 +739,7 @@ fun LibraryScreen(
                                 modifier = Modifier
                                     .pointerHoverIcon(PointerIcon.Hand)
                                     .clickable(enabled = searchPage > 0) {
-                                        remoteSearch(remoteSearchQuery, page = searchPage - 1)
+                                        remoteSearch(remoteSearchQuery)
                                     }
                                     .padding(horizontal = 8.dp, vertical = 4.dp),
                             )
@@ -756,7 +755,7 @@ fun LibraryScreen(
                                 modifier = Modifier
                                     .pointerHoverIcon(PointerIcon.Hand)
                                     .clickable(enabled = online.isNotEmpty()) {
-                                        remoteSearch(remoteSearchQuery, page = searchPage + 1)
+                                        remoteSearch(remoteSearchQuery, nextGid = online.lastOrNull()?.gid)
                                     }
                                     .padding(horizontal = 8.dp, vertical = 4.dp),
                             )
