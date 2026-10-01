@@ -17,21 +17,14 @@
  */
 package com.hippo.ehviewer.client.parser
 
+import com.ehviewer.core.database.client.GalleryMultiPageViewerPTokenParser as CorePTokenParser
 import com.hippo.ehviewer.client.exception.ParseException
-import com.hippo.ehviewer.client.parseAs
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 object GalleryMultiPageViewerPTokenParser {
-    private const val IMAGE_LIST_STRING = "var imagelist = "
-
-    fun parse(body: String): List<String> = runCatching {
-        val index = body.indexOf(IMAGE_LIST_STRING)
-        val imagelist = body.substring(index + IMAGE_LIST_STRING.length, body.indexOf(";", index))
-        imagelist.parseAs<List<Item>>().map(Item::token)
-    }.getOrElse {
-        throw ParseException("Parse pToken from MPV error", it)
-    }
+    fun parse(body: String): List<String> = CorePTokenParser.parse(body)
+        ?: throw ParseException("Parse pToken from MPV error")
 
     @Serializable
     data class Item(@SerialName("k") val token: String)
