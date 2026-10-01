@@ -62,14 +62,17 @@ object DesktopWindowManager {
 
     private val sessionJson = Json { ignoreUnknownKeys = true }
 
-    fun windowTitle(kind: DesktopWindowKind): String = when (kind) {
+    fun windowTitle(
+        kind: DesktopWindowKind,
+        untitledLabel: String = "(Untitled)",
+    ): String = when (kind) {
         DesktopWindowKind.Library -> "EhViewer"
         DesktopWindowKind.Settings -> "EhViewer Settings"
         is DesktopWindowKind.GalleryDetail -> {
             val gallery = kind.gallery
             val displayTitle = gallery.title?.takeIf { it.isNotBlank() }
                 ?: gallery.titleJpn?.takeIf { it.isNotBlank() }
-                ?: "(Untitled)"
+                ?: untitledLabel
             "$displayTitle - EhViewer"
         }
     }

@@ -716,6 +716,7 @@
     <string name="shortcut_context_menu">右键菜单（复制、浏览器打开、删除）</string>
     <string name="shortcut_show_help">显示键盘快捷键</string>
     <string name="settings_restore_session">恢复上次会话窗口</string>
+    <string name="desktop_untitled">（未命名）</string>
     <string name="desktop_copied">已复制</string>
     <string name="desktop_link_copied">链接已复制</string>
     <string name="desktop_removed_from_history">已从历史记录移除</string>

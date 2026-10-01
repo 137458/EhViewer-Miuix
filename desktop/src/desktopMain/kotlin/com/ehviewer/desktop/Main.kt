@@ -163,7 +163,10 @@ fun main() {
                 Window(
                     onCloseRequest = { handleClose(window) },
                     state = windowState,
-                    title = DesktopWindowManager.windowTitle(window.kind),
+                    title = DesktopWindowManager.windowTitle(
+                        window.kind,
+                        untitledLabel = stringResource(MR.strings.desktop_untitled),
+                    ),
                     onKeyEvent = { event ->
                         val action = resolveKeyAction(
                             isKeyDown = event.type == androidx.compose.ui.input.key.KeyEventType.KeyDown,
