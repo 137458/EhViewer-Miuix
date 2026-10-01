@@ -31,7 +31,9 @@ import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import coil3.SingletonImageLoader
 import coil3.compose.AsyncImage
+import coil3.compose.LocalPlatformContext
 import com.ehviewer.core.database.client.GalleryDetailPageLinksParser
 import com.ehviewer.core.database.client.GalleryPageParser
 import com.ehviewer.core.model.BaseGalleryInfo
@@ -56,6 +58,7 @@ fun ReaderScreen(
     val displayTitle = gallery.title?.takeIf { it.isNotBlank() }
         ?: gallery.titleJpn?.takeIf { it.isNotBlank() }
         ?: gallery.gid.toString()
+    val context = LocalPlatformContext.current
 
     LaunchedEffect(gallery.gid) {
         imageState = "Loading page links..."
@@ -94,6 +97,21 @@ fun ReaderScreen(
             } else {
                 imageState = null
                 imageUrl = result
+            }
+        }
+    }
+
+    // 预取下一页图片地址与本体：翻页时免等待（图片本体进 Coil 磁盘/内存缓存）
+    val nextLink = pageLinks.getOrNull(page)
+    LaunchedEffect(nextLink) {
+        val link = nextLink ?: return@LaunchedEffect
+        withContext(Dispatchers.IO) {
+            runCatching {
+                val pageResponse = desktopGet(link.pageUrl)
+                GalleryPageParser.parse(pageResponse.body)?.imageUrl
+            }.getOrNull()?.let { url ->
+                val request = coil3.request.ImageRequest.Builder(context).data(url).build()
+                SingletonImageLoader.get(context).enqueue(request)
             }
         }
     }
