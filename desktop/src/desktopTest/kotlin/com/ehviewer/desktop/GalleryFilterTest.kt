@@ -80,6 +80,20 @@ class GalleryFilterTest {
     }
 
     @Test
+    fun filterGalleriesMatchesPastedEhentaiUrl() {
+        val result = GalleryFilter.filterGalleries(sampleItems, "https://e-hentai.org/g/20002/abcdef1234/")
+        assertEquals(1, result.size)
+        assertEquals(20002L, result.first().gid)
+    }
+
+    @Test
+    fun filterGalleriesMatchesPastedExhentaiUrl() {
+        val result = GalleryFilter.filterGalleries(sampleItems, "https://exhentai.org/g/30003/1234567890/")
+        assertEquals(1, result.size)
+        assertEquals(30003L, result.first().gid)
+    }
+
+    @Test
     fun filterGalleriesNonMatchingReturnsEmpty() {
         val result = GalleryFilter.filterGalleries(sampleItems, "nonexistent_query_404")
         assertTrue(result.isEmpty())

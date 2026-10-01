@@ -15,22 +15,15 @@
  */
 package com.hippo.ehviewer.client.parser
 
-import com.hippo.ehviewer.client.EhUrl
+import com.ehviewer.core.database.client.GalleryDetailUrlParser as CoreGalleryDetailUrlParser
 
 /**
  * Like http://exhentai.org/g/1234567/a1b2c3d4e5<br></br>
  */
 object GalleryDetailUrlParser {
-    private val URL_STRICT_PATTERN = Regex(
-        "https?://(?:${EhUrl.DOMAIN_EX}|${EhUrl.DOMAIN_E}(?:/lofi)?)/(?:g|mpv)/(\\d+)/([0-9a-f]{10})",
-    )
-    private val URL_PATTERN = Regex("(\\d+)/([0-9a-f]{10})(?:[^0-9a-f]|$)")
-
     fun parse(url: String?, strict: Boolean = true): Result? {
-        url ?: return null
-        val pattern = if (strict) URL_STRICT_PATTERN else URL_PATTERN
-        return pattern.find(url)?.destructured?.let { (gid, token) ->
-            Result(gid.toLong(), token)
+        return CoreGalleryDetailUrlParser.parse(url, strict)?.let {
+            Result(it.gid, it.token)
         }
     }
 
