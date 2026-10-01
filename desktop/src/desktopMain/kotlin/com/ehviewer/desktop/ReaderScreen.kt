@@ -245,14 +245,16 @@ fun ReaderScreen(
             contentAlignment = Alignment.Center,
         ) {
             val url = imageUrl
+            val copyLinkLabel = stringResource(MR.strings.copy_link)
+            val openInBrowserLabel = stringResource(MR.strings.open_in_browser)
             when {
                 url != null -> ContextMenuArea(
                     items = {
                         listOf(
-                            ContextMenuItem(stringResource(MR.strings.copy_link)) {
+                            ContextMenuItem(copyLinkLabel) {
                                 clipboard.setText(AnnotatedString(url))
                             },
-                            ContextMenuItem(stringResource(MR.strings.open_in_browser)) {
+                            ContextMenuItem(openInBrowserLabel) {
                                 DesktopBrowser.openUrl(url)
                             },
                         )
