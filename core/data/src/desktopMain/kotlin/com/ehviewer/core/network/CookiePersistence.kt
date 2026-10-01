@@ -1,7 +1,8 @@
 package com.ehviewer.core.network
 
-import java.io.FileInputStream
-import java.io.FileOutputStream
+import com.sun.jna.platform.win32.Crypt32Util
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
 import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
 import java.io.Serializable
@@ -9,6 +10,7 @@ import java.net.HttpCookie
 import java.net.URI
 import okio.FileSystem
 import okio.Path
+import okio.buffer
 
 // HttpCookie 不可序列化，落盘用自有 DTO；会话 cookie 重启后转为持久，保证桌面端登录态延续
 internal data class CookieRecord(
@@ -47,22 +49,26 @@ internal class CookiePersistence(private val path: Path) {
             val records = entries.flatMap { (uri, cookies) ->
                 cookies.map { c -> CookieRecord.from(uri, c) }
             }
-            ObjectOutputStream(FileOutputStream(path.toString())).use { out ->
-                out.writeObject(records)
-            }
+            val plain = ByteArrayOutputStream().also { buffer ->
+                ObjectOutputStream(buffer).use { it.writeObject(records) }
+            }.toByteArray()
+            // DPAPI CurrentUser 域加密：文件被拷走后无法在他人账户解出登录态
+            val protected = Crypt32Util.cryptProtectData(plain)
+            fs.sink(path).buffer().use { it.write(protected) }
         }
     }
 
     fun load(): Map<URI, List<HttpCookie>> {
         if (!fs.exists(path)) return emptyMap()
-        return runCatching {
-            ObjectInputStream(FileInputStream(path.toString())).use { input ->
-                val records = input.readObject() as List<CookieRecord>
-                records.groupBy({ it.uri }, { it.toHttpCookie() })
-            }
-        }.getOrElse {
-            // 文件损坏时丢弃会话副本，等价于未登录状态，不阻塞启动
-            emptyMap()
-        }
+        val raw = runCatching { fs.source(path).buffer().use { it.readByteArray() } }.getOrElse { return emptyMap() }
+        // 优先按 DPAPI 解密；旧版明文格式直接反序列化（一次性迁移）；损坏则回退未登录
+        return runCatching { deserialize(Crypt32Util.cryptUnprotectData(raw)) }
+            .recoverCatching { deserialize(raw) }
+            .getOrElse { emptyMap() }
+    }
+
+    private fun deserialize(bytes: ByteArray): Map<URI, List<HttpCookie>> = ObjectInputStream(ByteArrayInputStream(bytes)).use { input ->
+        val records = input.readObject() as List<CookieRecord>
+        records.groupBy({ it.uri }, { it.toHttpCookie() })
     }
 }

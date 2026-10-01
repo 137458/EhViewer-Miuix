@@ -35,6 +35,9 @@ kotlin {
 dependencies {
     add("desktopMainImplementation", "androidx.sqlite:sqlite-bundled-jvm:2.7.1")
     add("desktopMainImplementation", libs.ktor.client.okhttp)
+    // DPAPI 绑定：桌面 Cookie 落盘加密（锁 5.6.0 与本地缓存一致）
+    add("desktopMainImplementation", "net.java.dev.jna:jna:5.6.0")
+    add("desktopMainImplementation", "net.java.dev.jna:jna-platform:5.6.0")
     add("kspAndroid", libs.androidx.room.compiler)
     add("kspDesktop", libs.androidx.room.compiler)
 }

@@ -24,13 +24,15 @@ class CookieManagerDesktopTest {
             assertEquals("42", manager.getCookies(url)?.get(name))
             manager.flush()
 
-            // PersistentCookieStore 在变更时同步写盘；落盘内容为序列化 CookieRecord，
-            // ASCII 字段名可直接在字节流中检索（DesktopDirs 在数据根下再分 EhViewer/files/）
+            // PersistentCookieStore 在变更时同步写盘（DesktopDirs 在数据根下再分 EhViewer/files/）；
+            // 落盘为 DPAPI 密文：文件存在非空，且 cookie 键名/值不得以明文出现在字节流中
             val file = dataDir / "EhViewer" / "files" / "cookies.dat"
             val fs = FileSystem.SYSTEM
             assertTrue(fs.exists(file), "persisted store should exist at $file")
             val bytes = fs.read(file) { readByteArray() }
-            assertTrue(name in String(bytes, Charsets.ISO_8859_1), "persisted store should contain $name")
+            assertTrue(bytes.size > 0, "persisted store should not be empty")
+            val plaintext = String(bytes, Charsets.ISO_8859_1)
+            assertTrue(name !in plaintext && "42" !in plaintext, "cookie must not be stored in plaintext")
         } finally {
             clearIsolatedDataDir()
         }

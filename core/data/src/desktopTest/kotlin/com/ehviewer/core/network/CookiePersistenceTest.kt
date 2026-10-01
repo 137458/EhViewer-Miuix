@@ -26,12 +26,38 @@ class CookiePersistenceTest {
         }
         writer.save(mapOf(uri to listOf(cookie)))
 
+        // 落盘应为 DPAPI 密文：明文 cookie 值不得直接出现在字节流中
+        val storedBytes = fs.source(storePath).buffer().use { it.readByteArray() }
+        assertTrue("42".toByteArray() !in storedBytes.asSequence().windowed(2).map { it.toByteArray() }.toList())
+
         // 新实例 = 新进程语义：不共享内存态，仅依赖磁盘文件
         val reader = CookiePersistence(storePath)
         val restored = reader.load()
         val restoredCookie = restored[uri]?.single { it.getName() == "ipb_member_id" }
         assertEquals("42", restoredCookie?.getValue())
         assertEquals(".e-hentai.org", restoredCookie?.getDomain())
+    }
+
+    @Test
+    fun loadLegacyPlaintextFormatMigratesTransparently() {
+        val storePath = FileSystem.SYSTEM_TEMPORARY_DIRECTORY / "cookie_persist_legacy_${System.nanoTime()}.dat"
+        val uri = URI("https://e-hentai.org")
+        val legacy = listOf(
+            CookieRecord(
+                uri = uri,
+                name = "ipb_member_id",
+                value = "legacy",
+                domain = ".e-hentai.org",
+                path = "/",
+                secure = false,
+            ),
+        )
+        java.io.ObjectOutputStream(java.io.FileOutputStream(storePath.toString())).use { it.writeObject(legacy) }
+
+        val reader = CookiePersistence(storePath)
+        val restored = reader.load()
+        assertEquals("legacy", restored[uri]?.single()?.getValue())
+        fs.delete(storePath)
     }
 
     @Test
