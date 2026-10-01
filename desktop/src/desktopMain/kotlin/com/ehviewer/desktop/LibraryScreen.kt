@@ -433,7 +433,13 @@ fun LibraryScreen(
                     }
 
                     Text(
-                        text = "|  signed-in: ${EhCookieStore.hasSignedIn()}  |  download groups: ${downloadLabels.size}  |  favorites: $favoriteCount  |  version: $DESKTOP_VERSION",
+                        text = stringResource(
+                            MR.strings.desktop_library_status_bar,
+                            EhCookieStore.hasSignedIn().toString(),
+                            downloadLabels.size,
+                            favoriteCount,
+                            DESKTOP_VERSION,
+                        ),
                         fontSize = 12.sp,
                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     )
@@ -441,7 +447,7 @@ fun LibraryScreen(
 
                 if (info != null) {
                     Text(
-                        text = "update available: ${info.tag}",
+                        text = stringResource(MR.strings.desktop_update_available, info.tag),
                         fontSize = 12.sp,
                         color = MiuixTheme.colorScheme.primary,
                         modifier = Modifier
@@ -648,17 +654,17 @@ fun LibraryScreen(
                         Box(modifier = Modifier.fillMaxSize().padding(16.dp), contentAlignment = Alignment.Center) {
                             if (searchQuery.isNotBlank() && currentItems.isNotEmpty()) {
                                 Text(
-                                    text = "No matching galleries",
+                                    text = stringResource(MR.strings.desktop_empty_no_match),
                                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                 )
                             } else {
                                 when (currentTab) {
                                     LibraryTab.History -> Text(
-                                        text = "No history recorded",
+                                        text = stringResource(MR.strings.desktop_empty_no_history),
                                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                     )
                                     LibraryTab.Favorites -> Text(
-                                        text = "No favorites saved",
+                                        text = stringResource(MR.strings.desktop_empty_no_favorites),
                                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                     )
                                     LibraryTab.Online -> {
@@ -669,7 +675,7 @@ fun LibraryScreen(
                                             when (val status = connectionStatus) {
                                                 is DesktopConnectionStatus.Offline -> {
                                                     Text(
-                                                        text = "Offline: ${status.reason}",
+                                                        text = stringResource(MR.strings.desktop_status_offline) + ": ${status.reason}",
                                                         color = MiuixTheme.colorScheme.error,
                                                     )
                                                     Box(

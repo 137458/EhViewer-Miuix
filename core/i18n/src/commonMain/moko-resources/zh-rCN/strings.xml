@@ -745,6 +745,11 @@
     <string name="desktop_status_offline">离线</string>
     <string name="desktop_online_connecting">正在连接 E-Hentai…</string>
     <string name="desktop_online_empty">未找到在线画廊</string>
+    <string name="desktop_empty_no_match">没有匹配的画廊</string>
+    <string name="desktop_empty_no_history">暂无历史记录</string>
+    <string name="desktop_empty_no_favorites">暂无收藏</string>
+    <string name="desktop_library_status_bar">|  已登录：%1$s  |  下载分组：%2$d  |  收藏：%3$d  |  版本：%4$s</string>
+    <string name="desktop_update_available">有可用更新：%1$s</string>
     <string name="desktop_notification_opening_gallery">正在打开画廊</string>
     <string name="desktop_gallery_metadata_loading">画廊元数据加载中，请稍后重试</string>
     <string name="search_hint">过滤标题、标签、上传者...</string>
