@@ -94,8 +94,7 @@ fun formatGalleryTags(tags: List<String>?): String = tags?.joinToString(", ") ?:
 enum class LibraryTab {
     History,
     Favorites,
-    Online,
-    ;
+    Online;
 
     companion object {
         fun fromName(raw: String?): LibraryTab = runCatching { valueOf(raw!!) }.getOrDefault(History)
