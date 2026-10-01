@@ -8,6 +8,68 @@ import kotlin.test.assertTrue
 class DesktopWindowManagerTest {
 
     @Test
+    fun sessionSnapshotExtractsGalleryDetailWindowsInOrder() {
+        val windows = listOf(
+            ShellWindow(id = 0, kind = DesktopWindowKind.Library),
+            ShellWindow(id = 1, kind = DesktopWindowKind.GalleryDetail(BaseGalleryInfo(gid = 100, token = "a", title = "A"))),
+            ShellWindow(id = 2, kind = DesktopWindowKind.Settings),
+            ShellWindow(id = 3, kind = DesktopWindowKind.GalleryDetail(BaseGalleryInfo(gid = 200, token = "b"))),
+        )
+        val snapshot = DesktopWindowManager.sessionSnapshot(windows)
+        assertEquals(listOf(100L, 200L), snapshot.map { it.gid })
+        assertEquals("a", snapshot[0].token)
+        assertEquals("A", snapshot[0].title)
+    }
+
+    @Test
+    fun sessionEncodeDecodeRoundTrips() {
+        val snapshot = listOf(
+            DesktopWindowManager.SessionGallery(gid = 100, token = "abc1234567", title = "A", titleJpn = "あ"),
+            DesktopWindowManager.SessionGallery(gid = 200, token = "def7654321", title = null, titleJpn = null),
+        )
+        val encoded = DesktopWindowManager.encodeSession(snapshot)
+        val decoded = DesktopWindowManager.decodeSession(encoded)
+        assertEquals(snapshot, decoded)
+        // 空列表往返
+        assertEquals(emptyList(), DesktopWindowManager.decodeSession(DesktopWindowManager.encodeSession(emptyList())))
+    }
+
+    @Test
+    fun sessionDecodeCorruptOrBlankReturnsEmpty() {
+        assertEquals(emptyList(), DesktopWindowManager.decodeSession(null))
+        assertEquals(emptyList(), DesktopWindowManager.decodeSession(""))
+        assertEquals(emptyList(), DesktopWindowManager.decodeSession("not json at all"))
+        assertEquals(emptyList(), DesktopWindowManager.decodeSession("""{"wrong":"shape"}"""))
+    }
+
+    @Test
+    fun sessionDecodeCapsAtMaxRestoreWindows() {
+        val many = (1L..15L).map { DesktopWindowManager.SessionGallery(gid = it, token = "t$it", title = null, titleJpn = null) }
+        val decoded = DesktopWindowManager.decodeSession(DesktopWindowManager.encodeSession(many))
+        assertEquals(DesktopWindowManager.MAX_RESTORE_WINDOWS, decoded.size)
+        assertEquals(1L, decoded.first().gid)
+    }
+
+    @Test
+    fun restoreWindowsBuildsGalleryDetailShellsPreservingOrder() {
+        val saved = listOf(
+            DesktopWindowManager.SessionGallery(gid = 300, token = "x", title = "X", titleJpn = null),
+            DesktopWindowManager.SessionGallery(gid = 400, token = "y", title = null, titleJpn = "Y"),
+        )
+        var nextId = 7L
+        val restored = DesktopWindowManager.restoreWindows(saved) { nextId++ }
+        assertEquals(2, restored.size)
+        assertEquals(7L, restored[0].id)
+        assertEquals(8L, restored[1].id)
+        val kind0 = restored[0].kind as DesktopWindowKind.GalleryDetail
+        assertEquals(300L, kind0.gallery.gid)
+        assertEquals("X", kind0.gallery.title)
+        val kind1 = restored[1].kind as DesktopWindowKind.GalleryDetail
+        assertEquals("y", kind1.gallery.token)
+        assertEquals("Y", kind1.gallery.titleJpn)
+    }
+
+    @Test
     fun testWindowTitleForLibraryAndSettings() {
         assertEquals("EhViewer", DesktopWindowManager.windowTitle(DesktopWindowKind.Library))
         assertEquals("EhViewer Settings", DesktopWindowManager.windowTitle(DesktopWindowKind.Settings))

@@ -1,6 +1,8 @@
 package com.ehviewer.desktop
 
 import com.ehviewer.core.model.BaseGalleryInfo
+import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.json.Json
 
 sealed interface DesktopWindowKind {
     data object Library : DesktopWindowKind
@@ -18,6 +20,48 @@ data class ShellWindow(val id: Long, val kind: DesktopWindowKind = DesktopWindow
 }
 
 object DesktopWindowManager {
+    // 会话恢复上限：防止异常状态积累导致启动时铺满桌面
+    const val MAX_RESTORE_WINDOWS = 10
+
+    @kotlinx.serialization.Serializable
+    data class SessionGallery(
+        val gid: Long,
+        val token: String,
+        val title: String?,
+        val titleJpn: String?,
+    )
+
+    fun sessionSnapshot(windows: List<ShellWindow>): List<SessionGallery> = windows.mapNotNull { window ->
+        (window.kind as? DesktopWindowKind.GalleryDetail)?.let { kind ->
+            SessionGallery(
+                gid = kind.gallery.gid,
+                token = kind.gallery.token,
+                title = kind.gallery.title,
+                titleJpn = kind.gallery.titleJpn,
+            )
+        }
+    }
+
+    fun encodeSession(galleries: List<SessionGallery>): String = sessionJson.encodeToString(ListSerializer(SessionGallery.serializer()), galleries)
+
+    fun decodeSession(raw: String?): List<SessionGallery> {
+        if (raw.isNullOrBlank()) return emptyList()
+        return runCatching {
+            sessionJson.decodeFromString(ListSerializer(SessionGallery.serializer()), raw)
+        }.getOrDefault(emptyList()).take(MAX_RESTORE_WINDOWS)
+    }
+
+    fun restoreWindows(saved: List<SessionGallery>, nextIdProvider: () -> Long): List<ShellWindow> = saved.map { gallery ->
+        ShellWindow(
+            id = nextIdProvider(),
+            kind = DesktopWindowKind.GalleryDetail(
+                BaseGalleryInfo(gid = gallery.gid, token = gallery.token, title = gallery.title, titleJpn = gallery.titleJpn),
+            ),
+        )
+    }
+
+    private val sessionJson = Json { ignoreUnknownKeys = true }
+
     fun windowTitle(kind: DesktopWindowKind): String = when (kind) {
         DesktopWindowKind.Library -> "EhViewer"
         DesktopWindowKind.Settings -> "EhViewer Settings"

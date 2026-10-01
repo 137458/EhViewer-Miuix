@@ -21,4 +21,7 @@ object DesktopSettings : DataStorePreferences("desktop") {
 
     // 搜索历史记录（多行编码字符串，持久化跨会话）
     val searchHistory = stringPref("search_history", "")
+
+    // 上次会话打开的画廊窗口快照（JSON 数组，启动时恢复；窗口列表清空视为退出不覆盖）
+    val sessionGalleries = stringPref("session_galleries", "")
 }

@@ -3,6 +3,7 @@ import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
+    alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.compose.multiplatform)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.spotless)
@@ -45,6 +46,7 @@ kotlin {
                 implementation(projects.core.data)
                 implementation(projects.core.i18n)
                 implementation(projects.core.ui)
+                implementation(libs.serialization.json)
                 implementation(project.dependencies.platform(libs.coil.bom))
                 implementation(libs.coil.compose)
                 implementation(libs.coil.network)
