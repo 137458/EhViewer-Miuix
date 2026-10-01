@@ -1,13 +1,7 @@
 package com.hippo.ehviewer.client.parser
 
-import io.ktor.util.moveToByteArray
+import com.ehviewer.core.database.client.unmarshalParsingAs as CoreUnmarshalParsingAs
 import java.nio.ByteBuffer
-import kotlinx.serialization.cbor.Cbor
-import kotlinx.serialization.decodeFromByteArray
 
-inline fun <reified T> unmarshalParsingAs(body: ByteBuffer, parser: (ByteBuffer, Int) -> Int): T {
-    val cborBytes = parser(body, body.limit())
-    body.limit(cborBytes)
-    val array = body.moveToByteArray()
-    return Cbor.decodeFromByteArray<T>(array)
-}
+// 下沉共享层后的兼容转发（Rust native 桥辅助），app 内既有调用点无需改动
+inline fun <reified T> unmarshalParsingAs(body: ByteBuffer, parser: (ByteBuffer, Int) -> Int): T = CoreUnmarshalParsingAs(body, parser)
