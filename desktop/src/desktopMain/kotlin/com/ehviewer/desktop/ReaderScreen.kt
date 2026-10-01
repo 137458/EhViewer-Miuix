@@ -63,6 +63,7 @@ fun ReaderScreen(
     var linksState by remember { mutableStateOf<String?>(null) }
     var imageUrl by remember { mutableStateOf<String?>(null) }
     var imageState by remember { mutableStateOf<String?>(null) }
+    var reloadKey by remember { mutableIntStateOf(0) }
     val displayTitle = gallery.title?.takeIf { it.isNotBlank() }
         ?: gallery.titleJpn?.takeIf { it.isNotBlank() }
         ?: gallery.gid.toString()
@@ -95,7 +96,7 @@ fun ReaderScreen(
     }
 
     val currentLink = pageLinks.getOrNull(page - 1)
-    LaunchedEffect(currentLink) {
+    LaunchedEffect(currentLink, reloadKey) {
         val link = currentLink ?: return@LaunchedEffect
         imageState = loadingImageText
         imageUrl = null
@@ -223,10 +224,23 @@ fun ReaderScreen(
                         },
                     contentScale = ContentScale.Fit,
                 )
-                imageState != null -> Text(
-                    text = imageState!!,
-                    color = Color.White.copy(alpha = 0.7f),
-                )
+                imageState != null -> Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier
+                        .pointerHoverIcon(PointerIcon.Hand)
+                        .clickable { reloadKey += 1 }
+                        .padding(16.dp),
+                ) {
+                    Text(
+                        text = imageState!!,
+                        color = Color.White.copy(alpha = 0.7f),
+                    )
+                    Text(
+                        text = stringResource(MR.strings.action_retry),
+                        color = MiuixTheme.colorScheme.primary,
+                    )
+                }
                 else -> Text(
                     text = loadingText,
                     color = Color.White.copy(alpha = 0.5f),
