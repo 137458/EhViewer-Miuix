@@ -18,4 +18,7 @@ object DesktopSettings : DataStorePreferences("desktop") {
 
     // 0 = 列表视图 (List)，1 = 网格卡片视图 (Grid)
     val viewMode = intPref("view_mode", 0)
+
+    // 搜索历史记录（多行编码字符串，持久化跨会话）
+    val searchHistory = stringPref("search_history", "")
 }

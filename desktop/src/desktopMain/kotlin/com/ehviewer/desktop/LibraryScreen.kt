@@ -21,6 +21,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.OutlinedTextField
@@ -49,6 +50,7 @@ import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.ehviewer.core.database.client.getCategoryDisplayName
 import com.ehviewer.core.database.client.thumbUrl
@@ -109,6 +111,9 @@ fun LibraryScreen(
     var updateInfo by remember { mutableStateOf<UpdateInfo?>(null) }
     var searchQuery by remember { mutableStateOf("") }
     var sortConfig by remember { mutableStateOf(DesktopSortConfig()) }
+    var searchHistoryList by remember {
+        mutableStateOf(DesktopSearchHistory.decode(DesktopSettings.searchHistory.value))
+    }
     var notifications by remember { mutableStateOf<List<DesktopNotification>>(emptyList()) }
     val nextNotificationId = remember { AtomicLong(1L) }
     val clipboard = LocalClipboardManager.current
@@ -122,6 +127,19 @@ fun LibraryScreen(
             timestamp = now,
             idProvider = { nextNotificationId.getAndIncrement() },
         )
+    }
+
+    fun recordSearch(query: String) {
+        val updated = DesktopSearchHistory.addQuery(searchHistoryList, query)
+        searchHistoryList = updated
+        DesktopSettings.searchHistory.value = DesktopSearchHistory.encode(updated)
+    }
+
+    fun clearSearchHistory() {
+        val updated = DesktopSearchHistory.clearAll()
+        searchHistoryList = updated
+        DesktopSettings.searchHistory.value = DesktopSearchHistory.encode(updated)
+        showNotification("Search history cleared")
     }
 
     LaunchedEffect(notifications) {
@@ -268,6 +286,9 @@ fun LibraryScreen(
                             }
                         }
                         DesktopKeyAction.OpenSelected -> {
+                            if (searchQuery.isNotBlank()) {
+                                recordSearch(searchQuery)
+                            }
                             selected?.let { gallery ->
                                 onOpenGalleryInNewWindow?.invoke(gallery)
                             }
@@ -364,6 +385,18 @@ fun LibraryScreen(
                             onValueChange = { searchQuery = it },
                             placeholder = { Text(stringResource(MR.strings.search_hint)) },
                             singleLine = true,
+                            keyboardActions = KeyboardActions(
+                                onSearch = {
+                                    if (searchQuery.isNotBlank()) {
+                                        recordSearch(searchQuery)
+                                    }
+                                },
+                                onDone = {
+                                    if (searchQuery.isNotBlank()) {
+                                        recordSearch(searchQuery)
+                                    }
+                                },
+                            ),
                             modifier = Modifier.weight(1f),
                         )
                         Text(
@@ -384,6 +417,58 @@ fun LibraryScreen(
                                 }
                                 .padding(horizontal = 6.dp, vertical = 4.dp),
                         )
+                    }
+                    val suggestions = remember(searchHistoryList, searchQuery) {
+                        DesktopSearchHistory.filterSuggestions(searchHistoryList, searchQuery, maxSuggestions = 3)
+                    }
+                    if (suggestions.isNotEmpty()) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        ) {
+                            Text(
+                                text = if (searchQuery.isBlank()) "Recent:" else "History:",
+                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                fontSize = 11.sp,
+                            )
+                            Row(
+                                modifier = Modifier.weight(1f),
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                suggestions.forEach { suggestion ->
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(4.dp))
+                                            .background(MiuixTheme.colorScheme.surfaceVariant)
+                                            .pointerHoverIcon(PointerIcon.Hand)
+                                            .clickable {
+                                                searchQuery = suggestion
+                                                recordSearch(suggestion)
+                                            }
+                                            .padding(horizontal = 6.dp, vertical = 2.dp),
+                                    ) {
+                                        Text(
+                                            text = suggestion,
+                                            fontSize = 11.sp,
+                                            color = MiuixTheme.colorScheme.primary,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                        )
+                                    }
+                                }
+                            }
+                            Text(
+                                text = "✕",
+                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                fontSize = 11.sp,
+                                modifier = Modifier
+                                    .pointerHoverIcon(PointerIcon.Hand)
+                                    .clickable { clearSearchHistory() }
+                                    .padding(horizontal = 4.dp, vertical = 2.dp),
+                            )
+                        }
                     }
                     HorizontalDivider()
                     if (filteredItems.isEmpty()) {
