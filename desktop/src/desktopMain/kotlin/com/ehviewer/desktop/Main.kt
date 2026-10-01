@@ -241,6 +241,8 @@ fun main() {
                 ) {
                     // 循环变量 window(ShellWindow) 遮蔽 FrameWindowScope.window，需显式接收者取 AWT 原生窗口
                     val awtWindow: AwtWindow = this@Window.window
+                    // 最小可用尺寸：主库双栏布局在过小窗口下不可用
+                    awtWindow.minimumSize = java.awt.Dimension(560, 400)
                     DisposableEffect(window.id) {
                         windowFrames[window.id] = awtWindow
                         onDispose { windowFrames.remove(window.id) }
