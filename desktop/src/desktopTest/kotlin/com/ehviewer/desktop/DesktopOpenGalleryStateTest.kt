@@ -58,20 +58,6 @@ class DesktopOpenGalleryStateTest {
     }
 
     @Test
-    fun validateInput_reportsErrorsProperly() {
-        assertEquals("Please enter a gallery URL or GID/Token", DesktopOpenGalleryState.validateInput(null))
-        assertEquals("Please enter a gallery URL or GID/Token", DesktopOpenGalleryState.validateInput(""))
-        assertEquals("Please enter a gallery URL or GID/Token", DesktopOpenGalleryState.validateInput("   "))
-
-        assertEquals("Invalid gallery URL or GID/Token", DesktopOpenGalleryState.validateInput("not a valid link"))
-        assertEquals("Invalid gallery URL or GID/Token", DesktopOpenGalleryState.validateInput("12345/nothex"))
-
-        // 合法输入返回 null
-        assertNull(DesktopOpenGalleryState.validateInput("https://e-hentai.org/g/123456/abcdef1234/"))
-        assertNull(DesktopOpenGalleryState.validateInput("123456/abcdef1234"))
-    }
-
-    @Test
     fun validate_reportsErrorKindsForI18n() {
         // 空输入 → EmptyInput
         assertEquals(DesktopOpenGalleryError.EmptyInput, DesktopOpenGalleryState.validate(null))

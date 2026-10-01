@@ -925,7 +925,19 @@ private fun OpenGalleryDialog(
     var input by remember { mutableStateOf("") }
     var attempted by remember { mutableStateOf(false) }
     val target = remember(input) { DesktopOpenGalleryState.parseInput(input) }
-    val errorText = if (attempted) DesktopOpenGalleryState.validateInput(input) else null
+    val errorText = if (attempted) {
+        when (DesktopOpenGalleryState.validate(input)) {
+            DesktopOpenGalleryError.EmptyInput -> stringResource(MR.strings.desktop_open_gallery_empty_input)
+            DesktopOpenGalleryError.InvalidInput -> stringResource(MR.strings.desktop_open_gallery_invalid_input)
+            null -> null
+        }
+    } else {
+        null
+    }
+    val title = stringResource(MR.strings.desktop_open_gallery_title)
+    val hint = stringResource(MR.strings.desktop_open_gallery_hint)
+    val cancelLabel = stringResource(MR.strings.desktop_action_cancel)
+    val openLabel = stringResource(MR.strings.desktop_open_gallery_action_open)
 
     Box(
         modifier = Modifier
@@ -943,14 +955,14 @@ private fun OpenGalleryDialog(
                 .padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text(text = "Open Gallery", color = MiuixTheme.colorScheme.primary)
+            Text(text = title, color = MiuixTheme.colorScheme.primary)
             OutlinedTextField(
                 value = input,
                 onValueChange = {
                     input = it
                     attempted = false
                 },
-                placeholder = { Text("Gallery URL or GID/Token (Ctrl+V to paste)") },
+                placeholder = { Text(hint) },
                 singleLine = true,
                 isError = errorText != null,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
@@ -974,7 +986,7 @@ private fun OpenGalleryDialog(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = "Cancel",
+                    text = cancelLabel,
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     modifier = Modifier
                         .pointerHoverIcon(PointerIcon.Hand)
@@ -982,7 +994,7 @@ private fun OpenGalleryDialog(
                         .padding(horizontal = 12.dp, vertical = 6.dp),
                 )
                 Text(
-                    text = "Open",
+                    text = openLabel,
                     color = if (target != null) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     modifier = Modifier
                         .pointerHoverIcon(PointerIcon.Hand)

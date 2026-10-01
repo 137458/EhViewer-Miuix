@@ -46,18 +46,6 @@ object DesktopOpenGalleryState {
         }
     }
 
-    fun validateInput(rawInput: String?): String? {
-        if (rawInput.isNullOrBlank()) {
-            return "Please enter a gallery URL or GID/Token"
-        }
-        val target = parseInput(rawInput)
-        return if (target == null) {
-            "Invalid gallery URL or GID/Token"
-        } else {
-            null
-        }
-    }
-
     fun createGalleryInfo(target: GalleryParsedTarget, customTitle: String? = null): BaseGalleryInfo = BaseGalleryInfo(
         gid = target.gid,
         token = target.token,
