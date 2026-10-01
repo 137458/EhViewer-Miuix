@@ -58,4 +58,63 @@ class DesktopHistoryStateTest {
         val result = DesktopHistoryState.updateSelectionAfterDelete(null, 101L)
         assertNull(result)
     }
+
+    @Test
+    fun clearAllGalleries_returnsEmptyList() {
+        val item1 = BaseGalleryInfo(gid = 101L, title = "Item 101")
+        val item2 = BaseGalleryInfo(gid = 102L, title = "Item 102")
+        val list = listOf(item1, item2)
+        val result: List<BaseGalleryInfo> = DesktopHistoryState.clearAllGalleries()
+        assertTrue(result.isEmpty())
+        assertEquals(0, result.size)
+    }
+
+    @Test
+    fun updateSelectionAfterClearAll_whenInHistoryTab_clearsSelection() {
+        val item1 = BaseGalleryInfo(gid = 101L, title = "Item 101")
+        val result = DesktopHistoryState.updateSelectionAfterClearAll(
+            currentSelected = item1,
+            currentTabIsHistory = true,
+        )
+        assertNull(result)
+
+        val item2 = BaseGalleryInfo(gid = 202L, title = "Item 202")
+        val result2 = DesktopHistoryState.updateSelectionAfterClearAll(
+            currentSelected = item2,
+            currentTabIsHistory = true,
+        )
+        assertNull(result2)
+    }
+
+    @Test
+    fun updateSelectionAfterClearAll_whenNotInHistoryTab_preservesSelection() {
+        val item1 = BaseGalleryInfo(gid = 101L, title = "Item 101")
+        val result = DesktopHistoryState.updateSelectionAfterClearAll(
+            currentSelected = item1,
+            currentTabIsHistory = false,
+        )
+        assertEquals(item1, result)
+
+        val item2 = BaseGalleryInfo(gid = 202L, title = "Item 202")
+        val result2 = DesktopHistoryState.updateSelectionAfterClearAll(
+            currentSelected = item2,
+            currentTabIsHistory = false,
+        )
+        assertEquals(item2, result2)
+    }
+
+    @Test
+    fun updateSelectionAfterClearAll_whenNoneSelected_returnsNull() {
+        val resultInHistory = DesktopHistoryState.updateSelectionAfterClearAll(
+            currentSelected = null,
+            currentTabIsHistory = true,
+        )
+        assertNull(resultInHistory)
+
+        val resultNotInHistory = DesktopHistoryState.updateSelectionAfterClearAll(
+            currentSelected = null,
+            currentTabIsHistory = false,
+        )
+        assertNull(resultNotInHistory)
+    }
 }

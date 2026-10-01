@@ -222,22 +222,49 @@ fun LibraryScreen(
                 Column(modifier = Modifier.width(320.dp).fillMaxHeight()) {
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Text(
-                            text = "${stringResource(MR.strings.history)} (${history.size})",
-                            color = if (currentTab == LibraryTab.History) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                            modifier = Modifier
-                                .clickable { currentTab = LibraryTab.History }
-                                .padding(vertical = 4.dp, horizontal = 4.dp),
-                        )
-                        Text(
-                            text = "${stringResource(MR.strings.online)} (${online.size})",
-                            color = if (currentTab == LibraryTab.Online) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                            modifier = Modifier
-                                .clickable { currentTab = LibraryTab.Online }
-                                .padding(vertical = 4.dp, horizontal = 4.dp),
-                        )
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(
+                                text = "${stringResource(MR.strings.history)} (${history.size})",
+                                color = if (currentTab == LibraryTab.History) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                modifier = Modifier
+                                    .pointerHoverIcon(PointerIcon.Hand)
+                                    .clickable { currentTab = LibraryTab.History }
+                                    .padding(vertical = 4.dp, horizontal = 4.dp),
+                            )
+                            Text(
+                                text = "${stringResource(MR.strings.online)} (${online.size})",
+                                color = if (currentTab == LibraryTab.Online) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                modifier = Modifier
+                                    .pointerHoverIcon(PointerIcon.Hand)
+                                    .clickable { currentTab = LibraryTab.Online }
+                                    .padding(vertical = 4.dp, horizontal = 4.dp),
+                            )
+                        }
+                        if (currentTab == LibraryTab.History && history.isNotEmpty()) {
+                            Text(
+                                text = stringResource(MR.strings.clear_all),
+                                color = MiuixTheme.colorScheme.primary,
+                                modifier = Modifier
+                                    .pointerHoverIcon(PointerIcon.Hand)
+                                    .clickable {
+                                        coroutineScope.launch {
+                                            withContext(Dispatchers.IO) {
+                                                DesktopDatabase.eh.historyDao().deleteAll()
+                                            }
+                                            history = DesktopHistoryState.clearAllGalleries()
+                                            selected = DesktopHistoryState.updateSelectionAfterClearAll(
+                                                currentSelected = selected,
+                                                currentTabIsHistory = true,
+                                            )
+                                            showNotification("History cleared")
+                                        }
+                                    }
+                                    .padding(vertical = 4.dp, horizontal = 4.dp),
+                            )
+                        }
                     }
                     OutlinedTextField(
                         value = searchQuery,

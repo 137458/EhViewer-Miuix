@@ -12,4 +12,11 @@ object DesktopHistoryState {
         currentSelected: BaseGalleryInfo?,
         deletedGid: Long,
     ): BaseGalleryInfo? = if (currentSelected?.gid == deletedGid) null else currentSelected
+
+    fun <T : BaseGalleryInfo> clearAllGalleries(): List<T> = emptyList()
+
+    fun updateSelectionAfterClearAll(
+        currentSelected: BaseGalleryInfo?,
+        currentTabIsHistory: Boolean,
+    ): BaseGalleryInfo? = if (currentTabIsHistory) null else currentSelected
 }
