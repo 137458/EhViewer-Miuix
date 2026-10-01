@@ -48,6 +48,9 @@ jobs:
       - name: Spotless Check
         run: ./gradlew spotlessCheck
 
+      - name: Unit Tests
+        run: ./gradlew :app:testDefaultDebugUnitTest
+
       - name: Lint Check
         run: ./gradlew lintMarshmallowRelease
 
