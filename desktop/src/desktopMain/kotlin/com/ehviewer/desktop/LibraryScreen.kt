@@ -267,6 +267,7 @@ fun LibraryScreen(
                         val copyLinkLabel = stringResource(MR.strings.copy_link)
                         val openBrowserLabel = stringResource(MR.strings.open_in_browser)
                         val openInNewWindowLabel = stringResource(MR.strings.menu_new_window)
+                        val deleteLabel = stringResource(MR.strings.delete)
                         LazyColumn(modifier = Modifier.fillMaxSize()) {
                             items(filteredItems.size) { index ->
                                 val gallery = filteredItems[index]
@@ -291,6 +292,20 @@ fun LibraryScreen(
                                             menuItems.add(
                                                 ContextMenuItem(openInNewWindowLabel) {
                                                     onOpenGalleryInNewWindow(gallery)
+                                                },
+                                            )
+                                        }
+                                        if (currentTab == LibraryTab.History) {
+                                            menuItems.add(
+                                                ContextMenuItem(deleteLabel) {
+                                                    coroutineScope.launch {
+                                                        withContext(Dispatchers.IO) {
+                                                            DesktopDatabase.eh.historyDao().deleteByKey(gallery.gid)
+                                                        }
+                                                        history = DesktopHistoryState.removeGallery(history, gallery.gid)
+                                                        selected = DesktopHistoryState.updateSelectionAfterDelete(selected, gallery.gid)
+                                                        showNotification("Removed from history")
+                                                    }
                                                 },
                                             )
                                         }
