@@ -12,4 +12,7 @@ object DesktopSettings : DataStorePreferences("desktop") {
 
     // HTTP 代理，格式 host:port，空 = 直连（无系统代理自动探测）
     val proxy = stringOrNullPref("proxy")
+
+    // true = 关闭窗口时最小化至系统托盘防误触，false = 直接退出应用
+    val closeToTray = boolPref("close_to_tray", false)
 }

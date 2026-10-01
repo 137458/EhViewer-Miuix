@@ -18,6 +18,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.isCtrlPressed
 import androidx.compose.ui.input.key.key
@@ -27,6 +31,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.FrameWindowScope
 import androidx.compose.ui.window.MenuBar
+import androidx.compose.ui.window.Tray
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
@@ -41,15 +46,62 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.darkColorScheme as miuixDarkColorScheme
 import top.yukonga.miuix.kmp.theme.lightColorScheme as miuixLightColorScheme
 
-// 桌面壳骨架：Miuix 主题跟随系统深浅色 + 平台菜单栏 + Ctrl+Q + 多窗口 + 尺寸记忆；
-// 功能接线（路由/网络/设置界面）由后续轮次逐步迁入。
-
+// 桌面壳骨架：Miuix 主题跟随系统深浅色 + 平台菜单栏 + Ctrl+Q + 多窗口 + 尺寸记忆 + 系统托盘与防误触
 private data class ShellWindow(val id: Long, val isSettings: Boolean = false)
+
+private object EhViewerTrayPainter : Painter() {
+    override val intrinsicSize: Size = Size(32f, 32f)
+    override fun DrawScope.onDraw() {
+        drawCircle(color = Color(0xFF00796B), radius = size.minDimension / 2)
+    }
+}
 
 fun main() = application {
     val windows = remember { mutableStateListOf(ShellWindow(0)) }
     var nextWindowId by remember { mutableStateOf(1L) }
     val themeMode by DesktopSettings.themeMode.valueFlow().collectAsState(DesktopSettings.themeMode.value)
+    val closeToTray by DesktopSettings.closeToTray.valueFlow().collectAsState(DesktopSettings.closeToTray.value)
+    val isTraySupported = remember { java.awt.SystemTray.isSupported() }
+
+    val handleClose: (ShellWindow) -> Unit = { targetWindow ->
+        val behavior = if (closeToTray) CloseBehavior.MINIMIZE_TO_TRAY else CloseBehavior.EXIT
+        val action = DesktopClosePolicy.evaluateClose(
+            currentWindowCount = windows.size,
+            behavior = behavior,
+            isTrayAvailable = isTraySupported,
+        )
+        windows.remove(targetWindow)
+        if (action.shouldExitApp) {
+            exitApplication()
+        }
+    }
+
+    if (isTraySupported) {
+        Tray(
+            icon = remember { EhViewerTrayPainter },
+            tooltip = "EhViewer",
+            onAction = {
+                if (windows.isEmpty()) {
+                    windows.add(ShellWindow(nextWindowId++))
+                }
+            },
+            menu = {
+                Item("Open EhViewer", onClick = {
+                    if (windows.isEmpty()) {
+                        windows.add(ShellWindow(nextWindowId++))
+                    }
+                })
+                Item("Settings", onClick = {
+                    windows.add(ShellWindow(nextWindowId++, isSettings = true))
+                })
+                Separator()
+                Item(stringResource(MR.strings.menu_exit), onClick = {
+                    windows.clear()
+                    exitApplication()
+                })
+            },
+        )
+    }
 
     for (window in windows) {
         // key 绑定窗口身份：多窗口下按位置记忆会让关窗时错关另一个原生窗口
@@ -59,12 +111,7 @@ fun main() = application {
                 height = DesktopSettings.windowHeight.dp,
             )
             Window(
-                onCloseRequest = {
-                    windows.remove(window)
-                    if (windows.isEmpty()) {
-                        exitApplication()
-                    }
-                },
+                onCloseRequest = { handleClose(window) },
                 state = windowState,
                 title = if (window.isSettings) "EhViewer Settings" else "EhViewer",
                 onKeyEvent = { event ->
@@ -76,10 +123,7 @@ fun main() = application {
                     )
                     when (action) {
                         DesktopKeyAction.CloseWindow -> {
-                            windows.remove(window)
-                            if (windows.isEmpty()) {
-                                exitApplication()
-                            }
+                            handleClose(window)
                             true
                         }
                         else -> false

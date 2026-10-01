@@ -28,6 +28,7 @@ fun SettingsScreen() {
     }
     val proxyValue by DesktopSettings.proxy.valueFlow().collectAsState(DesktopSettings.proxy.value)
     var proxyText by remember(proxyValue) { mutableStateOf(proxyValue.orEmpty()) }
+    val closeToTray by DesktopSettings.closeToTray.valueFlow().collectAsState(DesktopSettings.closeToTray.value)
 
     LazyColumn(modifier = Modifier.fillMaxWidth()) {
         item {
@@ -35,6 +36,13 @@ fun SettingsScreen() {
                 title = stringResource(MR.strings.settings_theme),
                 summary = themeLabel,
                 onClick = { DesktopSettings.themeMode.value = (themeMode + 1) % 3 },
+            )
+        }
+        item {
+            BasicComponent(
+                title = "Close behavior",
+                summary = if (closeToTray) "Minimize to tray" else "Exit application",
+                onClick = { DesktopSettings.closeToTray.value = !closeToTray },
             )
         }
         item {
