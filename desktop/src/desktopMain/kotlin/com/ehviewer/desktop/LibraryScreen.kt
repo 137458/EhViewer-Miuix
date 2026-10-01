@@ -226,10 +226,17 @@ fun LibraryScreen(
         }
     }
 
-    // 搜索提交：Online Tab 走远程搜索（结果替换在线列表），其余 Tab 维持本地过滤
+    // 搜索提交：Online Tab 走远程搜索（结果替换在线列表），空查询且处于远程搜索态则恢复默认列表，其余 Tab 维持本地过滤
     fun submitSearch(query: String) {
         val q = query.trim()
-        if (q.isEmpty()) return
+        if (q.isEmpty()) {
+            if (currentTab == LibraryTab.Online && (remoteSearchQuery.isNotBlank() || searchPage > 0)) {
+                remoteSearchQuery = ""
+                searchPage = 0
+                coroutineScope.launch { refreshGalleries() }
+            }
+            return
+        }
         recordSearch(q)
         if (currentTab == LibraryTab.Online) {
             remoteSearch(q, page = 0)
