@@ -72,7 +72,7 @@ jobs:
           cache-read-only: true
 
       - name: Desktop tests
-        run: ./gradlew :core:common:desktopTest :core:data:desktopTest :core:ui:desktopTest
+        run: ./gradlew :core:common:desktopTest :core:data:desktopTest :core:ui:desktopTest :desktop:desktopTest
 
       - name: Desktop build
         run: ./gradlew :desktop:compileKotlinDesktop :desktop:desktopJar
