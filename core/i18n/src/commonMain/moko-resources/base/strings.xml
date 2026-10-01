@@ -648,6 +648,7 @@
     <string name="desktop_link_copied">Link copied</string>
     <string name="desktop_removed_from_history">Removed from history</string>
     <string name="desktop_filter">Filter</string>
+    <string name="desktop_sort">Sort</string>
     <string name="settings_theme">Theme</string>
     <string name="settings_proxy">Proxy (host:port, empty = direct)</string>
     <string name="theme_follow_system">Follow system</string>

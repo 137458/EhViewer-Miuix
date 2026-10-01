@@ -527,7 +527,11 @@ fun LibraryScreen(
                                 },
                         )
                         Text(
-                            text = sortConfig.label,
+                            text = if (sortConfig.field == DesktopSortField.Default) {
+                                stringResource(MR.strings.desktop_sort)
+                            } else {
+                                sortConfig.label
+                            },
                             color = if (sortConfig.field == DesktopSortField.Default) MiuixTheme.colorScheme.onSurfaceVariantSummary else MiuixTheme.colorScheme.primary,
                             modifier = Modifier
                                 .pointerHoverIcon(PointerIcon.Hand)

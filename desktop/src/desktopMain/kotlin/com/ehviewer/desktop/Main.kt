@@ -178,6 +178,7 @@ fun main() {
                 Window(
                     onCloseRequest = { handleClose(window) },
                     state = windowState,
+                    icon = remember { EhViewerTrayPainter },
                     title = DesktopWindowManager.windowTitle(
                         window.kind,
                         untitledLabel = stringResource(MR.strings.desktop_untitled),
