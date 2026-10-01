@@ -10,6 +10,7 @@ object DesktopShortcuts {
         DesktopShortcutEntry("Ctrl + W / Ctrl + Q", "Close window"),
         DesktopShortcutEntry("Ctrl + R / F5", "Refresh galleries"),
         DesktopShortcutEntry("Ctrl + O", "Open gallery by URL or GID/Token"),
+        DesktopShortcutEntry("Ctrl + Tab", "Cycle window focus"),
         DesktopShortcutEntry("Escape", "Clear selection / Cancel search / Close window"),
         DesktopShortcutEntry("↑ / ↓", "Navigate gallery list"),
         DesktopShortcutEntry("Enter", "Open selected gallery in standalone window"),

@@ -13,12 +13,49 @@ class DesktopKeyActionTest {
     }
 
     @Test
+    fun ctrlTabResolvesToCycleWindow() {
+        val action = resolveKeyAction(
+            isKeyDown = true,
+            isCtrlPressed = true,
+            key = Key.Tab,
+        )
+        assertEquals(DesktopKeyAction.CycleWindow, action)
+
+        // KeyUp 忽略
+        assertEquals(
+            DesktopKeyAction.None,
+            resolveKeyAction(isKeyDown = false, isCtrlPressed = true, key = Key.Tab),
+        )
+        // 无 Ctrl 的 Tab 不触发（避免劫持焦点导航）
+        assertEquals(
+            DesktopKeyAction.None,
+            resolveKeyAction(isKeyDown = true, isCtrlPressed = false, key = Key.Tab),
+        )
+    }
+
+    @Test
+    fun cycleWindowIdRotatesThroughOpenWindows() {
+        val ids = listOf(0L, 5L, 9L)
+        // 依次向后轮转
+        assertEquals(5L, cycleWindowId(ids, 0L))
+        assertEquals(9L, cycleWindowId(ids, 5L))
+        // 回绕到第一个
+        assertEquals(0L, cycleWindowId(ids, 9L))
+        // 单窗口或空列表：无需轮转
+        assertEquals(null, cycleWindowId(listOf(3L), 3L))
+        assertEquals(null, cycleWindowId(emptyList(), 3L))
+        // 当前窗口不在列表中（已关闭）：回到第一个
+        assertEquals(0L, cycleWindowId(ids, 42L))
+    }
+
+    @Test
     fun defaultEntriesContainCoreShortcuts() {
         val entries = DesktopShortcuts.defaultEntries()
         val combinations = entries.map { it.keyCombination }
         assertTrue(combinations.any { it.contains("Ctrl + W") || it.contains("Ctrl + Q") })
         assertTrue(combinations.any { it.contains("F5") || it.contains("Ctrl + R") })
         assertTrue(combinations.any { it.contains("Ctrl + O") })
+        assertTrue(combinations.any { it.contains("Ctrl + Tab") })
         assertTrue(combinations.any { it.contains("Escape") })
         assertTrue(combinations.any { it.contains("F1") })
 

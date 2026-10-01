@@ -164,6 +164,12 @@ fun main() {
                                 showShortcutsHelp = !showShortcutsHelp
                                 true
                             }
+                            DesktopKeyAction.CycleWindow -> {
+                                cycleWindowId(windows.map { it.id }, window.id)?.let { targetId ->
+                                    windowFrames[targetId]?.toFront()
+                                }
+                                true
+                            }
                             DesktopKeyAction.ClearSelection -> {
                                 if (showShortcutsHelp) {
                                     showShortcutsHelp = false
