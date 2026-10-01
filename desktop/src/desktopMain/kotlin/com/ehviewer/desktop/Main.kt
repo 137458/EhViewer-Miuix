@@ -332,7 +332,7 @@ private fun ShortcutsHelpDialog(onDismiss: () -> Unit) {
                     color = MiuixTheme.colorScheme.primary,
                 )
                 Text(
-                    text = entry.description,
+                    text = stringResource(entry.descriptionRes),
                     color = MiuixTheme.colorScheme.onSurface,
                 )
             }

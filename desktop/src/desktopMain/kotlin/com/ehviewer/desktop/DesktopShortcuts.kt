@@ -1,22 +1,25 @@
 package com.ehviewer.desktop
 
+import com.ehviewer.core.i18n.MR
+import dev.icerock.moko.resources.StringResource
+
 data class DesktopShortcutEntry(
     val keyCombination: String,
-    val description: String,
+    val descriptionRes: StringResource,
 )
 
 object DesktopShortcuts {
     fun defaultEntries(): List<DesktopShortcutEntry> = listOf(
-        DesktopShortcutEntry("Ctrl + W / Ctrl + Q", "Close window"),
-        DesktopShortcutEntry("Ctrl + R / F5", "Refresh galleries"),
-        DesktopShortcutEntry("Ctrl + O", "Open gallery by URL or GID/Token"),
-        DesktopShortcutEntry("Ctrl + Tab", "Cycle window focus"),
-        DesktopShortcutEntry("Escape", "Clear selection / Cancel search / Close window"),
-        DesktopShortcutEntry("↑ / ↓", "Navigate gallery list"),
-        DesktopShortcutEntry("Home / End", "Jump to first / last gallery"),
-        DesktopShortcutEntry("Enter", "Open selected gallery in standalone window"),
-        DesktopShortcutEntry("Double Click", "Open gallery in standalone window"),
-        DesktopShortcutEntry("Right Click", "Context menu (copy, open browser, delete)"),
-        DesktopShortcutEntry("F1", "Show keyboard shortcuts"),
+        DesktopShortcutEntry("Ctrl + W / Ctrl + Q", MR.strings.shortcut_close_window),
+        DesktopShortcutEntry("Ctrl + R / F5", MR.strings.shortcut_refresh_galleries),
+        DesktopShortcutEntry("Ctrl + O", MR.strings.shortcut_open_gallery_by_link),
+        DesktopShortcutEntry("Ctrl + Tab", MR.strings.shortcut_cycle_window),
+        DesktopShortcutEntry("Escape", MR.strings.shortcut_escape),
+        DesktopShortcutEntry("↑ / ↓", MR.strings.shortcut_navigate_list),
+        DesktopShortcutEntry("Home / End", MR.strings.shortcut_jump_first_last),
+        DesktopShortcutEntry("Enter", MR.strings.shortcut_open_selected),
+        DesktopShortcutEntry("Double Click", MR.strings.shortcut_open_gallery),
+        DesktopShortcutEntry("Right Click", MR.strings.shortcut_context_menu),
+        DesktopShortcutEntry("F1", MR.strings.shortcut_show_help),
     )
 }

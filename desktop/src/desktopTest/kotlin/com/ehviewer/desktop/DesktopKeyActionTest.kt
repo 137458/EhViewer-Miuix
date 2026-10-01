@@ -1,8 +1,10 @@
 package com.ehviewer.desktop
 
 import androidx.compose.ui.input.key.Key
+import com.ehviewer.core.i18n.MR
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 class DesktopKeyActionTest {
@@ -59,10 +61,12 @@ class DesktopKeyActionTest {
         assertTrue(combinations.any { it.contains("Escape") })
         assertTrue(combinations.any { it.contains("F1") })
 
-        entries.forEach { entry ->
-            assertTrue(entry.keyCombination.isNotBlank())
-            assertTrue(entry.description.isNotBlank())
-        }
+        // 描述已资源化：两两不同（moko object 单例同一性，防复制粘贴错串）并抽查关键映射
+        val descriptions = entries.map { it.descriptionRes }
+        assertEquals(descriptions.size, descriptions.toSet().size)
+        assertSame(MR.strings.shortcut_cycle_window, entries.first { it.keyCombination == "Ctrl + Tab" }.descriptionRes)
+        assertSame(MR.strings.shortcut_show_help, entries.first { it.keyCombination == "F1" }.descriptionRes)
+        assertSame(MR.strings.shortcut_open_gallery_by_link, entries.first { it.keyCombination == "Ctrl + O" }.descriptionRes)
     }
 
     @Test
