@@ -20,9 +20,13 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.ContextMenuArea
+import androidx.compose.foundation.ContextMenuItem
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.OutlinedTextField
@@ -39,6 +43,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.isCtrlPressed
 import androidx.compose.ui.input.key.key
@@ -49,6 +54,7 @@ import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -111,14 +117,17 @@ fun LibraryScreen(
     var connectionError by remember { mutableStateOf<String?>(null) }
     var updateInfo by remember { mutableStateOf<UpdateInfo?>(null) }
     var searchQuery by remember { mutableStateOf("") }
-    var sortConfig by remember { mutableStateOf(DesktopSortConfig()) }
-    var searchHistoryList by remember {
-        mutableStateOf(DesktopSearchHistory.decode(DesktopSettings.searchHistory.value))
+    val searchHistoryRaw by DesktopSettings.searchHistory.valueFlow()
+        .collectAsState(DesktopSettings.searchHistory.value)
+    val searchHistoryList = remember(searchHistoryRaw) {
+        DesktopSearchHistory.decode(searchHistoryRaw)
     }
+    var previewCoverUrl by remember { mutableStateOf<String?>(null) }
     var notifications by remember { mutableStateOf<List<DesktopNotification>>(emptyList()) }
     val nextNotificationId = remember { AtomicLong(1L) }
     val clipboard = LocalClipboardManager.current
     val coroutineScope = rememberCoroutineScope()
+    val historyClearedMessage = stringResource(MR.strings.search_history_cleared)
 
     fun showNotification(message: String) {
         val now = System.currentTimeMillis()
@@ -132,15 +141,12 @@ fun LibraryScreen(
 
     fun recordSearch(query: String) {
         val updated = DesktopSearchHistory.addQuery(searchHistoryList, query)
-        searchHistoryList = updated
         DesktopSettings.searchHistory.value = DesktopSearchHistory.encode(updated)
     }
 
     fun clearSearchHistory() {
-        val updated = DesktopSearchHistory.clearAll()
-        searchHistoryList = updated
-        DesktopSettings.searchHistory.value = DesktopSearchHistory.encode(updated)
-        showNotification("Search history cleared")
+        DesktopSettings.searchHistory.value = ""
+        showNotification(historyClearedMessage)
     }
 
     LaunchedEffect(notifications) {
@@ -257,7 +263,9 @@ fun LibraryScreen(
                     )
                     when (action) {
                         DesktopKeyAction.ClearSelection -> {
-                            if (searchQuery.isNotEmpty()) {
+                            if (previewCoverUrl != null) {
+                                previewCoverUrl = null
+                            } else if (searchQuery.isNotEmpty()) {
                                 searchQuery = ""
                             } else {
                                 selected = null
@@ -694,6 +702,7 @@ fun LibraryScreen(
                             recordSearch(tag)
                             showNotification("Filter: $tag")
                         },
+                        onPreviewCover = { url -> previewCoverUrl = url },
                     )
                 }
             }
@@ -726,6 +735,13 @@ fun LibraryScreen(
                 }
             }
         }
+
+        previewCoverUrl?.let { coverUrl ->
+            CoverPreviewDialog(
+                imageUrl = coverUrl,
+                onDismiss = { previewCoverUrl = null },
+            )
+        }
     }
 }
 
@@ -737,6 +753,7 @@ internal fun GalleryDetailPane(
     isFavorite: Boolean = false,
     onToggleFavorite: (() -> Unit)? = null,
     onSearchTag: ((tag: String) -> Unit)? = null,
+    onPreviewCover: ((url: String) -> Unit)? = null,
 ) {
     Column(
         modifier = Modifier
@@ -759,7 +776,9 @@ internal fun GalleryDetailPane(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(200.dp)
-                    .clip(RoundedCornerShape(8.dp)),
+                    .clip(RoundedCornerShape(8.dp))
+                    .pointerHoverIcon(PointerIcon.Hand)
+                    .clickable { onPreviewCover?.invoke(thumb) },
                 contentAlignment = Alignment.Center,
             ) {
                 AsyncImage(
@@ -946,4 +965,90 @@ private fun VerticalDivider() = HorizontalDivider(
 
 private fun openBrowser(url: String) {
     DesktopBrowser.openUrl(url)
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun CoverPreviewDialog(
+    imageUrl: String,
+    onDismiss: () -> Unit,
+) {
+    var scale by remember { mutableStateOf(1.0f) }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.85f))
+            .clickable(onClick = onDismiss),
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize(0.85f)
+                .clickable(enabled = false) {},
+            contentAlignment = Alignment.Center,
+        ) {
+            AsyncImage(
+                model = imageUrl,
+                contentDescription = "Cover Preview",
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer {
+                        scaleX = scale
+                        scaleY = scale
+                    }
+                    .pointerHoverIcon(PointerIcon.Hand)
+                    .combinedClickable(
+                        onClick = {},
+                        onDoubleClick = { scale = DesktopZoomController.toggleFitZoom(scale) },
+                    ),
+                contentScale = ContentScale.Fit,
+            )
+        }
+
+        Row(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 24.dp)
+                .clip(RoundedCornerShape(24.dp))
+                .background(MiuixTheme.colorScheme.surfaceContainerHighest)
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(
+                text = "−",
+                color = MiuixTheme.colorScheme.onSurface,
+                modifier = Modifier
+                    .pointerHoverIcon(PointerIcon.Hand)
+                    .clickable { scale = DesktopZoomController.zoomOut(scale) }
+                    .padding(horizontal = 8.dp),
+            )
+            Text(
+                text = DesktopZoomController.formatZoomPercentage(scale),
+                color = MiuixTheme.colorScheme.primary,
+                style = MiuixTheme.textStyles.body2,
+                modifier = Modifier
+                    .pointerHoverIcon(PointerIcon.Hand)
+                    .clickable { scale = DesktopZoomController.resetZoom() },
+            )
+            Text(
+                text = "+",
+                color = MiuixTheme.colorScheme.onSurface,
+                modifier = Modifier
+                    .pointerHoverIcon(PointerIcon.Hand)
+                    .clickable { scale = DesktopZoomController.zoomIn(scale) }
+                    .padding(horizontal = 8.dp),
+            )
+            VerticalDivider()
+            Text(
+                text = "✕",
+                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                modifier = Modifier
+                    .pointerHoverIcon(PointerIcon.Hand)
+                    .clickable(onClick = onDismiss)
+                    .padding(horizontal = 4.dp),
+            )
+        }
+    }
 }
