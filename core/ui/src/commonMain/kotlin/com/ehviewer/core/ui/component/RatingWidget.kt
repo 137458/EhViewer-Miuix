@@ -53,8 +53,9 @@ fun RatingWidgetReuse(rating: Float, ratingSize: Dp, ratingInterval: Dp, modifie
 fun RatingWidget(rating: Float, ratingSize: Dp, ratingInterval: Dp, modifier: Modifier = Modifier, onRatingChange: ((Float) -> Unit)? = null) {
     val r = (rating * 2).roundToInt().coerceIn(0, 10)
     val density = LocalDensity.current
-    val ratingSizePx = remember { with(density) { ratingSize.toPx() } }
-    val ratingIntervalPx = remember { with(density) { ratingInterval.toPx() } }
+    // 密度须作为 key：桌面跨 DPI 显示器拖窗 / Android 分屏密度变更时 px 缓存过期会让点按映射错位
+    val ratingSizePx = remember(density) { with(density) { ratingSize.toPx() } }
+    val ratingIntervalPx = remember(density) { with(density) { ratingInterval.toPx() } }
     fun calculateRating(offset: Float): Float = ((offset * 2 + ratingIntervalPx) / (ratingSizePx + ratingIntervalPx))
         .roundToInt().coerceIn(0, 10).div(2f)
     Row(
