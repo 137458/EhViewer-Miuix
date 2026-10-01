@@ -124,7 +124,6 @@ fun LibraryScreen(
     val viewModeOrdinal by DesktopSettings.viewMode.valueFlow().collectAsState(DesktopSettings.viewMode.value)
     val viewMode = DesktopViewMode.fromOrdinal(viewModeOrdinal)
     var currentTab by remember { mutableStateOf(LibraryTab.fromName(DesktopSettings.lastTab.value)) }
-    var searchPage by remember { mutableIntStateOf(0) }
     var remoteSearchQuery by remember { mutableStateOf("") }
 
     // 游标导航栈：记录每次远程搜索请求的 next 游标（null=第一页），支撑双向翻页
@@ -292,9 +291,8 @@ fun LibraryScreen(
     fun submitSearch(query: String) {
         val q = query.trim()
         if (q.isEmpty()) {
-            if (currentTab == LibraryTab.Online && (remoteSearchQuery.isNotBlank() || searchPage > 0)) {
+            if (currentTab == LibraryTab.Online && remoteSearchQuery.isNotBlank()) {
                 remoteSearchQuery = ""
-                searchPage = 0
                 coroutineScope.launch { refreshGalleries() }
             }
             return
@@ -739,7 +737,6 @@ fun LibraryScreen(
                                     .pointerHoverIcon(PointerIcon.Hand)
                                     .clickable {
                                         remoteSearchQuery = ""
-                                        searchPage = 0
                                         cursorStack.clear()
                                         cursorStack.add(null)
                                         cursorIndex = 0
