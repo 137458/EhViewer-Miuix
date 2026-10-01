@@ -21,7 +21,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.scrollbar.rememberScrollbarAdapter
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -68,6 +70,7 @@ import com.ehviewer.core.i18n.MR
 import com.ehviewer.core.model.BaseGalleryInfo
 import com.ehviewer.core.network.EhCookieStore
 import com.ehviewer.core.ui.component.GalleryListCardRating
+import com.ehviewer.core.ui.component.VerticalScrollbar
 import com.ehviewer.core.util.LogPriority
 import com.ehviewer.core.util.logcat
 import com.hippo.ehviewer.client.parser.GalleryListParserKtProbe
@@ -734,51 +737,58 @@ fun LibraryScreen(
                         }
 
                         if (viewMode == DesktopViewMode.List) {
-                            LazyColumn(modifier = Modifier.fillMaxSize()) {
-                                items(
-                                    filteredItems.size,
-                                    key = { index -> filteredItems[index].gid },
-                                ) { index ->
-                                    val gallery = filteredItems[index]
-                                    val title = galleryDisplayTitle(gallery.title, gallery.gid)
-                                    val link = galleryWebUrl(gallery.gid, gallery.token)
-                                    ContextMenuArea(
-                                        items = { buildGalleryContextMenu(gallery, title, link) },
-                                    ) {
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth()
-                                                .pointerHoverIcon(PointerIcon.Hand)
-                                                .combinedClickable(
-                                                    onClick = { selected = gallery },
-                                                    onDoubleClick = {
-                                                        selected = gallery
-                                                        onOpenGalleryInNewWindow?.invoke(gallery)
-                                                    },
-                                                )
-                                                .background(
-                                                    if (selected?.gid == gallery.gid) {
-                                                        MiuixTheme.colorScheme.secondaryContainer
-                                                    } else {
-                                                        Color.Unspecified
-                                                    },
-                                                )
-                                                .padding(horizontal = 8.dp, vertical = 6.dp),
-                                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            val listState = rememberLazyListState()
+                            Row(modifier = Modifier.fillMaxSize()) {
+                                LazyColumn(state = listState, modifier = Modifier.weight(1f)) {
+                                    items(
+                                        filteredItems.size,
+                                        key = { index -> filteredItems[index].gid },
+                                    ) { index ->
+                                        val gallery = filteredItems[index]
+                                        val title = galleryDisplayTitle(gallery.title, gallery.gid)
+                                        val link = galleryWebUrl(gallery.gid, gallery.token)
+                                        ContextMenuArea(
+                                            items = { buildGalleryContextMenu(gallery, title, link) },
                                         ) {
-                                            Text(
-                                                text = title,
-                                                maxLines = 1,
-                                                overflow = TextOverflow.Ellipsis,
-                                                modifier = Modifier.weight(1f),
-                                                color = MiuixTheme.colorScheme.onBackground,
-                                            )
-                                            Text(
-                                                text = getCategoryDisplayName(gallery.category),
-                                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                            )
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth()
+                                                    .pointerHoverIcon(PointerIcon.Hand)
+                                                    .combinedClickable(
+                                                        onClick = { selected = gallery },
+                                                        onDoubleClick = {
+                                                            selected = gallery
+                                                            onOpenGalleryInNewWindow?.invoke(gallery)
+                                                        },
+                                                    )
+                                                    .background(
+                                                        if (selected?.gid == gallery.gid) {
+                                                            MiuixTheme.colorScheme.secondaryContainer
+                                                        } else {
+                                                            Color.Unspecified
+                                                        },
+                                                    )
+                                                    .padding(horizontal = 8.dp, vertical = 6.dp),
+                                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                            ) {
+                                                Text(
+                                                    text = title,
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis,
+                                                    modifier = Modifier.weight(1f),
+                                                    color = MiuixTheme.colorScheme.onBackground,
+                                                )
+                                                Text(
+                                                    text = getCategoryDisplayName(gallery.category),
+                                                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                                )
+                                            }
                                         }
                                     }
                                 }
+                                VerticalScrollbar(
+                                    adapter = rememberScrollbarAdapter(listState),
+                                    isScrollInProgress = listState.isScrollInProgress,
+                                )
                             }
                         } else {
                             LazyVerticalGrid(
@@ -1028,163 +1038,166 @@ internal fun GalleryDetailPane(
     onSearchTag: ((tag: String) -> Unit)? = null,
     onPreviewCover: ((url: String) -> Unit)? = null,
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        val displayTitle = galleryDisplayTitle(gallery.title, gallery.gid)
-        val link = galleryWebUrl(gallery.gid, gallery.token)
-        Text(
-            text = displayTitle,
-            color = MiuixTheme.colorScheme.primary,
-        )
-        gallery.titleJpn?.takeIf { it.isNotEmpty() }?.let {
-            Text(text = it, color = MiuixTheme.colorScheme.onBackground)
-        }
-        gallery.thumbUrl?.let { thumb ->
-            val imageState = remember(thumb) { DesktopImageStateController() }
-            val decodeErrorText = stringResource(MR.strings.decode_image_error)
-            val retryActionText = stringResource(MR.strings.action_retry)
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(200.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .pointerHoverIcon(PointerIcon.Hand)
-                    .clickable { onPreviewCover?.invoke(thumb) },
-                contentAlignment = Alignment.Center,
-            ) {
-                key(thumb, imageState.retryCount) {
-                    AsyncImage(
-                        model = thumb,
-                        contentDescription = displayTitle,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Fit,
-                        onLoading = { imageState.onLoading() },
-                        onSuccess = { imageState.onSuccess() },
-                        onError = { err -> imageState.onError(err.result.throwable.message) },
-                    )
-                }
-                if (imageState.canRetry) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(MiuixTheme.colorScheme.surfaceVariant)
-                            .pointerHoverIcon(PointerIcon.Hand)
-                            .clickable { imageState.retry() },
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(
-                            text = "$decodeErrorText ($retryActionText)",
-                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                            fontSize = 12.sp,
+    val detailScrollState = rememberScrollState()
+    Row(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .verticalScroll(detailScrollState)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            val displayTitle = galleryDisplayTitle(gallery.title, gallery.gid)
+            val link = galleryWebUrl(gallery.gid, gallery.token)
+            Text(
+                text = displayTitle,
+                color = MiuixTheme.colorScheme.primary,
+            )
+            gallery.titleJpn?.takeIf { it.isNotEmpty() }?.let {
+                Text(text = it, color = MiuixTheme.colorScheme.onBackground)
+            }
+            gallery.thumbUrl?.let { thumb ->
+                val imageState = remember(thumb) { DesktopImageStateController() }
+                val decodeErrorText = stringResource(MR.strings.decode_image_error)
+                val retryActionText = stringResource(MR.strings.action_retry)
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .pointerHoverIcon(PointerIcon.Hand)
+                        .clickable { onPreviewCover?.invoke(thumb) },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    key(thumb, imageState.retryCount) {
+                        AsyncImage(
+                            model = thumb,
+                            contentDescription = displayTitle,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Fit,
+                            onLoading = { imageState.onLoading() },
+                            onSuccess = { imageState.onSuccess() },
+                            onError = { err -> imageState.onError(err.result.throwable.message) },
                         )
+                    }
+                    if (imageState.canRetry) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(MiuixTheme.colorScheme.surfaceVariant)
+                                .pointerHoverIcon(PointerIcon.Hand)
+                                .clickable { imageState.retry() },
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(
+                                text = "$decodeErrorText ($retryActionText)",
+                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                fontSize = 12.sp,
+                            )
+                        }
                     }
                 }
             }
-        }
-        HorizontalDivider()
-        DetailRow(label = stringResource(MR.strings.key_gid), value = gallery.gid.toString(), onCopy = onCopy)
-        DetailRow(label = stringResource(MR.strings.key_token), value = gallery.token, onCopy = onCopy)
-        DetailRow(label = stringResource(MR.strings.key_uploader), value = gallery.uploader.orEmpty().ifEmpty { "-" }, onCopy = onCopy)
-        DetailRow(label = stringResource(MR.strings.key_category), value = getCategoryDisplayName(gallery.category), onCopy = onCopy)
-        DetailRow(label = stringResource(MR.strings.key_pages), value = gallery.pages.toString(), onCopy = onCopy)
-        DetailRow(
-            label = stringResource(MR.strings.key_rating),
-            value = DesktopRating.formatRatingScore(gallery.rating),
-            onCopy = onCopy,
-            extraContent = { GalleryListCardRating(rating = gallery.rating) },
-        )
-        gallery.simpleLanguage?.let { DetailRow(label = stringResource(MR.strings.key_language), value = it, onCopy = onCopy) }
-        if (onToggleFavorite != null) {
+            HorizontalDivider()
+            DetailRow(label = stringResource(MR.strings.key_gid), value = gallery.gid.toString(), onCopy = onCopy)
+            DetailRow(label = stringResource(MR.strings.key_token), value = gallery.token, onCopy = onCopy)
+            DetailRow(label = stringResource(MR.strings.key_uploader), value = gallery.uploader.orEmpty().ifEmpty { "-" }, onCopy = onCopy)
+            DetailRow(label = stringResource(MR.strings.key_category), value = getCategoryDisplayName(gallery.category), onCopy = onCopy)
+            DetailRow(label = stringResource(MR.strings.key_pages), value = gallery.pages.toString(), onCopy = onCopy)
             DetailRow(
-                label = stringResource(MR.strings.favorite_name),
-                value = if (isFavorite) stringResource(MR.strings.key_favorited) else stringResource(MR.strings.not_favorited),
+                label = stringResource(MR.strings.key_rating),
+                value = DesktopRating.formatRatingScore(gallery.rating),
                 onCopy = onCopy,
-                actionText = if (isFavorite) stringResource(MR.strings.delete_favorites_dialog_title) else stringResource(MR.strings.add_favorites_dialog_title),
-                onAction = onToggleFavorite,
+                extraContent = { GalleryListCardRating(rating = gallery.rating) },
             )
-        }
-        DetailRow(
-            label = stringResource(MR.strings.key_url),
-            value = link,
-            onCopy = onCopy,
-            onOpen = onOpenUrl?.let { opener -> { opener(link) } },
-        )
-        gallery.thumbUrl?.let { DetailRow(label = stringResource(MR.strings.key_thumb), value = it, onCopy = onCopy) }
-        DetailRow(
-            label = stringResource(MR.strings.action_share),
-            value = stringResource(MR.strings.action_copy),
-            onCopy = onCopy,
-            actionText = stringResource(MR.strings.action_copy),
-            onAction = {
-                val summary = DesktopTagFormatter.generateShareSummary(
-                    title = displayTitle,
-                    gid = gallery.gid,
-                    token = gallery.token,
-                    rating = gallery.rating,
-                    pages = gallery.pages,
-                    category = gallery.category,
-                    tags = gallery.simpleTags?.toList(),
+            gallery.simpleLanguage?.let { DetailRow(label = stringResource(MR.strings.key_language), value = it, onCopy = onCopy) }
+            if (onToggleFavorite != null) {
+                DetailRow(
+                    label = stringResource(MR.strings.favorite_name),
+                    value = if (isFavorite) stringResource(MR.strings.key_favorited) else stringResource(MR.strings.not_favorited),
+                    onCopy = onCopy,
+                    actionText = if (isFavorite) stringResource(MR.strings.delete_favorites_dialog_title) else stringResource(MR.strings.add_favorites_dialog_title),
+                    onAction = onToggleFavorite,
                 )
-                onCopy(summary, "")
-            },
-        )
-        gallery.simpleTags?.takeIf { it.isNotEmpty() }?.let { tags ->
-            val grouped = remember(tags) { DesktopTagFormatter.groupTags(tags.toList()) }
-            if (grouped.isNotEmpty()) {
-                val tagLabel = stringResource(MR.strings.search_sft)
-                Column(
-                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
-                    verticalArrangement = Arrangement.spacedBy(6.dp),
-                ) {
-                    Text(
-                        text = "$tagLabel (${DesktopTagFormatter.splitTags(tags.toList()).size})",
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        fontSize = 12.sp,
+            }
+            DetailRow(
+                label = stringResource(MR.strings.key_url),
+                value = link,
+                onCopy = onCopy,
+                onOpen = onOpenUrl?.let { opener -> { opener(link) } },
+            )
+            gallery.thumbUrl?.let { DetailRow(label = stringResource(MR.strings.key_thumb), value = it, onCopy = onCopy) }
+            DetailRow(
+                label = stringResource(MR.strings.action_share),
+                value = stringResource(MR.strings.action_copy),
+                onCopy = onCopy,
+                actionText = stringResource(MR.strings.action_copy),
+                onAction = {
+                    val summary = DesktopTagFormatter.generateShareSummary(
+                        title = displayTitle,
+                        gid = gallery.gid,
+                        token = gallery.token,
+                        rating = gallery.rating,
+                        pages = gallery.pages,
+                        category = gallery.category,
+                        tags = gallery.simpleTags?.toList(),
                     )
-                    grouped.forEach { (namespace, tagList) ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.Top,
-                        ) {
-                            Text(
-                                text = "$namespace:",
-                                color = MiuixTheme.colorScheme.primary,
-                                fontSize = 12.sp,
-                                modifier = Modifier.width(60.dp).padding(top = 2.dp),
-                            )
-                            FlowRow(
-                                modifier = Modifier.weight(1f),
-                                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                                verticalArrangement = Arrangement.spacedBy(4.dp),
+                    onCopy(summary, "")
+                },
+            )
+            gallery.simpleTags?.takeIf { it.isNotEmpty() }?.let { tags ->
+                val grouped = remember(tags) { DesktopTagFormatter.groupTags(tags.toList()) }
+                if (grouped.isNotEmpty()) {
+                    val tagLabel = stringResource(MR.strings.search_sft)
+                    Column(
+                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        Text(
+                            text = "$tagLabel (${DesktopTagFormatter.splitTags(tags.toList()).size})",
+                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                            fontSize = 12.sp,
+                        )
+                        grouped.forEach { (namespace, tagList) ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.Top,
                             ) {
-                                tagList.forEach { tagName ->
-                                    val fullTag = DesktopTagFormatter.formatTagQuery(namespace, tagName)
-                                    Box(
-                                        modifier = Modifier
-                                            .clip(RoundedCornerShape(4.dp))
-                                            .background(MiuixTheme.colorScheme.surfaceVariant)
-                                            .pointerHoverIcon(PointerIcon.Hand)
-                                            .clickable {
-                                                if (onSearchTag != null) {
-                                                    onSearchTag(fullTag)
-                                                } else {
-                                                    onCopy(fullTag, tagLabel)
+                                Text(
+                                    text = "$namespace:",
+                                    color = MiuixTheme.colorScheme.primary,
+                                    fontSize = 12.sp,
+                                    modifier = Modifier.width(60.dp).padding(top = 2.dp),
+                                )
+                                FlowRow(
+                                    modifier = Modifier.weight(1f),
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                                ) {
+                                    tagList.forEach { tagName ->
+                                        val fullTag = DesktopTagFormatter.formatTagQuery(namespace, tagName)
+                                        Box(
+                                            modifier = Modifier
+                                                .clip(RoundedCornerShape(4.dp))
+                                                .background(MiuixTheme.colorScheme.surfaceVariant)
+                                                .pointerHoverIcon(PointerIcon.Hand)
+                                                .clickable {
+                                                    if (onSearchTag != null) {
+                                                        onSearchTag(fullTag)
+                                                    } else {
+                                                        onCopy(fullTag, tagLabel)
+                                                    }
                                                 }
-                                            }
-                                            .padding(horizontal = 6.dp, vertical = 2.dp),
-                                    ) {
-                                        Text(
-                                            text = tagName,
-                                            fontSize = 11.sp,
-                                            color = MiuixTheme.colorScheme.onBackground,
-                                            maxLines = 1,
-                                        )
+                                                .padding(horizontal = 6.dp, vertical = 2.dp),
+                                        ) {
+                                            Text(
+                                                text = tagName,
+                                                fontSize = 11.sp,
+                                                color = MiuixTheme.colorScheme.onBackground,
+                                                maxLines = 1,
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -1193,6 +1206,10 @@ internal fun GalleryDetailPane(
                 }
             }
         }
+        VerticalScrollbar(
+            adapter = rememberScrollbarAdapter(detailScrollState),
+            isScrollInProgress = detailScrollState.isScrollInProgress,
+        )
     }
 }
 
