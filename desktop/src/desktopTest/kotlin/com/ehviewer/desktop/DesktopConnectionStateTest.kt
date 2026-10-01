@@ -34,18 +34,40 @@ class DesktopConnectionStateTest {
     }
 
     @Test
-    fun formatStatus_formatsReadableMessages() {
-        assertEquals("Checking...", DesktopConnectionState.formatStatus(DesktopConnectionStatus.Checking))
-        assertEquals("HTTP 200", DesktopConnectionState.formatStatus(DesktopConnectionStatus.Online(200)))
-        assertEquals("HTTP 503", DesktopConnectionState.formatStatus(DesktopConnectionStatus.Online(503)))
+    fun formatStatus_formatsWithInjectedLocalizedLabels() {
+        // 界面层经 i18n 注入标签；此处用等价英文断言纯逻辑（HTTP 状态码为协议文本）
+        assertEquals(
+            "Checking...",
+            DesktopConnectionState.formatStatus(DesktopConnectionStatus.Checking, checkingLabel = "Checking...", offlineLabel = "Offline"),
+        )
+        assertEquals(
+            "HTTP 200",
+            DesktopConnectionState.formatStatus(DesktopConnectionStatus.Online(200), checkingLabel = "Checking...", offlineLabel = "Offline"),
+        )
+        assertEquals(
+            "HTTP 503",
+            DesktopConnectionState.formatStatus(DesktopConnectionStatus.Online(503), checkingLabel = "Checking...", offlineLabel = "Offline"),
+        )
 
         assertEquals(
             "Offline (Connection refused)",
-            DesktopConnectionState.formatStatus(DesktopConnectionStatus.Offline("Connection refused")),
+            DesktopConnectionState.formatStatus(DesktopConnectionStatus.Offline("Connection refused"), checkingLabel = "Checking...", offlineLabel = "Offline"),
         )
-        // 边界：空原因或空白原因
-        assertEquals("Offline", DesktopConnectionState.formatStatus(DesktopConnectionStatus.Offline("")))
-        assertEquals("Offline", DesktopConnectionState.formatStatus(DesktopConnectionStatus.Offline("   ")))
+        // 边界：空原因或空白原因不带括号
+        assertEquals(
+            "Offline",
+            DesktopConnectionState.formatStatus(DesktopConnectionStatus.Offline(""), checkingLabel = "Checking...", offlineLabel = "Offline"),
+        )
+        assertEquals(
+            "Offline",
+            DesktopConnectionState.formatStatus(DesktopConnectionStatus.Offline("   "), checkingLabel = "Checking...", offlineLabel = "Offline"),
+        )
+
+        // 中文标签注入等价成立
+        assertEquals(
+            "离线 (Connection refused)",
+            DesktopConnectionState.formatStatus(DesktopConnectionStatus.Offline("Connection refused"), checkingLabel = "检查中", offlineLabel = "离线"),
+        )
     }
 
     @Test

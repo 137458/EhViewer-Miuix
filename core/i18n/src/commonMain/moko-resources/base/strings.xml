@@ -643,6 +643,12 @@
     <string name="desktop_open_gallery_invalid_input">Invalid gallery URL or GID/Token</string>
     <string name="desktop_open_gallery_action_open">Open</string>
     <string name="desktop_action_cancel">Cancel</string>
+    <string name="desktop_status_checking">Checking connection…</string>
+    <string name="desktop_status_offline">Offline</string>
+    <string name="desktop_online_connecting">Connecting to E-Hentai…</string>
+    <string name="desktop_online_empty">No online galleries found</string>
+    <string name="desktop_notification_opening_gallery">Opening gallery</string>
+    <string name="desktop_gallery_metadata_loading">Gallery metadata is loading, please retry later</string>
     <string name="search_hint">Filter title, tag, uploader...</string>
     <string name="open_in_browser">Open in browser</string>
     <string name="copy_link">Copy link</string>

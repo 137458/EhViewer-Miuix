@@ -332,14 +332,29 @@ private fun GalleryDetailWindowContent(gallery: com.ehviewer.core.model.BaseGall
     var previewCoverUrl by remember { mutableStateOf<String?>(null) }
     var isFavorite by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
+    // Ctrl+O 打开时是仅有 gid/token 的占位信息，hydrate 成功后整体替换触发重组
+    var currentGallery by remember { mutableStateOf(gallery) }
     val addedToFavoriteText = stringResource(MR.strings.add_to_favorite_success)
     val removedFromFavoriteText = stringResource(MR.strings.remove_from_favorite_success)
     val noBrowserText = stringResource(MR.strings.no_browser_installed)
     val tagLabel = stringResource(MR.strings.search_sft)
+    val metadataLoadingText = stringResource(MR.strings.desktop_gallery_metadata_loading)
 
     LaunchedEffect(gallery.gid) {
         isFavorite = withContext(Dispatchers.IO) {
             DesktopDatabase.eh.localFavoritesDao().contains(gallery.gid)
+        }
+    }
+
+    LaunchedEffect(currentGallery.gid) {
+        if (DesktopGalleryHydrator.needsHydration(currentGallery)) {
+            val fetched = withContext(Dispatchers.IO) {
+                DesktopGalleryHydrator.fetchInfo(currentGallery.gid, currentGallery.token)
+            }
+            if (fetched != null) {
+                currentGallery = fetched
+                logcat("DetailWindow", LogPriority.INFO) { "Hydrated gallery ${fetched.gid}" }
+            }
         }
     }
 
@@ -366,14 +381,19 @@ private fun GalleryDetailWindowContent(gallery: com.ehviewer.core.model.BaseGall
 
     fun toggleFavorite() {
         coroutineScope.launch {
+            // 元数据未回填（离线等场景）时禁止把占位假数据写入画廊库/收藏
+            if (DesktopGalleryHydrator.needsHydration(currentGallery)) {
+                showNotification(metadataLoadingText)
+                return@launch
+            }
             val nextState = !isFavorite
             withContext(Dispatchers.IO) {
                 if (nextState) {
-                    val entity = DesktopFavoritesState.toGalleryEntity(gallery)
+                    val entity = DesktopFavoritesState.toGalleryEntity(currentGallery)
                     DesktopDatabase.eh.galleryDao().upsert(entity)
-                    DesktopDatabase.eh.localFavoritesDao().upsert(LocalFavoriteInfo(gallery.gid))
+                    DesktopDatabase.eh.localFavoritesDao().upsert(LocalFavoriteInfo(currentGallery.gid))
                 } else {
-                    DesktopDatabase.eh.localFavoritesDao().deleteByKey(gallery.gid)
+                    DesktopDatabase.eh.localFavoritesDao().deleteByKey(currentGallery.gid)
                 }
             }
             isFavorite = nextState
@@ -387,7 +407,7 @@ private fun GalleryDetailWindowContent(gallery: com.ehviewer.core.model.BaseGall
             .background(MiuixTheme.colorScheme.background),
     ) {
         GalleryDetailPane(
-            gallery = gallery,
+            gallery = currentGallery,
             isFavorite = isFavorite,
             onToggleFavorite = { toggleFavorite() },
             onCopy = { value, label ->

@@ -717,6 +717,12 @@
     <string name="desktop_open_gallery_invalid_input">无效的画廊链接或 GID/Token</string>
     <string name="desktop_open_gallery_action_open">打开</string>
     <string name="desktop_action_cancel">取消</string>
+    <string name="desktop_status_checking">检查连接中…</string>
+    <string name="desktop_status_offline">离线</string>
+    <string name="desktop_online_connecting">正在连接 E-Hentai…</string>
+    <string name="desktop_online_empty">未找到在线画廊</string>
+    <string name="desktop_notification_opening_gallery">正在打开画廊</string>
+    <string name="desktop_gallery_metadata_loading">画廊元数据加载中，请稍后重试</string>
     <string name="search_hint">过滤标题、标签、上传者...</string>
     <string name="open_in_browser">在浏览器中打开</string>
     <string name="copy_link">复制链接</string>

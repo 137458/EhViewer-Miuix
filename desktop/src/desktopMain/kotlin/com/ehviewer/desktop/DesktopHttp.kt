@@ -29,13 +29,14 @@ private fun parseHostPort(value: String): InetSocketAddress? {
     return runCatching { InetSocketAddress(host, port.toInt()) }.getOrNull()
 }
 
-// okhttp 与部分代理隧道存在同步挂死（探针实测，连超时都不触发），
-// 桌面外部请求走 JDK HttpURLConnection（实测 576ms 可达）+ EhCookieStore Cookie 头注入。
-fun desktopGet(url: String): DesktopResponse {
+// okhttp 与部分代理隧道存在同步挂死（探针实测，连超时都不触发），桌面外部请求走 JDK
+// HttpURLConnection（实测 576ms 可达）+ EhCookieStore Cookie 头注入。
+private fun openDesktopConnection(url: String, method: String, body: String?): HttpURLConnection {
     val target = URL(url)
     val proxy = resolveProxy()
     val conn = (if (proxy != null) target.openConnection(proxy) else target.openConnection(Proxy.NO_PROXY))
         as HttpURLConnection
+    conn.requestMethod = method
     conn.connectTimeout = 15_000
     conn.readTimeout = 15_000
     conn.instanceFollowRedirects = true
@@ -49,6 +50,20 @@ fun desktopGet(url: String): DesktopResponse {
         EhCookieStore.get(io.ktor.http.Url(url))
     }.takeIf { it.isNotEmpty() }?.joinToString("; ") { "${it.name}=${it.value}" }
     cookies?.let { conn.setRequestProperty("Cookie", it) }
+    if (body != null) {
+        conn.doOutput = true
+        conn.setRequestProperty("Content-Type", "application/json")
+        conn.outputStream.use { it.write(body.toByteArray()) }
+    }
+    return conn
+}
+
+fun desktopGet(url: String): DesktopResponse = readDesktopResponse(openDesktopConnection(url, "GET", null))
+
+// gdata 等 JSON API 的 POST 入口，代理/Cookie/UA 规则与 desktopGet 完全一致
+fun desktopPost(url: String, body: String): DesktopResponse = readDesktopResponse(openDesktopConnection(url, "POST", body))
+
+private fun readDesktopResponse(conn: HttpURLConnection): DesktopResponse {
     val status = conn.responseCode
     val stream = if (status in 200..299) conn.inputStream else conn.errorStream
     val body = stream?.bufferedReader()?.use { it.readText() }.orEmpty()

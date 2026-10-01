@@ -39,12 +39,17 @@ object DesktopConnectionState {
         }
     }
 
-    fun formatStatus(status: DesktopConnectionStatus): String = when (status) {
-        DesktopConnectionStatus.Checking -> "Checking..."
+    // 状态文案由界面层经 i18n 提供标签（Checking/Offline），HTTP 状态码为协议文本不本地化
+    fun formatStatus(
+        status: DesktopConnectionStatus,
+        checkingLabel: String,
+        offlineLabel: String,
+    ): String = when (status) {
+        DesktopConnectionStatus.Checking -> checkingLabel
         is DesktopConnectionStatus.Online -> "HTTP ${status.statusCode}"
         is DesktopConnectionStatus.Offline -> {
             val trimmedReason = status.reason.trim()
-            if (trimmedReason.isEmpty()) "Offline" else "Offline ($trimmedReason)"
+            if (trimmedReason.isEmpty()) offlineLabel else "$offlineLabel ($trimmedReason)"
         }
     }
 

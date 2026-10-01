@@ -130,6 +130,10 @@ fun LibraryScreen(
     val clipboard = LocalClipboardManager.current
     val coroutineScope = rememberCoroutineScope()
     val historyClearedMessage = stringResource(MR.strings.search_history_cleared)
+    val checkingConnectionText = stringResource(MR.strings.desktop_status_checking)
+    val connectingServerText = stringResource(MR.strings.desktop_online_connecting)
+    val onlineEmptyText = stringResource(MR.strings.desktop_online_empty)
+    val openingGalleryText = stringResource(MR.strings.desktop_notification_opening_gallery)
 
     fun showNotification(message: String) {
         val now = System.currentTimeMillis()
@@ -337,7 +341,11 @@ fun LibraryScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    val statusText = "e-hentai: ${DesktopConnectionState.formatStatus(connectionStatus)}"
+                    val statusText = "e-hentai: " + DesktopConnectionState.formatStatus(
+                        status = connectionStatus,
+                        checkingLabel = stringResource(MR.strings.desktop_status_checking),
+                        offlineLabel = stringResource(MR.strings.desktop_status_offline),
+                    )
                     val isOffline = DesktopConnectionState.isOffline(connectionStatus)
                     val statusBgColor = when (connectionStatus) {
                         is DesktopConnectionStatus.Online -> MiuixTheme.colorScheme.surfaceVariant
@@ -359,7 +367,7 @@ fun LibraryScreen(
                                         .pointerHoverIcon(PointerIcon.Hand)
                                         .clickable {
                                             coroutineScope.launch {
-                                                showNotification("Checking connection...")
+                                                showNotification(checkingConnectionText)
                                                 refreshGalleries()
                                             }
                                         }
@@ -625,7 +633,7 @@ fun LibraryScreen(
                                                             .pointerHoverIcon(PointerIcon.Hand)
                                                             .clickable {
                                                                 coroutineScope.launch {
-                                                                    showNotification("Checking connection...")
+                                                                    showNotification(checkingConnectionText)
                                                                     refreshGalleries()
                                                                 }
                                                             }
@@ -640,13 +648,13 @@ fun LibraryScreen(
                                                 }
                                                 DesktopConnectionStatus.Checking -> {
                                                     Text(
-                                                        text = "Connecting to E-Hentai...",
+                                                        text = connectingServerText,
                                                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                                     )
                                                 }
                                                 is DesktopConnectionStatus.Online -> {
                                                     Text(
-                                                        text = "No online galleries found",
+                                                        text = onlineEmptyText,
                                                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                                     )
                                                 }
@@ -909,7 +917,7 @@ fun LibraryScreen(
                 onDismiss = { showOpenGalleryDialog = false },
                 onOpen = { target ->
                     showOpenGalleryDialog = false
-                    showNotification("Opening gallery ${target.gid}")
+                    showNotification("$openingGalleryText ${target.gid}")
                     onOpenGalleryInNewWindow?.invoke(DesktopOpenGalleryState.createGalleryInfo(target))
                 },
             )
