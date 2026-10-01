@@ -24,5 +24,17 @@ class DesktopI18nTest {
 
         val searchHint = StringDesc.Resource(MR.strings.search_hint).localized()
         assertTrue(searchHint.isNotEmpty())
+
+        val openBrowser = StringDesc.Resource(MR.strings.open_in_browser).localized()
+        assertTrue(openBrowser.isNotEmpty())
+
+        val copyLink = StringDesc.Resource(MR.strings.copy_link).localized()
+        assertTrue(copyLink.isNotEmpty())
+
+        val copyTitle = StringDesc.Resource(MR.strings.copy_title).localized()
+        assertTrue(copyTitle.isNotEmpty())
+
+        val online = StringDesc.Resource(MR.strings.online).localized()
+        assertTrue(online.isNotEmpty())
     }
 }

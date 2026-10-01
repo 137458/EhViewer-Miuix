@@ -638,6 +638,10 @@
     <string name="settings_close_exit">Exit application</string>
     <string name="tray_open_app">Open EhViewer</string>
     <string name="search_hint">Filter title, tag, uploader...</string>
+    <string name="open_in_browser">Open in browser</string>
+    <string name="copy_link">Copy link</string>
+    <string name="copy_title">Copy title</string>
+    <string name="online">Online</string>
     <string name="pref_rotation_type">Default rotation type</string>
     <string name="viewer">Reading mode</string>
     <string name="action_menu">Menu</string>

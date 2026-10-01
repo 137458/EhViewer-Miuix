@@ -712,5 +712,9 @@
     <string name="settings_close_exit">直接退出应用</string>
     <string name="tray_open_app">打开 EhViewer</string>
     <string name="search_hint">过滤标题、标签、上传者...</string>
+    <string name="open_in_browser">在浏览器中打开</string>
+    <string name="copy_link">复制链接</string>
+    <string name="copy_title">复制标题</string>
+    <string name="online">在线</string>
     <!-- Tachiyomi Reader End-->
 </resources>

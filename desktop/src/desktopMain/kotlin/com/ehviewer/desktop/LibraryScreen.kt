@@ -39,12 +39,14 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.ehviewer.core.database.client.thumbUrl
 import com.ehviewer.core.database.model.GalleryEntity
+import com.ehviewer.core.i18n.MR
 import com.ehviewer.core.model.BaseGalleryInfo
 import com.ehviewer.core.network.EhCookieStore
 import com.ehviewer.core.util.LogPriority
 import com.ehviewer.core.util.logcat
 import com.hippo.ehviewer.client.parser.GalleryListParserKtProbe
 import com.hippo.ehviewer.client.parser.parseGalleryList
+import dev.icerock.moko.resources.compose.stringResource
 import java.nio.ByteBuffer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -181,14 +183,14 @@ fun LibraryScreen() {
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     Text(
-                        text = "History (${history.size})",
+                        text = "${stringResource(MR.strings.history)} (${history.size})",
                         color = if (currentTab == LibraryTab.History) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantSummary,
                         modifier = Modifier
                             .clickable { currentTab = LibraryTab.History }
                             .padding(vertical = 4.dp, horizontal = 4.dp),
                     )
                     Text(
-                        text = "Online (${online.size})",
+                        text = "${stringResource(MR.strings.online)} (${online.size})",
                         color = if (currentTab == LibraryTab.Online) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantSummary,
                         modifier = Modifier
                             .clickable { currentTab = LibraryTab.Online }
@@ -198,7 +200,7 @@ fun LibraryScreen() {
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = { searchQuery = it },
-                    placeholder = { Text("Filter title, tag, uploader...") },
+                    placeholder = { Text(stringResource(MR.strings.search_hint)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
                 )
@@ -223,6 +225,9 @@ fun LibraryScreen() {
                         )
                     }
                 } else {
+                    val copyTitleLabel = stringResource(MR.strings.copy_title)
+                    val copyLinkLabel = stringResource(MR.strings.copy_link)
+                    val openBrowserLabel = stringResource(MR.strings.open_in_browser)
                     LazyColumn(modifier = Modifier.fillMaxSize()) {
                         items(filteredItems.size) { index ->
                             val gallery = filteredItems[index]
@@ -231,13 +236,13 @@ fun LibraryScreen() {
                             ContextMenuArea(
                                 items = {
                                     listOf(
-                                        ContextMenuItem("Copy title") {
+                                        ContextMenuItem(copyTitleLabel) {
                                             clipboard.setText(AnnotatedString(title))
                                         },
-                                        ContextMenuItem("Copy link") {
+                                        ContextMenuItem(copyLinkLabel) {
                                             clipboard.setText(AnnotatedString(link))
                                         },
-                                        ContextMenuItem("Open in browser") {
+                                        ContextMenuItem(openBrowserLabel) {
                                             openBrowser(link)
                                         },
                                     )
@@ -303,15 +308,15 @@ private fun GalleryDetailPane(gallery: BaseGalleryInfo, onCopy: (value: String, 
             Text(text = it, color = MiuixTheme.colorScheme.onBackground)
         }
         HorizontalDivider()
-        DetailRow(label = "GID", value = gallery.gid.toString(), onCopy = onCopy)
-        DetailRow(label = "Token", value = gallery.token, onCopy = onCopy)
-        DetailRow(label = "Uploader", value = gallery.uploader.orEmpty().ifEmpty { "-" }, onCopy = onCopy)
-        DetailRow(label = "Category", value = gallery.category.toString(), onCopy = onCopy)
-        DetailRow(label = "Pages", value = gallery.pages.toString(), onCopy = onCopy)
-        DetailRow(label = "Rating", value = gallery.rating.toString(), onCopy = onCopy)
-        gallery.simpleLanguage?.let { DetailRow(label = "Language", value = it, onCopy = onCopy) }
-        DetailRow(label = "Link", value = link, onCopy = onCopy)
-        gallery.thumbUrl?.let { DetailRow(label = "Cover", value = it, onCopy = onCopy) }
+        DetailRow(label = stringResource(MR.strings.key_gid), value = gallery.gid.toString(), onCopy = onCopy)
+        DetailRow(label = stringResource(MR.strings.key_token), value = gallery.token, onCopy = onCopy)
+        DetailRow(label = stringResource(MR.strings.key_uploader), value = gallery.uploader.orEmpty().ifEmpty { "-" }, onCopy = onCopy)
+        DetailRow(label = stringResource(MR.strings.key_category), value = gallery.category.toString(), onCopy = onCopy)
+        DetailRow(label = stringResource(MR.strings.key_pages), value = gallery.pages.toString(), onCopy = onCopy)
+        DetailRow(label = stringResource(MR.strings.key_rating), value = gallery.rating.toString(), onCopy = onCopy)
+        gallery.simpleLanguage?.let { DetailRow(label = stringResource(MR.strings.key_language), value = it, onCopy = onCopy) }
+        DetailRow(label = stringResource(MR.strings.key_url), value = link, onCopy = onCopy)
+        gallery.thumbUrl?.let { DetailRow(label = stringResource(MR.strings.key_thumb), value = it, onCopy = onCopy) }
         gallery.simpleTags?.takeIf { it.isNotEmpty() }?.let { tags ->
             Text(
                 text = tags.joinToString(", "),
@@ -342,7 +347,7 @@ private fun DetailRow(label: String, value: String, onCopy: (value: String, labe
             modifier = Modifier.weight(1f),
         )
         Text(
-            text = "Copy",
+            text = stringResource(MR.strings.action_copy),
             color = MiuixTheme.colorScheme.primary,
             modifier = Modifier.clickable { onCopy(value, label) },
         )
