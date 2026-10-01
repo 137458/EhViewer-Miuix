@@ -17,6 +17,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -92,6 +94,8 @@ fun LibraryScreen(
     val favoriteCount by DesktopDatabase.eh.localFavoritesDao()
         .count()
         .collectAsState(initial = 0)
+    val viewModeOrdinal by DesktopSettings.viewMode.valueFlow().collectAsState(DesktopSettings.viewMode.value)
+    val viewMode = DesktopViewMode.fromOrdinal(viewModeOrdinal)
     var currentTab by remember { mutableStateOf(LibraryTab.History) }
     var history by remember { mutableStateOf<List<GalleryEntity>>(emptyList()) }
     var favorites by remember { mutableStateOf<List<GalleryEntity>>(emptyList()) }
@@ -313,13 +317,29 @@ fun LibraryScreen(
                             )
                         }
                     }
-                    OutlinedTextField(
-                        value = searchQuery,
-                        onValueChange = { searchQuery = it },
-                        placeholder = { Text(stringResource(MR.strings.search_hint)) },
-                        singleLine = true,
+                    Row(
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
-                    )
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        OutlinedTextField(
+                            value = searchQuery,
+                            onValueChange = { searchQuery = it },
+                            placeholder = { Text(stringResource(MR.strings.search_hint)) },
+                            singleLine = true,
+                            modifier = Modifier.weight(1f),
+                        )
+                        Text(
+                            text = if (viewMode == DesktopViewMode.List) "List" else "Grid",
+                            color = MiuixTheme.colorScheme.primary,
+                            modifier = Modifier
+                                .pointerHoverIcon(PointerIcon.Hand)
+                                .clickable {
+                                    DesktopSettings.viewMode.value = viewMode.toggle().ordinal
+                                }
+                                .padding(horizontal = 6.dp, vertical = 4.dp),
+                        )
+                    }
                     HorizontalDivider()
                     val currentItems: List<BaseGalleryInfo> = when (currentTab) {
                         LibraryTab.History -> history
@@ -352,90 +372,165 @@ fun LibraryScreen(
                         val deleteLabel = stringResource(MR.strings.delete)
                         val addFavoriteLabel = stringResource(MR.strings.add_favorites_dialog_title)
                         val deleteFavoriteLabel = stringResource(MR.strings.delete_favorites_dialog_title)
-                        LazyColumn(modifier = Modifier.fillMaxSize()) {
-                            items(filteredItems.size) { index ->
-                                val gallery = filteredItems[index]
-                                val title = galleryDisplayTitle(gallery.title, gallery.gid)
-                                val link = galleryWebUrl(gallery.gid, gallery.token)
-                                ContextMenuArea(
-                                    items = {
-                                        val menuItems = mutableListOf(
-                                            ContextMenuItem(copyTitleLabel) {
-                                                clipboard.setText(AnnotatedString(title))
-                                                showNotification("Copied: $title")
-                                            },
-                                            ContextMenuItem(copyLinkLabel) {
-                                                clipboard.setText(AnnotatedString(link))
-                                                showNotification("Copied link")
-                                            },
-                                            ContextMenuItem(openBrowserLabel) {
-                                                openBrowser(link)
-                                            },
-                                            ContextMenuItem(
-                                                if (DesktopFavoritesState.isFavorite(favoriteGids, gallery.gid)) {
-                                                    deleteFavoriteLabel
-                                                } else {
-                                                    addFavoriteLabel
-                                                },
-                                            ) {
-                                                toggleFavorite(gallery)
-                                            },
-                                        )
-                                        if (onOpenGalleryInNewWindow != null) {
-                                            menuItems.add(
-                                                ContextMenuItem(openInNewWindowLabel) {
-                                                    onOpenGalleryInNewWindow(gallery)
-                                                },
-                                            )
-                                        }
-                                        if (currentTab == LibraryTab.History) {
-                                            menuItems.add(
-                                                ContextMenuItem(deleteLabel) {
-                                                    coroutineScope.launch {
-                                                        withContext(Dispatchers.IO) {
-                                                            DesktopDatabase.eh.historyDao().deleteByKey(gallery.gid)
-                                                        }
-                                                        history = DesktopHistoryState.removeGallery(history, gallery.gid)
-                                                        selected = DesktopHistoryState.updateSelectionAfterDelete(selected, gallery.gid)
-                                                        showNotification("Removed from history")
-                                                    }
-                                                },
-                                            )
-                                        }
-                                        menuItems
+
+                        fun buildGalleryContextMenu(
+                            gallery: BaseGalleryInfo,
+                            title: String,
+                            link: String,
+                        ): List<ContextMenuItem> {
+                            val menuItems = mutableListOf(
+                                ContextMenuItem(copyTitleLabel) {
+                                    clipboard.setText(AnnotatedString(title))
+                                    showNotification("Copied: $title")
+                                },
+                                ContextMenuItem(copyLinkLabel) {
+                                    clipboard.setText(AnnotatedString(link))
+                                    showNotification("Copied link")
+                                },
+                                ContextMenuItem(openBrowserLabel) {
+                                    openBrowser(link)
+                                },
+                                ContextMenuItem(
+                                    if (DesktopFavoritesState.isFavorite(favoriteGids, gallery.gid)) {
+                                        deleteFavoriteLabel
+                                    } else {
+                                        addFavoriteLabel
                                     },
                                 ) {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth()
-                                            .pointerHoverIcon(PointerIcon.Hand)
-                                            .combinedClickable(
-                                                onClick = { selected = gallery },
-                                                onDoubleClick = {
-                                                    selected = gallery
-                                                    onOpenGalleryInNewWindow?.invoke(gallery)
-                                                },
-                                            )
-                                            .background(
-                                                if (selected?.gid == gallery.gid) {
-                                                    MiuixTheme.colorScheme.secondaryContainer
-                                                } else {
-                                                    Color.Unspecified
-                                                },
-                                            )
-                                            .padding(horizontal = 8.dp, vertical = 6.dp),
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    toggleFavorite(gallery)
+                                },
+                            )
+                            if (onOpenGalleryInNewWindow != null) {
+                                menuItems.add(
+                                    ContextMenuItem(openInNewWindowLabel) {
+                                        onOpenGalleryInNewWindow(gallery)
+                                    },
+                                )
+                            }
+                            if (currentTab == LibraryTab.History) {
+                                menuItems.add(
+                                    ContextMenuItem(deleteLabel) {
+                                        coroutineScope.launch {
+                                            withContext(Dispatchers.IO) {
+                                                DesktopDatabase.eh.historyDao().deleteByKey(gallery.gid)
+                                            }
+                                            history = DesktopHistoryState.removeGallery(history, gallery.gid)
+                                            selected = DesktopHistoryState.updateSelectionAfterDelete(selected, gallery.gid)
+                                            showNotification("Removed from history")
+                                        }
+                                    },
+                                )
+                            }
+                            return menuItems
+                        }
+
+                        if (viewMode == DesktopViewMode.List) {
+                            LazyColumn(modifier = Modifier.fillMaxSize()) {
+                                items(filteredItems.size) { index ->
+                                    val gallery = filteredItems[index]
+                                    val title = galleryDisplayTitle(gallery.title, gallery.gid)
+                                    val link = galleryWebUrl(gallery.gid, gallery.token)
+                                    ContextMenuArea(
+                                        items = { buildGalleryContextMenu(gallery, title, link) },
                                     ) {
-                                        Text(
-                                            text = title,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis,
-                                            modifier = Modifier.weight(1f),
-                                            color = MiuixTheme.colorScheme.onBackground,
-                                        )
-                                        Text(
-                                            text = gallery.category.toString(),
-                                            color = MiuixTheme.colorScheme.onBackground,
-                                        )
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth()
+                                                .pointerHoverIcon(PointerIcon.Hand)
+                                                .combinedClickable(
+                                                    onClick = { selected = gallery },
+                                                    onDoubleClick = {
+                                                        selected = gallery
+                                                        onOpenGalleryInNewWindow?.invoke(gallery)
+                                                    },
+                                                )
+                                                .background(
+                                                    if (selected?.gid == gallery.gid) {
+                                                        MiuixTheme.colorScheme.secondaryContainer
+                                                    } else {
+                                                        Color.Unspecified
+                                                    },
+                                                )
+                                                .padding(horizontal = 8.dp, vertical = 6.dp),
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        ) {
+                                            Text(
+                                                text = title,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis,
+                                                modifier = Modifier.weight(1f),
+                                                color = MiuixTheme.colorScheme.onBackground,
+                                            )
+                                            Text(
+                                                text = gallery.category.toString(),
+                                                color = MiuixTheme.colorScheme.onBackground,
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        } else {
+                            LazyVerticalGrid(
+                                columns = GridCells.Fixed(2),
+                                modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp, vertical = 4.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                items(filteredItems.size) { index ->
+                                    val gallery = filteredItems[index]
+                                    val title = galleryDisplayTitle(gallery.title, gallery.gid)
+                                    val link = galleryWebUrl(gallery.gid, gallery.token)
+                                    ContextMenuArea(
+                                        items = { buildGalleryContextMenu(gallery, title, link) },
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clip(RoundedCornerShape(8.dp))
+                                                .pointerHoverIcon(PointerIcon.Hand)
+                                                .combinedClickable(
+                                                    onClick = { selected = gallery },
+                                                    onDoubleClick = {
+                                                        selected = gallery
+                                                        onOpenGalleryInNewWindow?.invoke(gallery)
+                                                    },
+                                                )
+                                                .background(
+                                                    if (selected?.gid == gallery.gid) {
+                                                        MiuixTheme.colorScheme.secondaryContainer
+                                                    } else {
+                                                        MiuixTheme.colorScheme.surfaceVariant
+                                                    },
+                                                )
+                                                .padding(8.dp),
+                                        ) {
+                                            Column(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                verticalArrangement = Arrangement.spacedBy(6.dp),
+                                            ) {
+                                                gallery.thumbUrl?.let { thumb ->
+                                                    Box(
+                                                        modifier = Modifier
+                                                            .fillMaxWidth()
+                                                            .height(110.dp)
+                                                            .clip(RoundedCornerShape(6.dp)),
+                                                        contentAlignment = Alignment.Center,
+                                                    ) {
+                                                        AsyncImage(
+                                                            model = thumb,
+                                                            contentDescription = title,
+                                                            modifier = Modifier.fillMaxSize(),
+                                                            contentScale = ContentScale.Crop,
+                                                        )
+                                                    }
+                                                }
+                                                Text(
+                                                    text = title,
+                                                    maxLines = 2,
+                                                    overflow = TextOverflow.Ellipsis,
+                                                    color = MiuixTheme.colorScheme.onBackground,
+                                                )
+                                            }
+                                        }
                                     }
                                 }
                             }

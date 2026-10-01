@@ -15,4 +15,7 @@ object DesktopSettings : DataStorePreferences("desktop") {
 
     // true = 关闭窗口时最小化至系统托盘防误触，false = 直接退出应用
     val closeToTray = boolPref("close_to_tray", false)
+
+    // 0 = 列表视图 (List)，1 = 网格卡片视图 (Grid)
+    val viewMode = intPref("view_mode", 0)
 }
