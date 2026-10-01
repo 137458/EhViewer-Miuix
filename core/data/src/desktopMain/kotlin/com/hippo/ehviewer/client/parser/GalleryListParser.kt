@@ -8,23 +8,63 @@ import kotlinx.serialization.decodeFromByteArray
 
 // HTML 列表解析的执行体在 Rust 库（ehviewer_rust，jvm feature），
 // JNI 符号由 ffi/jvm.rs 的 jni_fn 声明为 GalleryListParserKt——本文件类名/包名必须与之逐字一致。
-private val rustLibrariesLoaded = runCatching {
-    System.loadLibrary("ehviewer_rust")
-}.recoverCatching {
-    // 开发/测试环境：dll 不在 java.library.path 时按候选路径加载
-    val path = candidateDllPaths().firstOrNull { java.io.File(it).exists() }
-        ?: throw IllegalStateException("ehviewer_rust library not found (set EHVIEWER_RUST_DLL to override)")
-    System.load(path)
-}.isSuccess
+private var rustLibrariesLoaded = false
+    get() {
+        if (!field) {
+            field = ensureRustLoaded()
+        }
+        return field
+    }
+
+private var lastLoadError: String? = null
+
+private fun ensureRustLoaded(): Boolean {
+    val errors = mutableListOf<String>()
+    runCatching {
+        System.loadLibrary("ehviewer_rust")
+        return true
+    }.onFailure { errors += "loadLibrary: ${it.message}" }
+    runCatching {
+        // 类路径资源（Gradle 构建/分发时从 Rust 产物复制）
+        Thread.currentThread().contextClassLoader.getResourceAsStream("native/ehviewer_rust.dll")?.use { input ->
+            val tmp = java.io.File.createTempFile("ehviewer_rust", ".dll")
+            input.copyTo(tmp.outputStream())
+            tmp.deleteOnExit()
+            System.load(tmp.absolutePath)
+            return true
+        }
+        errors += "resource: not on classpath"
+    }.onFailure { errors += "resource: ${it.message}" }
+    runCatching {
+        // 兜底：环境变量/相对路径候选
+        val path = candidateDllPaths().firstOrNull { java.io.File(it).exists() }
+            ?: throw IllegalStateException("no candidate exists")
+        System.load(path)
+        return true
+    }.onFailure { errors += "candidates: ${it.message}" }
+    lastLoadError = errors.joinToString(" | ")
+    return false
+}
+
+// 诊断探针
+object GalleryListParserKtProbe {
+    val resAvailable: Boolean
+        get() = Thread.currentThread().contextClassLoader
+            ?.getResource("native/ehviewer_rust.dll") != null
+    val loadError: String? get() = lastLoadError
+}
 
 // 供测试判断原生绑定是否可用（CI/Linux 无 dll 时跳过相关用例）
 val rustGalleryBindingsAvailable: Boolean get() = rustLibrariesLoaded
 
-// dll 候选：环境变量显式指定 > 模块工作目录的 cargo 产物（desktopTest 的 cwd 为模块目录）
+// dll 候选：环境变量/系统属性显式指定 > 各工作目录下的 cargo 产物
 private fun candidateDllPaths(): List<String> = buildList {
+    System.getProperty("EHVIEWER_RUST_DLL")?.let(::add)
     System.getenv("EHVIEWER_RUST_DLL")?.let(::add)
     add("../../app/src/main/rust/target-desk/x86_64-pc-windows-gnu/release/ehviewer_rust.dll")
     add("../../app/src/main/rust/target/x86_64-pc-windows-gnu/release/ehviewer_rust.dll")
+    add("app/src/main/rust/target-desk/x86_64-pc-windows-gnu/release/ehviewer_rust.dll")
+    add("app/src/main/rust/target/x86_64-pc-windows-gnu/release/ehviewer_rust.dll")
 }
 
 data class GalleryListResult(

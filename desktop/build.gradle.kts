@@ -20,6 +20,14 @@ configure<SpotlessExtension> {
     }
 }
 
+val rustDesktopDllFile = rootProject.file("app/src/main/rust/target-desk/x86_64-pc-windows-gnu/release/ehviewer_rust.dll")
+
+val copyRustDll = tasks.register<Copy>("copyRustDll") {
+    from(rustDesktopDllFile)
+    into(layout.projectDirectory.dir("src/desktopMain/resources/native"))
+    onlyIf { rustDesktopDllFile.exists() }
+}
+
 kotlin {
     jvm("desktop")
 
@@ -46,6 +54,9 @@ kotlin {
         }
     }
 }
+
+val rustDesktopDll = rootProject.file("app/src/main/rust/target-desk/x86_64-pc-windows-gnu/release/ehviewer_rust.dll")
+
 
 compose.desktop {
     application {

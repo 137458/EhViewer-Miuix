@@ -14,3 +14,6 @@ app/src/main/jniLibs/
 .zcode/
 hs_err_pid*.log
 replay_pid*.log
+
+# 桌面 Rust dll 由构建复制，不入库
+desktop/src/desktopMain/resources/native/

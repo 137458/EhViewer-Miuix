@@ -30,9 +30,13 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.ehviewer.core.database.model.GalleryEntity
+import com.ehviewer.core.model.BaseGalleryInfo
 import com.ehviewer.core.network.EhCookieStore
+import com.hippo.ehviewer.client.parser.parseGalleryList
+import com.hippo.ehviewer.client.parser.GalleryListParserKtProbe
 import com.ehviewer.core.util.LogPriority
 import com.ehviewer.core.util.logcat
+import java.nio.ByteBuffer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -48,6 +52,7 @@ fun LibraryScreen() {
         .count()
         .collectAsState(initial = 0)
     var history by remember { mutableStateOf<List<GalleryEntity>>(emptyList()) }
+    var online by remember { mutableStateOf<List<BaseGalleryInfo>>(emptyList()) }
     var selected by remember { mutableStateOf<GalleryEntity?>(null) }
     var httpStatusCode by remember { mutableStateOf<Int?>(null) }
     var connectionError by remember { mutableStateOf<String?>(null) }
@@ -66,6 +71,21 @@ fun LibraryScreen() {
             connectionError = null
             httpStatusCode = response.status
             logcat("Connection", LogPriority.INFO) { "EH_HOME status=${response.status}" }
+            if (response.status in 200..299) {
+                runCatching {
+                    val bytes = response.body.toByteArray()
+                    val buffer = ByteBuffer.allocateDirect(bytes.size).put(bytes).apply { flip() }
+                    parseGalleryList(buffer).galleryInfoList.toList()
+                }.onSuccess { list ->
+                    online = list
+                    logcat("Library", LogPriority.INFO) { "ONLINE_LIST parsed=${list.size}" }
+                }.onFailure { e ->
+                    logcat("Library", LogPriority.WARN) {
+                        "ONLINE_LIST parse failed: ${e} | loadErr=${GalleryListParserKtProbe.loadError} | " +
+                            "res=${GalleryListParserKtProbe.resAvailable} | cwd=${java.io.File(".").absolutePath}"
+                    }
+                }
+            }
         }.onFailure { e ->
             connectionError = e.message ?: e::class.simpleName
             logcat("Connection", LogPriority.WARN) { "EH_HOME failed: $connectionError" }
