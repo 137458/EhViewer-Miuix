@@ -304,6 +304,37 @@ class DesktopKeyActionTest {
     }
 
     @Test
+    fun ctrlShiftTabResolvesToCycleWindowBackward() {
+        assertEquals(
+            DesktopKeyAction.CycleWindowBackward,
+            resolveKeyAction(isKeyDown = true, isCtrlPressed = true, isShiftPressed = true, key = Key.Tab),
+        )
+        // 无 Shift 的 Ctrl+Tab 仍是正向轮转
+        assertEquals(
+            DesktopKeyAction.CycleWindow,
+            resolveKeyAction(isKeyDown = true, isCtrlPressed = true, isShiftPressed = false, key = Key.Tab),
+        )
+        // KeyUp 忽略
+        assertEquals(
+            DesktopKeyAction.None,
+            resolveKeyAction(isKeyDown = false, isCtrlPressed = true, isShiftPressed = true, key = Key.Tab),
+        )
+    }
+
+    @Test
+    fun cycleWindowIdBackwardRotatesReverse() {
+        val ids = listOf(0L, 5L, 9L)
+        assertEquals(9L, cycleWindowId(ids, 0L, forward = false))
+        assertEquals(0L, cycleWindowId(ids, 5L, forward = false))
+        assertEquals(5L, cycleWindowId(ids, 9L, forward = false))
+        // 单窗口/空列表不轮转
+        assertEquals(null, cycleWindowId(listOf(3L), 3L, forward = false))
+        assertEquals(null, cycleWindowId(emptyList(), 3L, forward = false))
+        // 未知当前窗口：反向回最后一个
+        assertEquals(9L, cycleWindowId(ids, 42L, forward = false))
+    }
+
+    @Test
     fun desktopNavigationSelectsNextAndPrevious() {
         val g1 = com.ehviewer.core.model.BaseGalleryInfo(gid = 1L)
         val g2 = com.ehviewer.core.model.BaseGalleryInfo(gid = 2L)

@@ -36,6 +36,7 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.isCtrlPressed
+import androidx.compose.ui.input.key.isShiftPressed
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.PointerIcon
@@ -185,6 +186,7 @@ fun main() {
                         val action = resolveKeyAction(
                             isKeyDown = event.type == androidx.compose.ui.input.key.KeyEventType.KeyDown,
                             isCtrlPressed = event.isCtrlPressed,
+                            isShiftPressed = event.isShiftPressed,
                             key = event.key,
                             hasSelection = false,
                             canCloseOnEscape = showShortcutsHelp ||
@@ -208,6 +210,12 @@ fun main() {
                             }
                             DesktopKeyAction.CycleWindow -> {
                                 cycleWindowId(windows.map { it.id }, window.id)?.let { targetId ->
+                                    windowFrames[targetId]?.toFront()
+                                }
+                                true
+                            }
+                            DesktopKeyAction.CycleWindowBackward -> {
+                                cycleWindowId(windows.map { it.id }, window.id, forward = false)?.let { targetId ->
                                     windowFrames[targetId]?.toFront()
                                 }
                                 true
