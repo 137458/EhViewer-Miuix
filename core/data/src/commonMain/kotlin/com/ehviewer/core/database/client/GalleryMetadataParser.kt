@@ -115,9 +115,23 @@ fun getCategory(type: String?): Int {
     return CATEGORY_UNKNOWN
 }
 
-// 与 EhCacheKeyFactory.getThumbKey 的前缀链逐字对齐
-private const val URL_PREFIX_THUMB_E = "https://ehgt.org/"
-private const val URL_PREFIX_THUMB_EX = "https://s.exhentai.org/"
+// 与 EhCacheKeyFactory 对齐
+const val URL_PREFIX_THUMB_E = "https://ehgt.org/"
+const val URL_PREFIX_THUMB_EX = "https://s.exhentai.org/"
 private const val URL_PREFIX_V1_THUMB_EX = URL_PREFIX_THUMB_EX + "t/"
 
 fun getThumbKey(url: String): String = url.removePrefix(URL_PREFIX_THUMB_E).removePrefix(URL_PREFIX_V1_THUMB_EX).removePrefix(URL_PREFIX_THUMB_EX)
+
+fun keyToThumbUrl(key: String, isExHentai: Boolean = false): String = if (key.startsWith("https:")) {
+    key
+} else {
+    val prefix = if (key.endsWith("webp")) {
+        if (isExHentai) URL_PREFIX_THUMB_EX else URL_PREFIX_THUMB_E
+    } else {
+        if (isExHentai) URL_PREFIX_V1_THUMB_EX else URL_PREFIX_THUMB_E
+    }
+    prefix + key
+}
+
+val GalleryInfo.thumbUrl: String?
+    get() = thumbKey?.let { keyToThumbUrl(it) }

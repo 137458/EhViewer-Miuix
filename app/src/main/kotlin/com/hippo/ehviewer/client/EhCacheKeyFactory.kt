@@ -15,6 +15,7 @@
  */
 package com.hippo.ehviewer.client
 
+import com.ehviewer.core.database.client.keyToThumbUrl
 import com.ehviewer.core.model.GalleryInfo
 
 // Normal Preview (v2): https://*.hath.network/c(m|1|2)/[timed token]/[gid]-[index].(jpg|webp)
@@ -23,14 +24,13 @@ import com.ehviewer.core.model.GalleryInfo
 // ExHentai v2 Cover: https://s.exhentai.org/**.webp
 // E-Hentai v2 Cover: https://ehgt.org/**.webp
 
-const val URL_PREFIX_THUMB_E = "https://ehgt.org/"
-const val URL_PREFIX_THUMB_EX = "https://s.exhentai.org/"
-private const val URL_PREFIX_V1_THUMB_EX = URL_PREFIX_THUMB_EX + "t/"
+const val URL_PREFIX_THUMB_E = com.ehviewer.core.database.client.URL_PREFIX_THUMB_E
+const val URL_PREFIX_THUMB_EX = com.ehviewer.core.database.client.URL_PREFIX_THUMB_EX
 private val V2PreviewKeyRegex = Regex("/c([m12]/)[^/]+/(\\d+-\\d+)")
 
 fun getImageKey(gid: Long, index: Int): String = "image:$gid:$index"
 
-fun getThumbKey(url: String): String = url.removePrefix(URL_PREFIX_THUMB_E).removePrefix(URL_PREFIX_V1_THUMB_EX).removePrefix(URL_PREFIX_THUMB_EX)
+fun getThumbKey(url: String): String = com.ehviewer.core.database.client.getThumbKey(url)
 
 fun getV2PreviewKey(url: String) = "$".plus(
     V2PreviewKeyRegex.find(url)?.let {
@@ -41,12 +41,4 @@ fun getV2PreviewKey(url: String) = "$".plus(
 val GalleryInfo.thumbUrl
     get() = keyToUrl(thumbKey!!)
 
-fun keyToUrl(key: String) = if (key.startsWith("https:")) {
-    key
-} else {
-    if (key.endsWith("webp")) {
-        if (EhUtils.isExHentai) URL_PREFIX_THUMB_EX else URL_PREFIX_THUMB_E
-    } else {
-        if (EhUtils.isExHentai) URL_PREFIX_V1_THUMB_EX else URL_PREFIX_THUMB_E
-    } + key
-}
+fun keyToUrl(key: String) = keyToThumbUrl(key, EhUtils.isExHentai)

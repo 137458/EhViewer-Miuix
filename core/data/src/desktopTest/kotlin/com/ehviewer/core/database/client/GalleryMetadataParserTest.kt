@@ -91,4 +91,23 @@ class GalleryMetadataParserTest {
         assertEquals("x.jpg", getThumbKey("https://s.exhentai.org/x.jpg"))
         assertEquals("plain", getThumbKey("plain"))
     }
+
+    @Test
+    fun keyToThumbUrlReconstructsCoverUrl() {
+        // e-hentai (jpg 走 ehgt.org)
+        assertEquals("https://ehgt.org/abc/def.jpg", keyToThumbUrl("abc/def.jpg", isExHentai = false))
+        // exhentai (jpg 走 s.exhentai.org/t/)
+        assertEquals("https://s.exhentai.org/t/abc/def.jpg", keyToThumbUrl("abc/def.jpg", isExHentai = true))
+        // webp 格式：e-hentai 走 ehgt.org，exhentai 走 s.exhentai.org（无 /t/）
+        assertEquals("https://ehgt.org/abc/def.webp", keyToThumbUrl("abc/def.webp", isExHentai = false))
+        assertEquals("https://s.exhentai.org/abc/def.webp", keyToThumbUrl("abc/def.webp", isExHentai = true))
+        // 已经是完整绝对 URL 保持不变
+        assertEquals("https://example.com/custom.png", keyToThumbUrl("https://example.com/custom.png"))
+
+        // GalleryInfo.thumbUrl 扩展属性
+        val info = BaseGalleryInfo(thumbKey = "test/cover.jpg")
+        assertEquals("https://ehgt.org/test/cover.jpg", info.thumbUrl)
+        val nullInfo = BaseGalleryInfo(thumbKey = null)
+        assertNull(nullInfo.thumbUrl)
+    }
 }

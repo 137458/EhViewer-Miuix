@@ -36,6 +36,7 @@ import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.ehviewer.core.database.client.thumbUrl
 import com.ehviewer.core.database.model.GalleryEntity
 import com.ehviewer.core.model.BaseGalleryInfo
 import com.ehviewer.core.network.EhCookieStore
@@ -292,6 +293,7 @@ private fun GalleryDetailPane(gallery: BaseGalleryInfo, onCopy: (value: String, 
         DetailRow(label = "Rating", value = gallery.rating.toString(), onCopy = onCopy)
         gallery.simpleLanguage?.let { DetailRow(label = "Language", value = it, onCopy = onCopy) }
         DetailRow(label = "Link", value = link, onCopy = onCopy)
+        gallery.thumbUrl?.let { DetailRow(label = "Cover", value = it, onCopy = onCopy) }
         gallery.simpleTags?.takeIf { it.isNotEmpty() }?.let { tags ->
             Text(
                 text = tags.joinToString(", "),
