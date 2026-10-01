@@ -205,6 +205,41 @@ class DesktopKeyActionTest {
     }
 
     @Test
+    fun numPadEnterWithSelectionResolvesToOpenSelected() {
+        val action = resolveKeyAction(
+            isKeyDown = true,
+            isCtrlPressed = false,
+            key = Key.NumPadEnter,
+            hasSelection = true,
+        )
+        assertEquals(DesktopKeyAction.OpenSelected, action)
+
+        val actionNoSel = resolveKeyAction(
+            isKeyDown = true,
+            isCtrlPressed = false,
+            key = Key.NumPadEnter,
+            hasSelection = false,
+        )
+        assertEquals(DesktopKeyAction.None, actionNoSel)
+
+        val actionKeyUp = resolveKeyAction(
+            isKeyDown = false,
+            isCtrlPressed = false,
+            key = Key.NumPadEnter,
+            hasSelection = true,
+        )
+        assertEquals(DesktopKeyAction.None, actionKeyUp)
+
+        val actionCtrl = resolveKeyAction(
+            isKeyDown = true,
+            isCtrlPressed = true,
+            key = Key.NumPadEnter,
+            hasSelection = true,
+        )
+        assertEquals(DesktopKeyAction.None, actionCtrl)
+    }
+
+    @Test
     fun desktopNavigationSelectsNextAndPrevious() {
         val g1 = com.ehviewer.core.model.BaseGalleryInfo(gid = 1L)
         val g2 = com.ehviewer.core.model.BaseGalleryInfo(gid = 2L)

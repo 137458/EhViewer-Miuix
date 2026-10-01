@@ -6,6 +6,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,9 +21,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.ContextMenuArea
-import androidx.compose.foundation.ContextMenuItem
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -43,6 +41,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.isCtrlPressed
@@ -117,6 +116,7 @@ fun LibraryScreen(
     var connectionError by remember { mutableStateOf<String?>(null) }
     var updateInfo by remember { mutableStateOf<UpdateInfo?>(null) }
     var searchQuery by remember { mutableStateOf("") }
+    var sortConfig by remember { mutableStateOf(DesktopSortConfig()) }
     val searchHistoryRaw by DesktopSettings.searchHistory.valueFlow()
         .collectAsState(DesktopSettings.searchHistory.value)
     val searchHistoryList = remember(searchHistoryRaw) {
@@ -394,6 +394,7 @@ fun LibraryScreen(
                             onValueChange = { searchQuery = it },
                             placeholder = { Text(stringResource(MR.strings.search_hint)) },
                             singleLine = true,
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                             keyboardActions = KeyboardActions(
                                 onSearch = {
                                     if (searchQuery.isNotBlank()) {
@@ -406,7 +407,18 @@ fun LibraryScreen(
                                     }
                                 },
                             ),
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier
+                                .weight(1f)
+                                .onPreviewKeyEvent { event ->
+                                    if (event.type == KeyEventType.KeyDown && (event.key == Key.Enter || event.key == Key.NumPadEnter)) {
+                                        if (searchQuery.isNotBlank()) {
+                                            recordSearch(searchQuery)
+                                        }
+                                        false
+                                    } else {
+                                        false
+                                    }
+                                },
                         )
                         Text(
                             text = sortConfig.label,
@@ -428,7 +440,7 @@ fun LibraryScreen(
                         )
                     }
                     val suggestions = remember(searchHistoryList, searchQuery) {
-                        DesktopSearchHistory.filterSuggestions(searchHistoryList, searchQuery, maxSuggestions = 3)
+                        DesktopSearchHistory.filterSuggestions(searchHistoryList, searchQuery, maxSuggestions = 5)
                     }
                     if (suggestions.isNotEmpty()) {
                         Row(
@@ -437,46 +449,64 @@ fun LibraryScreen(
                             horizontalArrangement = Arrangement.spacedBy(4.dp),
                         ) {
                             Text(
-                                text = if (searchQuery.isBlank()) "Recent:" else "History:",
+                                text = "${stringResource(MR.strings.history)}:",
                                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                 fontSize = 11.sp,
                             )
                             Row(
-                                modifier = Modifier.weight(1f),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .horizontalScroll(rememberScrollState()),
                                 horizontalArrangement = Arrangement.spacedBy(4.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
+                                val deleteLabel = stringResource(MR.strings.delete)
                                 suggestions.forEach { suggestion ->
-                                    Box(
-                                        modifier = Modifier
-                                            .clip(RoundedCornerShape(4.dp))
-                                            .background(MiuixTheme.colorScheme.surfaceVariant)
-                                            .pointerHoverIcon(PointerIcon.Hand)
-                                            .clickable {
-                                                searchQuery = suggestion
-                                                recordSearch(suggestion)
-                                            }
-                                            .padding(horizontal = 6.dp, vertical = 2.dp),
+                                    ContextMenuArea(
+                                        items = {
+                                            listOf(
+                                                ContextMenuItem(deleteLabel) {
+                                                    val updated = DesktopSearchHistory.removeQuery(searchHistoryList, suggestion)
+                                                    DesktopSettings.searchHistory.value = DesktopSearchHistory.encode(updated)
+                                                },
+                                            )
+                                        },
                                     ) {
-                                        Text(
-                                            text = suggestion,
-                                            fontSize = 11.sp,
-                                            color = MiuixTheme.colorScheme.primary,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis,
-                                        )
+                                        Box(
+                                            modifier = Modifier
+                                                .clip(RoundedCornerShape(4.dp))
+                                                .background(MiuixTheme.colorScheme.surfaceVariant)
+                                                .pointerHoverIcon(PointerIcon.Hand)
+                                                .clickable {
+                                                    searchQuery = suggestion
+                                                    recordSearch(suggestion)
+                                                }
+                                                .padding(horizontal = 6.dp, vertical = 2.dp),
+                                        ) {
+                                            Text(
+                                                text = suggestion,
+                                                fontSize = 11.sp,
+                                                color = MiuixTheme.colorScheme.primary,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis,
+                                            )
+                                        }
                                     }
                                 }
                             }
-                            Text(
-                                text = "✕",
-                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                fontSize = 11.sp,
+                            Box(
                                 modifier = Modifier
+                                    .clip(RoundedCornerShape(4.dp))
                                     .pointerHoverIcon(PointerIcon.Hand)
                                     .clickable { clearSearchHistory() }
                                     .padding(horizontal = 4.dp, vertical = 2.dp),
-                            )
+                            ) {
+                                Text(
+                                    text = "✕",
+                                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                    fontSize = 11.sp,
+                                )
+                            }
                         }
                     }
                     HorizontalDivider()
@@ -819,10 +849,10 @@ internal fun GalleryDetailPane(
         )
         gallery.thumbUrl?.let { DetailRow(label = stringResource(MR.strings.key_thumb), value = it, onCopy = onCopy) }
         DetailRow(
-            label = "Summary",
-            value = "Copy formatted summary",
+            label = stringResource(MR.strings.action_share),
+            value = stringResource(MR.strings.action_copy),
             onCopy = onCopy,
-            actionText = "Copy",
+            actionText = stringResource(MR.strings.action_copy),
             onAction = {
                 val summary = DesktopTagFormatter.generateShareSummary(
                     title = displayTitle,
@@ -833,18 +863,19 @@ internal fun GalleryDetailPane(
                     category = gallery.category,
                     tags = gallery.simpleTags?.toList(),
                 )
-                onCopy(summary, "gallery summary")
+                onCopy(summary, "")
             },
         )
         gallery.simpleTags?.takeIf { it.isNotEmpty() }?.let { tags ->
             val grouped = remember(tags) { DesktopTagFormatter.groupTags(tags.toList()) }
             if (grouped.isNotEmpty()) {
+                val tagLabel = stringResource(MR.strings.search_sft)
                 Column(
                     modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
                     verticalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
                     Text(
-                        text = "Tags (${DesktopTagFormatter.splitTags(tags.toList()).size})",
+                        text = "$tagLabel (${DesktopTagFormatter.splitTags(tags.toList()).size})",
                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                         fontSize = 12.sp,
                     )
@@ -876,7 +907,7 @@ internal fun GalleryDetailPane(
                                                 if (onSearchTag != null) {
                                                     onSearchTag(fullTag)
                                                 } else {
-                                                    onCopy(fullTag, "tag")
+                                                    onCopy(fullTag, tagLabel)
                                                 }
                                             }
                                             .padding(horizontal = 6.dp, vertical = 2.dp),
@@ -990,7 +1021,7 @@ private fun CoverPreviewDialog(
         ) {
             AsyncImage(
                 model = imageUrl,
-                contentDescription = "Cover Preview",
+                contentDescription = stringResource(MR.strings.key_thumb),
                 modifier = Modifier
                     .fillMaxSize()
                     .graphicsLayer {

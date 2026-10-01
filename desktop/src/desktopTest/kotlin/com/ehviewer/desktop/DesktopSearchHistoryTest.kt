@@ -69,6 +69,15 @@ class DesktopSearchHistoryTest {
     }
 
     @Test
+    fun removeQuery_andEncode_roundTrip() {
+        val initial = listOf("artist:alpha", "female:sole", "character:alice", "misc:color")
+        val removed = DesktopSearchHistory.removeQuery(initial, "FEMALE:sole")
+        val encoded = DesktopSearchHistory.encode(removed)
+        val decoded = DesktopSearchHistory.decode(encoded)
+        assertEquals(listOf("artist:alpha", "character:alice", "misc:color"), decoded)
+    }
+
+    @Test
     fun clearAll_returnsEmptyList() {
         val initial = listOf("a", "b", "c")
         assertEquals(emptyList(), DesktopSearchHistory.clearAll())
@@ -103,5 +112,14 @@ class DesktopSearchHistoryTest {
         val history = listOf("artist:alpha", "artist:beta", "artist:alphabet", "cosplay", "artist:al")
         val suggestions = DesktopSearchHistory.filterSuggestions(history, "ARTIST:al")
         assertEquals(listOf("artist:alpha", "artist:alphabet"), suggestions)
+    }
+
+    @Test
+    fun addQuery_withNewlines_sanitizesIntoSingleLineWithoutFragmentation() {
+        val initial = listOf("artist:alpha")
+        val result = DesktopSearchHistory.addQuery(initial, "tag:one\r\ntag:two\ntag:three")
+        assertEquals(listOf("tag:one tag:two tag:three", "artist:alpha"), result)
+        val roundTrip = DesktopSearchHistory.decode(DesktopSearchHistory.encode(result))
+        assertEquals(listOf("tag:one tag:two tag:three", "artist:alpha"), roundTrip)
     }
 }

@@ -31,7 +31,7 @@ fun resolveKeyAction(
         !isCtrlPressed && key == Key.Escape && hasSelection -> DesktopKeyAction.ClearSelection
         !isCtrlPressed && key == Key.DirectionDown -> DesktopKeyAction.SelectNext
         !isCtrlPressed && key == Key.DirectionUp -> DesktopKeyAction.SelectPrevious
-        !isCtrlPressed && key == Key.Enter && hasSelection -> DesktopKeyAction.OpenSelected
+        !isCtrlPressed && (key == Key.Enter || key == Key.NumPadEnter) && hasSelection -> DesktopKeyAction.OpenSelected
         else -> DesktopKeyAction.None
     }
 }

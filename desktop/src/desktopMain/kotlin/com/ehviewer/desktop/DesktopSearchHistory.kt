@@ -3,10 +3,12 @@ package com.ehviewer.desktop
 object DesktopSearchHistory {
     const val DEFAULT_MAX_ITEMS = 8
 
+    private fun sanitizeQuery(raw: String): String = raw.replace(Regex("[\\r\\n]+"), " ").trim()
+
     /**
      * 将搜索历史列表序列化为多行字符串存储
      */
-    fun encode(history: List<String>): String = history.map { it.trim() }
+    fun encode(history: List<String>): String = history.map { sanitizeQuery(it) }
         .filter { it.isNotEmpty() }
         .joinToString("\n")
 
@@ -16,7 +18,7 @@ object DesktopSearchHistory {
     fun decode(raw: String?): List<String> {
         if (raw.isNullOrBlank()) return emptyList()
         return raw.lineSequence()
-            .map { it.trim() }
+            .map { sanitizeQuery(it) }
             .filter { it.isNotEmpty() }
             .distinctBy { it.lowercase() }
             .toList()
@@ -24,7 +26,7 @@ object DesktopSearchHistory {
 
     /**
      * 记录新搜索词：
-     * - trim 前后空白，空白则不改变原列表
+     * - trim 前后空白并清洗内部换行，空白则不改变原列表
      * - 大小写不敏感去重：若列表中已有相同词（忽略大小写），剔除旧词并将新词置顶
      * - 最多保留 maxItems 条记录
      */
@@ -33,19 +35,19 @@ object DesktopSearchHistory {
         newQuery: String,
         maxItems: Int = DEFAULT_MAX_ITEMS,
     ): List<String> {
-        val trimmed = newQuery.trim()
-        if (trimmed.isEmpty()) return current
-        val filtered = current.filterNot { it.equals(trimmed, ignoreCase = true) }
-        return (listOf(trimmed) + filtered).take(maxItems)
+        val sanitized = sanitizeQuery(newQuery)
+        if (sanitized.isEmpty()) return current
+        val filtered = current.filterNot { it.equals(sanitized, ignoreCase = true) }
+        return (listOf(sanitized) + filtered).take(maxItems)
     }
 
     /**
      * 删除单条搜索历史（大小写不敏感匹配）
      */
     fun removeQuery(current: List<String>, target: String): List<String> {
-        val trimmed = target.trim()
-        if (trimmed.isEmpty()) return current
-        return current.filterNot { it.equals(trimmed, ignoreCase = true) }
+        val sanitized = sanitizeQuery(target)
+        if (sanitized.isEmpty()) return current
+        return current.filterNot { it.equals(sanitized, ignoreCase = true) }
     }
 
     /**
@@ -63,12 +65,12 @@ object DesktopSearchHistory {
         query: String,
         maxSuggestions: Int = 5,
     ): List<String> {
-        val trimmed = query.trim()
-        return if (trimmed.isEmpty()) {
+        val sanitized = sanitizeQuery(query)
+        return if (sanitized.isEmpty()) {
             history.take(maxSuggestions)
         } else {
             history.filter {
-                it.contains(trimmed, ignoreCase = true) && !it.equals(trimmed, ignoreCase = true)
+                it.contains(sanitized, ignoreCase = true) && !it.equals(sanitized, ignoreCase = true)
             }.take(maxSuggestions)
         }
     }
