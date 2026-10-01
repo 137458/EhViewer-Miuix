@@ -15,12 +15,9 @@
  */
 package com.hippo.ehviewer.client.parser
 
-import arrow.core.Either
-import arrow.core.getOrElse
+import com.ehviewer.core.database.client.GalleryTokenApiParser as CoreTokenParser
 import com.hippo.ehviewer.client.exception.EhException
 import com.hippo.ehviewer.client.parseAs
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
 
 object GalleryTokenApiParser {
     /**
@@ -33,15 +30,6 @@ object GalleryTokenApiParser {
      * ]
      * }
      */
-    fun parse(body: String): String = Either.catch {
-        body.parseAs<Result>().tokenList[0].token
-    }.getOrElse {
-        throw EhException(body.parseAs<VoteTagResult>().error)
-    }
-
-    @Serializable
-    data class Result(@SerialName("tokenlist") val tokenList: List<Item>)
-
-    @Serializable
-    data class Item(val gid: Long, val token: String)
+    fun parse(body: String): String = CoreTokenParser.parse(body)
+        ?: throw EhException(body.parseAs<VoteTagResult>().error)
 }
