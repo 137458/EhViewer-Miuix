@@ -637,6 +637,12 @@
     <string name="settings_close_minimize_to_tray">Minimize to system tray</string>
     <string name="settings_close_exit">Exit application</string>
     <string name="tray_open_app">Open EhViewer</string>
+    <string name="desktop_open_gallery_title">Open Gallery</string>
+    <string name="desktop_open_gallery_hint">Gallery URL or GID/Token (Ctrl+V to paste)</string>
+    <string name="desktop_open_gallery_empty_input">Please enter a gallery URL or GID/Token</string>
+    <string name="desktop_open_gallery_invalid_input">Invalid gallery URL or GID/Token</string>
+    <string name="desktop_open_gallery_action_open">Open</string>
+    <string name="desktop_action_cancel">Cancel</string>
     <string name="search_hint">Filter title, tag, uploader...</string>
     <string name="open_in_browser">Open in browser</string>
     <string name="copy_link">Copy link</string>

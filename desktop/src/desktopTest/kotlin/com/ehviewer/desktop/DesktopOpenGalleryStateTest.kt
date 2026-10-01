@@ -72,6 +72,23 @@ class DesktopOpenGalleryStateTest {
     }
 
     @Test
+    fun validate_reportsErrorKindsForI18n() {
+        // 空输入 → EmptyInput
+        assertEquals(DesktopOpenGalleryError.EmptyInput, DesktopOpenGalleryState.validate(null))
+        assertEquals(DesktopOpenGalleryError.EmptyInput, DesktopOpenGalleryState.validate(""))
+        assertEquals(DesktopOpenGalleryError.EmptyInput, DesktopOpenGalleryState.validate("   "))
+
+        // 非法输入 → InvalidInput
+        assertEquals(DesktopOpenGalleryError.InvalidInput, DesktopOpenGalleryState.validate("not a valid link"))
+        assertEquals(DesktopOpenGalleryError.InvalidInput, DesktopOpenGalleryState.validate("12345/nothex"))
+        assertEquals(DesktopOpenGalleryError.InvalidInput, DesktopOpenGalleryState.validate("https://google.com"))
+
+        // 合法输入 → null
+        assertNull(DesktopOpenGalleryState.validate("https://e-hentai.org/g/123456/abcdef1234/"))
+        assertNull(DesktopOpenGalleryState.validate("123456/abcdef1234"))
+    }
+
+    @Test
     fun createGalleryInfo_buildsExpectedModel() {
         val target = GalleryParsedTarget(gid = 778899L, token = "1234567890")
         val infoDefault = DesktopOpenGalleryState.createGalleryInfo(target)

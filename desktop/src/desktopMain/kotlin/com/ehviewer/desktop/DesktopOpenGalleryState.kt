@@ -8,6 +8,11 @@ data class GalleryParsedTarget(
     val token: String,
 )
 
+enum class DesktopOpenGalleryError {
+    EmptyInput,
+    InvalidInput,
+}
+
 object DesktopOpenGalleryState {
     private val GID_TOKEN_REGEX = Regex("""^(\d{1,14})[\s/,]+([a-fA-F0-9]{10})$""")
 
@@ -30,6 +35,15 @@ object DesktopOpenGalleryState {
         }
 
         return null
+    }
+
+    fun validate(rawInput: String?): DesktopOpenGalleryError? {
+        if (rawInput.isNullOrBlank()) return DesktopOpenGalleryError.EmptyInput
+        return if (parseInput(rawInput) == null) {
+            DesktopOpenGalleryError.InvalidInput
+        } else {
+            null
+        }
     }
 
     fun validateInput(rawInput: String?): String? {
