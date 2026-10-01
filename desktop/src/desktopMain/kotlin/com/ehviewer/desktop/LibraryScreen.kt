@@ -9,6 +9,7 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -688,6 +689,11 @@ fun LibraryScreen(
                                 showNotification("Failed to open browser")
                             }
                         },
+                        onSearchTag = { tag ->
+                            searchQuery = tag
+                            recordSearch(tag)
+                            showNotification("Filter: $tag")
+                        },
                     )
                 }
             }
@@ -730,6 +736,7 @@ internal fun GalleryDetailPane(
     onOpenUrl: ((url: String) -> Unit)? = null,
     isFavorite: Boolean = false,
     onToggleFavorite: (() -> Unit)? = null,
+    onSearchTag: ((tag: String) -> Unit)? = null,
 ) {
     Column(
         modifier = Modifier
@@ -792,12 +799,82 @@ internal fun GalleryDetailPane(
             onOpen = onOpenUrl?.let { opener -> { opener(link) } },
         )
         gallery.thumbUrl?.let { DetailRow(label = stringResource(MR.strings.key_thumb), value = it, onCopy = onCopy) }
+        DetailRow(
+            label = "Summary",
+            value = "Copy formatted summary",
+            onCopy = onCopy,
+            actionText = "Copy",
+            onAction = {
+                val summary = DesktopTagFormatter.generateShareSummary(
+                    title = displayTitle,
+                    gid = gallery.gid,
+                    token = gallery.token,
+                    rating = gallery.rating,
+                    pages = gallery.pages,
+                    category = gallery.category,
+                    tags = gallery.simpleTags?.toList(),
+                )
+                onCopy(summary, "gallery summary")
+            },
+        )
         gallery.simpleTags?.takeIf { it.isNotEmpty() }?.let { tags ->
-            Text(
-                text = formatGalleryTags(tags),
-                color = MiuixTheme.colorScheme.onBackground,
-                modifier = Modifier.fillMaxWidth(),
-            )
+            val grouped = remember(tags) { DesktopTagFormatter.groupTags(tags.toList()) }
+            if (grouped.isNotEmpty()) {
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    Text(
+                        text = "Tags (${DesktopTagFormatter.splitTags(tags.toList()).size})",
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        fontSize = 12.sp,
+                    )
+                    grouped.forEach { (namespace, tagList) ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.Top,
+                        ) {
+                            Text(
+                                text = "$namespace:",
+                                color = MiuixTheme.colorScheme.primary,
+                                fontSize = 12.sp,
+                                modifier = Modifier.width(60.dp).padding(top = 2.dp),
+                            )
+                            FlowRow(
+                                modifier = Modifier.weight(1f),
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                verticalArrangement = Arrangement.spacedBy(4.dp),
+                            ) {
+                                tagList.forEach { tagName ->
+                                    val fullTag = DesktopTagFormatter.formatTagQuery(namespace, tagName)
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(4.dp))
+                                            .background(MiuixTheme.colorScheme.surfaceVariant)
+                                            .pointerHoverIcon(PointerIcon.Hand)
+                                            .clickable {
+                                                if (onSearchTag != null) {
+                                                    onSearchTag(fullTag)
+                                                } else {
+                                                    onCopy(fullTag, "tag")
+                                                }
+                                            }
+                                            .padding(horizontal = 6.dp, vertical = 2.dp),
+                                    ) {
+                                        Text(
+                                            text = tagName,
+                                            fontSize = 11.sp,
+                                            color = MiuixTheme.colorScheme.onBackground,
+                                            maxLines = 1,
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }
