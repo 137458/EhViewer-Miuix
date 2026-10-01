@@ -7,6 +7,7 @@ enum class DesktopKeyAction {
     CloseWindow,
     Refresh,
     ClearSelection,
+    ShowShortcutsHelp,
 }
 
 fun resolveKeyAction(
@@ -22,6 +23,7 @@ fun resolveKeyAction(
         isCtrlPressed && (key == Key.Q || key == Key.W) -> DesktopKeyAction.CloseWindow
         isCtrlPressed && key == Key.R -> DesktopKeyAction.Refresh
         !isCtrlPressed && key == Key.F5 -> DesktopKeyAction.Refresh
+        !isCtrlPressed && key == Key.F1 -> DesktopKeyAction.ShowShortcutsHelp
         !isCtrlPressed && key == Key.Escape && canCloseOnEscape -> DesktopKeyAction.CloseWindow
         !isCtrlPressed && key == Key.Escape && hasSelection -> DesktopKeyAction.ClearSelection
         else -> DesktopKeyAction.None

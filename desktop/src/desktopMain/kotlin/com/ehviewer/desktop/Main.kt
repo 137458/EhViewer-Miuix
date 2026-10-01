@@ -6,9 +6,13 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -120,6 +124,7 @@ fun main() {
                     width = DesktopSettings.windowWidth.dp,
                     height = DesktopSettings.windowHeight.dp,
                 )
+                var showShortcutsHelp by remember { mutableStateOf(false) }
                 Window(
                     onCloseRequest = { handleClose(window) },
                     state = windowState,
@@ -130,15 +135,27 @@ fun main() {
                             isCtrlPressed = event.isCtrlPressed,
                             key = event.key,
                             hasSelection = false,
-                            canCloseOnEscape = window.kind !is DesktopWindowKind.Library,
+                            canCloseOnEscape = showShortcutsHelp || window.kind !is DesktopWindowKind.Library,
                         )
                         when (action) {
                             DesktopKeyAction.CloseWindow -> {
-                                handleClose(window)
+                                if (showShortcutsHelp) {
+                                    showShortcutsHelp = false
+                                    true
+                                } else {
+                                    handleClose(window)
+                                    true
+                                }
+                            }
+                            DesktopKeyAction.ShowShortcutsHelp -> {
+                                showShortcutsHelp = !showShortcutsHelp
                                 true
                             }
                             DesktopKeyAction.ClearSelection -> {
-                                if (window.kind is DesktopWindowKind.GalleryDetail) {
+                                if (showShortcutsHelp) {
+                                    showShortcutsHelp = false
+                                    true
+                                } else if (window.kind is DesktopWindowKind.GalleryDetail) {
                                     handleClose(window)
                                     true
                                 } else {
@@ -152,6 +169,7 @@ fun main() {
                     AppMenus(
                         onNewWindow = { windows.add(ShellWindow(nextWindowId++)) },
                         onOpenSettings = { windows.add(ShellWindow(nextWindowId++, isSettings = true)) },
+                        onShowShortcutsHelp = { showShortcutsHelp = true },
                         onExit = {
                             windows.clear()
                             exitApplication()
@@ -171,21 +189,26 @@ fun main() {
                         else -> isSystemInDarkTheme()
                     }
                     MiuixTheme(colors = if (darkTheme) miuixDarkColorScheme() else miuixLightColorScheme()) {
-                        when (val kind = window.kind) {
-                            DesktopWindowKind.Settings -> SettingsScreen()
-                            DesktopWindowKind.Library -> LibraryScreen(
-                                onOpenGalleryInNewWindow = { gallery ->
-                                    val (updated, _) = DesktopWindowManager.openOrFocusGallery(
-                                        windows = windows,
-                                        gallery = gallery,
-                                        nextIdProvider = { nextWindowId++ },
-                                    )
-                                    if (updated.size > windows.size) {
-                                        windows.add(updated.last())
-                                    }
-                                },
-                            )
-                            is DesktopWindowKind.GalleryDetail -> GalleryDetailWindowContent(kind.gallery)
+                        Box(modifier = Modifier.fillMaxSize()) {
+                            when (val kind = window.kind) {
+                                DesktopWindowKind.Settings -> SettingsScreen()
+                                DesktopWindowKind.Library -> LibraryScreen(
+                                    onOpenGalleryInNewWindow = { gallery ->
+                                        val (updated, _) = DesktopWindowManager.openOrFocusGallery(
+                                            windows = windows,
+                                            gallery = gallery,
+                                            nextIdProvider = { nextWindowId++ },
+                                        )
+                                        if (updated.size > windows.size) {
+                                            windows.add(updated.last())
+                                        }
+                                    },
+                                )
+                                is DesktopWindowKind.GalleryDetail -> GalleryDetailWindowContent(kind.gallery)
+                            }
+                            if (showShortcutsHelp) {
+                                ShortcutsHelpDialog(onDismiss = { showShortcutsHelp = false })
+                            }
                         }
                     }
                 }
@@ -209,13 +232,77 @@ private fun SaveWindowSize(windowState: androidx.compose.ui.window.WindowState) 
 }
 
 @Composable
-private fun FrameWindowScope.AppMenus(onNewWindow: () -> Unit, onOpenSettings: () -> Unit, onExit: () -> Unit) = MenuBar {
+private fun FrameWindowScope.AppMenus(
+    onNewWindow: () -> Unit,
+    onOpenSettings: () -> Unit,
+    onShowShortcutsHelp: () -> Unit,
+    onExit: () -> Unit,
+) = MenuBar {
     Menu(stringResource(MR.strings.menu_file)) {
         Item(stringResource(MR.strings.menu_new_window), onClick = onNewWindow)
         Item(stringResource(MR.strings.menu_exit), onClick = onExit)
     }
     Menu(stringResource(MR.strings.menu_settings)) {
         Item(stringResource(MR.strings.menu_settings), onClick = onOpenSettings)
+    }
+    Menu("Help") {
+        Item("Keyboard Shortcuts (F1)", onClick = onShowShortcutsHelp)
+    }
+}
+
+@Composable
+private fun ShortcutsHelpDialog(onDismiss: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.5f))
+            .clickable(onClick = onDismiss),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            modifier = Modifier
+                .width(420.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(MiuixTheme.colorScheme.surface)
+                .clickable(enabled = false) {}
+                .padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "Keyboard Shortcuts",
+                    color = MiuixTheme.colorScheme.primary,
+                )
+                Text(
+                    text = "✕",
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    modifier = Modifier
+                        .pointerHoverIcon(PointerIcon.Hand)
+                        .clickable(onClick = onDismiss),
+                )
+            }
+            HorizontalDivider()
+            DesktopShortcuts.defaultEntries().forEach { entry ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = entry.keyCombination,
+                        color = MiuixTheme.colorScheme.primary,
+                    )
+                    Text(
+                        text = entry.description,
+                        color = MiuixTheme.colorScheme.onSurface,
+                    )
+                }
+            }
+        }
     }
 }
 
