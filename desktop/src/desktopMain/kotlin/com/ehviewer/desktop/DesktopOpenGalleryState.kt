@@ -19,9 +19,11 @@ object DesktopOpenGalleryState {
     fun parseInput(rawInput: String?): GalleryParsedTarget? {
         if (rawInput.isNullOrBlank()) return null
         val trimmed = rawInput.trim()
+        // URL 形态先归一化小写：上游 pattern 仅识别小写 hex，归一化使大写 Token 链接与裸 GID/Token 行为一致
+        val lowered = trimmed.lowercase()
 
-        if (trimmed.contains("/g/")) {
-            val urlResult = GalleryDetailUrlParser.parse(trimmed, strict = false)
+        if (lowered.contains("/g/") || lowered.contains("/mpv/")) {
+            val urlResult = GalleryDetailUrlParser.parse(lowered, strict = false)
             if (urlResult != null) {
                 return GalleryParsedTarget(urlResult.gid, urlResult.token.lowercase())
             }

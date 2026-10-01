@@ -46,6 +46,30 @@ class DesktopOpenGalleryStateTest {
     }
 
     @Test
+    fun parseInput_uppercaseHexUrl_returnsNormalizedTarget() {
+        // 与裸 GID/Token 形式对齐：完整 URL 中大写 hex Token 亦应被接受并归一化为小写
+        val target = DesktopOpenGalleryState.parseInput("https://e-hentai.org/g/1234567/ABCDEF1234/")
+        assertNotNull(target)
+        assertEquals(1234567L, target.gid)
+        assertEquals("abcdef1234", target.token)
+    }
+
+    @Test
+    fun parseInput_mpvUrl_returnsTarget() {
+        // 上游 GalleryDetailUrlParser 严格模式支持 g|mpv，桌面入口不应拒绝 mpv 链接
+        val target = DesktopOpenGalleryState.parseInput("https://e-hentai.org/mpv/2468135790/deadbeef00/")
+        assertNotNull(target)
+        assertEquals(2468135790L, target.gid)
+        assertEquals("deadbeef00", target.token)
+    }
+
+    @Test
+    fun parseInput_nonGalleryUrlWithGidLikeSegment_returnsNull() {
+        // 画廊 URL 门控保留：非画廊站点链接即使携带 gid/token 形态片段也不误判
+        assertNull(DesktopOpenGalleryState.parseInput("https://forums.example.org/thread/9999999999/deadbeef00"))
+    }
+
+    @Test
     fun parseInput_invalidOrBlank_returnsNull() {
         assertNull(DesktopOpenGalleryState.parseInput(null))
         assertNull(DesktopOpenGalleryState.parseInput(""))
