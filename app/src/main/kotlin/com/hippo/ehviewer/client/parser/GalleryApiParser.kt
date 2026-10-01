@@ -15,50 +15,12 @@
  */
 package com.hippo.ehviewer.client.parser
 
+import com.ehviewer.core.database.client.GalleryMetadataParser
 import com.ehviewer.core.model.GalleryInfo
-import com.ehviewer.core.util.unescapeXml
-import com.hippo.ehviewer.client.EhUtils.getCategory
-import com.hippo.ehviewer.client.getThumbKey
-import com.hippo.ehviewer.client.parseAs
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
 
+// 解析实现已下沉共享层（core:data），此处保留调用点签名稳定
 object GalleryApiParser {
     fun parse(body: String, galleryInfoList: List<GalleryInfo>) {
-        body.parseAs<Result>().items.forEach { item ->
-            val gi = galleryInfoList.find { it.gid == item.gid } ?: return@forEach
-            gi.apply {
-                title = item.title.unescapeXml()
-                titleJpn = item.titleJpn.unescapeXml()
-                category = getCategory(item.category)
-                thumbKey = getThumbKey(item.thumb)
-                uploader = item.uploader?.unescapeXml()
-                posted = ParserUtils.formatDate(item.posted * 1000)
-                rating = item.rating
-                simpleTags = item.tags
-                pages = item.pages
-                generateSLang()
-            }
-        }
+        GalleryMetadataParser.parse(body, galleryInfoList)
     }
-
-    @Serializable
-    data class Result(@SerialName("gmetadata") val items: List<Item>)
-
-    @Serializable
-    data class Item(
-        val gid: Long,
-        val title: String,
-        @SerialName("title_jpn")
-        val titleJpn: String,
-        val category: String,
-        val thumb: String,
-        // Null in some old galleries
-        val uploader: String?,
-        val posted: Long,
-        @SerialName("filecount")
-        val pages: Int,
-        val rating: Float,
-        val tags: List<String>,
-    )
 }
