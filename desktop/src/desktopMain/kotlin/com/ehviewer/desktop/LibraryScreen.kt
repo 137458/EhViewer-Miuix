@@ -189,6 +189,46 @@ fun LibraryScreen(
         DesktopSettings.searchHistory.value = DesktopSearchHistory.encode(updated)
     }
 
+    fun remoteSearch(query: String) {
+        val url = DesktopSearchUrl.build(query) ?: return
+        coroutineScope.launch {
+            online = emptyList()
+            connectionStatus = DesktopConnectionStatus.Checking
+            runCatching {
+                withContext(Dispatchers.IO) { desktopGet(url) }
+            }.onSuccess { response ->
+                if (response.status in 200..299) {
+                    runCatching {
+                        val bytes = response.body.toByteArray()
+                        val buffer = ByteBuffer.allocateDirect(bytes.size).put(bytes).apply { flip() }
+                        parseGalleryList(buffer).galleryInfoList.toList()
+                    }.onSuccess { list ->
+                        online = list
+                        logcat("Library", LogPriority.INFO) { "ONLINE_SEARCH parsed=${list.size} q=$query" }
+                    }.onFailure { e ->
+                        logcat("Library", LogPriority.WARN) { "ONLINE_SEARCH parse failed: $e" }
+                    }
+                } else {
+                    logcat("Library", LogPriority.WARN) { "ONLINE_SEARCH status=${response.status}" }
+                }
+            }.onFailure { e ->
+                val cleaned = DesktopConnectionState.cleanErrorMessage(e.message ?: e::class.simpleName)
+                connectionStatus = DesktopConnectionStatus.Offline(cleaned)
+                logcat("Library", LogPriority.WARN) { "ONLINE_SEARCH failed: $cleaned" }
+            }
+        }
+    }
+
+    // 搜索提交：Online Tab 走远程搜索（结果替换在线列表），其余 Tab 维持本地过滤
+    fun submitSearch(query: String) {
+        val q = query.trim()
+        if (q.isEmpty()) return
+        recordSearch(q)
+        if (currentTab == LibraryTab.Online) {
+            remoteSearch(q)
+        }
+    }
+
     fun clearSearchHistory() {
         DesktopSettings.searchHistory.value = ""
         showNotification(historyClearedMessage)
@@ -350,7 +390,7 @@ fun LibraryScreen(
                             }
                             DesktopKeyAction.OpenSelected -> {
                                 if (searchQuery.isNotBlank()) {
-                                    recordSearch(searchQuery)
+                                    submitSearch(searchQuery)
                                 }
                                 selected?.let { gallery ->
                                     onOpenGalleryInNewWindow?.invoke(gallery)
@@ -528,12 +568,12 @@ fun LibraryScreen(
                             keyboardActions = KeyboardActions(
                                 onSearch = {
                                     if (searchQuery.isNotBlank()) {
-                                        recordSearch(searchQuery)
+                                        submitSearch(searchQuery)
                                     }
                                 },
                                 onDone = {
                                     if (searchQuery.isNotBlank()) {
-                                        recordSearch(searchQuery)
+                                        submitSearch(searchQuery)
                                     }
                                 },
                             ),
@@ -542,7 +582,7 @@ fun LibraryScreen(
                                 .onPreviewKeyEvent { event ->
                                     if (event.type == KeyEventType.KeyDown && (event.key == Key.Enter || event.key == Key.NumPadEnter)) {
                                         if (searchQuery.isNotBlank()) {
-                                            recordSearch(searchQuery)
+                                            submitSearch(searchQuery)
                                         }
                                         false
                                     } else {
