@@ -668,7 +668,7 @@ fun LibraryScreen(
                                                 .pointerHoverIcon(PointerIcon.Hand)
                                                 .clickable {
                                                     searchQuery = suggestion
-                                                    recordSearch(suggestion)
+                                                    submitSearch(suggestion)
                                                 }
                                                 .padding(horizontal = 6.dp, vertical = 2.dp),
                                         ) {
