@@ -8,6 +8,7 @@ sealed interface DesktopWindowKind {
     data object Library : DesktopWindowKind
     data object Settings : DesktopWindowKind
     data class GalleryDetail(val gallery: BaseGalleryInfo) : DesktopWindowKind
+    data class Reader(val gallery: BaseGalleryInfo) : DesktopWindowKind
 }
 
 data class ShellWindow(val id: Long, val kind: DesktopWindowKind = DesktopWindowKind.Library) {
@@ -74,6 +75,13 @@ object DesktopWindowManager {
                 ?: gallery.titleJpn?.takeIf { it.isNotBlank() }
                 ?: untitledLabel
             "$displayTitle - EhViewer"
+        }
+        is DesktopWindowKind.Reader -> {
+            val gallery = kind.gallery
+            val displayTitle = gallery.title?.takeIf { it.isNotBlank() }
+                ?: gallery.titleJpn?.takeIf { it.isNotBlank() }
+                ?: gallery.gid.toString()
+            "$displayTitle - Reading"
         }
     }
 

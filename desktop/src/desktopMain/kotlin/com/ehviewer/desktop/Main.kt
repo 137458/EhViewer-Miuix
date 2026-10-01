@@ -319,6 +319,10 @@ fun main() {
                                         }
                                     },
                                 )
+                                is DesktopWindowKind.Reader -> ReaderScreen(
+                                    gallery = kind.gallery,
+                                    onClose = { handleClose(window) },
+                                )
                             }
                             if (showShortcutsHelp) {
                                 ShortcutsHelpDialog(onDismiss = { showShortcutsHelp = false })

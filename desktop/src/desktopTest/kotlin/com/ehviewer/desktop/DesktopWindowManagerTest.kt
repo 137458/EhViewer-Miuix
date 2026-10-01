@@ -97,6 +97,21 @@ class DesktopWindowManagerTest {
     }
 
     @Test
+    fun testWindowTitleForReaderWindow() {
+        val gallery = BaseGalleryInfo(gid = 5001, token = "rtok", title = "Readable Manga")
+        assertEquals(
+            "Readable Manga - Reading",
+            DesktopWindowManager.windowTitle(DesktopWindowKind.Reader(gallery)),
+        )
+        // 无标题画廊阅读窗口回退 GID
+        val noTitle = BaseGalleryInfo(gid = 5002, token = "t2")
+        assertEquals(
+            "5002 - Reading",
+            DesktopWindowManager.windowTitle(DesktopWindowKind.Reader(noTitle)),
+        )
+    }
+
+    @Test
     fun testOpenGalleryCreatesNewWindowWhenNotPresent() {
         val initialWindows = listOf(ShellWindow(id = 0, kind = DesktopWindowKind.Library))
         val gallery = BaseGalleryInfo(gid = 2001, token = "tokenA", title = "Gallery A")

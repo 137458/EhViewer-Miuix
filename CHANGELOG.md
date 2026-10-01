@@ -4,6 +4,7 @@
 
 ### 新增
 
+- 桌面端阅读窗口骨架落地：新增 Reader 窗口类型（标题为「标题 - Reading」、无标题回退 GID）、多窗口路由与阅读界面骨架（页码状态/翻页控件/占位图片区），图片获取链路由后续迭代接入。
 - 图片页 HTML 解析（GalleryPageParser：图片地址/跳转键/原图地址/showkey）、MPV 多页查看器 pToken 解析与 Rust 解析桥辅助层（CBOR unmarshal）下沉至共享 core:data 层：app 模块改为委托保持 ParseException 语义不变，桌面端获得阅读链路的图片页解析地基（无网络环境以 HTML 样本测试覆盖全字段/转义/可选字段/失败分支）。
 - CI desktop 任务纳入 :desktop 模块桌面测试（快捷键/窗口管理/过滤器/元数据回填等 145+ 用例随门禁运行）。
 - 桌面端新增 Ctrl+Shift+Tab 反向窗口轮转：与 Ctrl+Tab 正向轮转对称（单窗口不响应），键盘模型新增 Shift 修饰维度并具备完整单元测试覆盖，快捷键指南同步补录。
