@@ -355,12 +355,14 @@ fun AnimatedVisibilityScope.UpdateScreen(navigator: DestinationsNavigator) = Scr
                             )
                             val ignored = Settings.ignoredUpdateVersion.value
                             if (ignored != null) {
+                                // 回调期文案组合期提升，规避 LocalContextGetResourceValueCall
+                                val restoreAlertText = stringResource(R.string.update_msg_restore_alert, ignored)
                                 Preference(
                                     title = stringResource(R.string.update_pref_ignore_title),
                                     summary = stringResource(R.string.update_pref_ignore_ignored, ignored) + stringResource(R.string.update_pref_restore_summary),
                                     onClick = {
                                         Settings.ignoredUpdateVersion.value = null
-                                        launchSnackbar(context.getString(R.string.update_msg_restore_alert, ignored))
+                                        launchSnackbar(restoreAlertText)
                                     },
                                 )
                             }
@@ -441,14 +443,17 @@ fun AnimatedVisibilityScope.UpdateScreen(navigator: DestinationsNavigator) = Scr
 
         // ── 保持现有效果的更新弹窗 ──
         if (showDialog && dialogRelease != null) {
+            val currentRelease = dialogRelease!!
+            // onIgnore 的 version 恒为当前弹窗 release.version，文案可组合期提升
+            val ignoreAlertText = stringResource(R.string.update_msg_ignore_alert, currentRelease.version)
             UpdateDialog(
                 show = showDialog,
-                release = dialogRelease!!,
+                release = currentRelease,
                 onDismiss = { showDialog = false },
                 onIgnore = { ver ->
                     Settings.ignoredUpdateVersion.value = ver
                     showDialog = false
-                    launchSnackbar(context.getString(R.string.update_msg_ignore_alert, ver))
+                    launchSnackbar(ignoreAlertText)
                 },
             )
         }

@@ -80,6 +80,8 @@ fun UpdateDialog(
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
+    // 回调期使用的文案须组合期提升：context.getString 不随配置变化更新（lint LocalContextGetResourceValueCall）
+    val sandboxDoneText = stringResource(R.string.update_msg_sandbox_done)
 
     val isDownloading = UpdateDownloadManager.isDownloading
     val downloadProgress = UpdateDownloadManager.downloadProgress
@@ -390,7 +392,7 @@ fun UpdateDialog(
                         Button(
                             onClick = {
                                 if (isSimulated) {
-                                    Toast.makeText(context, context.getString(R.string.update_msg_sandbox_done), Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, sandboxDoneText, Toast.LENGTH_SHORT).show()
                                 } else {
                                     coroutineScope.launch {
                                         with(context) { installPackage(downloadedFile) }
