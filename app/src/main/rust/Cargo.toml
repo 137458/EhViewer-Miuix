@@ -4,7 +4,8 @@ version = "0.0.0"
 edition = "2024"
 
 [lib]
-crate-type = ["staticlib"]
+# staticlib: Android 链接进 so；cdylib: 桌面 JVM 加载的动态库（ehviewer_rust.dll）
+crate-type = ["staticlib", "cdylib"]
 
 [features]
 jvm = ["dep:jni", "dep:jni_fn"]
@@ -27,7 +28,9 @@ anyhow = "1.0"
 image = { default-features = false, version = "0.25" }
 rxing = { version = "0.9", default-features = false, features = ["decoders", "qrcode", "no_character_set_support"] }
 ndk = { version = "0.9", optional = true }
-libwebp-sys2 = { git = "https://github.com/FooIbar/libwebp-sys2-rs.git", features = ["1_5", "demux", "extern-types"] }
+# 桌面无系统 webp 库：static vendor 编译；Android 侧 corrosion 仍链接 NDK 系统库，
+# sys2 静态库在 Android 上冗余但语义一致（统一 features 是 cargo 的合并规则）
+libwebp-sys2 = { git = "https://github.com/FooIbar/libwebp-sys2-rs.git", features = ["1_5", "demux", "extern-types", "static"] }
 
 [dev-dependencies]
 reqwest = "0.13"
