@@ -745,13 +745,13 @@ fun LibraryScreen(
                                     .padding(horizontal = 8.dp, vertical = 4.dp),
                             )
                             Text(
-                                text = "Page ${searchPage + 1}",
+                                text = stringResource(MR.strings.desktop_online_page_n, searchPage + 1),
                                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                 fontSize = 11.sp,
                             )
                             Box(modifier = Modifier.weight(1f))
                             Text(
-                                text = "Next ▶",
+                                text = stringResource(MR.strings.desktop_online_next),
                                 color = if (online.isNotEmpty()) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                 modifier = Modifier
                                     .pointerHoverIcon(PointerIcon.Hand)

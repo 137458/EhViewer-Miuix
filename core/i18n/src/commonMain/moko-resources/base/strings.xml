@@ -687,6 +687,8 @@
     <string name="desktop_reader_page_progress">Page %1$d / %2$d</string>
     <string name="desktop_reader_prev">◀ Prev</string>
     <string name="desktop_reader_next">Next ▶</string>
+    <string name="desktop_online_page_n">Page %1$d</string>
+    <string name="desktop_online_next">Next ▶</string>
     <string name="desktop_notification_opening_gallery">Opening gallery</string>
     <string name="desktop_gallery_metadata_loading">Gallery metadata is loading, please retry later</string>
     <string name="search_hint">Filter title, tag, uploader...</string>

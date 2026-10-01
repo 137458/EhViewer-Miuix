@@ -761,6 +761,8 @@
     <string name="desktop_reader_page_progress">第 %1$d / %2$d 页</string>
     <string name="desktop_reader_prev">◀ 上一页</string>
     <string name="desktop_reader_next">下一页 ▶</string>
+    <string name="desktop_online_page_n">第 %1$d 页</string>
+    <string name="desktop_online_next">下一页 ▶</string>
     <string name="desktop_notification_opening_gallery">正在打开画廊</string>
     <string name="desktop_gallery_metadata_loading">画廊元数据加载中，请稍后重试</string>
     <string name="search_hint">过滤标题、标签、上传者...</string>
