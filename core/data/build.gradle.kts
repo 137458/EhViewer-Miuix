@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.ehviewer.multiplatform.library)
+    alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
     alias(libs.plugins.room)
 }
@@ -14,6 +15,7 @@ kotlin {
                 api(libs.androidx.datastore)
                 api(libs.androidx.room.paging)
                 implementation(libs.ktor.client.core)
+                implementation(libs.serialization.json)
             }
         }
         androidMain {
