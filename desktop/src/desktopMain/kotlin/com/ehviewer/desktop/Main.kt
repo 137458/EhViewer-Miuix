@@ -49,6 +49,7 @@ import androidx.compose.ui.window.Tray
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
+import com.ehviewer.core.database.model.HistoryInfo
 import com.ehviewer.core.database.model.LocalFavoriteInfo
 import com.ehviewer.core.i18n.MR
 import com.ehviewer.core.util.LogPriority
@@ -359,6 +360,13 @@ private fun GalleryDetailWindowContent(gallery: com.ehviewer.core.model.BaseGall
     LaunchedEffect(gallery.gid) {
         isFavorite = withContext(Dispatchers.IO) {
             DesktopDatabase.eh.localFavoritesDao().contains(gallery.gid)
+        }
+        // 记录阅读历史：HISTORY 表经 GID 与 GALLERIES 联表，须先确保画廊行存在（HISTORY JOIN GALLERIES 语义）
+        withContext(Dispatchers.IO) {
+            runCatching {
+                DesktopDatabase.eh.galleryDao().upsert(DesktopFavoritesState.toGalleryEntity(gallery))
+                DesktopDatabase.eh.historyDao().upsert(HistoryInfo(gallery.gid))
+            }
         }
     }
 
