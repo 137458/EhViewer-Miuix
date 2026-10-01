@@ -152,4 +152,30 @@ class DesktopWindowManagerTest {
         val nonExistent = DesktopWindowManager.closeWindow(closed, id = 999)
         assertEquals(1, nonExistent.size)
     }
+
+    @Test
+    fun updateGalleryWindowReplacesGalleryPreservingIdentity() {
+        val placeholder = BaseGalleryInfo(gid = 4001, token = "tok", title = "Gallery 4001")
+        val hydrated = BaseGalleryInfo(gid = 4001, token = "tok", title = "Real Title", thumbKey = "a/b.jpg")
+        val library = ShellWindow(id = 0, kind = DesktopWindowKind.Library)
+        val detail = ShellWindow(id = 3, kind = DesktopWindowKind.GalleryDetail(placeholder))
+        val list = listOf(library, detail)
+
+        val updated = DesktopWindowManager.updateGalleryWindow(list, windowId = 3, gallery = hydrated)
+
+        // 同 id 替换画廊信息，id 与位置不变（窗口身份稳定）
+        assertEquals(2, updated.size)
+        assertEquals(0L, updated[0].id)
+        assertEquals(3L, updated[1].id)
+        val kind = updated[1].kind as DesktopWindowKind.GalleryDetail
+        assertEquals("Real Title", kind.gallery.title)
+        assertEquals("a/b.jpg", kind.gallery.thumbKey)
+        // 库窗口不受影响
+        assertEquals(DesktopWindowKind.Library, updated[0].kind)
+
+        // 窗口 id 不存在时原样返回
+        assertEquals(list, DesktopWindowManager.updateGalleryWindow(list, windowId = 99, gallery = hydrated))
+        // 替换非 GalleryDetail 窗口（如 Library）不生效
+        assertEquals(list, DesktopWindowManager.updateGalleryWindow(list, windowId = 0, gallery = hydrated))
+    }
 }

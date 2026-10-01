@@ -95,5 +95,18 @@ object DesktopWindowManager {
         return (windows + newWindow) to newId
     }
 
+    // hydrate 等场景的窗口内画廊信息回写：同 id 替换 GalleryDetail 保留窗口身份，非 GalleryDetail 或 id 不存在时原样返回
+    fun updateGalleryWindow(
+        windows: List<ShellWindow>,
+        windowId: Long,
+        gallery: BaseGalleryInfo,
+    ): List<ShellWindow> = windows.map { window ->
+        if (window.id == windowId && window.kind is DesktopWindowKind.GalleryDetail) {
+            window.copy(kind = DesktopWindowKind.GalleryDetail(gallery))
+        } else {
+            window
+        }
+    }
+
     fun closeWindow(windows: List<ShellWindow>, id: Long): List<ShellWindow> = windows.filterNot { it.id == id }
 }

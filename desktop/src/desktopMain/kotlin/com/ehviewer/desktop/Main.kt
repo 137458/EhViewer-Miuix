@@ -268,7 +268,20 @@ fun main() {
                                         }
                                     },
                                 )
-                                is DesktopWindowKind.GalleryDetail -> GalleryDetailWindowContent(kind.gallery)
+                                is DesktopWindowKind.GalleryDetail -> GalleryDetailWindowContent(
+                                    gallery = kind.gallery,
+                                    onGalleryUpdated = { updated ->
+                                        val idx = windows.indexOfFirst { it.id == window.id }
+                                        if (idx >= 0) {
+                                            val replaced = DesktopWindowManager.updateGalleryWindow(
+                                                listOf(windows[idx]),
+                                                window.id,
+                                                updated,
+                                            )
+                                            windows[idx] = replaced.first()
+                                        }
+                                    },
+                                )
                             }
                             if (showShortcutsHelp) {
                                 ShortcutsHelpDialog(onDismiss = { showShortcutsHelp = false })
@@ -345,7 +358,10 @@ private fun ShortcutsHelpDialog(onDismiss: () -> Unit) {
 }
 
 @Composable
-private fun GalleryDetailWindowContent(gallery: com.ehviewer.core.model.BaseGalleryInfo) {
+private fun GalleryDetailWindowContent(
+    gallery: com.ehviewer.core.model.BaseGalleryInfo,
+    onGalleryUpdated: ((com.ehviewer.core.model.BaseGalleryInfo) -> Unit)? = null,
+) {
     var notifications by remember { mutableStateOf<List<DesktopNotification>>(emptyList()) }
     val nextNotificationId = remember { AtomicLong(1L) }
     val clipboard = LocalClipboardManager.current
@@ -373,6 +389,8 @@ private fun GalleryDetailWindowContent(gallery: com.ehviewer.core.model.BaseGall
             }
             if (fetched != null) {
                 currentGallery = fetched
+                // 回写 windows 列表：原生窗口标题与多窗口防重判定随真实元数据更新
+                onGalleryUpdated?.invoke(fetched)
                 logcat("DetailWindow", LogPriority.INFO) { "Hydrated gallery ${fetched.gid}" }
             }
         }
