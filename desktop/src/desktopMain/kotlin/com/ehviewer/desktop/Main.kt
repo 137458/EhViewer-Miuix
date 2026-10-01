@@ -79,12 +79,34 @@ private object EhViewerTrayPainter : Painter() {
 fun main() {
     DesktopImageLoader.init()
     application {
-        val windows = remember { mutableStateListOf(ShellWindow(0)) }
-        val windowFrames = remember { mutableStateMapOf<Long, AwtWindow>() }
         var nextWindowId by remember { mutableStateOf(1L) }
+        val windows = remember {
+            mutableStateListOf(ShellWindow(0)).apply {
+                // 会话恢复：上次退出时打开的画廊窗口按原顺序重开（占位信息由 hydrator 回填）
+                addAll(
+                    DesktopWindowManager.restoreWindows(
+                        DesktopWindowManager.decodeSession(DesktopSettings.sessionGalleries.value),
+                    ) { nextWindowId++ },
+                )
+            }
+        }
+        val windowFrames = remember { mutableStateMapOf<Long, AwtWindow>() }
         val themeMode by DesktopSettings.themeMode.valueFlow().collectAsState(DesktopSettings.themeMode.value)
         val closeToTray by DesktopSettings.closeToTray.valueFlow().collectAsState(DesktopSettings.closeToTray.value)
         val isTraySupported = remember { java.awt.SystemTray.isSupported() }
+
+        // 会话保存：窗口增删变化即持久化；列表为空（退出时 clear / 末窗关闭）跳过以保留最后会话
+        LaunchedEffect(Unit) {
+            snapshotFlow { windows.toList() }
+                .drop(1)
+                .collect { list ->
+                    if (list.isNotEmpty()) {
+                        DesktopSettings.sessionGalleries.value = DesktopWindowManager.encodeSession(
+                            DesktopWindowManager.sessionSnapshot(list),
+                        )
+                    }
+                }
+        }
 
         val handleClose: (ShellWindow) -> Unit = { targetWindow ->
             val behavior = if (closeToTray) CloseBehavior.MINIMIZE_TO_TRAY else CloseBehavior.EXIT
