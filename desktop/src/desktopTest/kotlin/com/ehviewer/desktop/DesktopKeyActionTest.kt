@@ -58,6 +58,7 @@ class DesktopKeyActionTest {
         assertTrue(combinations.any { it.contains("F5") || it.contains("Ctrl + R") })
         assertTrue(combinations.any { it.contains("Ctrl + O") })
         assertTrue(combinations.any { it.contains("Ctrl + Tab") })
+        assertTrue(combinations.any { it.contains("Ctrl + Shift + Tab") })
         assertTrue(combinations.any { it.contains("Escape") })
         assertTrue(combinations.any { it.contains("F1") })
 

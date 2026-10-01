@@ -708,6 +708,7 @@
     <string name="shortcut_refresh_galleries">刷新画廊</string>
     <string name="shortcut_open_gallery_by_link">按链接或 GID/Token 打开画廊</string>
     <string name="shortcut_cycle_window">轮转窗口焦点</string>
+    <string name="shortcut_cycle_window_reverse">反向轮转窗口焦点</string>
     <string name="shortcut_escape">取消选择 / 清空搜索 / 关闭窗口</string>
     <string name="shortcut_navigate_list">在画廊列表中移动</string>
     <string name="shortcut_jump_first_last">跳转首个 / 末个画廊</string>

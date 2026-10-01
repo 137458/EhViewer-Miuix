@@ -634,6 +634,7 @@
     <string name="shortcut_refresh_galleries">Refresh galleries</string>
     <string name="shortcut_open_gallery_by_link">Open gallery by URL or GID/Token</string>
     <string name="shortcut_cycle_window">Cycle window focus</string>
+    <string name="shortcut_cycle_window_reverse">Cycle window focus (reverse)</string>
     <string name="shortcut_escape">Clear selection / Cancel search / Close window</string>
     <string name="shortcut_navigate_list">Navigate gallery list</string>
     <string name="shortcut_jump_first_last">Jump to first / last gallery</string>
