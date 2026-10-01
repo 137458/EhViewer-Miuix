@@ -623,9 +623,11 @@ fun AnimatedVisibilityScope.DownloadsScreen(navigator: DestinationsNavigator) = 
         val height by collectListThumbSizeAsState()
         val marginH = dimensionResource(id = com.hippo.ehviewer.R.dimen.gallery_list_margin_h)
         val realPadding = contentPadding + PaddingValues(marginH, dimensionResource(id = com.hippo.ehviewer.R.dimen.gallery_list_margin_v))
+        // 原地旋转时 paddingValues/density 会变化，连接体内惰性读取最新值（remember 无 key 不重建）
+        val currentContentPadding by rememberUpdatedState(contentPadding)
+        val currentDensity by rememberUpdatedState(density)
         val searchBarConnection = remember {
             val slop = ViewConfiguration.get(contextOf<Context>()).scaledTouchSlop
-            val topPaddingPx = with(density) { contentPadding.calculateTopPadding().roundToPx() }
             object : NestedScrollConnection {
                 override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
                     val dy = -consumed.y
@@ -634,6 +636,7 @@ fun AnimatedVisibilityScope.DownloadsScreen(navigator: DestinationsNavigator) = 
                     } else if (dy <= -slop / 2) {
                         fabHidden = false
                     }
+                    val topPaddingPx = with(currentDensity) { currentContentPadding.calculateTopPadding().roundToPx() }
                     searchBarOffsetY = (searchBarOffsetY - dy).roundToInt().coerceIn(-topPaddingPx, 0)
                     return Offset.Zero // We never consume it
                 }

@@ -16,6 +16,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -128,11 +129,14 @@ fun AnimatedVisibilityScope.HistoryScreen(navigator: DestinationsNavigator) = Sc
             }
         },
     ) { paddingValues ->
+        // 原地旋转时 paddingValues/density 会变化，连接体内惰性读取最新值（remember 无 key 不重建）
+        val currentPaddingValues by rememberUpdatedState(paddingValues)
+        val currentDensity by rememberUpdatedState(density)
         val searchBarConnection = remember {
-            val topPaddingPx = with(density) { paddingValues.calculateTopPadding().roundToPx() }
             object : NestedScrollConnection {
                 override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
                     val dy = -consumed.y
+                    val topPaddingPx = with(currentDensity) { currentPaddingValues.calculateTopPadding().roundToPx() }
                     searchBarOffsetY = (searchBarOffsetY - dy).roundToInt().coerceIn(-topPaddingPx, 0)
                     return Offset.Zero // We never consume it
                 }
