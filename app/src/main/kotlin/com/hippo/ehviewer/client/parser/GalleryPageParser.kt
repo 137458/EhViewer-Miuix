@@ -15,36 +15,13 @@
  */
 package com.hippo.ehviewer.client.parser
 
-import com.ehviewer.core.util.unescapeXml
+import com.ehviewer.core.database.client.GalleryPageParser as CoreGalleryPageParser
 import com.hippo.ehviewer.client.exception.ParseException
 
 object GalleryPageParser {
-    private val PATTERN_IMAGE_URL = Regex("<img[^>]*src=\"([^\"]+)\" style")
-    private val PATTERN_SKIP_HATH_KEY = Regex("onclick=\"return nl\\('([^)]+)'\\)")
-    private val PATTERN_ORIGIN_IMAGE_URL = Regex("<a href=\"([^\"]+/fullimg/[^\"]+)\">")
-
-    // TODO Not sure about the size of show keys
-    private val PATTERN_SHOW_KEY = Regex("var showkey=\"([0-9a-z]+)\";")
-
-    fun parse(body: String): Result {
-        val imageUrl = PATTERN_IMAGE_URL.find(body)?.run {
-            groupValues[1].unescapeXml()
-        }
-        val skipHathKey = PATTERN_SKIP_HATH_KEY.find(body)?.run {
-            groupValues[1]
-        }
-        val originImageUrl = PATTERN_ORIGIN_IMAGE_URL.find(body)?.run {
-            groupValues[1].unescapeXml()
-        }
-        val showKey = PATTERN_SHOW_KEY.find(body)?.run {
-            groupValues[1]
-        }
-        return if (!imageUrl.isNullOrEmpty()) {
-            Result(imageUrl, skipHathKey, originImageUrl, showKey)
-        } else {
-            throw ParseException("Parse image url error")
-        }
-    }
+    fun parse(body: String): Result = CoreGalleryPageParser.parse(body)?.let {
+        Result(it.imageUrl, it.skipHathKey, it.originImageUrl, it.showKey)
+    } ?: throw ParseException("Parse image url error")
 
     class Result(
         val imageUrl: String,
