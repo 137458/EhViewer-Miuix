@@ -24,4 +24,7 @@ object DesktopSettings : DataStorePreferences("desktop") {
 
     // 上次会话打开的画廊窗口快照（JSON 数组，启动时恢复；窗口列表清空视为退出不覆盖）
     val sessionGalleries = stringPref("session_galleries", "")
+
+    // false = 启动不恢复上次会话窗口，true = 恢复
+    val restoreSession = boolPref("restore_session", true)
 }

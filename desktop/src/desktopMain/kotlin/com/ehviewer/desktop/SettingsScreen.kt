@@ -50,6 +50,15 @@ fun SettingsScreen() {
             )
         }
         item {
+            val restoreSession by DesktopSettings.restoreSession.valueFlow()
+                .collectAsState(DesktopSettings.restoreSession.value)
+            BasicComponent(
+                title = stringResource(MR.strings.settings_restore_session),
+                summary = if (restoreSession) "✓" else "—",
+                onClick = { DesktopSettings.restoreSession.value = !restoreSession },
+            )
+        }
+        item {
             OutlinedTextField(
                 value = proxyText,
                 onValueChange = {

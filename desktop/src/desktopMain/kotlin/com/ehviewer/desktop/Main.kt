@@ -82,12 +82,14 @@ fun main() {
         var nextWindowId by remember { mutableStateOf(1L) }
         val windows = remember {
             mutableStateListOf(ShellWindow(0)).apply {
-                // 会话恢复：上次退出时打开的画廊窗口按原顺序重开（占位信息由 hydrator 回填）
-                addAll(
-                    DesktopWindowManager.restoreWindows(
-                        DesktopWindowManager.decodeSession(DesktopSettings.sessionGalleries.value),
-                    ) { nextWindowId++ },
-                )
+                // 会话恢复（可在设置中关闭）：上次退出时打开的画廊窗口按原顺序重开（占位信息由 hydrator 回填）
+                if (DesktopSettings.restoreSession.value) {
+                    addAll(
+                        DesktopWindowManager.restoreWindows(
+                            DesktopWindowManager.decodeSession(DesktopSettings.sessionGalleries.value),
+                        ) { nextWindowId++ },
+                    )
+                }
             }
         }
         val windowFrames = remember { mutableStateMapOf<Long, AwtWindow>() }
