@@ -249,10 +249,10 @@ fun ReaderScreen(
                 url != null -> ContextMenuArea(
                     items = {
                         listOf(
-                            ContextMenuItem("Copy image URL") {
+                            ContextMenuItem(stringResource(MR.strings.copy_link)) {
                                 clipboard.setText(AnnotatedString(url))
                             },
-                            ContextMenuItem("Open image in browser") {
+                            ContextMenuItem(stringResource(MR.strings.open_in_browser)) {
                                 DesktopBrowser.openUrl(url)
                             },
                         )
