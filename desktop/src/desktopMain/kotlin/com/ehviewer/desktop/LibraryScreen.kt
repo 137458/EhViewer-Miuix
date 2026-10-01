@@ -120,6 +120,10 @@ fun LibraryScreen(
     val history by DesktopDatabase.eh.historyDao()
         .listGalleriesFlow()
         .collectAsState(initial = emptyList())
+    val historyTimes by DesktopDatabase.eh.historyDao()
+        .listTimesFlow()
+        .collectAsState(initial = emptyList())
+    val historyTimeByGid = remember(historyTimes) { historyTimes.associate { it.gid to it.time } }
     val favorites by DesktopDatabase.eh.localFavoritesDao()
         .listGalleriesFlow()
         .collectAsState(initial = emptyList())
@@ -778,6 +782,17 @@ fun LibraryScreen(
                                                     modifier = Modifier.weight(1f),
                                                     color = MiuixTheme.colorScheme.onBackground,
                                                 )
+                                                if (currentTab == LibraryTab.History) {
+                                                    historyTimeByGid[gallery.gid]?.let { time ->
+                                                        Text(
+                                                            text = java.time.Instant.ofEpochMilli(time)
+                                                                .atZone(java.time.ZoneId.systemDefault())
+                                                                .format(java.time.format.DateTimeFormatter.ofPattern("MM-dd HH:mm")),
+                                                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                                            fontSize = 11.sp,
+                                                        )
+                                                    }
+                                                }
                                                 Text(
                                                     text = getCategoryDisplayName(gallery.category),
                                                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,

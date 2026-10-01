@@ -8,6 +8,7 @@ import androidx.room.Query
 import androidx.room.Upsert
 import com.ehviewer.core.database.model.GalleryEntity
 import com.ehviewer.core.database.model.HistoryInfo
+import com.ehviewer.core.database.model.HistoryTime
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -22,6 +23,10 @@ interface HistoryDao {
     // 桌面响应式历史画廊流（增删改自动推送，替代手动刷新）
     @Query("SELECT GALLERIES.* FROM HISTORY JOIN GALLERIES USING(GID) ORDER BY TIME DESC")
     fun listGalleriesFlow(): Flow<List<GalleryEntity>>
+
+    // 桌面历史浏览时间流（GID→最后浏览 epoch millis），供列表展示
+    @Query("SELECT HISTORY.GID AS gid, HISTORY.TIME AS time FROM HISTORY ORDER BY TIME DESC")
+    fun listTimesFlow(): Flow<List<HistoryTime>>
 
     @Query("SELECT GALLERIES.* FROM HISTORY JOIN GALLERIES USING(GID) ORDER BY TIME DESC")
     fun joinListLazy(): PagingSource<Int, GalleryEntity>

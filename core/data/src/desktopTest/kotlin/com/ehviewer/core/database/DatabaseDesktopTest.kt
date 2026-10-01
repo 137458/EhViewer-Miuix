@@ -140,4 +140,50 @@ class DatabaseDesktopTest {
             runCatching { File(path).delete() }
         }
     }
+
+    @Test
+    fun historyTimesFlowProjectsGidAndTime() {
+        val path = (FileSystem.SYSTEM_TEMPORARY_DIRECTORY / "ehviewer_htime_${System.currentTimeMillis()}.db").toString()
+        val db = roomDb<EhDatabase>(path)
+        try {
+            runBlocking {
+                withTimeout(10_000) {
+                    val gid = 66666L
+                    val time = 1_700_000_000_000L
+                    db.galleryDao().upsert(
+                        GalleryEntity(
+                            gid = gid,
+                            token = "htoken1",
+                            title = "Timed",
+                            titleJpn = null,
+                            thumbKey = null,
+                            category = 2,
+                            posted = null,
+                            uploader = null,
+                            rating = 0.0f,
+                            simpleTags = null,
+                            pages = 1,
+                            simpleLanguage = null,
+                            favoriteSlot = -1,
+                        ),
+                    )
+                    db.historyDao().upsert(HistoryInfo(gid, time))
+
+                    val times = db.historyDao().listTimesFlow().first()
+                    assertEquals(1, times.size)
+                    assertEquals(gid, times[0].gid)
+                    assertEquals(time, times[0].time)
+
+                    // 再次浏览更新时间戳并置顶
+                    val newer = time + 60_000L
+                    db.historyDao().upsert(HistoryInfo(gid, newer))
+                    val updated = db.historyDao().listTimesFlow().first()
+                    assertEquals(newer, updated.single { it.gid == gid }.time)
+                }
+            }
+        } finally {
+            runCatching { db.close() }
+            runCatching { File(path).delete() }
+        }
+    }
 }
