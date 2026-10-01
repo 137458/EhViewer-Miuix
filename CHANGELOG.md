@@ -16,6 +16,7 @@
 
 ### 修复
 
+- 桌面端在线画廊列表的 Rust 原生 HTML 解析移出主线程：大页面解析期间不再冻结 UI（解析结果仍回主线程渲染）。
 - 桌面端阅读历史仅在画廊元数据就绪后记录：开窗即写库会在快捷打开/会话恢复场景把占位假数据写入 GALLERIES 与 HISTORY 表，现对齐 Android 侧"详情加载成功才记录"语义，元数据不可得（离线）时不落库。
 - 修复内嵌 WebView 渲染进程崩溃/内存不足时宿主应用被连带杀死的问题：渲染进程丢失时移除并销毁 WebView 实例（含 Cloudflare 登录、MyTags、UC 配置等内嵌浏览器场景）。
 - 修复 Android Lint 门禁报错（LocalContextGetResourceValueCall）：更新对话框与更新页三处回调期文案改在组合期提升（stringResource），配置变化时不再返回陈旧资源值。
