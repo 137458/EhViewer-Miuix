@@ -47,7 +47,6 @@ import top.yukonga.miuix.kmp.theme.darkColorScheme as miuixDarkColorScheme
 import top.yukonga.miuix.kmp.theme.lightColorScheme as miuixLightColorScheme
 
 // 桌面壳骨架：Miuix 主题跟随系统深浅色 + 平台菜单栏 + Ctrl+Q + 多窗口 + 尺寸记忆 + 系统托盘与防误触
-private data class ShellWindow(val id: Long, val isSettings: Boolean = false)
 
 private object EhViewerTrayPainter : Painter() {
     override val intrinsicSize: Size = Size(32f, 32f)
@@ -113,7 +112,7 @@ fun main() = application {
             Window(
                 onCloseRequest = { handleClose(window) },
                 state = windowState,
-                title = if (window.isSettings) "EhViewer Settings" else "EhViewer",
+                title = DesktopWindowManager.windowTitle(window.kind),
                 onKeyEvent = { event ->
                     val action = resolveKeyAction(
                         isKeyDown = event.type == androidx.compose.ui.input.key.KeyEventType.KeyDown,
@@ -125,6 +124,14 @@ fun main() = application {
                         DesktopKeyAction.CloseWindow -> {
                             handleClose(window)
                             true
+                        }
+                        DesktopKeyAction.ClearSelection -> {
+                            if (window.kind is DesktopWindowKind.GalleryDetail) {
+                                handleClose(window)
+                                true
+                            } else {
+                                false
+                            }
                         }
                         else -> false
                     }
@@ -138,7 +145,7 @@ fun main() = application {
                         exitApplication()
                     },
                 )
-                if (!window.isSettings) {
+                if (window.kind == DesktopWindowKind.Library) {
                     SaveWindowSize(windowState)
                     LaunchedEffect(Unit) {
                         logcat("Shell", LogPriority.INFO) {
@@ -162,10 +169,28 @@ fun main() = application {
                             )
                         },
                     ) {
-                        if (window.isSettings) {
-                            SettingsScreen()
-                        } else {
-                            LibraryScreen()
+                        when (val kind = window.kind) {
+                            DesktopWindowKind.Settings -> SettingsScreen()
+                            DesktopWindowKind.Library -> LibraryScreen(
+                                onOpenGalleryInNewWindow = { gallery ->
+                                    val (updated, _) = DesktopWindowManager.openOrFocusGallery(
+                                        windows = windows,
+                                        gallery = gallery,
+                                        nextIdProvider = { nextWindowId++ },
+                                    )
+                                    if (updated.size > windows.size) {
+                                        windows.add(updated.last())
+                                    }
+                                },
+                            )
+                            is DesktopWindowKind.GalleryDetail -> {
+                                GalleryDetailPane(
+                                    gallery = kind.gallery,
+                                    onCopy = { value, _ ->
+                                        clipboard.setText(AnnotatedString(value))
+                                    },
+                                )
+                            }
                         }
                     }
                 }

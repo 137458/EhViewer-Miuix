@@ -65,7 +65,9 @@ enum class LibraryTab {
 // 本地库：历史列表(左) + 选中画廊详情(右) 主从双栏（桌面大屏习惯）+ 连接诊断行。
 // 在线画廊列表需 HTML 解析下沉（Rust 专项），由后续轮次接入。
 @Composable
-fun LibraryScreen() {
+fun LibraryScreen(
+    onOpenGalleryInNewWindow: ((BaseGalleryInfo) -> Unit)? = null,
+) {
     val downloadLabels by DesktopDatabase.eh.downloadsDao()
         .countByLabel()
         .collectAsState(initial = emptyMap())
@@ -228,6 +230,7 @@ fun LibraryScreen() {
                     val copyTitleLabel = stringResource(MR.strings.copy_title)
                     val copyLinkLabel = stringResource(MR.strings.copy_link)
                     val openBrowserLabel = stringResource(MR.strings.open_in_browser)
+                    val openInNewWindowLabel = stringResource(MR.strings.menu_new_window)
                     LazyColumn(modifier = Modifier.fillMaxSize()) {
                         items(filteredItems.size) { index ->
                             val gallery = filteredItems[index]
@@ -235,7 +238,7 @@ fun LibraryScreen() {
                             val link = galleryWebUrl(gallery.gid, gallery.token)
                             ContextMenuArea(
                                 items = {
-                                    listOf(
+                                    val menuItems = mutableListOf(
                                         ContextMenuItem(copyTitleLabel) {
                                             clipboard.setText(AnnotatedString(title))
                                         },
@@ -246,6 +249,14 @@ fun LibraryScreen() {
                                             openBrowser(link)
                                         },
                                     )
+                                    if (onOpenGalleryInNewWindow != null) {
+                                        menuItems.add(
+                                            ContextMenuItem(openInNewWindowLabel) {
+                                                onOpenGalleryInNewWindow(gallery)
+                                            },
+                                        )
+                                    }
+                                    menuItems
                                 },
                             ) {
                                 Row(
@@ -293,7 +304,7 @@ fun LibraryScreen() {
 }
 
 @Composable
-private fun GalleryDetailPane(gallery: BaseGalleryInfo, onCopy: (value: String, label: String) -> Unit) {
+internal fun GalleryDetailPane(gallery: BaseGalleryInfo, onCopy: (value: String, label: String) -> Unit) {
     Column(
         modifier = Modifier.fillMaxSize().padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
