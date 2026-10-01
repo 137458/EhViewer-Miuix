@@ -36,9 +36,11 @@ import coil3.compose.AsyncImage
 import coil3.compose.LocalPlatformContext
 import com.ehviewer.core.database.client.GalleryDetailPageLinksParser
 import com.ehviewer.core.database.client.GalleryPageParser
+import com.ehviewer.core.i18n.MR
 import com.ehviewer.core.model.BaseGalleryInfo
 import com.ehviewer.core.util.LogPriority
 import com.ehviewer.core.util.logcat
+import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -59,9 +61,14 @@ fun ReaderScreen(
         ?: gallery.titleJpn?.takeIf { it.isNotBlank() }
         ?: gallery.gid.toString()
     val context = LocalPlatformContext.current
+    val loadingLinksText = stringResource(MR.strings.desktop_reader_loading_links)
+    val noLinksText = stringResource(MR.strings.desktop_reader_no_links)
+    val loadFailedText = stringResource(MR.strings.desktop_reader_load_failed)
+    val loadingImageText = stringResource(MR.strings.desktop_reader_loading_image)
+    val loadingText = stringResource(MR.strings.desktop_reader_loading)
 
     LaunchedEffect(gallery.gid) {
-        imageState = "Loading page links..."
+        imageState = loadingLinksText
         runCatching {
             withContext(Dispatchers.IO) {
                 val detail = desktopGet(galleryWebUrl(gallery.gid, gallery.token))
@@ -69,14 +76,14 @@ fun ReaderScreen(
             }
         }.onSuccess { links ->
             if (links.isEmpty()) {
-                linksState = "No page links found (login required or parse failure)"
+                linksState = noLinksText
                 imageState = null
             } else {
                 pageLinks = links
                 linksState = null
             }
         }.onFailure {
-            linksState = "Failed to load gallery: ${it.message}"
+            linksState = "$loadFailedText: ${it.message}"
             imageState = null
         }
     }
@@ -84,7 +91,7 @@ fun ReaderScreen(
     val currentLink = pageLinks.getOrNull(page - 1)
     LaunchedEffect(currentLink) {
         val link = currentLink ?: return@LaunchedEffect
-        imageState = "Loading image..."
+        imageState = loadingImageText
         imageUrl = null
         withContext(Dispatchers.IO) {
             runCatching {
@@ -154,7 +161,7 @@ fun ReaderScreen(
                 modifier = Modifier.weight(1f),
             )
             Text(
-                text = if (pageLinks.isEmpty()) "" else "Page $page / ${pageLinks.size}",
+                text = if (pageLinks.isEmpty()) "" else stringResource(MR.strings.desktop_reader_page_progress, page, pageLinks.size),
                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
             )
             Text(
@@ -187,7 +194,7 @@ fun ReaderScreen(
                     color = Color.White.copy(alpha = 0.7f),
                 )
                 else -> Text(
-                    text = "Loading...",
+                    text = loadingText,
                     color = Color.White.copy(alpha = 0.5f),
                 )
             }
@@ -201,7 +208,7 @@ fun ReaderScreen(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = "◀ Prev",
+                text = stringResource(MR.strings.desktop_reader_prev),
                 color = if (page > 1) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 modifier = Modifier
                     .pointerHoverIcon(PointerIcon.Hand)
@@ -210,7 +217,7 @@ fun ReaderScreen(
             )
             Box(modifier = Modifier.weight(1f))
             Text(
-                text = "Next ▶",
+                text = stringResource(MR.strings.desktop_reader_next),
                 color = if (page < pageLinks.size) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 modifier = Modifier
                     .pointerHoverIcon(PointerIcon.Hand)
