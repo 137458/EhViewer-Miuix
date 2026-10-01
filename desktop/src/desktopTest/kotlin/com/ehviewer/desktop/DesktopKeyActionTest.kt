@@ -18,6 +18,7 @@ class DesktopKeyActionTest {
         val combinations = entries.map { it.keyCombination }
         assertTrue(combinations.any { it.contains("Ctrl + W") || it.contains("Ctrl + Q") })
         assertTrue(combinations.any { it.contains("F5") || it.contains("Ctrl + R") })
+        assertTrue(combinations.any { it.contains("Ctrl + O") })
         assertTrue(combinations.any { it.contains("Escape") })
         assertTrue(combinations.any { it.contains("F1") })
 

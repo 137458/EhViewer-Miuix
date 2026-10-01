@@ -4,6 +4,7 @@
 
 ### 新增
 
+- 桌面端快捷键帮助补全 Ctrl+O 条目，并对重复打开同一画廊时将既有独立窗口置前（复用多窗口防重调度，不再无响应静默忽略）。
 - 桌面端快捷打开画廊对话框：新增 Ctrl+O 快捷键呼出模态对话框，支持直接粘贴画廊网页链接（e-hentai/exhentai）或 GID/Token 组合（斜杠/空格/逗号分隔）即时校验并在独立窗口打开画廊详情；对话框打开期间按键事件与列表快捷键安全隔离，Escape 优先关闭对话框，非法输入呈现校验错误提示，核心解析与校验由 DesktopOpenGalleryState 纯逻辑驱动并具备完整单元测试覆盖。
 - 桌面端网络连接诊断与异常快速恢复交互：引入 DesktopConnectionState 纯逻辑状态机（Checking/Online/Offline），顶栏引入可点击网络诊断胶囊与手型悬停交互，在线画廊空列表状态自适应呈现清洗后的异常原因与一键重试按钮，对齐 MR.strings.action_retry 多语言规范并具备完整单元测试覆盖。
 - 为 core:i18n 与 core:common 启用 JVM desktop 编译目标：日志出口改为平台无关的 LogPriority 枚举加 expect/actual（Android 侧继续走 logcat，桌面侧输出到标准错误流），文件系统的 SystemFileSystem 与 Path.read/write 补充桌面 actual，为桌面端奠定编译基础。

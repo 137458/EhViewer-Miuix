@@ -15,11 +15,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -52,6 +54,7 @@ import com.ehviewer.core.i18n.MR
 import com.ehviewer.core.util.LogPriority
 import com.ehviewer.core.util.logcat
 import dev.icerock.moko.resources.compose.stringResource
+import java.awt.Window as AwtWindow
 import java.util.concurrent.atomic.AtomicLong
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
@@ -77,6 +80,7 @@ fun main() {
     DesktopImageLoader.init()
     application {
         val windows = remember { mutableStateListOf(ShellWindow(0)) }
+        val windowFrames = remember { mutableStateMapOf<Long, AwtWindow>() }
         var nextWindowId by remember { mutableStateOf(1L) }
         val themeMode by DesktopSettings.themeMode.valueFlow().collectAsState(DesktopSettings.themeMode.value)
         val closeToTray by DesktopSettings.closeToTray.valueFlow().collectAsState(DesktopSettings.closeToTray.value)
@@ -171,6 +175,12 @@ fun main() {
                         }
                     },
                 ) {
+                    // 循环变量 window(ShellWindow) 遮蔽 FrameWindowScope.window，需显式接收者取 AWT 原生窗口
+                    val awtWindow: AwtWindow = this@Window.window
+                    DisposableEffect(window.id) {
+                        windowFrames[window.id] = awtWindow
+                        onDispose { windowFrames.remove(window.id) }
+                    }
                     AppMenus(
                         onNewWindow = { windows.add(ShellWindow(nextWindowId++)) },
                         onOpenSettings = { windows.add(ShellWindow(nextWindowId++, isSettings = true)) },
@@ -199,13 +209,16 @@ fun main() {
                                 DesktopWindowKind.Settings -> SettingsScreen()
                                 DesktopWindowKind.Library -> LibraryScreen(
                                     onOpenGalleryInNewWindow = { gallery ->
-                                        val (updated, _) = DesktopWindowManager.openOrFocusGallery(
+                                        val (updated, windowId) = DesktopWindowManager.openOrFocusGallery(
                                             windows = windows,
                                             gallery = gallery,
                                             nextIdProvider = { nextWindowId++ },
                                         )
                                         if (updated.size > windows.size) {
                                             windows.add(updated.last())
+                                        } else {
+                                            // 已开窗防重：把既有窗口带到前台
+                                            windowFrames[windowId]?.toFront()
                                         }
                                     },
                                 )
