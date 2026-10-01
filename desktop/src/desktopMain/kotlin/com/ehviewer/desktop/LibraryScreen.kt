@@ -362,6 +362,11 @@ fun LibraryScreen(
                             showNotification("Copied $label")
                             logcat("Library", LogPriority.INFO) { "Copied $label" }
                         },
+                        onOpenUrl = { url ->
+                            if (!DesktopBrowser.openUrl(url)) {
+                                showNotification("Failed to open browser")
+                            }
+                        },
                     )
                 }
             }
@@ -398,7 +403,11 @@ fun LibraryScreen(
 }
 
 @Composable
-internal fun GalleryDetailPane(gallery: BaseGalleryInfo, onCopy: (value: String, label: String) -> Unit) {
+internal fun GalleryDetailPane(
+    gallery: BaseGalleryInfo,
+    onCopy: (value: String, label: String) -> Unit,
+    onOpenUrl: ((url: String) -> Unit)? = null,
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -439,7 +448,12 @@ internal fun GalleryDetailPane(gallery: BaseGalleryInfo, onCopy: (value: String,
         DetailRow(label = stringResource(MR.strings.key_pages), value = gallery.pages.toString(), onCopy = onCopy)
         DetailRow(label = stringResource(MR.strings.key_rating), value = gallery.rating.toString(), onCopy = onCopy)
         gallery.simpleLanguage?.let { DetailRow(label = stringResource(MR.strings.key_language), value = it, onCopy = onCopy) }
-        DetailRow(label = stringResource(MR.strings.key_url), value = link, onCopy = onCopy)
+        DetailRow(
+            label = stringResource(MR.strings.key_url),
+            value = link,
+            onCopy = onCopy,
+            onOpen = onOpenUrl?.let { opener -> { opener(link) } },
+        )
         gallery.thumbUrl?.let { DetailRow(label = stringResource(MR.strings.key_thumb), value = it, onCopy = onCopy) }
         gallery.simpleTags?.takeIf { it.isNotEmpty() }?.let { tags ->
             Text(
@@ -452,7 +466,12 @@ internal fun GalleryDetailPane(gallery: BaseGalleryInfo, onCopy: (value: String,
 }
 
 @Composable
-private fun DetailRow(label: String, value: String, onCopy: (value: String, label: String) -> Unit) {
+private fun DetailRow(
+    label: String,
+    value: String,
+    onCopy: (value: String, label: String) -> Unit,
+    onOpen: (() -> Unit)? = null,
+) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -470,6 +489,15 @@ private fun DetailRow(label: String, value: String, onCopy: (value: String, labe
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f),
         )
+        if (onOpen != null) {
+            Text(
+                text = stringResource(MR.strings.open_in_browser),
+                color = MiuixTheme.colorScheme.primary,
+                modifier = Modifier
+                    .pointerHoverIcon(PointerIcon.Hand)
+                    .clickable { onOpen() },
+            )
+        }
         Text(
             text = stringResource(MR.strings.action_copy),
             color = MiuixTheme.colorScheme.primary,
@@ -488,9 +516,5 @@ private fun VerticalDivider() = HorizontalDivider(
 )
 
 private fun openBrowser(url: String) {
-    runCatching {
-        java.awt.Desktop.getDesktop().browse(java.net.URI(url))
-    }.onFailure { e ->
-        logcat("Update", LogPriority.WARN) { "open browser failed: ${e.message}" }
-    }
+    DesktopBrowser.openUrl(url)
 }

@@ -258,6 +258,11 @@ private fun GalleryDetailWindowContent(gallery: com.ehviewer.core.model.BaseGall
                 showNotification("Copied $label")
                 logcat("DetailWindow", LogPriority.INFO) { "Copied $label" }
             },
+            onOpenUrl = { url ->
+                if (!DesktopBrowser.openUrl(url)) {
+                    showNotification("Failed to open browser")
+                }
+            },
         )
         if (notifications.isNotEmpty()) {
             Column(
