@@ -50,6 +50,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import com.ehviewer.core.database.client.getCategoryDisplayName
 import com.ehviewer.core.database.client.thumbUrl
 import com.ehviewer.core.database.model.GalleryEntity
 import com.ehviewer.core.database.model.LocalFavoriteInfo
@@ -471,8 +472,8 @@ fun LibraryScreen(
                                                 color = MiuixTheme.colorScheme.onBackground,
                                             )
                                             Text(
-                                                text = gallery.category.toString(),
-                                                color = MiuixTheme.colorScheme.onBackground,
+                                                text = getCategoryDisplayName(gallery.category),
+                                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                             )
                                         }
                                     }
@@ -642,7 +643,7 @@ internal fun GalleryDetailPane(
         DetailRow(label = stringResource(MR.strings.key_gid), value = gallery.gid.toString(), onCopy = onCopy)
         DetailRow(label = stringResource(MR.strings.key_token), value = gallery.token, onCopy = onCopy)
         DetailRow(label = stringResource(MR.strings.key_uploader), value = gallery.uploader.orEmpty().ifEmpty { "-" }, onCopy = onCopy)
-        DetailRow(label = stringResource(MR.strings.key_category), value = gallery.category.toString(), onCopy = onCopy)
+        DetailRow(label = stringResource(MR.strings.key_category), value = getCategoryDisplayName(gallery.category), onCopy = onCopy)
         DetailRow(label = stringResource(MR.strings.key_pages), value = gallery.pages.toString(), onCopy = onCopy)
         DetailRow(label = stringResource(MR.strings.key_rating), value = gallery.rating.toString(), onCopy = onCopy)
         gallery.simpleLanguage?.let { DetailRow(label = stringResource(MR.strings.key_language), value = it, onCopy = onCopy) }

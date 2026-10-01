@@ -13,6 +13,7 @@ class GalleryFilterTest {
             title = "Touhou Project Anthology",
             titleJpn = "東方Projectまとめ",
             uploader = "Alice",
+            category = com.ehviewer.core.database.client.CATEGORY_DOUJINSHI,
             simpleTags = listOf("touhou", "parody"),
         ),
         BaseGalleryInfo(
@@ -20,6 +21,7 @@ class GalleryFilterTest {
             title = "Original Artbook Vol.1",
             titleJpn = "オリジナル画集",
             uploader = "Bob",
+            category = com.ehviewer.core.database.client.CATEGORY_ARTIST_CG,
             simpleTags = listOf("original", "full color"),
         ),
         BaseGalleryInfo(
@@ -27,9 +29,25 @@ class GalleryFilterTest {
             title = "Fate Grand Order Doujin",
             titleJpn = "Fate/Grand Order 同人誌",
             uploader = "Charlie",
+            category = com.ehviewer.core.database.client.CATEGORY_COSPLAY,
             simpleTags = listOf("fate", "female:saber"),
         ),
     )
+
+    @Test
+    fun filterGalleriesMatchesCategoryNameOrDisplayName() {
+        val resultDoujin = GalleryFilter.filterGalleries(sampleItems, "doujinshi")
+        assertEquals(1, resultDoujin.size)
+        assertEquals(10001L, resultDoujin.first().gid)
+
+        val resultArtist = GalleryFilter.filterGalleries(sampleItems, "Artist CG")
+        assertEquals(1, resultArtist.size)
+        assertEquals(20002L, resultArtist.first().gid)
+
+        val resultCosplay = GalleryFilter.filterGalleries(sampleItems, "cosplay")
+        assertEquals(1, resultCosplay.size)
+        assertEquals(30003L, resultCosplay.first().gid)
+    }
 
     @Test
     fun filterGalleriesBlankQueryReturnsOriginalList() {

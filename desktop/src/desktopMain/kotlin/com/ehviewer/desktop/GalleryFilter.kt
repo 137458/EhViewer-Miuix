@@ -1,6 +1,8 @@
 package com.ehviewer.desktop
 
 import com.ehviewer.core.database.client.GalleryDetailUrlParser
+import com.ehviewer.core.database.client.getCategoryDisplayName
+import com.ehviewer.core.database.client.getCategoryName
 import com.ehviewer.core.model.BaseGalleryInfo
 
 object GalleryFilter {
@@ -21,7 +23,9 @@ object GalleryFilter {
                 item.titleJpn?.contains(trimmed, ignoreCase = true) == true ||
                 item.uploader?.contains(trimmed, ignoreCase = true) == true ||
                 item.gid.toString().contains(trimmed) ||
-                item.simpleTags?.any { it.contains(trimmed, ignoreCase = true) } == true
+                item.simpleTags?.any { it.contains(trimmed, ignoreCase = true) } == true ||
+                getCategoryName(item.category).contains(trimmed, ignoreCase = true) ||
+                getCategoryDisplayName(item.category).contains(trimmed, ignoreCase = true)
         }
     }
 }

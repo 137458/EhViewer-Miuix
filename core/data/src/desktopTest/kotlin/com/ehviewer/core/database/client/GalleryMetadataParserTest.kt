@@ -84,6 +84,38 @@ class GalleryMetadataParserTest {
     }
 
     @Test
+    fun categoryNameAndDisplayNameMapping() {
+        assertEquals("doujinshi", getCategoryName(CATEGORY_DOUJINSHI))
+        assertEquals("Doujinshi", getCategoryDisplayName(CATEGORY_DOUJINSHI))
+        assertEquals("manga", getCategoryName(CATEGORY_MANGA))
+        assertEquals("Manga", getCategoryDisplayName(CATEGORY_MANGA))
+        assertEquals("artistcg", getCategoryName(CATEGORY_ARTIST_CG))
+        assertEquals("Artist CG", getCategoryDisplayName(CATEGORY_ARTIST_CG))
+        assertEquals("gamecg", getCategoryName(CATEGORY_GAME_CG))
+        assertEquals("Game CG", getCategoryDisplayName(CATEGORY_GAME_CG))
+        assertEquals("imageset", getCategoryName(CATEGORY_IMAGE_SET))
+        assertEquals("Image Set", getCategoryDisplayName(CATEGORY_IMAGE_SET))
+        assertEquals("cosplay", getCategoryName(CATEGORY_COSPLAY))
+        assertEquals("Cosplay", getCategoryDisplayName(CATEGORY_COSPLAY))
+        assertEquals("asianporn", getCategoryName(CATEGORY_ASIAN_PORN))
+        assertEquals("Asian Porn", getCategoryDisplayName(CATEGORY_ASIAN_PORN))
+        assertEquals("non-h", getCategoryName(CATEGORY_NON_H))
+        assertEquals("Non-H", getCategoryDisplayName(CATEGORY_NON_H))
+        assertEquals("western", getCategoryName(CATEGORY_WESTERN))
+        assertEquals("Western", getCategoryDisplayName(CATEGORY_WESTERN))
+        assertEquals("misc", getCategoryName(CATEGORY_MISC))
+        assertEquals("Misc", getCategoryDisplayName(CATEGORY_MISC))
+        assertEquals("private", getCategoryName(CATEGORY_PRIVATE))
+        assertEquals("Private", getCategoryDisplayName(CATEGORY_PRIVATE))
+        assertEquals("unknown", getCategoryName(CATEGORY_UNKNOWN))
+        assertEquals("Unknown", getCategoryDisplayName(CATEGORY_UNKNOWN))
+        assertEquals("unknown", getCategoryName(0))
+        assertEquals("Unknown", getCategoryDisplayName(0))
+        assertEquals("unknown", getCategoryName(-1))
+        assertEquals("Unknown", getCategoryDisplayName(-1))
+    }
+
+    @Test
     fun thumbKeyStripsAllKnownPrefixes() {
         assertEquals("a/b.jpg", getThumbKey("https://ehgt.org/a/b.jpg"))
         // 前缀链依次剥离：exhentai 的 t/ 变体在剥离主域后被一并剥除（与 app 实现一致）
