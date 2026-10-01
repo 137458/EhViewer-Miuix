@@ -11,7 +11,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -64,6 +66,8 @@ fun ReaderScreen(
     var imageUrl by remember { mutableStateOf<String?>(null) }
     var imageState by remember { mutableStateOf<String?>(null) }
     var reloadKey by remember { mutableIntStateOf(0) }
+    var showJumpInput by remember { mutableStateOf(false) }
+    var jumpInput by remember { mutableStateOf("") }
     val displayTitle = gallery.title?.takeIf { it.isNotBlank() }
         ?: gallery.titleJpn?.takeIf { it.isNotBlank() }
         ?: gallery.gid.toString()
@@ -135,16 +139,16 @@ fun ReaderScreen(
             .fillMaxSize()
             .background(MiuixTheme.colorScheme.background)
             .onPreviewKeyEvent { event ->
-                // 阅读器键盘翻页：←/→（仅 KeyDown 响应一次）
+                // 阅读器键盘翻页：←/→（仅 KeyDown 响应一次；跳页输入框打开时让位给文本编辑）
                 if (event.type == KeyEventType.KeyDown) {
                     when (event.key) {
                         Key.DirectionRight -> {
-                            if (page < pageLinks.size) page += 1
-                            true
+                            if (!showJumpInput && page < pageLinks.size) page += 1
+                            !showJumpInput
                         }
                         Key.DirectionLeft -> {
-                            if (page > 1) page -= 1
-                            true
+                            if (!showJumpInput && page > 1) page -= 1
+                            !showJumpInput
                         }
                         else -> false
                     }
@@ -170,7 +174,33 @@ fun ReaderScreen(
             Text(
                 text = if (pageLinks.isEmpty()) "" else stringResource(MR.strings.desktop_reader_page_progress, page, pageLinks.size),
                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                modifier = Modifier
+                    .pointerHoverIcon(PointerIcon.Hand)
+                    .clickable(enabled = pageLinks.isNotEmpty()) {
+                        jumpInput = page.toString()
+                        showJumpInput = !showJumpInput
+                    },
             )
+            if (showJumpInput && pageLinks.isNotEmpty()) {
+                OutlinedTextField(
+                    value = jumpInput,
+                    onValueChange = { jumpInput = it.filter(Char::isDigit).take(6) },
+                    singleLine = true,
+                    modifier = Modifier
+                        .width(72.dp)
+                        .onPreviewKeyEvent { event ->
+                            if (event.type == KeyEventType.KeyDown && event.key == Key.Enter) {
+                                jumpInput.toIntOrNull()?.let { target ->
+                                    page = target.coerceIn(1, pageLinks.size)
+                                }
+                                showJumpInput = false
+                                true
+                            } else {
+                                false
+                            }
+                        },
+                )
+            }
             Text(
                 text = "✕",
                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
