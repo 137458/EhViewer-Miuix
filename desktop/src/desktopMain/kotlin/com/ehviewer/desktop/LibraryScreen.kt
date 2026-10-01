@@ -936,7 +936,19 @@ fun LibraryScreen(
                                                     )
                                                     .padding(horizontal = 8.dp, vertical = 6.dp),
                                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                                verticalAlignment = Alignment.CenterVertically,
                                             ) {
+                                                gallery.thumbUrl?.let { thumb ->
+                                                    AsyncImage(
+                                                        model = thumb,
+                                                        contentDescription = null,
+                                                        modifier = Modifier
+                                                            .width(42.dp)
+                                                            .height(56.dp)
+                                                            .clip(RoundedCornerShape(4.dp)),
+                                                        contentScale = ContentScale.Crop,
+                                                    )
+                                                }
                                                 Text(
                                                     text = title,
                                                     maxLines = 1,
