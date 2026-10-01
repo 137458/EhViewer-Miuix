@@ -286,8 +286,8 @@ private fun FrameWindowScope.AppMenus(
     Menu(stringResource(MR.strings.menu_settings)) {
         Item(stringResource(MR.strings.menu_settings), onClick = onOpenSettings)
     }
-    Menu("Help") {
-        Item("Keyboard Shortcuts (F1)", onClick = onShowShortcutsHelp)
+    Menu(stringResource(MR.strings.menu_help)) {
+        Item("${stringResource(MR.strings.menu_keyboard_shortcuts)} (F1)", onClick = onShowShortcutsHelp)
     }
 }
 
@@ -315,7 +315,7 @@ private fun ShortcutsHelpDialog(onDismiss: () -> Unit) {
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = "Keyboard Shortcuts",
+                    text = stringResource(MR.strings.menu_keyboard_shortcuts),
                     color = MiuixTheme.colorScheme.primary,
                 )
                 Text(

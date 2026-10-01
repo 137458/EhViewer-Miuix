@@ -702,6 +702,8 @@
     <string name="menu_exit">退出</string>
     <string name="menu_new_window">新建窗口</string>
     <string name="menu_settings">设置</string>
+    <string name="menu_help">帮助</string>
+    <string name="menu_keyboard_shortcuts">键盘快捷键</string>
     <string name="settings_theme">主题</string>
     <string name="settings_proxy">代理 (host:port，留空为直连)</string>
     <string name="theme_follow_system">跟随系统</string>
