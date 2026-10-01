@@ -45,6 +45,9 @@ kotlin {
                 implementation(projects.core.data)
                 implementation(projects.core.i18n)
                 implementation(projects.core.ui)
+                implementation(project.dependencies.platform(libs.coil.bom))
+                implementation(libs.coil.compose)
+                implementation(libs.coil.network)
             }
         }
         getByName("desktopTest") {

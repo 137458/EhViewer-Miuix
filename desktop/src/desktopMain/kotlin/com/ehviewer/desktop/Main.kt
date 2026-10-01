@@ -55,141 +55,144 @@ private object EhViewerTrayPainter : Painter() {
     }
 }
 
-fun main() = application {
-    val windows = remember { mutableStateListOf(ShellWindow(0)) }
-    var nextWindowId by remember { mutableStateOf(1L) }
-    val themeMode by DesktopSettings.themeMode.valueFlow().collectAsState(DesktopSettings.themeMode.value)
-    val closeToTray by DesktopSettings.closeToTray.valueFlow().collectAsState(DesktopSettings.closeToTray.value)
-    val isTraySupported = remember { java.awt.SystemTray.isSupported() }
+fun main() {
+    DesktopImageLoader.init()
+    application {
+        val windows = remember { mutableStateListOf(ShellWindow(0)) }
+        var nextWindowId by remember { mutableStateOf(1L) }
+        val themeMode by DesktopSettings.themeMode.valueFlow().collectAsState(DesktopSettings.themeMode.value)
+        val closeToTray by DesktopSettings.closeToTray.valueFlow().collectAsState(DesktopSettings.closeToTray.value)
+        val isTraySupported = remember { java.awt.SystemTray.isSupported() }
 
-    val handleClose: (ShellWindow) -> Unit = { targetWindow ->
-        val behavior = if (closeToTray) CloseBehavior.MINIMIZE_TO_TRAY else CloseBehavior.EXIT
-        val action = DesktopClosePolicy.evaluateClose(
-            currentWindowCount = windows.size,
-            behavior = behavior,
-            isTrayAvailable = isTraySupported,
-        )
-        windows.remove(targetWindow)
-        if (action.shouldExitApp) {
-            exitApplication()
+        val handleClose: (ShellWindow) -> Unit = { targetWindow ->
+            val behavior = if (closeToTray) CloseBehavior.MINIMIZE_TO_TRAY else CloseBehavior.EXIT
+            val action = DesktopClosePolicy.evaluateClose(
+                currentWindowCount = windows.size,
+                behavior = behavior,
+                isTrayAvailable = isTraySupported,
+            )
+            windows.remove(targetWindow)
+            if (action.shouldExitApp) {
+                exitApplication()
+            }
         }
-    }
 
-    if (isTraySupported) {
-        Tray(
-            icon = remember { EhViewerTrayPainter },
-            tooltip = "EhViewer",
-            onAction = {
-                if (windows.isEmpty()) {
-                    windows.add(ShellWindow(nextWindowId++))
-                }
-            },
-            menu = {
-                Item(stringResource(MR.strings.tray_open_app), onClick = {
+        if (isTraySupported) {
+            Tray(
+                icon = remember { EhViewerTrayPainter },
+                tooltip = "EhViewer",
+                onAction = {
                     if (windows.isEmpty()) {
                         windows.add(ShellWindow(nextWindowId++))
                     }
-                })
-                Item(stringResource(MR.strings.menu_settings), onClick = {
-                    windows.add(ShellWindow(nextWindowId++, isSettings = true))
-                })
-                Separator()
-                Item(stringResource(MR.strings.menu_exit), onClick = {
-                    windows.clear()
-                    exitApplication()
-                })
-            },
-        )
-    }
-
-    for (window in windows) {
-        // key 绑定窗口身份：多窗口下按位置记忆会让关窗时错关另一个原生窗口
-        key(window.id) {
-            val windowState = rememberWindowState(
-                width = DesktopSettings.windowWidth.dp,
-                height = DesktopSettings.windowHeight.dp,
-            )
-            Window(
-                onCloseRequest = { handleClose(window) },
-                state = windowState,
-                title = DesktopWindowManager.windowTitle(window.kind),
-                onKeyEvent = { event ->
-                    val action = resolveKeyAction(
-                        isKeyDown = event.type == androidx.compose.ui.input.key.KeyEventType.KeyDown,
-                        isCtrlPressed = event.isCtrlPressed,
-                        key = event.key,
-                        hasSelection = false,
-                    )
-                    when (action) {
-                        DesktopKeyAction.CloseWindow -> {
-                            handleClose(window)
-                            true
-                        }
-                        DesktopKeyAction.ClearSelection -> {
-                            if (window.kind is DesktopWindowKind.GalleryDetail) {
-                                handleClose(window)
-                                true
-                            } else {
-                                false
-                            }
-                        }
-                        else -> false
-                    }
                 },
-            ) {
-                AppMenus(
-                    onNewWindow = { windows.add(ShellWindow(nextWindowId++)) },
-                    onOpenSettings = { windows.add(ShellWindow(nextWindowId++, isSettings = true)) },
-                    onExit = {
+                menu = {
+                    Item(stringResource(MR.strings.tray_open_app), onClick = {
+                        if (windows.isEmpty()) {
+                            windows.add(ShellWindow(nextWindowId++))
+                        }
+                    })
+                    Item(stringResource(MR.strings.menu_settings), onClick = {
+                        windows.add(ShellWindow(nextWindowId++, isSettings = true))
+                    })
+                    Separator()
+                    Item(stringResource(MR.strings.menu_exit), onClick = {
                         windows.clear()
                         exitApplication()
-                    },
+                    })
+                },
+            )
+        }
+
+        for (window in windows) {
+            // key 绑定窗口身份：多窗口下按位置记忆会让关窗时错关另一个原生窗口
+            key(window.id) {
+                val windowState = rememberWindowState(
+                    width = DesktopSettings.windowWidth.dp,
+                    height = DesktopSettings.windowHeight.dp,
                 )
-                if (window.kind == DesktopWindowKind.Library) {
-                    SaveWindowSize(windowState)
-                    LaunchedEffect(Unit) {
-                        logcat("Shell", LogPriority.INFO) {
-                            "SHELL_STARTED width=${DesktopSettings.windowWidth} height=${DesktopSettings.windowHeight}"
+                Window(
+                    onCloseRequest = { handleClose(window) },
+                    state = windowState,
+                    title = DesktopWindowManager.windowTitle(window.kind),
+                    onKeyEvent = { event ->
+                        val action = resolveKeyAction(
+                            isKeyDown = event.type == androidx.compose.ui.input.key.KeyEventType.KeyDown,
+                            isCtrlPressed = event.isCtrlPressed,
+                            key = event.key,
+                            hasSelection = false,
+                        )
+                        when (action) {
+                            DesktopKeyAction.CloseWindow -> {
+                                handleClose(window)
+                                true
+                            }
+                            DesktopKeyAction.ClearSelection -> {
+                                if (window.kind is DesktopWindowKind.GalleryDetail) {
+                                    handleClose(window)
+                                    true
+                                } else {
+                                    false
+                                }
+                            }
+                            else -> false
+                        }
+                    },
+                ) {
+                    AppMenus(
+                        onNewWindow = { windows.add(ShellWindow(nextWindowId++)) },
+                        onOpenSettings = { windows.add(ShellWindow(nextWindowId++, isSettings = true)) },
+                        onExit = {
+                            windows.clear()
+                            exitApplication()
+                        },
+                    )
+                    if (window.kind == DesktopWindowKind.Library) {
+                        SaveWindowSize(windowState)
+                        LaunchedEffect(Unit) {
+                            logcat("Shell", LogPriority.INFO) {
+                                "SHELL_STARTED width=${DesktopSettings.windowWidth} height=${DesktopSettings.windowHeight}"
+                            }
                         }
                     }
-                }
-                val darkTheme = when (themeMode) {
-                    1 -> false
-                    2 -> true
-                    else -> isSystemInDarkTheme()
-                }
-                MiuixTheme(colors = if (darkTheme) miuixDarkColorScheme() else miuixLightColorScheme()) {
-                    val clipboard = LocalClipboardManager.current
-                    ContextMenuArea(
-                        items = {
-                            listOf(
-                                ContextMenuItem("Copy") {
-                                    clipboard.setText(AnnotatedString("EhViewer Desktop"))
-                                },
-                            )
-                        },
-                    ) {
-                        when (val kind = window.kind) {
-                            DesktopWindowKind.Settings -> SettingsScreen()
-                            DesktopWindowKind.Library -> LibraryScreen(
-                                onOpenGalleryInNewWindow = { gallery ->
-                                    val (updated, _) = DesktopWindowManager.openOrFocusGallery(
-                                        windows = windows,
-                                        gallery = gallery,
-                                        nextIdProvider = { nextWindowId++ },
-                                    )
-                                    if (updated.size > windows.size) {
-                                        windows.add(updated.last())
-                                    }
-                                },
-                            )
-                            is DesktopWindowKind.GalleryDetail -> {
-                                GalleryDetailPane(
-                                    gallery = kind.gallery,
-                                    onCopy = { value, _ ->
-                                        clipboard.setText(AnnotatedString(value))
+                    val darkTheme = when (themeMode) {
+                        1 -> false
+                        2 -> true
+                        else -> isSystemInDarkTheme()
+                    }
+                    MiuixTheme(colors = if (darkTheme) miuixDarkColorScheme() else miuixLightColorScheme()) {
+                        val clipboard = LocalClipboardManager.current
+                        ContextMenuArea(
+                            items = {
+                                listOf(
+                                    ContextMenuItem("Copy") {
+                                        clipboard.setText(AnnotatedString("EhViewer Desktop"))
                                     },
                                 )
+                            },
+                        ) {
+                            when (val kind = window.kind) {
+                                DesktopWindowKind.Settings -> SettingsScreen()
+                                DesktopWindowKind.Library -> LibraryScreen(
+                                    onOpenGalleryInNewWindow = { gallery ->
+                                        val (updated, _) = DesktopWindowManager.openOrFocusGallery(
+                                            windows = windows,
+                                            gallery = gallery,
+                                            nextIdProvider = { nextWindowId++ },
+                                        )
+                                        if (updated.size > windows.size) {
+                                            windows.add(updated.last())
+                                        }
+                                    },
+                                )
+                                is DesktopWindowKind.GalleryDetail -> {
+                                    GalleryDetailPane(
+                                        gallery = kind.gallery,
+                                        onCopy = { value, _ ->
+                                            clipboard.setText(AnnotatedString(value))
+                                        },
+                                    )
+                                }
                             }
                         }
                     }
