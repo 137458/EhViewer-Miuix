@@ -19,7 +19,7 @@ private var rustLibrariesLoaded = false
 
 private var lastLoadError: String? = null
 
-private fun ensureRustLoaded(): Boolean {
+internal fun ensureRustLoaded(): Boolean {
     val errors = mutableListOf<String>()
     runCatching {
         System.loadLibrary("ehviewer_rust")
