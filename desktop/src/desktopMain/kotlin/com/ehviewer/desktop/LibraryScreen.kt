@@ -106,6 +106,7 @@ fun LibraryScreen(
     var connectionError by remember { mutableStateOf<String?>(null) }
     var updateInfo by remember { mutableStateOf<UpdateInfo?>(null) }
     var searchQuery by remember { mutableStateOf("") }
+    var sortConfig by remember { mutableStateOf(DesktopSortConfig()) }
     var notifications by remember { mutableStateOf<List<DesktopNotification>>(emptyList()) }
     val nextNotificationId = remember { AtomicLong(1L) }
     val clipboard = LocalClipboardManager.current
@@ -330,6 +331,14 @@ fun LibraryScreen(
                             modifier = Modifier.weight(1f),
                         )
                         Text(
+                            text = sortConfig.label,
+                            color = if (sortConfig.field == DesktopSortField.Default) MiuixTheme.colorScheme.onSurfaceVariantSummary else MiuixTheme.colorScheme.primary,
+                            modifier = Modifier
+                                .pointerHoverIcon(PointerIcon.Hand)
+                                .clickable { sortConfig = sortConfig.cycle() }
+                                .padding(horizontal = 4.dp, vertical = 4.dp),
+                        )
+                        Text(
                             text = if (viewMode == DesktopViewMode.List) "List" else "Grid",
                             color = MiuixTheme.colorScheme.primary,
                             modifier = Modifier
@@ -346,8 +355,9 @@ fun LibraryScreen(
                         LibraryTab.Favorites -> favorites
                         LibraryTab.Online -> online
                     }
-                    val filteredItems = remember(currentItems, searchQuery) {
-                        GalleryFilter.filterGalleries(currentItems, searchQuery)
+                    val filteredItems = remember(currentItems, searchQuery, sortConfig) {
+                        val filtered = GalleryFilter.filterGalleries(currentItems, searchQuery)
+                        sortConfig.sort(filtered)
                     }
                     if (filteredItems.isEmpty()) {
                         Box(modifier = Modifier.fillMaxSize().padding(16.dp), contentAlignment = Alignment.Center) {

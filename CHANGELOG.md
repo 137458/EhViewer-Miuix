@@ -33,6 +33,7 @@
 - 桌面端快捷键帮助指南与 F1 / 帮助菜单唤起：新增快捷键帮助对话框（ShortcutsHelpDialog），菜单栏增加「Help -> Keyboard Shortcuts (F1)」入口，支持按 F1 快捷键或菜单项一键唤起全局按键指南（按 Escape 或点击遮罩即可关闭），快捷键注册表模型由 DesktopShortcuts 驱动并提供单元测试覆盖。
 - 桌面端本地收藏夹（Local Favorites）数据浏览与收藏状态联动：主界面新增本地收藏 Tab 页面，支持通过列表右键菜单一键添加或移除本地收藏（异步持久化同步至 Room 数据库 LocalFavoritesDao 与 GalleryDao），画廊详情面板增加收藏状态与即时切换操作，由独立 DesktopFavoritesState 纯逻辑驱动并提供完整单元测试与边界三角验证覆盖。
 - 桌面端画廊双视图模式（紧凑列表与卡片网格）与偏好持久化：主界面搜索栏新增视图切换控件（List / Grid），支持切换单列紧凑列表（LazyColumn）与双列缩略图卡片网格（LazyVerticalGrid），卡片网格完整支持封面渲染、选中间隔、双击独立窗口浏览与右键菜单交互，视图模式状态持久化于 DesktopSettings（view_mode），由独立 DesktopViewMode 模型驱动并提供完整单元测试覆盖。
+- 桌面端画廊列表多字段即时排序与升降序切换：搜索栏新增即时排序控件（支持按默认原序、评分、页数、标题循环切换与升降序切换），采用稳定排序算法对过滤后的画廊列表即时重排，由独立 DesktopSortConfig / DesktopSortField / DesktopSortDirection 纯逻辑驱动并提供完整单元测试与边界三角验证覆盖。
 
 ### 修复
 
