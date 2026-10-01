@@ -8,6 +8,7 @@ import androidx.room.Query
 import androidx.room.Upsert
 import com.ehviewer.core.database.model.GalleryEntity
 import com.ehviewer.core.database.model.LocalFavoriteInfo
+import com.ehviewer.core.database.model.TimeInfo
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -25,6 +26,10 @@ interface LocalFavoritesDao {
     // 桌面响应式本地收藏画廊流（增删改自动推送，替代手动刷新）
     @Query("SELECT GALLERIES.* FROM LOCAL_FAVORITES JOIN GALLERIES USING(GID) ORDER BY TIME DESC")
     fun listGalleriesFlow(): Flow<List<GalleryEntity>>
+
+    // 桌面收藏时间流（GID→收藏 epoch millis），供列表展示（别名对齐 TimeInfo 的 ColumnInfo）
+    @Query("SELECT LOCAL_FAVORITES.GID AS GID, LOCAL_FAVORITES.TIME AS TIME FROM LOCAL_FAVORITES ORDER BY TIME DESC")
+    fun listTimesFlow(): Flow<List<TimeInfo>>
 
     @Query("SELECT GALLERIES.* FROM LOCAL_FAVORITES JOIN GALLERIES USING(GID) ORDER BY TIME DESC")
     fun joinListLazy(): PagingSource<Int, GalleryEntity>

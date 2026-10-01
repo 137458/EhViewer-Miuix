@@ -128,6 +128,8 @@ class DatabaseDesktopTest {
                     db.localFavoritesDao().upsert(LocalFavoriteInfo(55555L))
                     assertEquals(55555L, historyFlow.first().single().gid)
                     assertEquals(55555L, favoritesFlow.first().single().gid)
+                    // 收藏时间投影：复用 TimeInfo 基类（与 R116 历史时间对称）
+                    assertEquals(55555L, db.localFavoritesDao().listTimesFlow().first().single().gid)
 
                     // 历史删除后流清空且不影响收藏
                     db.historyDao().deleteByKey(55555L)

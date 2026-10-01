@@ -124,6 +124,10 @@ fun LibraryScreen(
         .listTimesFlow()
         .collectAsState(initial = emptyList())
     val historyTimeByGid = remember(historyTimes) { historyTimes.associate { it.gid to it.time } }
+    val favoriteTimes by DesktopDatabase.eh.localFavoritesDao()
+        .listTimesFlow()
+        .collectAsState(initial = emptyList())
+    val favoriteTimeByGid = remember(favoriteTimes) { favoriteTimes.associate { it.gid to it.time } }
     val favorites by DesktopDatabase.eh.localFavoritesDao()
         .listGalleriesFlow()
         .collectAsState(initial = emptyList())
@@ -792,16 +796,19 @@ fun LibraryScreen(
                                                     modifier = Modifier.weight(1f),
                                                     color = MiuixTheme.colorScheme.onBackground,
                                                 )
-                                                if (currentTab == LibraryTab.History) {
-                                                    historyTimeByGid[gallery.gid]?.let { time ->
-                                                        Text(
-                                                            text = java.time.Instant.ofEpochMilli(time)
-                                                                .atZone(java.time.ZoneId.systemDefault())
-                                                                .format(java.time.format.DateTimeFormatter.ofPattern("MM-dd HH:mm")),
-                                                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                                            fontSize = 11.sp,
-                                                        )
-                                                    }
+                                                val browseTime = when (currentTab) {
+                                                    LibraryTab.History -> historyTimeByGid[gallery.gid]
+                                                    LibraryTab.Favorites -> favoriteTimeByGid[gallery.gid]
+                                                    LibraryTab.Online -> null
+                                                }
+                                                browseTime?.let { time ->
+                                                    Text(
+                                                        text = java.time.Instant.ofEpochMilli(time)
+                                                            .atZone(java.time.ZoneId.systemDefault())
+                                                            .format(java.time.format.DateTimeFormatter.ofPattern("MM-dd HH:mm")),
+                                                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                                        fontSize = 11.sp,
+                                                    )
                                                 }
                                                 Text(
                                                     text = getCategoryDisplayName(gallery.category),
