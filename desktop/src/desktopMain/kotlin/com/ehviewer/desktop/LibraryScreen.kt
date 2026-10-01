@@ -715,6 +715,19 @@ fun LibraryScreen(
                                 modifier = Modifier.weight(1f, fill = false),
                             )
                             Text(
+                                text = "✕",
+                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                fontSize = 11.sp,
+                                modifier = Modifier
+                                    .pointerHoverIcon(PointerIcon.Hand)
+                                    .clickable {
+                                        remoteSearchQuery = ""
+                                        searchPage = 0
+                                        coroutineScope.launch { refreshGalleries() }
+                                    }
+                                    .padding(horizontal = 4.dp),
+                            )
+                            Text(
                                 text = "◀ Prev",
                                 color = if (searchPage > 0) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                 modifier = Modifier
