@@ -6,12 +6,6 @@ import com.ehviewer.core.model.BaseGalleryInfo
 object DesktopFavoritesState {
     fun isFavorite(favoriteGids: Set<Long>, gid: Long): Boolean = gid in favoriteGids
 
-    fun toggleFavoriteGid(currentFavorites: Set<Long>, gid: Long): Set<Long> = if (gid in currentFavorites) {
-        currentFavorites - gid
-    } else {
-        currentFavorites + gid
-    }
-
     fun toggleFavorite(currentFavorites: Set<Long>, gid: Long): Pair<Set<Long>, Boolean> {
         val isFav = gid in currentFavorites
         val updated = if (isFav) currentFavorites - gid else currentFavorites + gid

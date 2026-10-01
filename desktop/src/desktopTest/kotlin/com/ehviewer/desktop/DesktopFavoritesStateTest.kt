@@ -41,22 +41,6 @@ class DesktopFavoritesStateTest {
     }
 
     @Test
-    fun toggleFavoriteGid_addsWhenMissing_removesWhenPresent() {
-        val initial = setOf(101L, 102L)
-        val added = DesktopFavoritesState.toggleFavoriteGid(initial, 103L)
-        assertEquals(setOf(101L, 102L, 103L), added)
-
-        val removed = DesktopFavoritesState.toggleFavoriteGid(added, 101L)
-        assertEquals(setOf(102L, 103L), removed)
-
-        // 三角验证：针对空集合添加，以及对单元素移除至空
-        val fromEmpty = DesktopFavoritesState.toggleFavoriteGid(emptySet(), 999L)
-        assertEquals(setOf(999L), fromEmpty)
-        val toEmpty = DesktopFavoritesState.toggleFavoriteGid(fromEmpty, 999L)
-        assertEquals(emptySet(), toEmpty)
-    }
-
-    @Test
     fun toggleFavorite_returnsUpdatedSetAndNewStatus() {
         val initial = setOf(101L, 102L)
         val (addedSet, isFavAfterAdd) = DesktopFavoritesState.toggleFavorite(initial, 103L)
