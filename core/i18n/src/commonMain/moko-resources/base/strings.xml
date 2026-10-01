@@ -630,6 +630,18 @@
     <string name="menu_settings">Settings</string>
     <string name="menu_help">Help</string>
     <string name="menu_keyboard_shortcuts">Keyboard Shortcuts</string>
+    <string name="shortcut_close_window">Close window</string>
+    <string name="shortcut_refresh_galleries">Refresh galleries</string>
+    <string name="shortcut_open_gallery_by_link">Open gallery by URL or GID/Token</string>
+    <string name="shortcut_cycle_window">Cycle window focus</string>
+    <string name="shortcut_escape">Clear selection / Cancel search / Close window</string>
+    <string name="shortcut_navigate_list">Navigate gallery list</string>
+    <string name="shortcut_jump_first_last">Jump to first / last gallery</string>
+    <string name="shortcut_open_selected">Open selected gallery in standalone window</string>
+    <string name="shortcut_open_gallery">Open gallery in standalone window</string>
+    <string name="shortcut_context_menu">Context menu (copy, open browser, delete)</string>
+    <string name="shortcut_show_help">Show keyboard shortcuts</string>
+    <string name="settings_restore_session">Restore last session windows</string>
     <string name="settings_theme">Theme</string>
     <string name="settings_proxy">Proxy (host:port, empty = direct)</string>
     <string name="theme_follow_system">Follow system</string>
