@@ -1,10 +1,14 @@
 package com.ehviewer.desktop
 
-import androidx.compose.foundation.ContextMenuArea
-import androidx.compose.foundation.ContextMenuItem
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -18,6 +22,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
@@ -26,6 +31,8 @@ import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.isCtrlPressed
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
@@ -39,7 +46,9 @@ import com.ehviewer.core.i18n.MR
 import com.ehviewer.core.util.LogPriority
 import com.ehviewer.core.util.logcat
 import dev.icerock.moko.resources.compose.stringResource
+import java.util.concurrent.atomic.AtomicLong
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.drop
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -161,39 +170,21 @@ fun main() {
                         else -> isSystemInDarkTheme()
                     }
                     MiuixTheme(colors = if (darkTheme) miuixDarkColorScheme() else miuixLightColorScheme()) {
-                        val clipboard = LocalClipboardManager.current
-                        ContextMenuArea(
-                            items = {
-                                listOf(
-                                    ContextMenuItem("Copy") {
-                                        clipboard.setText(AnnotatedString("EhViewer Desktop"))
-                                    },
-                                )
-                            },
-                        ) {
-                            when (val kind = window.kind) {
-                                DesktopWindowKind.Settings -> SettingsScreen()
-                                DesktopWindowKind.Library -> LibraryScreen(
-                                    onOpenGalleryInNewWindow = { gallery ->
-                                        val (updated, _) = DesktopWindowManager.openOrFocusGallery(
-                                            windows = windows,
-                                            gallery = gallery,
-                                            nextIdProvider = { nextWindowId++ },
-                                        )
-                                        if (updated.size > windows.size) {
-                                            windows.add(updated.last())
-                                        }
-                                    },
-                                )
-                                is DesktopWindowKind.GalleryDetail -> {
-                                    GalleryDetailPane(
-                                        gallery = kind.gallery,
-                                        onCopy = { value, _ ->
-                                            clipboard.setText(AnnotatedString(value))
-                                        },
+                        when (val kind = window.kind) {
+                            DesktopWindowKind.Settings -> SettingsScreen()
+                            DesktopWindowKind.Library -> LibraryScreen(
+                                onOpenGalleryInNewWindow = { gallery ->
+                                    val (updated, _) = DesktopWindowManager.openOrFocusGallery(
+                                        windows = windows,
+                                        gallery = gallery,
+                                        nextIdProvider = { nextWindowId++ },
                                     )
-                                }
-                            }
+                                    if (updated.size > windows.size) {
+                                        windows.add(updated.last())
+                                    }
+                                },
+                            )
+                            is DesktopWindowKind.GalleryDetail -> GalleryDetailWindowContent(kind.gallery)
                         }
                     }
                 }
@@ -224,5 +215,75 @@ private fun FrameWindowScope.AppMenus(onNewWindow: () -> Unit, onOpenSettings: (
     }
     Menu(stringResource(MR.strings.menu_settings)) {
         Item(stringResource(MR.strings.menu_settings), onClick = onOpenSettings)
+    }
+}
+
+@Composable
+private fun GalleryDetailWindowContent(gallery: com.ehviewer.core.model.BaseGalleryInfo) {
+    var notifications by remember { mutableStateOf<List<DesktopNotification>>(emptyList()) }
+    val nextNotificationId = remember { AtomicLong(1L) }
+    val clipboard = LocalClipboardManager.current
+
+    fun showNotification(message: String) {
+        val now = System.currentTimeMillis()
+        notifications = DesktopNotificationManager.post(
+            current = notifications,
+            message = message,
+            timestamp = now,
+            idProvider = { nextNotificationId.getAndIncrement() },
+        )
+    }
+
+    LaunchedEffect(notifications) {
+        if (notifications.isNotEmpty()) {
+            delay(2500L)
+            notifications = DesktopNotificationManager.expire(
+                current = notifications,
+                currentTime = System.currentTimeMillis(),
+                ttlMs = 2500L,
+            )
+        }
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MiuixTheme.colorScheme.background),
+    ) {
+        GalleryDetailPane(
+            gallery = gallery,
+            onCopy = { value, label ->
+                clipboard.setText(AnnotatedString(value))
+                showNotification("Copied $label")
+                logcat("DetailWindow", LogPriority.INFO) { "Copied $label" }
+            },
+        )
+        if (notifications.isNotEmpty()) {
+            Column(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalAlignment = Alignment.End,
+            ) {
+                notifications.forEach { notice ->
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(MiuixTheme.colorScheme.surfaceContainerHighest)
+                            .pointerHoverIcon(PointerIcon.Hand)
+                            .clickable {
+                                notifications = DesktopNotificationManager.dismiss(notifications, notice.id)
+                            }
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                    ) {
+                        Text(
+                            text = notice.message,
+                            color = MiuixTheme.colorScheme.onSurface,
+                        )
+                    }
+                }
+            }
+        }
     }
 }

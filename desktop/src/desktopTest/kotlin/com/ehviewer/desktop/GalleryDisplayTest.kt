@@ -28,4 +28,12 @@ class GalleryDisplayTest {
         val noThumb = BaseGalleryInfo(thumbKey = null)
         assertNull(noThumb.thumbUrl)
     }
+
+    @Test
+    fun formatGalleryTagsFormatsWithCommaSeparation() {
+        assertEquals("touhou, parody, female:reimu", formatGalleryTags(listOf("touhou", "parody", "female:reimu")))
+        assertEquals("single_tag", formatGalleryTags(listOf("single_tag")))
+        assertEquals("", formatGalleryTags(emptyList()))
+        assertEquals("", formatGalleryTags(null))
+    }
 }

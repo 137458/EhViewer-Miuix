@@ -17,7 +17,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -67,6 +69,8 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 fun galleryWebUrl(gid: Long, token: String): String = "https://e-hentai.org/g/$gid/$token/"
 
 fun galleryDisplayTitle(title: String?, gid: Long): String = title?.trim()?.takeIf { it.isNotEmpty() } ?: gid.toString()
+
+fun formatGalleryTags(tags: List<String>?): String = tags?.joinToString(", ") ?: ""
 
 enum class LibraryTab {
     History,
@@ -396,7 +400,10 @@ fun LibraryScreen(
 @Composable
 internal fun GalleryDetailPane(gallery: BaseGalleryInfo, onCopy: (value: String, label: String) -> Unit) {
     Column(
-        modifier = Modifier.fillMaxSize().padding(16.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         val displayTitle = galleryDisplayTitle(gallery.title, gallery.gid)
@@ -436,7 +443,7 @@ internal fun GalleryDetailPane(gallery: BaseGalleryInfo, onCopy: (value: String,
         gallery.thumbUrl?.let { DetailRow(label = stringResource(MR.strings.key_thumb), value = it, onCopy = onCopy) }
         gallery.simpleTags?.takeIf { it.isNotEmpty() }?.let { tags ->
             Text(
-                text = tags.joinToString(", "),
+                text = formatGalleryTags(tags),
                 color = MiuixTheme.colorScheme.onBackground,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -466,7 +473,9 @@ private fun DetailRow(label: String, value: String, onCopy: (value: String, labe
         Text(
             text = stringResource(MR.strings.action_copy),
             color = MiuixTheme.colorScheme.primary,
-            modifier = Modifier.clickable { onCopy(value, label) },
+            modifier = Modifier
+                .pointerHoverIcon(PointerIcon.Hand)
+                .clickable { onCopy(value, label) },
         )
     }
 }
