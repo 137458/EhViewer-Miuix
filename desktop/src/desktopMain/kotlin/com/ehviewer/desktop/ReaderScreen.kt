@@ -12,8 +12,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -21,22 +23,75 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import com.ehviewer.core.database.client.GalleryDetailPageLinksParser
+import com.ehviewer.core.database.client.GalleryPageParser
+import com.ehviewer.core.model.BaseGalleryInfo
+import com.ehviewer.core.util.LogPriority
+import com.ehviewer.core.util.logcat
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-// 阅读窗口骨架：页码状态 + 图片区 + 翻页控件。
-// 图片获取链路（详情页→图片页→图片地址）由后续轮次接入，当前以占位呈现。
+// 阅读窗口：详情页链接提取 → 图片页解析 → 图片显示。
+// 图片页与解析链路均走桌面网络栈（desktopGet，代理随 DesktopSettings/环境变量）。
 @Composable
 fun ReaderScreen(
-    gallery: com.ehviewer.core.model.BaseGalleryInfo,
+    gallery: BaseGalleryInfo,
     onClose: () -> Unit,
 ) {
     var page by remember { mutableIntStateOf(1) }
+    var pageLinks by remember { mutableStateOf<List<GalleryDetailPageLinksParser.PageLink>>(emptyList()) }
+    var linksState by remember { mutableStateOf<String?>(null) }
+    var imageUrl by remember { mutableStateOf<String?>(null) }
+    var imageState by remember { mutableStateOf<String?>(null) }
     val displayTitle = gallery.title?.takeIf { it.isNotBlank() }
         ?: gallery.titleJpn?.takeIf { it.isNotBlank() }
         ?: gallery.gid.toString()
+
+    LaunchedEffect(gallery.gid) {
+        imageState = "Loading page links..."
+        runCatching {
+            withContext(Dispatchers.IO) {
+                val detail = desktopGet(galleryWebUrl(gallery.gid, gallery.token))
+                GalleryDetailPageLinksParser.parse(detail.body)
+            }
+        }.onSuccess { links ->
+            if (links.isEmpty()) {
+                linksState = "No page links found (login required or parse failure)"
+                imageState = null
+            } else {
+                pageLinks = links
+                linksState = null
+            }
+        }.onFailure {
+            linksState = "Failed to load gallery: ${it.message}"
+            imageState = null
+        }
+    }
+
+    val currentLink = pageLinks.getOrNull(page - 1)
+    LaunchedEffect(currentLink) {
+        val link = currentLink ?: return@LaunchedEffect
+        imageState = "Loading image..."
+        imageUrl = null
+        withContext(Dispatchers.IO) {
+            runCatching {
+                val pageResponse = desktopGet(link.pageUrl)
+                GalleryPageParser.parse(pageResponse.body)?.imageUrl
+            }.getOrElse { "ERROR: ${it.message}" }
+        }.let { result ->
+            if (result?.startsWith("ERROR:") == true) {
+                imageState = result.removePrefix("ERROR: ")
+            } else {
+                imageState = null
+                imageUrl = result
+            }
+        }
+    }
 
     Column(modifier = Modifier.fillMaxSize().background(MiuixTheme.colorScheme.background)) {
         Row(
@@ -54,7 +109,7 @@ fun ReaderScreen(
                 modifier = Modifier.weight(1f),
             )
             Text(
-                text = "Page $page",
+                text = if (pageLinks.isEmpty()) "" else "Page $page / ${pageLinks.size}",
                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
             )
             Text(
@@ -74,10 +129,23 @@ fun ReaderScreen(
                 .background(Color.Black),
             contentAlignment = Alignment.Center,
         ) {
-            Text(
-                text = "Image loading pipeline lands in a later iteration",
-                color = Color.White.copy(alpha = 0.6f),
-            )
+            val url = imageUrl
+            when {
+                url != null -> AsyncImage(
+                    model = url,
+                    contentDescription = displayTitle,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Fit,
+                )
+                imageState != null -> Text(
+                    text = imageState!!,
+                    color = Color.White.copy(alpha = 0.7f),
+                )
+                else -> Text(
+                    text = "Loading...",
+                    color = Color.White.copy(alpha = 0.5f),
+                )
+            }
         }
 
         Row(
@@ -98,10 +166,10 @@ fun ReaderScreen(
             Box(modifier = Modifier.weight(1f))
             Text(
                 text = "Next ▶",
-                color = MiuixTheme.colorScheme.primary,
+                color = if (page < pageLinks.size) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 modifier = Modifier
                     .pointerHoverIcon(PointerIcon.Hand)
-                    .clickable { page += 1 }
+                    .clickable(enabled = page < pageLinks.size) { page += 1 }
                     .padding(horizontal = 8.dp, vertical = 4.dp),
             )
         }
