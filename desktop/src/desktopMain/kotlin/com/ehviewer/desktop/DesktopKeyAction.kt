@@ -11,6 +11,7 @@ enum class DesktopKeyAction {
     SelectNext,
     SelectPrevious,
     OpenSelected,
+    OpenLinkDialog,
 }
 
 fun resolveKeyAction(
@@ -25,6 +26,7 @@ fun resolveKeyAction(
     return when {
         isCtrlPressed && (key == Key.Q || key == Key.W) -> DesktopKeyAction.CloseWindow
         isCtrlPressed && key == Key.R -> DesktopKeyAction.Refresh
+        isCtrlPressed && key == Key.O -> DesktopKeyAction.OpenLinkDialog
         !isCtrlPressed && key == Key.F5 -> DesktopKeyAction.Refresh
         !isCtrlPressed && key == Key.F1 -> DesktopKeyAction.ShowShortcutsHelp
         !isCtrlPressed && key == Key.Escape && canCloseOnEscape -> DesktopKeyAction.CloseWindow

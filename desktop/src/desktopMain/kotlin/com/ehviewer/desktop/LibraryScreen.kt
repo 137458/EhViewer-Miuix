@@ -124,6 +124,7 @@ fun LibraryScreen(
         DesktopSearchHistory.decode(searchHistoryRaw)
     }
     var previewCoverUrl by remember { mutableStateOf<String?>(null) }
+    var showOpenGalleryDialog by remember { mutableStateOf(false) }
     var notifications by remember { mutableStateOf<List<DesktopNotification>>(emptyList()) }
     val nextNotificationId = remember { AtomicLong(1L) }
     val clipboard = LocalClipboardManager.current
@@ -258,55 +259,69 @@ fun LibraryScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .onPreviewKeyEvent { event ->
-                    val action = resolveKeyAction(
-                        isKeyDown = event.type == KeyEventType.KeyDown,
-                        isCtrlPressed = event.isCtrlPressed,
-                        key = event.key,
-                        hasSelection = selected != null,
-                    )
-                    when (action) {
-                        DesktopKeyAction.ClearSelection -> {
-                            if (previewCoverUrl != null) {
-                                previewCoverUrl = null
-                            } else if (searchQuery.isNotEmpty()) {
-                                searchQuery = ""
-                            } else {
-                                selected = null
-                            }
+                    if (showOpenGalleryDialog) {
+                        // 对话框打开期间只拦截 Escape 关闭，其余按键让给输入框
+                        if (event.type == KeyEventType.KeyDown && !event.isCtrlPressed && event.key == Key.Escape) {
+                            showOpenGalleryDialog = false
                             true
+                        } else {
+                            false
                         }
-                        DesktopKeyAction.Refresh -> {
-                            coroutineScope.launch { refreshGalleries() }
-                            true
-                        }
-                        DesktopKeyAction.SelectNext -> {
-                            val next = DesktopNavigation.nextSelection(filteredItems, selected)
-                            if (next != null) {
-                                selected = next
+                    } else {
+                        val action = resolveKeyAction(
+                            isKeyDown = event.type == KeyEventType.KeyDown,
+                            isCtrlPressed = event.isCtrlPressed,
+                            key = event.key,
+                            hasSelection = selected != null,
+                        )
+                        when (action) {
+                            DesktopKeyAction.ClearSelection -> {
+                                if (previewCoverUrl != null) {
+                                    previewCoverUrl = null
+                                } else if (searchQuery.isNotEmpty()) {
+                                    searchQuery = ""
+                                } else {
+                                    selected = null
+                                }
                                 true
-                            } else {
-                                false
                             }
-                        }
-                        DesktopKeyAction.SelectPrevious -> {
-                            val prev = DesktopNavigation.previousSelection(filteredItems, selected)
-                            if (prev != null) {
-                                selected = prev
+                            DesktopKeyAction.Refresh -> {
+                                coroutineScope.launch { refreshGalleries() }
                                 true
-                            } else {
-                                false
                             }
+                            DesktopKeyAction.SelectNext -> {
+                                val next = DesktopNavigation.nextSelection(filteredItems, selected)
+                                if (next != null) {
+                                    selected = next
+                                    true
+                                } else {
+                                    false
+                                }
+                            }
+                            DesktopKeyAction.SelectPrevious -> {
+                                val prev = DesktopNavigation.previousSelection(filteredItems, selected)
+                                if (prev != null) {
+                                    selected = prev
+                                    true
+                                } else {
+                                    false
+                                }
+                            }
+                            DesktopKeyAction.OpenSelected -> {
+                                if (searchQuery.isNotBlank()) {
+                                    recordSearch(searchQuery)
+                                }
+                                selected?.let { gallery ->
+                                    onOpenGalleryInNewWindow?.invoke(gallery)
+                                }
+                                true
+                            }
+                            DesktopKeyAction.OpenLinkDialog -> {
+                                showOpenGalleryDialog = true
+                                true
+                            }
+                            else -> false
                         }
-                        DesktopKeyAction.OpenSelected -> {
-                            if (searchQuery.isNotBlank()) {
-                                recordSearch(searchQuery)
-                            }
-                            selected?.let { gallery ->
-                                onOpenGalleryInNewWindow?.invoke(gallery)
-                            }
-                            true
-                        }
-                        else -> false
                     }
                 },
         ) {
@@ -887,6 +902,96 @@ fun LibraryScreen(
                 imageUrl = coverUrl,
                 onDismiss = { previewCoverUrl = null },
             )
+        }
+
+        if (showOpenGalleryDialog) {
+            OpenGalleryDialog(
+                onDismiss = { showOpenGalleryDialog = false },
+                onOpen = { target ->
+                    showOpenGalleryDialog = false
+                    showNotification("Opening gallery ${target.gid}")
+                    onOpenGalleryInNewWindow?.invoke(DesktopOpenGalleryState.createGalleryInfo(target))
+                },
+            )
+        }
+    }
+}
+
+@Composable
+private fun OpenGalleryDialog(
+    onDismiss: () -> Unit,
+    onOpen: (GalleryParsedTarget) -> Unit,
+) {
+    var input by remember { mutableStateOf("") }
+    var attempted by remember { mutableStateOf(false) }
+    val target = remember(input) { DesktopOpenGalleryState.parseInput(input) }
+    val errorText = if (attempted) DesktopOpenGalleryState.validateInput(input) else null
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.5f))
+            .clickable(onClick = onDismiss),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            modifier = Modifier
+                .width(440.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(MiuixTheme.colorScheme.surface)
+                .clickable(enabled = false) {}
+                .padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(text = "Open Gallery", color = MiuixTheme.colorScheme.primary)
+            OutlinedTextField(
+                value = input,
+                onValueChange = {
+                    input = it
+                    attempted = false
+                },
+                placeholder = { Text("Gallery URL or GID/Token (Ctrl+V to paste)") },
+                singleLine = true,
+                isError = errorText != null,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(
+                    onDone = {
+                        if (target != null) onOpen(target) else attempted = true
+                    },
+                ),
+                modifier = Modifier.fillMaxWidth(),
+            )
+            if (errorText != null) {
+                Text(
+                    text = errorText,
+                    color = MiuixTheme.colorScheme.error,
+                    fontSize = 12.sp,
+                )
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "Cancel",
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    modifier = Modifier
+                        .pointerHoverIcon(PointerIcon.Hand)
+                        .clickable(onClick = onDismiss)
+                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                )
+                Text(
+                    text = "Open",
+                    color = if (target != null) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    modifier = Modifier
+                        .pointerHoverIcon(PointerIcon.Hand)
+                        .clickable {
+                            if (target != null) onOpen(target) else attempted = true
+                        }
+                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                )
+            }
         }
     }
 }
