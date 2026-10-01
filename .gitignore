@@ -17,3 +17,8 @@ replay_pid*.log
 
 # 桌面 Rust dll 由构建复制，不入库
 desktop/src/desktopMain/resources/native/
+
+# Rust 构建产物与本地工作草稿不入库
+app/src/main/rust/target-desk/
+app/src/main/rust/target-gnudesktop/
+.goal/
