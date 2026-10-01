@@ -38,6 +38,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -126,6 +127,10 @@ fun LibraryScreen(
     var searchPage by remember { mutableIntStateOf(0) }
     var remoteSearchQuery by remember { mutableStateOf("") }
 
+    // 游标导航栈：记录每次远程搜索请求的 next 游标（null=第一页），支撑双向翻页
+    val cursorStack = remember { mutableStateListOf<Long?>(null) }
+    var cursorIndex by remember { mutableIntStateOf(0) }
+
     fun switchTab(tab: LibraryTab) {
         currentTab = tab
         DesktopSettings.lastTab.value = tab.name
@@ -192,9 +197,15 @@ fun LibraryScreen(
         DesktopSettings.searchHistory.value = DesktopSearchHistory.encode(updated)
     }
 
-    fun remoteSearch(query: String, nextGid: Long? = null) {
+    fun remoteSearch(query: String, nextGid: Long? = null, pushCursor: Boolean = true) {
         val url = DesktopSearchUrl.build(query, nextGid = nextGid) ?: return
         remoteSearchQuery = query
+        if (pushCursor) {
+            // 新方向搜索：截断回退分支后压入本次游标
+            while (cursorStack.size > cursorIndex + 1) cursorStack.removeAt(cursorStack.size - 1)
+            cursorStack.add(nextGid)
+            cursorIndex += 1
+        }
         // 列表即将被新页替换，清除跨页残留的选中态
         selected = null
         coroutineScope.launch {
@@ -729,22 +740,26 @@ fun LibraryScreen(
                                     .clickable {
                                         remoteSearchQuery = ""
                                         searchPage = 0
+                                        cursorStack.clear()
+                                        cursorStack.add(null)
+                                        cursorIndex = 0
                                         coroutineScope.launch { refreshGalleries() }
                                     }
                                     .padding(horizontal = 4.dp),
                             )
                             Text(
                                 text = "◀ Prev",
-                                color = if (searchPage > 0) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                color = if (cursorIndex > 0) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                 modifier = Modifier
                                     .pointerHoverIcon(PointerIcon.Hand)
-                                    .clickable(enabled = searchPage > 0) {
-                                        remoteSearch(remoteSearchQuery)
+                                    .clickable(enabled = cursorIndex > 0) {
+                                        cursorIndex -= 1
+                                        remoteSearch(remoteSearchQuery, nextGid = cursorStack[cursorIndex], pushCursor = false)
                                     }
                                     .padding(horizontal = 8.dp, vertical = 4.dp),
                             )
                             Text(
-                                text = stringResource(MR.strings.desktop_online_page_n, searchPage + 1),
+                                text = stringResource(MR.strings.desktop_online_page_n, cursorIndex + 1),
                                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                 fontSize = 11.sp,
                             )
@@ -755,7 +770,13 @@ fun LibraryScreen(
                                 modifier = Modifier
                                     .pointerHoverIcon(PointerIcon.Hand)
                                     .clickable(enabled = online.isNotEmpty()) {
-                                        remoteSearch(remoteSearchQuery, nextGid = online.lastOrNull()?.gid)
+                                        val lastGid = online.lastOrNull()?.gid
+                                        if (lastGid != null) {
+                                            while (cursorStack.size > cursorIndex + 1) cursorStack.removeAt(cursorStack.size - 1)
+                                            cursorStack.add(lastGid)
+                                            cursorIndex += 1
+                                            remoteSearch(remoteSearchQuery, nextGid = lastGid, pushCursor = false)
+                                        }
                                     }
                                     .padding(horizontal = 8.dp, vertical = 4.dp),
                             )
