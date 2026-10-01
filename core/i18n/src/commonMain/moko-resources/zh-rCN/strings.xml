@@ -759,6 +759,9 @@
     <string name="desktop_reader_loading_image">正在加载图片…</string>
     <string name="desktop_reader_loading">加载中…</string>
     <string name="desktop_reader_page_progress">第 %1$d / %2$d 页</string>
+    <string name="settings_reading_direction">阅读方向</string>
+    <string name="settings_reading_direction_ltr">从左到右</string>
+    <string name="settings_reading_direction_rtl">从右到左（日漫）</string>
     <string name="desktop_reader_prev">◀ 上一页</string>
     <string name="desktop_reader_next">下一页 ▶</string>
     <string name="desktop_online_page_n">第 %1$d 页</string>

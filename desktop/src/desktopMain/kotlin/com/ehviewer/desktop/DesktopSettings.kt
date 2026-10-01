@@ -31,6 +31,9 @@ object DesktopSettings : DataStorePreferences("desktop") {
     // 上次浏览的主库 Tab（History/Favorites/Online，跨会话保留）
     val lastTab = stringPref("last_tab", "History")
 
+    // 阅读方向（LTR 西式 / RTL 日漫），影响阅读器点击区域与方向键语义
+    val readingDirection = stringPref("reading_direction", "LTR")
+
     // false = 启动不恢复上次会话窗口，true = 恢复
     val restoreSession = boolPref("restore_session", true)
 }

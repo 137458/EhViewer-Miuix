@@ -76,6 +76,8 @@ fun ReaderScreen(
         ?: gallery.titleJpn?.takeIf { it.isNotBlank() }
         ?: gallery.gid.toString()
     val context = LocalPlatformContext.current
+    // 阅读方向（RTL 日漫：右区上一页、← 为下一页）
+    val readingDirection = DesktopReadingDirection.fromPersisted(DesktopSettings.readingDirection.value)
     val clipboard = LocalClipboardManager.current
     val loadingLinksText = stringResource(MR.strings.desktop_reader_loading_links)
     val noLinksText = stringResource(MR.strings.desktop_reader_no_links)
@@ -148,11 +150,13 @@ fun ReaderScreen(
                 if (event.type == KeyEventType.KeyDown) {
                     when (event.key) {
                         Key.DirectionRight -> {
-                            if (!showJumpInput && page < pageLinks.size) page += 1
+                            val delta = readingDirection.pageDeltaForKey(forward = true)
+                            if (!showJumpInput && page + delta in 1..pageLinks.size) page += delta
                             !showJumpInput
                         }
                         Key.DirectionLeft -> {
-                            if (!showJumpInput && page > 1) page -= 1
+                            val delta = readingDirection.pageDeltaForKey(forward = false)
+                            if (!showJumpInput && page + delta in 1..pageLinks.size) page += delta
                             !showJumpInput
                         }
                         else -> false
@@ -237,12 +241,12 @@ fun ReaderScreen(
                 .pointerInput(Unit) {
                     detectTapGestures(
                         onTap = { tap ->
-                            // 未缩放时点击左右 1/3 区域翻页（漫画阅读器标准交互）
+                            // 未缩放时点击左右 1/3 区域翻页（方向随阅读方向设置）
                             if (scale <= 1f && size.width > 0) {
-                                when {
-                                    tap.x < size.width / 3f -> if (page > 1) page -= 1
-                                    tap.x > size.width * 2f / 3f -> if (page < pageLinks.size) page += 1
-                                }
+                                val rightZone = tap.x > size.width / 2f
+                                val delta = readingDirection.pageDeltaForZone(rightZone = rightZone)
+                                val target = page + delta
+                                if (target in 1..pageLinks.size) page = target
                             }
                         },
                         onDoubleTap = {

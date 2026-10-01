@@ -59,6 +59,21 @@ fun SettingsScreen() {
             )
         }
         item {
+            val direction by DesktopSettings.readingDirection.valueFlow()
+                .collectAsState(DesktopSettings.readingDirection.value)
+            BasicComponent(
+                title = stringResource(MR.strings.settings_reading_direction),
+                summary = if (direction == "RTL") {
+                    stringResource(MR.strings.settings_reading_direction_rtl)
+                } else {
+                    stringResource(MR.strings.settings_reading_direction_ltr)
+                },
+                onClick = {
+                    DesktopSettings.readingDirection.value = if (direction == "RTL") "LTR" else "RTL"
+                },
+            )
+        }
+        item {
             OutlinedTextField(
                 value = proxyText,
                 onValueChange = {

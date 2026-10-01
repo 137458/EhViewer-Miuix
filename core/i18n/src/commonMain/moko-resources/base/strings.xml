@@ -685,6 +685,9 @@
     <string name="desktop_reader_loading_image">Loading image…</string>
     <string name="desktop_reader_loading">Loading…</string>
     <string name="desktop_reader_page_progress">Page %1$d / %2$d</string>
+    <string name="settings_reading_direction">Reading direction</string>
+    <string name="settings_reading_direction_ltr">Left to right</string>
+    <string name="settings_reading_direction_rtl">Right to left (manga)</string>
     <string name="desktop_reader_prev">◀ Prev</string>
     <string name="desktop_reader_next">Next ▶</string>
     <string name="desktop_online_page_n">Page %1$d</string>
