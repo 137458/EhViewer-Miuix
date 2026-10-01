@@ -136,6 +136,13 @@ fun LibraryScreen(
     val connectingServerText = stringResource(MR.strings.desktop_online_connecting)
     val onlineEmptyText = stringResource(MR.strings.desktop_online_empty)
     val openingGalleryText = stringResource(MR.strings.desktop_notification_opening_gallery)
+    val addedToFavoritesText = stringResource(MR.strings.add_to_favorite_success)
+    val removedFromFavoritesText = stringResource(MR.strings.remove_from_favorite_success)
+    val copiedText = stringResource(MR.strings.desktop_copied)
+    val linkCopiedText = stringResource(MR.strings.desktop_link_copied)
+    val removedFromHistoryText = stringResource(MR.strings.desktop_removed_from_history)
+    val filterText = stringResource(MR.strings.desktop_filter)
+    val noBrowserText = stringResource(MR.strings.no_browser_installed)
 
     fun showNotification(message: String) {
         val now = System.currentTimeMillis()
@@ -223,7 +230,7 @@ fun LibraryScreen(
                     removedGid = gallery.gid,
                     isInFavoritesTab = currentTab == LibraryTab.Favorites,
                 )
-                showNotification("Removed from favorites")
+                showNotification(removedFromFavoritesText)
             } else {
                 withContext(Dispatchers.IO) {
                     val entity = DesktopFavoritesState.toGalleryEntity(gallery)
@@ -233,7 +240,7 @@ fun LibraryScreen(
                 favoriteGids = DesktopFavoritesState.toggleFavoriteGid(favoriteGids, gallery.gid)
                 val entity = DesktopFavoritesState.toGalleryEntity(gallery)
                 favorites = listOf(entity) + favorites.filter { it.gid != gallery.gid }
-                showNotification("Added to favorites")
+                showNotification(addedToFavoritesText)
             }
         }
     }
@@ -475,7 +482,7 @@ fun LibraryScreen(
                                                 currentSelected = selected,
                                                 currentTabIsHistory = true,
                                             )
-                                            showNotification("History cleared")
+                                            showNotification(historyClearedMessage)
                                         }
                                     }
                                     .padding(vertical = 4.dp, horizontal = 4.dp),
@@ -691,11 +698,11 @@ fun LibraryScreen(
                             val menuItems = mutableListOf(
                                 ContextMenuItem(copyTitleLabel) {
                                     clipboard.setText(AnnotatedString(title))
-                                    showNotification("Copied: $title")
+                                    showNotification("$copiedText: $title")
                                 },
                                 ContextMenuItem(copyLinkLabel) {
                                     clipboard.setText(AnnotatedString(link))
-                                    showNotification("Copied link")
+                                    showNotification(linkCopiedText)
                                 },
                                 ContextMenuItem(openBrowserLabel) {
                                     openBrowser(link)
@@ -726,7 +733,7 @@ fun LibraryScreen(
                                             }
                                             history = DesktopHistoryState.removeGallery(history, gallery.gid)
                                             selected = DesktopHistoryState.updateSelectionAfterDelete(selected, gallery.gid)
-                                            showNotification("Removed from history")
+                                            showNotification(removedFromHistoryText)
                                         }
                                     },
                                 )
@@ -874,18 +881,18 @@ fun LibraryScreen(
                         onToggleFavorite = { toggleFavorite(gallery) },
                         onCopy = { value, label ->
                             clipboard.setText(AnnotatedString(value))
-                            showNotification("Copied $label")
+                            showNotification(if (label.isBlank()) copiedText else "$copiedText: $label")
                             logcat("Library", LogPriority.INFO) { "Copied $label" }
                         },
                         onOpenUrl = { url ->
                             if (!DesktopBrowser.openUrl(url)) {
-                                showNotification("Failed to open browser")
+                                showNotification(noBrowserText)
                             }
                         },
                         onSearchTag = { tag ->
                             searchQuery = tag
                             recordSearch(tag)
-                            showNotification("Filter: $tag")
+                            showNotification("$filterText: $tag")
                         },
                         onPreviewCover = { url -> previewCoverUrl = url },
                     )
