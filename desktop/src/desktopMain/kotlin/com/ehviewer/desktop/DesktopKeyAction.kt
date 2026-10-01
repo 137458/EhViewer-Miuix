@@ -8,6 +8,9 @@ enum class DesktopKeyAction {
     Refresh,
     ClearSelection,
     ShowShortcutsHelp,
+    SelectNext,
+    SelectPrevious,
+    OpenSelected,
 }
 
 fun resolveKeyAction(
@@ -26,6 +29,9 @@ fun resolveKeyAction(
         !isCtrlPressed && key == Key.F1 -> DesktopKeyAction.ShowShortcutsHelp
         !isCtrlPressed && key == Key.Escape && canCloseOnEscape -> DesktopKeyAction.CloseWindow
         !isCtrlPressed && key == Key.Escape && hasSelection -> DesktopKeyAction.ClearSelection
+        !isCtrlPressed && key == Key.DirectionDown -> DesktopKeyAction.SelectNext
+        !isCtrlPressed && key == Key.DirectionUp -> DesktopKeyAction.SelectPrevious
+        !isCtrlPressed && key == Key.Enter && hasSelection -> DesktopKeyAction.OpenSelected
         else -> DesktopKeyAction.None
     }
 }

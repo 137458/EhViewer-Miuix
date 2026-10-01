@@ -170,4 +170,63 @@ class DesktopKeyActionTest {
         )
         assertEquals(DesktopKeyAction.None, actionEsc)
     }
+
+    @Test
+    fun directionKeysAndEnterResolveCorrectly() {
+        val nextAction = resolveKeyAction(
+            isKeyDown = true,
+            isCtrlPressed = false,
+            key = Key.DirectionDown,
+        )
+        assertEquals(DesktopKeyAction.SelectNext, nextAction)
+
+        val prevAction = resolveKeyAction(
+            isKeyDown = true,
+            isCtrlPressed = false,
+            key = Key.DirectionUp,
+        )
+        assertEquals(DesktopKeyAction.SelectPrevious, prevAction)
+
+        val enterWithSelection = resolveKeyAction(
+            isKeyDown = true,
+            isCtrlPressed = false,
+            key = Key.Enter,
+            hasSelection = true,
+        )
+        assertEquals(DesktopKeyAction.OpenSelected, enterWithSelection)
+
+        val enterWithoutSelection = resolveKeyAction(
+            isKeyDown = true,
+            isCtrlPressed = false,
+            key = Key.Enter,
+            hasSelection = false,
+        )
+        assertEquals(DesktopKeyAction.None, enterWithoutSelection)
+    }
+
+    @Test
+    fun desktopNavigationSelectsNextAndPrevious() {
+        val g1 = com.ehviewer.core.model.BaseGalleryInfo(gid = 1L)
+        val g2 = com.ehviewer.core.model.BaseGalleryInfo(gid = 2L)
+        val g3 = com.ehviewer.core.model.BaseGalleryInfo(gid = 3L)
+        val list = listOf(g1, g2, g3)
+
+        // 未选中时按下：首项
+        assertEquals(g1, DesktopNavigation.nextSelection(list, null))
+        // 从 g1 下移：g2
+        assertEquals(g2, DesktopNavigation.nextSelection(list, g1))
+        // 从 g3 下移：停留在 g3（或不越界）
+        assertEquals(g3, DesktopNavigation.nextSelection(list, g3))
+
+        // 未选中时按上：末项
+        assertEquals(g3, DesktopNavigation.previousSelection(list, null))
+        // 从 g3 上移：g2
+        assertEquals(g2, DesktopNavigation.previousSelection(list, g3))
+        // 从 g1 上移：停留在 g1
+        assertEquals(g1, DesktopNavigation.previousSelection(list, g1))
+
+        // 空列表
+        assertEquals(null, DesktopNavigation.nextSelection(emptyList(), null))
+        assertEquals(null, DesktopNavigation.previousSelection(emptyList(), null))
+    }
 }

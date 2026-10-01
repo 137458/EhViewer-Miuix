@@ -215,6 +215,16 @@ fun LibraryScreen(
         }
     }
 
+    val currentItems: List<BaseGalleryInfo> = when (currentTab) {
+        LibraryTab.History -> history
+        LibraryTab.Favorites -> favorites
+        LibraryTab.Online -> online
+    }
+    val filteredItems = remember(currentItems, searchQuery, sortConfig) {
+        val filtered = GalleryFilter.filterGalleries(currentItems, searchQuery)
+        sortConfig.sort(filtered)
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
@@ -237,6 +247,30 @@ fun LibraryScreen(
                         }
                         DesktopKeyAction.Refresh -> {
                             coroutineScope.launch { refreshGalleries() }
+                            true
+                        }
+                        DesktopKeyAction.SelectNext -> {
+                            val next = DesktopNavigation.nextSelection(filteredItems, selected)
+                            if (next != null) {
+                                selected = next
+                                true
+                            } else {
+                                false
+                            }
+                        }
+                        DesktopKeyAction.SelectPrevious -> {
+                            val prev = DesktopNavigation.previousSelection(filteredItems, selected)
+                            if (prev != null) {
+                                selected = prev
+                                true
+                            } else {
+                                false
+                            }
+                        }
+                        DesktopKeyAction.OpenSelected -> {
+                            selected?.let { gallery ->
+                                onOpenGalleryInNewWindow?.invoke(gallery)
+                            }
                             true
                         }
                         else -> false
@@ -352,15 +386,6 @@ fun LibraryScreen(
                         )
                     }
                     HorizontalDivider()
-                    val currentItems: List<BaseGalleryInfo> = when (currentTab) {
-                        LibraryTab.History -> history
-                        LibraryTab.Favorites -> favorites
-                        LibraryTab.Online -> online
-                    }
-                    val filteredItems = remember(currentItems, searchQuery, sortConfig) {
-                        val filtered = GalleryFilter.filterGalleries(currentItems, searchQuery)
-                        sortConfig.sort(filtered)
-                    }
                     if (filteredItems.isEmpty()) {
                         Box(modifier = Modifier.fillMaxSize().padding(16.dp), contentAlignment = Alignment.Center) {
                             Text(

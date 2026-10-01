@@ -36,6 +36,7 @@
 - 桌面端画廊列表多字段即时排序与升降序切换：搜索栏新增即时排序控件（支持按默认原序、评分、页数、标题循环切换与升降序切换），采用稳定排序算法对过滤后的画廊列表即时重排，由独立 DesktopSortConfig / DesktopSortField / DesktopSortDirection 纯逻辑驱动并提供完整单元测试与边界三角验证覆盖。
 - 画廊分类名称解析（getCategoryName / getCategoryDisplayName）下沉至共享 core:data 层并与桌面端展示/搜索联动：消除列表与详情面板裸露数字分类的问题，改为规范友好的分类名称（如 Manga / Doujinshi / Cosplay 等）；桌面端画廊搜索框全面支持输入分类代码与呈现名称进行即时匹配，提供完整单元测试与三角边界验证覆盖。
 - 桌面端画廊评分格式化与星级组件全景呈现：卡片网格视图与画廊详情面板接入共享 core:ui 的 GalleryListCardRating 星级组件，详情面板 DetailRow 扩展 extraContent 槽位并显示规范两位小数评分（formatRatingScore），卡片网格紧凑呈现星级与元数据摘要（formatCardMeta），由独立 DesktopRating 纯逻辑驱动并提供完整单元测试与边界三角验证覆盖。
+- 桌面端全键盘画廊列表导航与回车开窗闭环：支持按方向键 ↑ / ↓ 在画廊列表中顺序上下移动选择（右侧详情面板即时联动呈现），在已有选中项时按 Enter 键一键在独立窗口打开画廊详情，按键动作与列表状态计算收敛至独立 DesktopNavigation 纯逻辑算法并提供完整单元测试覆盖，快捷键指南（F1）同步更新。
 
 ### 修复
 
