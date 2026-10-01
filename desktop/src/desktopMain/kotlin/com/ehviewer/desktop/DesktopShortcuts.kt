@@ -13,6 +13,7 @@ object DesktopShortcuts {
         DesktopShortcutEntry("Ctrl + Tab", "Cycle window focus"),
         DesktopShortcutEntry("Escape", "Clear selection / Cancel search / Close window"),
         DesktopShortcutEntry("↑ / ↓", "Navigate gallery list"),
+        DesktopShortcutEntry("Home / End", "Jump to first / last gallery"),
         DesktopShortcutEntry("Enter", "Open selected gallery in standalone window"),
         DesktopShortcutEntry("Double Click", "Open gallery in standalone window"),
         DesktopShortcutEntry("Right Click", "Context menu (copy, open browser, delete)"),

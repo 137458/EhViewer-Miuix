@@ -313,6 +313,14 @@ fun LibraryScreen(
                                     false
                                 }
                             }
+                            DesktopKeyAction.SelectFirst -> {
+                                DesktopNavigation.nextSelection(filteredItems, null)?.let { selected = it }
+                                filteredItems.isNotEmpty()
+                            }
+                            DesktopKeyAction.SelectLast -> {
+                                DesktopNavigation.previousSelection(filteredItems, null)?.let { selected = it }
+                                filteredItems.isNotEmpty()
+                            }
                             DesktopKeyAction.OpenSelected -> {
                                 if (searchQuery.isNotBlank()) {
                                     recordSearch(searchQuery)

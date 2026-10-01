@@ -278,6 +278,28 @@ class DesktopKeyActionTest {
     }
 
     @Test
+    fun homeEndResolveToFirstAndLastSelection() {
+        assertEquals(
+            DesktopKeyAction.SelectFirst,
+            resolveKeyAction(isKeyDown = true, isCtrlPressed = false, key = Key.MoveHome),
+        )
+        assertEquals(
+            DesktopKeyAction.SelectLast,
+            resolveKeyAction(isKeyDown = true, isCtrlPressed = false, key = Key.MoveEnd),
+        )
+        // KeyUp 忽略
+        assertEquals(
+            DesktopKeyAction.None,
+            resolveKeyAction(isKeyDown = false, isCtrlPressed = false, key = Key.MoveHome),
+        )
+        // Ctrl+Home 不触发（保留系统语义）
+        assertEquals(
+            DesktopKeyAction.None,
+            resolveKeyAction(isKeyDown = true, isCtrlPressed = true, key = Key.MoveHome),
+        )
+    }
+
+    @Test
     fun desktopNavigationSelectsNextAndPrevious() {
         val g1 = com.ehviewer.core.model.BaseGalleryInfo(gid = 1L)
         val g2 = com.ehviewer.core.model.BaseGalleryInfo(gid = 2L)

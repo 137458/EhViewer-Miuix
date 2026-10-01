@@ -10,6 +10,8 @@ enum class DesktopKeyAction {
     ShowShortcutsHelp,
     SelectNext,
     SelectPrevious,
+    SelectFirst,
+    SelectLast,
     OpenSelected,
     OpenLinkDialog,
     CycleWindow,
@@ -35,6 +37,8 @@ fun resolveKeyAction(
         !isCtrlPressed && key == Key.Escape && hasSelection -> DesktopKeyAction.ClearSelection
         !isCtrlPressed && key == Key.DirectionDown -> DesktopKeyAction.SelectNext
         !isCtrlPressed && key == Key.DirectionUp -> DesktopKeyAction.SelectPrevious
+        !isCtrlPressed && key == Key.MoveHome -> DesktopKeyAction.SelectFirst
+        !isCtrlPressed && key == Key.MoveEnd -> DesktopKeyAction.SelectLast
         !isCtrlPressed && (key == Key.Enter || key == Key.NumPadEnter) && hasSelection -> DesktopKeyAction.OpenSelected
         else -> DesktopKeyAction.None
     }
