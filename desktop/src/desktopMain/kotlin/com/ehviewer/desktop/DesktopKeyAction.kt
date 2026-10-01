@@ -14,13 +14,15 @@ fun resolveKeyAction(
     isCtrlPressed: Boolean,
     key: Key,
     hasSelection: Boolean = false,
+    canCloseOnEscape: Boolean = false,
 ): DesktopKeyAction {
     if (!isKeyDown) return DesktopKeyAction.None
 
     return when {
-        isCtrlPressed && key == Key.Q -> DesktopKeyAction.CloseWindow
+        isCtrlPressed && (key == Key.Q || key == Key.W) -> DesktopKeyAction.CloseWindow
         isCtrlPressed && key == Key.R -> DesktopKeyAction.Refresh
         !isCtrlPressed && key == Key.F5 -> DesktopKeyAction.Refresh
+        !isCtrlPressed && key == Key.Escape && canCloseOnEscape -> DesktopKeyAction.CloseWindow
         !isCtrlPressed && key == Key.Escape && hasSelection -> DesktopKeyAction.ClearSelection
         else -> DesktopKeyAction.None
     }

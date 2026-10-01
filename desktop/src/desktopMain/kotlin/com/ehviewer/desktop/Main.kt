@@ -130,6 +130,7 @@ fun main() {
                             isCtrlPressed = event.isCtrlPressed,
                             key = event.key,
                             hasSelection = false,
+                            canCloseOnEscape = window.kind !is DesktopWindowKind.Library,
                         )
                         when (action) {
                             DesktopKeyAction.CloseWindow -> {

@@ -27,6 +27,7 @@
 - 桌面端历史记录删除管理与状态联动：历史记录列表项支持右键菜单「删除」单条记录，异步持久化删除 Room 数据库中的阅读历史（HistoryDao.deleteByKey），同步更新内存列表并保护当前详情选中态（被删除画廊处于选中时自动清除选中并通知提示），由独立 DesktopHistoryState 状态机纯逻辑驱动并具备完整单元测试覆盖。
 - 画廊详情 URL 解析逻辑（GalleryDetailUrlParser）下沉至共享 core:data 层：app 模块改为委托共享实现保持全端一致性，桌面端画廊搜索框全面支持直接粘贴画廊网页链接（包含 e-hentai / exhentai / lofi / mpv）即时解析 GID 精确匹配过滤，提供完整单元测试覆盖。
 - 桌面端画廊详情面板滚动与独立窗口复制通知完善：画廊详情面板支持垂直滚动（verticalScroll），彻底解决窗口缩小时长标签与元数据被裁切的问题；复制按钮添加鼠标手型光标（PointerIcon.Hand）；独立画廊详情窗口接入 Miuix 背景容器与轻量复制通知浮层，移除无用死右键菜单；提供 formatGalleryTags 单元测试覆盖。
+- 桌面端快捷键模型扩展与独立窗口 Escape / Ctrl+W 关窗闭环：快捷关窗组合键在 Ctrl+Q 基础上扩展支持通用的 Ctrl+W，独立画廊详情与设置窗口支持按 Escape 键直接关闭，核心按键解析模型（DesktopKeyAction）完善 canCloseOnEscape 策略驱动并具备完整单元测试与边界三角验证覆盖。
 
 ### 修复
 

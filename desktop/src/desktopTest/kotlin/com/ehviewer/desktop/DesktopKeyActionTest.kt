@@ -17,6 +17,47 @@ class DesktopKeyActionTest {
     }
 
     @Test
+    fun ctrlWResolvesToCloseWindow() {
+        val action = resolveKeyAction(
+            isKeyDown = true,
+            isCtrlPressed = true,
+            key = Key.W,
+            hasSelection = false,
+        )
+        assertEquals(DesktopKeyAction.CloseWindow, action)
+    }
+
+    @Test
+    fun escapeWithCanCloseOnEscapeResolvesToCloseWindow() {
+        val action = resolveKeyAction(
+            isKeyDown = true,
+            isCtrlPressed = false,
+            key = Key.Escape,
+            hasSelection = false,
+            canCloseOnEscape = true,
+        )
+        assertEquals(DesktopKeyAction.CloseWindow, action)
+
+        val actionWithBoth = resolveKeyAction(
+            isKeyDown = true,
+            isCtrlPressed = false,
+            key = Key.Escape,
+            hasSelection = true,
+            canCloseOnEscape = true,
+        )
+        assertEquals(DesktopKeyAction.CloseWindow, actionWithBoth)
+
+        val actionClear = resolveKeyAction(
+            isKeyDown = true,
+            isCtrlPressed = false,
+            key = Key.Escape,
+            hasSelection = true,
+            canCloseOnEscape = false,
+        )
+        assertEquals(DesktopKeyAction.ClearSelection, actionClear)
+    }
+
+    @Test
     fun ctrlRAndF5ResolveToRefresh() {
         val actionCtrlR = resolveKeyAction(
             isKeyDown = true,
@@ -63,5 +104,21 @@ class DesktopKeyActionTest {
             hasSelection = true,
         )
         assertEquals(DesktopKeyAction.None, action)
+
+        val actionW = resolveKeyAction(
+            isKeyDown = false,
+            isCtrlPressed = true,
+            key = Key.W,
+            hasSelection = true,
+        )
+        assertEquals(DesktopKeyAction.None, actionW)
+
+        val actionEsc = resolveKeyAction(
+            isKeyDown = false,
+            isCtrlPressed = false,
+            key = Key.Escape,
+            canCloseOnEscape = true,
+        )
+        assertEquals(DesktopKeyAction.None, actionEsc)
     }
 }
