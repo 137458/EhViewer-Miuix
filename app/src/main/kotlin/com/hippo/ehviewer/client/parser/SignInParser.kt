@@ -15,19 +15,15 @@
  */
 package com.hippo.ehviewer.client.parser
 
+import com.ehviewer.core.database.client.SignInParser as CoreSignInParser
+import com.ehviewer.core.database.client.SignInParser.SignInParseOutcome
 import com.hippo.ehviewer.client.exception.EhException
 import com.hippo.ehviewer.client.exception.ParseException
 
 object SignInParser {
-    private val NAME_PATTERN = Regex("<p>You are now logged in as: (.+?)<")
-    private val ERROR_PATTERN = Regex(
-        "<h4>The error returned was:</h4>\\s*<p>(.+?)</p>" +
-            "|<span class=\"postcolor\">(.+?)</span>",
-    )
-
-    fun parse(body: String): String = NAME_PATTERN.find(body)?.let {
-        it.groupValues[1]
-    } ?: ERROR_PATTERN.find(body)?.let {
-        throw EhException(it.groupValues[1].ifEmpty { it.groupValues[2] })
-    } ?: throw ParseException("Can't parse sign in")
+    fun parse(body: String): String = when (val outcome = CoreSignInParser.parse(body)) {
+        is SignInParseOutcome.Success -> outcome.name
+        is SignInParseOutcome.SiteError -> throw EhException(outcome.message)
+        SignInParseOutcome.NotFound -> throw ParseException("Can't parse sign in")
+    }
 }
