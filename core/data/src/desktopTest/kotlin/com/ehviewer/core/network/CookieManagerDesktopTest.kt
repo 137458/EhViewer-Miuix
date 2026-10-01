@@ -2,6 +2,7 @@ package com.ehviewer.core.network
 
 import com.ehviewer.core.desktop.testing.clearIsolatedDataDir
 import com.ehviewer.core.desktop.testing.newIsolatedDataDir
+import com.sun.jna.Platform
 import io.ktor.http.Cookie
 import io.ktor.http.Url
 import kotlin.test.Test
@@ -25,14 +26,17 @@ class CookieManagerDesktopTest {
             manager.flush()
 
             // PersistentCookieStore 在变更时同步写盘（DesktopDirs 在数据根下再分 EhViewer/files/）；
-            // 落盘为 DPAPI 密文：文件存在非空，且 cookie 键名/值不得以明文出现在字节流中
+            // Windows 落盘为 DPAPI 密文：文件存在非空，且 cookie 键名/值不得以明文出现在字节流中；
+            // 非 Windows 无 Crypt32，明文回环只验证存在与非空
             val file = dataDir / "EhViewer" / "files" / "cookies.dat"
             val fs = FileSystem.SYSTEM
             assertTrue(fs.exists(file), "persisted store should exist at $file")
             val bytes = fs.read(file) { readByteArray() }
             assertTrue(bytes.size > 0, "persisted store should not be empty")
-            val plaintext = String(bytes, Charsets.ISO_8859_1)
-            assertTrue(name !in plaintext && "42" !in plaintext, "cookie must not be stored in plaintext")
+            if (Platform.isWindows()) {
+                val plaintext = String(bytes, Charsets.ISO_8859_1)
+                assertTrue(name !in plaintext && "42" !in plaintext, "cookie must not be stored in plaintext")
+            }
         } finally {
             clearIsolatedDataDir()
         }

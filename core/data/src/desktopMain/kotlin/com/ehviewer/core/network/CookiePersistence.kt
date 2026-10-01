@@ -1,5 +1,6 @@
 package com.ehviewer.core.network
 
+import com.sun.jna.Platform
 import com.sun.jna.platform.win32.Crypt32Util
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
@@ -52,8 +53,10 @@ internal class CookiePersistence(private val path: Path) {
             val plain = ByteArrayOutputStream().also { buffer ->
                 ObjectOutputStream(buffer).use { it.writeObject(records) }
             }.toByteArray()
-            // DPAPI CurrentUser 域加密：文件被拷走后无法在他人账户解出登录态
-            val protected = Crypt32Util.cryptProtectData(plain)
+            // DPAPI CurrentUser 域加密：文件被拷走后无法在他人账户解出登录态。
+            // Crypt32 仅 Windows 可用；非 Windows 桌面（分发目标仅 MSI/Exe）退回明文，
+            // 保证 Linux/macOS 构建与 CI 的明文回环可用
+            val protected = if (Platform.isWindows()) Crypt32Util.cryptProtectData(plain) else plain
             fs.sink(path).buffer().use { it.write(protected) }
         }
     }

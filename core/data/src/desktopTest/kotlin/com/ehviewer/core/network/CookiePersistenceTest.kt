@@ -1,5 +1,6 @@
 package com.ehviewer.core.network
 
+import com.sun.jna.Platform
 import java.net.HttpCookie
 import java.net.URI
 import kotlin.test.Test
@@ -26,9 +27,11 @@ class CookiePersistenceTest {
         }
         writer.save(mapOf(uri to listOf(cookie)))
 
-        // 落盘应为 DPAPI 密文：明文 cookie 值不得直接出现在字节流中
+        // 落盘应为 DPAPI 密文：明文 cookie 值不得直接出现在字节流中（非 Windows 退回明文，跳过密文断言）
         val storedBytes = fs.source(storePath).buffer().use { it.readByteArray() }
-        assertTrue("42".toByteArray() !in storedBytes.asSequence().windowed(2).map { it.toByteArray() }.toList())
+        if (Platform.isWindows()) {
+            assertTrue("42".toByteArray() !in storedBytes.asSequence().windowed(2).map { it.toByteArray() }.toList())
+        }
 
         // 新实例 = 新进程语义：不共享内存态，仅依赖磁盘文件
         val reader = CookiePersistence(storePath)
