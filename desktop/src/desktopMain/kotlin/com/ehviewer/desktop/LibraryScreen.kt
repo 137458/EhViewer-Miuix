@@ -910,15 +910,22 @@ fun LibraryScreen(
                                                     color = MiuixTheme.colorScheme.onBackground,
                                                 )
                                                 val browseTime = when (currentTab) {
-                                                    LibraryTab.History -> historyTimeByGid[gallery.gid]
-                                                    LibraryTab.Favorites -> favoriteTimeByGid[gallery.gid]
-                                                    LibraryTab.Online -> null
+                                                    LibraryTab.History -> historyTimeByGid[gallery.gid]?.let { time ->
+                                                        java.time.Instant.ofEpochMilli(time)
+                                                            .atZone(java.time.ZoneId.systemDefault())
+                                                            .format(java.time.format.DateTimeFormatter.ofPattern("MM-dd HH:mm"))
+                                                    }
+                                                    LibraryTab.Favorites -> favoriteTimeByGid[gallery.gid]?.let { time ->
+                                                        java.time.Instant.ofEpochMilli(time)
+                                                            .atZone(java.time.ZoneId.systemDefault())
+                                                            .format(java.time.format.DateTimeFormatter.ofPattern("MM-dd HH:mm"))
+                                                    }
+                                                    // 在线列表：解析器已给出发布时间字符串（yyyy-MM-dd HH:mm）
+                                                    LibraryTab.Online -> gallery.posted?.take(10)
                                                 }
                                                 browseTime?.let { time ->
                                                     Text(
-                                                        text = java.time.Instant.ofEpochMilli(time)
-                                                            .atZone(java.time.ZoneId.systemDefault())
-                                                            .format(java.time.format.DateTimeFormatter.ofPattern("MM-dd HH:mm")),
+                                                        text = time,
                                                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                                         fontSize = 11.sp,
                                                     )
