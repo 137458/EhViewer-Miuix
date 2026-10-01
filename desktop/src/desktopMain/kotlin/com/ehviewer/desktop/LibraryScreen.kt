@@ -54,6 +54,7 @@ fun LibraryScreen() {
     var selected by remember { mutableStateOf<GalleryEntity?>(null) }
     var httpStatus by remember { mutableStateOf<HttpStatusCode?>(null) }
     var connectionError by remember { mutableStateOf<String?>(null) }
+    var updateInfo by remember { mutableStateOf<UpdateInfo?>(null) }
     val clipboard = LocalClipboardManager.current
 
     LaunchedEffect(Unit) {
@@ -71,19 +72,37 @@ fun LibraryScreen() {
             connectionError = e.message ?: e::class.simpleName
             logcat("Connection", LogPriority.WARN) { "EH_HOME failed: $connectionError" }
         }
+        checkLatestRelease()?.let { info ->
+            if (isNewer(info.tag, DESKTOP_VERSION)) {
+                updateInfo = info
+                logcat("Update", LogPriority.INFO) { "UPDATE_AVAILABLE tag=${info.tag}" }
+            } else {
+                logcat("Update", LogPriority.INFO) { "UP_TO_DATE current=$DESKTOP_VERSION latest=${info.tag}" }
+            }
+        }
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
         val status = httpStatus
+        val info = updateInfo
         Text(
-            "e-hentai: " + when {
-                status != null -> "HTTP ${status.value}"
-                connectionError != null -> "offline"
-                else -> "checking..."
-            } + "  |  signed-in: ${EhCookieStore.hasSignedIn()}" +
-                "  |  download groups: ${downloadLabels.size}  |  favorites: $favoriteCount",
-            color = MiuixTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(8.dp),
+            text = buildString {
+                append(
+                    "e-hentai: " + when {
+                        status != null -> "HTTP ${status.value}"
+                        connectionError != null -> "offline"
+                        else -> "checking..."
+                    },
+                )
+                append("  |  signed-in: ${EhCookieStore.hasSignedIn()}")
+                append("  |  download groups: ${downloadLabels.size}  |  favorites: $favoriteCount")
+                append("  |  version: $DESKTOP_VERSION")
+                if (info != null) append("  |  update available: ${info.tag}")
+            },
+            color = if (info != null) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onBackground,
+            modifier = Modifier
+                .padding(8.dp)
+                .let { m -> if (info != null) m.clickable { openBrowser(info.pageUrl) } else m },
         )
         HorizontalDivider()
         Row(modifier = Modifier.fillMaxSize()) {
@@ -213,3 +232,11 @@ private fun VerticalDivider() = HorizontalDivider(
     color = MiuixTheme.colorScheme.outline,
     thickness = 1.dp,
 )
+
+private fun openBrowser(url: String) {
+    runCatching {
+        java.awt.Desktop.getDesktop().browse(java.net.URI(url))
+    }.onFailure { e ->
+        logcat("Update", LogPriority.WARN) { "open browser failed: ${e.message}" }
+    }
+}

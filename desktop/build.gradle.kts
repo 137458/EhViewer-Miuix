@@ -38,6 +38,11 @@ kotlin {
                 implementation(projects.core.ui)
             }
         }
+        getByName("desktopTest") {
+            dependencies {
+                implementation(kotlin("test"))
+            }
+        }
     }
 }
 
