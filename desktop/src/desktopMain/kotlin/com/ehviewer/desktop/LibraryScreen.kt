@@ -33,6 +33,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -53,6 +54,7 @@ import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -112,8 +114,7 @@ fun LibraryScreen(
     var favoriteGids by remember { mutableStateOf<Set<Long>>(emptySet()) }
     var online by remember { mutableStateOf<List<BaseGalleryInfo>>(emptyList()) }
     var selected by remember { mutableStateOf<BaseGalleryInfo?>(null) }
-    var httpStatusCode by remember { mutableStateOf<Int?>(null) }
-    var connectionError by remember { mutableStateOf<String?>(null) }
+    var connectionStatus by remember { mutableStateOf<DesktopConnectionStatus>(DesktopConnectionStatus.Checking) }
     var updateInfo by remember { mutableStateOf<UpdateInfo?>(null) }
     var searchQuery by remember { mutableStateOf("") }
     var sortConfig by remember { mutableStateOf(DesktopSortConfig()) }
@@ -161,6 +162,7 @@ fun LibraryScreen(
     }
 
     suspend fun refreshGalleries() {
+        connectionStatus = DesktopConnectionStatus.Checking
         history = withContext(Dispatchers.IO) {
             DesktopDatabase.eh.historyDao().listGalleries()
         }
@@ -175,9 +177,9 @@ fun LibraryScreen(
                 desktopGet("https://e-hentai.org/home.php")
             }
         }.onSuccess { response ->
-            connectionError = null
-            httpStatusCode = response.status
-            logcat("Connection", LogPriority.INFO) { "EH_HOME status=${response.status}" }
+            val status = response.status
+            connectionStatus = DesktopConnectionStatus.Online(status)
+            logcat("Connection", LogPriority.INFO) { "EH_HOME status=$status" }
             if (response.status in 200..299) {
                 runCatching {
                     val bytes = response.body.toByteArray()
@@ -194,8 +196,9 @@ fun LibraryScreen(
                 }
             }
         }.onFailure { e ->
-            connectionError = e.message ?: e::class.simpleName
-            logcat("Connection", LogPriority.WARN) { "EH_HOME failed: $connectionError" }
+            val cleaned = DesktopConnectionState.cleanErrorMessage(e.message ?: e::class.simpleName)
+            connectionStatus = DesktopConnectionStatus.Offline(cleaned)
+            logcat("Connection", LogPriority.WARN) { "EH_HOME failed: $cleaned (raw: ${e.message})" }
         }
     }
 
@@ -308,25 +311,87 @@ fun LibraryScreen(
                 },
         ) {
             val info = updateInfo
-            Text(
-                text = buildString {
-                    append(
-                        "e-hentai: " + when {
-                            httpStatusCode != null -> "HTTP $httpStatusCode"
-                            connectionError != null -> "offline"
-                            else -> "checking..."
-                        },
-                    )
-                    append("  |  signed-in: ${EhCookieStore.hasSignedIn()}")
-                    append("  |  download groups: ${downloadLabels.size}  |  favorites: $favoriteCount")
-                    append("  |  version: $DESKTOP_VERSION")
-                    if (info != null) append("  |  update available: ${info.tag}")
-                },
-                color = if (info != null) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onBackground,
+            Row(
                 modifier = Modifier
-                    .padding(8.dp)
-                    .let { m -> if (info != null) m.clickable { openBrowser(info.pageUrl) } else m },
-            )
+                    .fillMaxWidth()
+                    .padding(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    val statusText = "e-hentai: ${DesktopConnectionState.formatStatus(connectionStatus)}"
+                    val isOffline = DesktopConnectionState.isOffline(connectionStatus)
+                    val statusBgColor = when (connectionStatus) {
+                        is DesktopConnectionStatus.Online -> MiuixTheme.colorScheme.surfaceVariant
+                        is DesktopConnectionStatus.Offline -> MiuixTheme.colorScheme.error.copy(alpha = 0.12f)
+                        DesktopConnectionStatus.Checking -> MiuixTheme.colorScheme.surfaceVariant
+                    }
+                    val statusTextColor = when (connectionStatus) {
+                        is DesktopConnectionStatus.Online -> MiuixTheme.colorScheme.onBackground
+                        is DesktopConnectionStatus.Offline -> MiuixTheme.colorScheme.error
+                        DesktopConnectionStatus.Checking -> MiuixTheme.colorScheme.onSurfaceVariantSummary
+                    }
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(statusBgColor)
+                            .then(
+                                if (DesktopConnectionState.canRetry(connectionStatus)) {
+                                    Modifier
+                                        .pointerHoverIcon(PointerIcon.Hand)
+                                        .clickable {
+                                            coroutineScope.launch {
+                                                showNotification("Checking connection...")
+                                                refreshGalleries()
+                                            }
+                                        }
+                                } else {
+                                    Modifier
+                                },
+                            )
+                            .padding(horizontal = 6.dp, vertical = 2.dp),
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        ) {
+                            Text(
+                                text = statusText,
+                                fontSize = 12.sp,
+                                color = statusTextColor,
+                            )
+                            if (isOffline) {
+                                Text(
+                                    text = "↻ ${stringResource(MR.strings.action_retry)}",
+                                    fontSize = 11.sp,
+                                    color = MiuixTheme.colorScheme.error,
+                                    fontWeight = FontWeight.Medium,
+                                )
+                            }
+                        }
+                    }
+
+                    Text(
+                        text = "|  signed-in: ${EhCookieStore.hasSignedIn()}  |  download groups: ${downloadLabels.size}  |  favorites: $favoriteCount  |  version: $DESKTOP_VERSION",
+                        fontSize = 12.sp,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    )
+                }
+
+                if (info != null) {
+                    Text(
+                        text = "update available: ${info.tag}",
+                        fontSize = 12.sp,
+                        color = MiuixTheme.colorScheme.primary,
+                        modifier = Modifier
+                            .pointerHoverIcon(PointerIcon.Hand)
+                            .clickable { openBrowser(info.pageUrl) },
+                    )
+                }
+            }
             HorizontalDivider()
             Row(modifier = Modifier.fillMaxSize()) {
                 Column(modifier = Modifier.width(320.dp).fillMaxHeight()) {
@@ -512,18 +577,69 @@ fun LibraryScreen(
                     HorizontalDivider()
                     if (filteredItems.isEmpty()) {
                         Box(modifier = Modifier.fillMaxSize().padding(16.dp), contentAlignment = Alignment.Center) {
-                            Text(
-                                text = if (searchQuery.isNotBlank() && currentItems.isNotEmpty()) {
-                                    "No matching galleries"
-                                } else {
-                                    when (currentTab) {
-                                        LibraryTab.History -> "No history recorded"
-                                        LibraryTab.Favorites -> "No favorites saved"
-                                        LibraryTab.Online -> if (connectionError != null) "Offline: $connectionError" else "Loading online galleries..."
+                            if (searchQuery.isNotBlank() && currentItems.isNotEmpty()) {
+                                Text(
+                                    text = "No matching galleries",
+                                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                )
+                            } else {
+                                when (currentTab) {
+                                    LibraryTab.History -> Text(
+                                        text = "No history recorded",
+                                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                    )
+                                    LibraryTab.Favorites -> Text(
+                                        text = "No favorites saved",
+                                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                    )
+                                    LibraryTab.Online -> {
+                                        Column(
+                                            horizontalAlignment = Alignment.CenterHorizontally,
+                                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                                        ) {
+                                            when (val status = connectionStatus) {
+                                                is DesktopConnectionStatus.Offline -> {
+                                                    Text(
+                                                        text = "Offline: ${status.reason}",
+                                                        color = MiuixTheme.colorScheme.error,
+                                                    )
+                                                    Box(
+                                                        modifier = Modifier
+                                                            .clip(RoundedCornerShape(6.dp))
+                                                            .background(MiuixTheme.colorScheme.surfaceVariant)
+                                                            .pointerHoverIcon(PointerIcon.Hand)
+                                                            .clickable {
+                                                                coroutineScope.launch {
+                                                                    showNotification("Checking connection...")
+                                                                    refreshGalleries()
+                                                                }
+                                                            }
+                                                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                                                    ) {
+                                                        Text(
+                                                            text = stringResource(MR.strings.action_retry),
+                                                            color = MiuixTheme.colorScheme.primary,
+                                                            fontSize = 12.sp,
+                                                        )
+                                                    }
+                                                }
+                                                DesktopConnectionStatus.Checking -> {
+                                                    Text(
+                                                        text = "Connecting to E-Hentai...",
+                                                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                                    )
+                                                }
+                                                is DesktopConnectionStatus.Online -> {
+                                                    Text(
+                                                        text = "No online galleries found",
+                                                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                                    )
+                                                }
+                                            }
+                                        }
                                     }
-                                },
-                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                            )
+                                }
+                            }
                         }
                     } else {
                         val copyTitleLabel = stringResource(MR.strings.copy_title)
@@ -803,6 +919,8 @@ internal fun GalleryDetailPane(
         }
         gallery.thumbUrl?.let { thumb ->
             val imageState = remember(thumb) { DesktopImageStateController() }
+            val decodeErrorText = stringResource(MR.strings.decode_image_error)
+            val retryActionText = stringResource(MR.strings.action_retry)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -812,15 +930,17 @@ internal fun GalleryDetailPane(
                     .clickable { onPreviewCover?.invoke(thumb) },
                 contentAlignment = Alignment.Center,
             ) {
-                AsyncImage(
-                    model = thumb,
-                    contentDescription = displayTitle,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Fit,
-                    onLoading = { imageState.onLoading() },
-                    onSuccess = { imageState.onSuccess() },
-                    onError = { err -> imageState.onError(err.result.throwable.message) },
-                )
+                key(thumb, imageState.retryCount) {
+                    AsyncImage(
+                        model = thumb,
+                        contentDescription = displayTitle,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Fit,
+                        onLoading = { imageState.onLoading() },
+                        onSuccess = { imageState.onSuccess() },
+                        onError = { err -> imageState.onError(err.result.throwable.message) },
+                    )
+                }
                 if (imageState.canRetry) {
                     Box(
                         modifier = Modifier
@@ -831,7 +951,7 @@ internal fun GalleryDetailPane(
                         contentAlignment = Alignment.Center,
                     ) {
                         Text(
-                            text = "Failed to load cover. Click to retry.",
+                            text = "$decodeErrorText ($retryActionText)",
                             color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                             fontSize = 12.sp,
                         )
