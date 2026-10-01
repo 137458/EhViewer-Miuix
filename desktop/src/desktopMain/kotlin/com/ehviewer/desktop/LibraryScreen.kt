@@ -196,6 +196,8 @@ fun LibraryScreen(
         val url = DesktopSearchUrl.build(query, page = page) ?: return
         searchPage = page
         remoteSearchQuery = query
+        // 列表即将被新页替换，清除跨页残留的选中态
+        selected = null
         coroutineScope.launch {
             online = emptyList()
             connectionStatus = DesktopConnectionStatus.Checking
