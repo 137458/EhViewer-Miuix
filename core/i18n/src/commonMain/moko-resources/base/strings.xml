@@ -654,6 +654,7 @@
     <string name="menu_read_hint">Open the reader for this gallery</string>
     <string name="desktop_view_list">List</string>
     <string name="desktop_view_grid">Grid</string>
+    <string name="desktop_search_no_results">No results</string>
     <string name="settings_theme">Theme</string>
     <string name="settings_proxy">Proxy (host:port, empty = direct)</string>
     <string name="theme_follow_system">Follow system</string>

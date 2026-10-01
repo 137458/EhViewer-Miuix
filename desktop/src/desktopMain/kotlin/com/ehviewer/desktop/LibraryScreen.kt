@@ -765,6 +765,13 @@ fun LibraryScreen(
                                             horizontalAlignment = Alignment.CenterHorizontally,
                                             verticalArrangement = Arrangement.spacedBy(8.dp),
                                         ) {
+                                            if (remoteSearchQuery.isNotBlank() && connectionStatus is DesktopConnectionStatus.Online) {
+                                                // 远程搜索已完成但无结果：与连接失败区分
+                                                Text(
+                                                    text = stringResource(MR.strings.desktop_search_no_results) + ": $remoteSearchQuery",
+                                                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                                )
+                                            }
                                             when (val status = connectionStatus) {
                                                 is DesktopConnectionStatus.Offline -> {
                                                     Text(
