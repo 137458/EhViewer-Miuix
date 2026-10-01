@@ -19,7 +19,9 @@ package com.google.accompanist.web
 import android.content.Context
 import android.graphics.Bitmap
 import android.os.Bundle
+import android.view.ViewGroup
 import android.view.ViewGroup.LayoutParams
+import android.webkit.RenderProcessGoneDetail
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
@@ -245,6 +247,13 @@ open class AccompanistWebViewClient : WebViewClient() {
         internal set
     open lateinit var navigator: WebViewNavigator
         internal set
+
+    override fun onRenderProcessGone(view: WebView, detail: RenderProcessGoneDetail): Boolean {
+        // 渲染进程崩溃/OOM 时必须移除并销毁 WebView，否则宿主应用进程会被系统连带杀死
+        (view.parent as? ViewGroup)?.removeView(view)
+        view.destroy()
+        return true
+    }
 
     override fun onPageStarted(view: WebView, url: String?, favicon: Bitmap?) {
         super.onPageStarted(view, url, favicon)
