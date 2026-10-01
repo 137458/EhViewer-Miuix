@@ -95,6 +95,11 @@ enum class LibraryTab {
     History,
     Favorites,
     Online,
+    ;
+
+    companion object {
+        fun fromName(raw: String?): LibraryTab = runCatching { valueOf(raw!!) }.getOrDefault(History)
+    }
 }
 
 // 本地库：历史列表(左) + 选中画廊详情(右) 主从双栏（桌面大屏习惯）+ 连接诊断行。
@@ -115,7 +120,12 @@ fun LibraryScreen(
         .collectAsState(initial = 0)
     val viewModeOrdinal by DesktopSettings.viewMode.valueFlow().collectAsState(DesktopSettings.viewMode.value)
     val viewMode = DesktopViewMode.fromOrdinal(viewModeOrdinal)
-    var currentTab by remember { mutableStateOf(LibraryTab.History) }
+    var currentTab by remember { mutableStateOf(LibraryTab.fromName(DesktopSettings.lastTab.value)) }
+
+    fun switchTab(tab: LibraryTab) {
+        currentTab = tab
+        DesktopSettings.lastTab.value = tab.name
+    }
     // 历史/收藏走 Room Flow 响应式收集：开窗/收藏/删除后跨窗口自动刷新
     val history by DesktopDatabase.eh.historyDao()
         .listGalleriesFlow()
@@ -454,7 +464,7 @@ fun LibraryScreen(
                                 color = if (currentTab == LibraryTab.History) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                 modifier = Modifier
                                     .pointerHoverIcon(PointerIcon.Hand)
-                                    .clickable { currentTab = LibraryTab.History }
+                                    .clickable { switchTab(LibraryTab.History) }
                                     .padding(vertical = 4.dp, horizontal = 4.dp),
                             )
                             Text(
@@ -462,7 +472,7 @@ fun LibraryScreen(
                                 color = if (currentTab == LibraryTab.Favorites) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                 modifier = Modifier
                                     .pointerHoverIcon(PointerIcon.Hand)
-                                    .clickable { currentTab = LibraryTab.Favorites }
+                                    .clickable { switchTab(LibraryTab.Favorites) }
                                     .padding(vertical = 4.dp, horizontal = 4.dp),
                             )
                             Text(
@@ -470,7 +480,7 @@ fun LibraryScreen(
                                 color = if (currentTab == LibraryTab.Online) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                 modifier = Modifier
                                     .pointerHoverIcon(PointerIcon.Hand)
-                                    .clickable { currentTab = LibraryTab.Online }
+                                    .clickable { switchTab(LibraryTab.Online) }
                                     .padding(vertical = 4.dp, horizontal = 4.dp),
                             )
                         }
@@ -549,7 +559,11 @@ fun LibraryScreen(
                                 .padding(horizontal = 4.dp, vertical = 4.dp),
                         )
                         Text(
-                            text = if (viewMode == DesktopViewMode.List) "List" else "Grid",
+                            text = if (viewMode == DesktopViewMode.List) {
+                                stringResource(MR.strings.desktop_view_list)
+                            } else {
+                                stringResource(MR.strings.desktop_view_grid)
+                            },
                             color = MiuixTheme.colorScheme.primary,
                             modifier = Modifier
                                 .pointerHoverIcon(PointerIcon.Hand)

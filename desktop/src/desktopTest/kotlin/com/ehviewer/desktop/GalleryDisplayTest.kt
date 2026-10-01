@@ -22,6 +22,17 @@ class GalleryDisplayTest {
     }
 
     @Test
+    fun libraryTabFromNameParsesAndFallsBackToHistory() {
+        assertEquals(LibraryTab.History, LibraryTab.fromName("History"))
+        assertEquals(LibraryTab.Favorites, LibraryTab.fromName("Favorites"))
+        assertEquals(LibraryTab.Online, LibraryTab.fromName("Online"))
+        // 非法/空值安全回退（存储损坏或历史版本键）
+        assertEquals(LibraryTab.History, LibraryTab.fromName(null))
+        assertEquals(LibraryTab.History, LibraryTab.fromName(""))
+        assertEquals(LibraryTab.History, LibraryTab.fromName("NoSuchTab"))
+    }
+
+    @Test
     fun galleryInfoThumbUrlExtensionProvidesHttpCoverUrl() {
         val gallery = BaseGalleryInfo(thumbKey = "t/12/34/56.jpg")
         assertEquals("https://ehgt.org/t/12/34/56.jpg", gallery.thumbUrl)

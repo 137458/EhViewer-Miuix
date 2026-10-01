@@ -723,6 +723,8 @@
     <string name="desktop_removed_from_history">已从历史记录移除</string>
     <string name="desktop_filter">过滤</string>
     <string name="desktop_sort">排序</string>
+    <string name="desktop_view_list">列表</string>
+    <string name="desktop_view_grid">网格</string>
     <string name="settings_theme">主题</string>
     <string name="settings_proxy">代理 (host:port，留空为直连)</string>
     <string name="theme_follow_system">跟随系统</string>

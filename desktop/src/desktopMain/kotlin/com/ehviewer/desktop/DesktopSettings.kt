@@ -28,6 +28,9 @@ object DesktopSettings : DataStorePreferences("desktop") {
     // 画廊列表排序（FIELD:DIRECTION，跨会话保留）
     val sortConfig = stringPref("sort_config", "")
 
+    // 上次浏览的主库 Tab（History/Favorites/Online，跨会话保留）
+    val lastTab = stringPref("last_tab", "History")
+
     // false = 启动不恢复上次会话窗口，true = 恢复
     val restoreSession = boolPref("restore_session", true)
 }
