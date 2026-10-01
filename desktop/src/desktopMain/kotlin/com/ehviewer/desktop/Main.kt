@@ -134,6 +134,7 @@ fun main() {
                     height = DesktopSettings.windowHeight.dp,
                 )
                 var showShortcutsHelp by remember { mutableStateOf(false) }
+                var showOpenGalleryDialog by remember { mutableStateOf(false) }
                 Window(
                     onCloseRequest = { handleClose(window) },
                     state = windowState,
@@ -144,12 +145,15 @@ fun main() {
                             isCtrlPressed = event.isCtrlPressed,
                             key = event.key,
                             hasSelection = false,
-                            canCloseOnEscape = showShortcutsHelp || window.kind !is DesktopWindowKind.Library,
+                            canCloseOnEscape = showShortcutsHelp ||
+                                showOpenGalleryDialog ||
+                                window.kind !is DesktopWindowKind.Library,
                         )
                         when (action) {
                             DesktopKeyAction.CloseWindow -> {
-                                if (showShortcutsHelp) {
+                                if (showShortcutsHelp || showOpenGalleryDialog) {
                                     showShortcutsHelp = false
+                                    showOpenGalleryDialog = false
                                     true
                                 } else {
                                     handleClose(window)
@@ -163,6 +167,9 @@ fun main() {
                             DesktopKeyAction.ClearSelection -> {
                                 if (showShortcutsHelp) {
                                     showShortcutsHelp = false
+                                    true
+                                } else if (showOpenGalleryDialog) {
+                                    showOpenGalleryDialog = false
                                     true
                                 } else if (window.kind is DesktopWindowKind.GalleryDetail) {
                                     handleClose(window)
@@ -189,6 +196,8 @@ fun main() {
                             windows.clear()
                             exitApplication()
                         },
+                        showOpenGalleryItem = window.kind == DesktopWindowKind.Library,
+                        onOpenGallery = { showOpenGalleryDialog = true },
                     )
                     if (window.kind == DesktopWindowKind.Library) {
                         SaveWindowSize(windowState)
@@ -208,6 +217,9 @@ fun main() {
                             when (val kind = window.kind) {
                                 DesktopWindowKind.Settings -> SettingsScreen()
                                 DesktopWindowKind.Library -> LibraryScreen(
+                                    openGalleryDialogVisible = showOpenGalleryDialog,
+                                    onOpenGalleryDialogOpen = { showOpenGalleryDialog = true },
+                                    onOpenGalleryDialogClose = { showOpenGalleryDialog = false },
                                     onOpenGalleryInNewWindow = { gallery ->
                                         val (updated, windowId) = DesktopWindowManager.openOrFocusGallery(
                                             windows = windows,
@@ -255,9 +267,14 @@ private fun FrameWindowScope.AppMenus(
     onOpenSettings: () -> Unit,
     onShowShortcutsHelp: () -> Unit,
     onExit: () -> Unit,
+    showOpenGalleryItem: Boolean = false,
+    onOpenGallery: () -> Unit = {},
 ) = MenuBar {
     Menu(stringResource(MR.strings.menu_file)) {
         Item(stringResource(MR.strings.menu_new_window), onClick = onNewWindow)
+        if (showOpenGalleryItem) {
+            Item("${stringResource(MR.strings.desktop_open_gallery_title)}... (Ctrl+O)", onClick = onOpenGallery)
+        }
         Item(stringResource(MR.strings.menu_exit), onClick = onExit)
     }
     Menu(stringResource(MR.strings.menu_settings)) {

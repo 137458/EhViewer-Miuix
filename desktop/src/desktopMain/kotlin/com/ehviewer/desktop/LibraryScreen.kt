@@ -99,6 +99,9 @@ enum class LibraryTab {
 @Composable
 fun LibraryScreen(
     onOpenGalleryInNewWindow: ((BaseGalleryInfo) -> Unit)? = null,
+    openGalleryDialogVisible: Boolean = false,
+    onOpenGalleryDialogOpen: () -> Unit = {},
+    onOpenGalleryDialogClose: () -> Unit = {},
 ) {
     val downloadLabels by DesktopDatabase.eh.downloadsDao()
         .countByLabel()
@@ -124,7 +127,6 @@ fun LibraryScreen(
         DesktopSearchHistory.decode(searchHistoryRaw)
     }
     var previewCoverUrl by remember { mutableStateOf<String?>(null) }
-    var showOpenGalleryDialog by remember { mutableStateOf(false) }
     var notifications by remember { mutableStateOf<List<DesktopNotification>>(emptyList()) }
     val nextNotificationId = remember { AtomicLong(1L) }
     val clipboard = LocalClipboardManager.current
@@ -263,10 +265,10 @@ fun LibraryScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .onPreviewKeyEvent { event ->
-                    if (showOpenGalleryDialog) {
+                    if (openGalleryDialogVisible) {
                         // 对话框打开期间只拦截 Escape 关闭，其余按键让给输入框
                         if (event.type == KeyEventType.KeyDown && !event.isCtrlPressed && event.key == Key.Escape) {
-                            showOpenGalleryDialog = false
+                            onOpenGalleryDialogClose()
                             true
                         } else {
                             false
@@ -321,7 +323,7 @@ fun LibraryScreen(
                                 true
                             }
                             DesktopKeyAction.OpenLinkDialog -> {
-                                showOpenGalleryDialog = true
+                                onOpenGalleryDialogOpen()
                                 true
                             }
                             else -> false
@@ -918,11 +920,11 @@ fun LibraryScreen(
             )
         }
 
-        if (showOpenGalleryDialog) {
+        if (openGalleryDialogVisible) {
             OpenGalleryDialog(
-                onDismiss = { showOpenGalleryDialog = false },
+                onDismiss = onOpenGalleryDialogClose,
                 onOpen = { target ->
-                    showOpenGalleryDialog = false
+                    onOpenGalleryDialogClose()
                     showNotification("$openingGalleryText ${target.gid}")
                     onOpenGalleryInNewWindow?.invoke(DesktopOpenGalleryState.createGalleryInfo(target))
                 },
