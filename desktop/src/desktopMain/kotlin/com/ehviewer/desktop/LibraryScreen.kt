@@ -208,7 +208,8 @@ fun LibraryScreen(
         connectionStatus = DesktopConnectionStatus.Checking
         runCatching {
             withContext(Dispatchers.IO) {
-                desktopGet("https://e-hentai.org/home.php")
+                // 首页即画廊列表（未登录可用）；home.php 需登录，未登录会被弹到 bounce_login 导致解析失败
+                desktopGet("https://e-hentai.org/")
             }
         }.onSuccess { response ->
             val status = response.status
