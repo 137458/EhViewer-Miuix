@@ -236,6 +236,15 @@ fun ReaderScreen(
                 }
                 .pointerInput(Unit) {
                     detectTapGestures(
+                        onTap = { tap ->
+                            // 未缩放时点击左右 1/3 区域翻页（漫画阅读器标准交互）
+                            if (scale <= 1f && size.width > 0) {
+                                when {
+                                    tap.x < size.width / 3f -> if (page > 1) page -= 1
+                                    tap.x > size.width * 2f / 3f -> if (page < pageLinks.size) page += 1
+                                }
+                            }
+                        },
                         onDoubleTap = {
                             scale = if (scale > 1f) 1f else 2.5f
                             offset = Offset.Zero
