@@ -18,12 +18,11 @@ class GalleryDetailPageLinksParserTest {
         """.trimIndent()
         val links = GalleryDetailPageLinksParser.parse(body)
         assertEquals(3, links.size)
-        // 按页码排序
+        // 按页码排序；真实链接无尾斜杠（base 即完整地址）
         assertEquals(listOf(1, 2, 3), links.map { it.page })
         assertEquals("abc1234567", links[0].pToken)
         assertEquals("def4567890", links[2].pToken)
-        // 图片页地址可直接构造
-        assertEquals("https://e-hentai.org/s/abc1234567/123456-1/", links[0].pageUrl)
+        assertEquals("https://e-hentai.org/s/abc1234567/123456-1", links[0].pageUrl)
     }
 
     @Test
