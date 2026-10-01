@@ -86,12 +86,12 @@ fun main() = application {
                 }
             },
             menu = {
-                Item("Open EhViewer", onClick = {
+                Item(stringResource(MR.strings.tray_open_app), onClick = {
                     if (windows.isEmpty()) {
                         windows.add(ShellWindow(nextWindowId++))
                     }
                 })
-                Item("Settings", onClick = {
+                Item(stringResource(MR.strings.menu_settings), onClick = {
                     windows.add(ShellWindow(nextWindowId++, isSettings = true))
                 })
                 Separator()

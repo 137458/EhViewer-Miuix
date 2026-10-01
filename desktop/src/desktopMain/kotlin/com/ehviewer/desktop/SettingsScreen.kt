@@ -40,8 +40,12 @@ fun SettingsScreen() {
         }
         item {
             BasicComponent(
-                title = "Close behavior",
-                summary = if (closeToTray) "Minimize to tray" else "Exit application",
+                title = stringResource(MR.strings.settings_close_behavior),
+                summary = if (closeToTray) {
+                    stringResource(MR.strings.settings_close_minimize_to_tray)
+                } else {
+                    stringResource(MR.strings.settings_close_exit)
+                },
                 onClick = { DesktopSettings.closeToTray.value = !closeToTray },
             )
         }

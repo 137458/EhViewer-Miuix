@@ -698,5 +698,19 @@
     <string name="pref_crop_borders">裁剪边缘</string>
     <string name="blocked_image">已屏蔽的图片</string>
     <string name="show_blocked_image">显示已屏蔽的图片</string>
+    <string name="menu_file">文件</string>
+    <string name="menu_exit">退出</string>
+    <string name="menu_new_window">新建窗口</string>
+    <string name="menu_settings">设置</string>
+    <string name="settings_theme">主题</string>
+    <string name="settings_proxy">代理 (host:port，留空为直连)</string>
+    <string name="theme_follow_system">跟随系统</string>
+    <string name="theme_light">浅色</string>
+    <string name="theme_dark">深色</string>
+    <string name="settings_close_behavior">窗口关闭行为</string>
+    <string name="settings_close_minimize_to_tray">最小化到系统托盘</string>
+    <string name="settings_close_exit">直接退出应用</string>
+    <string name="tray_open_app">打开 EhViewer</string>
+    <string name="search_hint">过滤标题、标签、上传者...</string>
     <!-- Tachiyomi Reader End-->
 </resources>

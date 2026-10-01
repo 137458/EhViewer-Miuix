@@ -633,6 +633,11 @@
     <string name="theme_follow_system">Follow system</string>
     <string name="theme_light">Light</string>
     <string name="theme_dark">Dark</string>
+    <string name="settings_close_behavior">Close window behavior</string>
+    <string name="settings_close_minimize_to_tray">Minimize to system tray</string>
+    <string name="settings_close_exit">Exit application</string>
+    <string name="tray_open_app">Open EhViewer</string>
+    <string name="search_hint">Filter title, tag, uploader...</string>
     <string name="pref_rotation_type">Default rotation type</string>
     <string name="viewer">Reading mode</string>
     <string name="action_menu">Menu</string>
