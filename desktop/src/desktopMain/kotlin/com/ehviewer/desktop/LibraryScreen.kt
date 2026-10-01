@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -76,6 +77,7 @@ fun LibraryScreen() {
     var httpStatusCode by remember { mutableStateOf<Int?>(null) }
     var connectionError by remember { mutableStateOf<String?>(null) }
     var updateInfo by remember { mutableStateOf<UpdateInfo?>(null) }
+    var searchQuery by remember { mutableStateOf("") }
     val clipboard = LocalClipboardManager.current
     val coroutineScope = rememberCoroutineScope()
 
@@ -136,7 +138,11 @@ fun LibraryScreen() {
                 )
                 when (action) {
                     DesktopKeyAction.ClearSelection -> {
-                        selected = null
+                        if (searchQuery.isNotEmpty()) {
+                            searchQuery = ""
+                        } else {
+                            selected = null
+                        }
                         true
                     }
                     DesktopKeyAction.Refresh -> {
@@ -189,12 +195,24 @@ fun LibraryScreen() {
                             .padding(vertical = 4.dp, horizontal = 4.dp),
                     )
                 }
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    placeholder = { Text("Filter title, tag, uploader...") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
+                )
                 HorizontalDivider()
                 val currentItems: List<BaseGalleryInfo> = if (currentTab == LibraryTab.History) history else online
-                if (currentItems.isEmpty()) {
+                val filteredItems = remember(currentItems, searchQuery) {
+                    GalleryFilter.filterGalleries(currentItems, searchQuery)
+                }
+                if (filteredItems.isEmpty()) {
                     Box(modifier = Modifier.fillMaxSize().padding(16.dp), contentAlignment = Alignment.Center) {
                         Text(
-                            text = if (currentTab == LibraryTab.History) {
+                            text = if (searchQuery.isNotBlank() && currentItems.isNotEmpty()) {
+                                "No matching galleries"
+                            } else if (currentTab == LibraryTab.History) {
                                 "No history recorded"
                             } else if (connectionError != null) {
                                 "Offline: $connectionError"
@@ -206,8 +224,8 @@ fun LibraryScreen() {
                     }
                 } else {
                     LazyColumn(modifier = Modifier.fillMaxSize()) {
-                        items(currentItems.size) { index ->
-                            val gallery = currentItems[index]
+                        items(filteredItems.size) { index ->
+                            val gallery = filteredItems[index]
                             val title = galleryDisplayTitle(gallery.title, gallery.gid)
                             val link = galleryWebUrl(gallery.gid, gallery.token)
                             ContextMenuArea(
