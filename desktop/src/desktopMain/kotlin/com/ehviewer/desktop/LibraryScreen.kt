@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.scrollbar.rememberScrollbarAdapter
@@ -791,86 +792,94 @@ fun LibraryScreen(
                                 )
                             }
                         } else {
-                            LazyVerticalGrid(
-                                columns = GridCells.Fixed(2),
-                                modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp, vertical = 4.dp),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalArrangement = Arrangement.spacedBy(8.dp),
-                            ) {
-                                items(
-                                    filteredItems.size,
-                                    key = { index -> filteredItems[index].gid },
-                                ) { index ->
-                                    val gallery = filteredItems[index]
-                                    val title = galleryDisplayTitle(gallery.title, gallery.gid)
-                                    val link = galleryWebUrl(gallery.gid, gallery.token)
-                                    ContextMenuArea(
-                                        items = { buildGalleryContextMenu(gallery, title, link) },
-                                    ) {
-                                        Box(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .clip(RoundedCornerShape(8.dp))
-                                                .pointerHoverIcon(PointerIcon.Hand)
-                                                .combinedClickable(
-                                                    onClick = { selected = gallery },
-                                                    onDoubleClick = {
-                                                        selected = gallery
-                                                        onOpenGalleryInNewWindow?.invoke(gallery)
-                                                    },
-                                                )
-                                                .background(
-                                                    if (selected?.gid == gallery.gid) {
-                                                        MiuixTheme.colorScheme.secondaryContainer
-                                                    } else {
-                                                        MiuixTheme.colorScheme.surfaceVariant
-                                                    },
-                                                )
-                                                .padding(8.dp),
+                            val gridState = rememberLazyGridState()
+                            Row(modifier = Modifier.fillMaxSize()) {
+                                LazyVerticalGrid(
+                                    state = gridState,
+                                    columns = GridCells.Fixed(2),
+                                    modifier = Modifier.weight(1f).padding(horizontal = 8.dp, vertical = 4.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                                ) {
+                                    items(
+                                        filteredItems.size,
+                                        key = { index -> filteredItems[index].gid },
+                                    ) { index ->
+                                        val gallery = filteredItems[index]
+                                        val title = galleryDisplayTitle(gallery.title, gallery.gid)
+                                        val link = galleryWebUrl(gallery.gid, gallery.token)
+                                        ContextMenuArea(
+                                            items = { buildGalleryContextMenu(gallery, title, link) },
                                         ) {
-                                            Column(
-                                                modifier = Modifier.fillMaxWidth(),
-                                                verticalArrangement = Arrangement.spacedBy(6.dp),
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .clip(RoundedCornerShape(8.dp))
+                                                    .pointerHoverIcon(PointerIcon.Hand)
+                                                    .combinedClickable(
+                                                        onClick = { selected = gallery },
+                                                        onDoubleClick = {
+                                                            selected = gallery
+                                                            onOpenGalleryInNewWindow?.invoke(gallery)
+                                                        },
+                                                    )
+                                                    .background(
+                                                        if (selected?.gid == gallery.gid) {
+                                                            MiuixTheme.colorScheme.secondaryContainer
+                                                        } else {
+                                                            MiuixTheme.colorScheme.surfaceVariant
+                                                        },
+                                                    )
+                                                    .padding(8.dp),
                                             ) {
-                                                gallery.thumbUrl?.let { thumb ->
-                                                    Box(
-                                                        modifier = Modifier
-                                                            .fillMaxWidth()
-                                                            .height(110.dp)
-                                                            .clip(RoundedCornerShape(6.dp)),
-                                                        contentAlignment = Alignment.Center,
+                                                Column(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                                                ) {
+                                                    gallery.thumbUrl?.let { thumb ->
+                                                        Box(
+                                                            modifier = Modifier
+                                                                .fillMaxWidth()
+                                                                .height(110.dp)
+                                                                .clip(RoundedCornerShape(6.dp)),
+                                                            contentAlignment = Alignment.Center,
+                                                        ) {
+                                                            AsyncImage(
+                                                                model = thumb,
+                                                                contentDescription = title,
+                                                                modifier = Modifier.fillMaxSize(),
+                                                                contentScale = ContentScale.Crop,
+                                                            )
+                                                        }
+                                                    }
+                                                    Text(
+                                                        text = title,
+                                                        maxLines = 2,
+                                                        overflow = TextOverflow.Ellipsis,
+                                                        color = MiuixTheme.colorScheme.onBackground,
+                                                    )
+                                                    Row(
+                                                        modifier = Modifier.fillMaxWidth(),
+                                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                                        verticalAlignment = Alignment.CenterVertically,
                                                     ) {
-                                                        AsyncImage(
-                                                            model = thumb,
-                                                            contentDescription = title,
-                                                            modifier = Modifier.fillMaxSize(),
-                                                            contentScale = ContentScale.Crop,
+                                                        GalleryListCardRating(rating = gallery.rating)
+                                                        Text(
+                                                            text = DesktopRating.formatCardMeta(gallery.pages, gallery.category),
+                                                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                                            maxLines = 1,
+                                                            overflow = TextOverflow.Ellipsis,
                                                         )
                                                     }
-                                                }
-                                                Text(
-                                                    text = title,
-                                                    maxLines = 2,
-                                                    overflow = TextOverflow.Ellipsis,
-                                                    color = MiuixTheme.colorScheme.onBackground,
-                                                )
-                                                Row(
-                                                    modifier = Modifier.fillMaxWidth(),
-                                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                                    verticalAlignment = Alignment.CenterVertically,
-                                                ) {
-                                                    GalleryListCardRating(rating = gallery.rating)
-                                                    Text(
-                                                        text = DesktopRating.formatCardMeta(gallery.pages, gallery.category),
-                                                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                                        maxLines = 1,
-                                                        overflow = TextOverflow.Ellipsis,
-                                                    )
                                                 }
                                             }
                                         }
                                     }
                                 }
+                                VerticalScrollbar(
+                                    adapter = rememberScrollbarAdapter(gridState),
+                                    isScrollInProgress = gridState.isScrollInProgress,
+                                )
                             }
                         }
                     }
