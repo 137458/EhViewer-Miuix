@@ -841,6 +841,7 @@ fun LibraryScreen(
                         val copyLinkLabel = stringResource(MR.strings.copy_link)
                         val openBrowserLabel = stringResource(MR.strings.open_in_browser)
                         val openInNewWindowLabel = stringResource(MR.strings.menu_new_window)
+                        val readLabel = stringResource(MR.strings.menu_read)
                         val deleteLabel = stringResource(MR.strings.delete)
                         val addFavoriteLabel = stringResource(MR.strings.add_favorites_dialog_title)
                         val deleteFavoriteLabel = stringResource(MR.strings.delete_favorites_dialog_title)
@@ -872,6 +873,13 @@ fun LibraryScreen(
                                     toggleFavorite(gallery)
                                 },
                             )
+                            if (onOpenReader != null) {
+                                menuItems.add(
+                                    ContextMenuItem(readLabel) {
+                                        onOpenReader(gallery)
+                                    },
+                                )
+                            }
                             if (onOpenGalleryInNewWindow != null) {
                                 menuItems.add(
                                     ContextMenuItem(openInNewWindowLabel) {
