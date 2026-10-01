@@ -116,4 +116,24 @@ class GalleryFilterTest {
         val result = GalleryFilter.filterGalleries(sampleItems, "nonexistent_query_404")
         assertTrue(result.isEmpty())
     }
+
+    @Test
+    fun filterGalleriesDeduplicatesByGidKeepingFirstOccurrence() {
+        // 列表以 gid 作为 Compose 条目 key，重复 gid 会触发 "Key was duplicated" 崩溃，须在源头去重
+        val duplicated = listOf(
+            sampleItems[0],
+            sampleItems[1],
+            BaseGalleryInfo(gid = 10001L, title = "Later Duplicate Of First"),
+            sampleItems[2],
+        )
+
+        // 空查询路径（原样返回分支）同样必须去重
+        val blankResult = GalleryFilter.filterGalleries(duplicated, "")
+        assertEquals(listOf(10001L, 20002L, 30003L), blankResult.map { it.gid })
+        assertEquals("Touhou Project Anthology", blankResult.first().title)
+
+        // 关键字过滤路径去重
+        val queryResult = GalleryFilter.filterGalleries(duplicated, "touhou")
+        assertEquals(listOf(10001L), queryResult.map { it.gid })
+    }
 }
