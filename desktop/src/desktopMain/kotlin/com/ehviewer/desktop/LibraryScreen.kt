@@ -705,6 +705,14 @@ fun LibraryScreen(
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Text(
+                                text = "\"$remoteSearchQuery\"",
+                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                fontSize = 11.sp,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f, fill = false),
+                            )
+                            Text(
                                 text = "◀ Prev",
                                 color = if (searchPage > 0) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                 modifier = Modifier
