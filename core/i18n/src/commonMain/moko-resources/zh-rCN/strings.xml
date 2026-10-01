@@ -724,6 +724,8 @@
     <string name="desktop_removed_from_history">已从历史记录移除</string>
     <string name="desktop_filter">过滤</string>
     <string name="desktop_sort">排序</string>
+    <string name="menu_read">阅读</string>
+    <string name="menu_read_hint">打开本画廊的阅读器</string>
     <string name="desktop_view_list">列表</string>
     <string name="desktop_view_grid">网格</string>
     <string name="settings_theme">主题</string>

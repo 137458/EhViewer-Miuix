@@ -126,6 +126,20 @@ fun main() {
             }
         }
 
+        // 阅读窗口入口：同 gid Reader 窗口防重
+        val openReaderWindow: (com.ehviewer.core.model.BaseGalleryInfo) -> Unit = { gallery ->
+            val (updated, windowId) = DesktopWindowManager.openOrFocusReader(
+                windows = windows,
+                gallery = gallery,
+                nextIdProvider = { nextWindowId++ },
+            )
+            if (updated.size > windows.size) {
+                windows.add(updated.last())
+            } else {
+                windowFrames[windowId]?.toFront()
+            }
+        }
+
         val handleClose: (ShellWindow) -> Unit = { targetWindow ->
             val behavior = if (closeToTray) CloseBehavior.MINIMIZE_TO_TRAY else CloseBehavior.EXIT
             val action = DesktopClosePolicy.evaluateClose(
@@ -304,9 +318,11 @@ fun main() {
                                     onOpenGalleryDialogOpen = { showOpenGalleryDialog = true },
                                     onOpenGalleryDialogClose = { showOpenGalleryDialog = false },
                                     onOpenGalleryInNewWindow = { openGalleryWindow(it) },
+                                    onOpenReader = { openReaderWindow(it) },
                                 )
                                 is DesktopWindowKind.GalleryDetail -> GalleryDetailWindowContent(
                                     gallery = kind.gallery,
+                                    onOpenReader = { openReaderWindow(it) },
                                     onGalleryUpdated = { updated ->
                                         val idx = windows.indexOfFirst { it.id == window.id }
                                         if (idx >= 0) {
@@ -402,6 +418,7 @@ private fun ShortcutsHelpDialog(onDismiss: () -> Unit) {
 private fun GalleryDetailWindowContent(
     gallery: com.ehviewer.core.model.BaseGalleryInfo,
     onGalleryUpdated: ((com.ehviewer.core.model.BaseGalleryInfo) -> Unit)? = null,
+    onOpenReader: ((com.ehviewer.core.model.BaseGalleryInfo) -> Unit)? = null,
 ) {
     var notifications by remember { mutableStateOf<List<DesktopNotification>>(emptyList()) }
     val nextNotificationId = remember { AtomicLong(1L) }
@@ -520,6 +537,7 @@ private fun GalleryDetailWindowContent(
                 showNotification("$tagLabel: $tag")
             },
             onPreviewCover = { url -> previewCoverUrl = url },
+            onOpenReader = onOpenReader?.let { opener -> { opener(gallery) } },
         )
         if (notifications.isNotEmpty()) {
             Column(

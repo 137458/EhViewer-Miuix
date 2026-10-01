@@ -650,6 +650,8 @@
     <string name="desktop_removed_from_history">Removed from history</string>
     <string name="desktop_filter">Filter</string>
     <string name="desktop_sort">Sort</string>
+    <string name="menu_read">Read</string>
+    <string name="menu_read_hint">Open the reader for this gallery</string>
     <string name="desktop_view_list">List</string>
     <string name="desktop_view_grid">Grid</string>
     <string name="settings_theme">Theme</string>

@@ -116,5 +116,24 @@ object DesktopWindowManager {
         }
     }
 
+    // 阅读窗口调度：同 gid 的 Reader 窗口防重（GalleryDetail 窗口不参与 Reader 去重）
+    fun openOrFocusReader(
+        windows: List<ShellWindow>,
+        gallery: BaseGalleryInfo,
+        nextIdProvider: () -> Long,
+    ): Pair<List<ShellWindow>, Long> {
+        val existing = windows.firstOrNull {
+            val kind = it.kind
+            kind is DesktopWindowKind.Reader && kind.gallery.gid == gallery.gid
+        }
+        if (existing != null) {
+            return windows to existing.id
+        }
+
+        val newId = nextIdProvider()
+        val newWindow = ShellWindow(id = newId, kind = DesktopWindowKind.Reader(gallery))
+        return (windows + newWindow) to newId
+    }
+
     fun closeWindow(windows: List<ShellWindow>, id: Long): List<ShellWindow> = windows.filterNot { it.id == id }
 }

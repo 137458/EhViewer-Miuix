@@ -169,6 +169,32 @@ class DesktopWindowManagerTest {
     }
 
     @Test
+    fun openOrFocusReaderDeduplicatesByGidAmongReaderWindows() {
+        val gallery = BaseGalleryInfo(gid = 7001, token = "tok")
+        val existingReader = ShellWindow(id = 4, kind = DesktopWindowKind.Reader(gallery))
+        val list = listOf(
+            ShellWindow(id = 0, kind = DesktopWindowKind.Library),
+            existingReader,
+            ShellWindow(id = 5, kind = DesktopWindowKind.GalleryDetail(gallery)),
+        )
+        var nextId = 10L
+
+        val (updated, activeId) = DesktopWindowManager.openOrFocusReader(list, gallery) { nextId++ }
+        assertEquals(3, updated.size, "reader dedupe should not add a window")
+        assertEquals(4L, activeId)
+        assertEquals(10L, nextId)
+
+        // 无既有阅读窗口时新建 Reader 窗口
+        val (updated2, activeId2) = DesktopWindowManager.openOrFocusReader(
+            listOf(ShellWindow(id = 0, kind = DesktopWindowKind.Library)),
+            gallery,
+        ) { nextId++ }
+        assertEquals(2, updated2.size)
+        assertEquals(DesktopWindowKind.Reader(gallery), updated2.last().kind)
+        assertTrue(activeId2 > 0)
+    }
+
+    @Test
     fun updateGalleryWindowReplacesGalleryPreservingIdentity() {
         val placeholder = BaseGalleryInfo(gid = 4001, token = "tok", title = "Gallery 4001")
         val hydrated = BaseGalleryInfo(gid = 4001, token = "tok", title = "Real Title", thumbKey = "a/b.jpg")

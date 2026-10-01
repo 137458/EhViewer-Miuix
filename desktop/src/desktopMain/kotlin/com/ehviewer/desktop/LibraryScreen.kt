@@ -108,6 +108,7 @@ enum class LibraryTab {
 @Composable
 fun LibraryScreen(
     onOpenGalleryInNewWindow: ((BaseGalleryInfo) -> Unit)? = null,
+    onOpenReader: ((BaseGalleryInfo) -> Unit)? = null,
     openGalleryDialogVisible: Boolean = false,
     onOpenGalleryDialogOpen: () -> Unit = {},
     onOpenGalleryDialogClose: () -> Unit = {},
@@ -959,6 +960,7 @@ fun LibraryScreen(
                             showNotification("$filterText: $tag")
                         },
                         onPreviewCover = { url -> previewCoverUrl = url },
+                        onOpenReader = onOpenReader?.let { opener -> { opener(gallery) } },
                     )
                 }
             }
@@ -1099,6 +1101,7 @@ internal fun GalleryDetailPane(
     onToggleFavorite: (() -> Unit)? = null,
     onSearchTag: ((tag: String) -> Unit)? = null,
     onPreviewCover: ((url: String) -> Unit)? = null,
+    onOpenReader: (() -> Unit)? = null,
 ) {
     val detailScrollState = rememberScrollState()
     Row(modifier = Modifier.fillMaxSize()) {
@@ -1188,6 +1191,15 @@ internal fun GalleryDetailPane(
                 onCopy = onCopy,
                 onOpen = onOpenUrl?.let { opener -> { opener(link) } },
             )
+            if (onOpenReader != null) {
+                DetailRow(
+                    label = stringResource(MR.strings.menu_read),
+                    value = stringResource(MR.strings.menu_read_hint),
+                    onCopy = onCopy,
+                    actionText = stringResource(MR.strings.menu_read),
+                    onAction = onOpenReader,
+                )
+            }
             gallery.thumbUrl?.let { DetailRow(label = stringResource(MR.strings.key_thumb), value = it, onCopy = onCopy) }
             DetailRow(
                 label = stringResource(MR.strings.action_share),
