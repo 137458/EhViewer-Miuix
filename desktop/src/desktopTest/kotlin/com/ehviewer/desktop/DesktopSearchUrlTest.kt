@@ -61,15 +61,20 @@ class DesktopSearchUrlTest {
     }
 
     @Test
-    fun buildFirstPageUsesPrevParameter() {
-        // 站点 &prev=1 语义为回到第一页
+    fun buildWithPrevGidPrependsPrevParameter() {
+        // 站点游标双向：prev={gid} 为从该 gid 起往前翻（往更早画廊方向）
         assertEquals(
-            "https://e-hentai.org/?f_search=touhou&prev=1",
-            DesktopSearchUrl.buildFirstPage("touhou"),
+            "https://e-hentai.org/?f_search=touhou&prev=4221532",
+            DesktopSearchUrl.build("touhou", nextGid = 4221532L, backward = true),
         )
         assertEquals(
-            "https://e-hentai.org/?f_search=%E6%9D%B1%E6%96%B9&prev=1",
-            DesktopSearchUrl.buildFirstPage("東方"),
+            "https://e-hentai.org/?f_search=%E6%9D%B1%E6%96%B9&prev=42",
+            DesktopSearchUrl.build("東方", nextGid = 42L, backward = true),
+        )
+        // 负值视为无游标
+        assertEquals(
+            "https://e-hentai.org/?f_search=touhou",
+            DesktopSearchUrl.build("touhou", nextGid = -1L, backward = true),
         )
     }
 }
