@@ -226,23 +226,6 @@ fun LibraryScreen(
         }
     }
 
-    // 搜索提交：Online Tab 走远程搜索（结果替换在线列表），空查询且处于远程搜索态则恢复默认列表，其余 Tab 维持本地过滤
-    fun submitSearch(query: String) {
-        val q = query.trim()
-        if (q.isEmpty()) {
-            if (currentTab == LibraryTab.Online && (remoteSearchQuery.isNotBlank() || searchPage > 0)) {
-                remoteSearchQuery = ""
-                searchPage = 0
-                coroutineScope.launch { refreshGalleries() }
-            }
-            return
-        }
-        recordSearch(q)
-        if (currentTab == LibraryTab.Online) {
-            remoteSearch(q, page = 0)
-        }
-    }
-
     fun clearSearchHistory() {
         DesktopSettings.searchHistory.value = ""
         showNotification(historyClearedMessage)
@@ -292,6 +275,23 @@ fun LibraryScreen(
             val cleaned = DesktopConnectionState.cleanErrorMessage(e.message ?: e::class.simpleName)
             connectionStatus = DesktopConnectionStatus.Offline(cleaned)
             logcat("Connection", LogPriority.WARN) { "EH_HOME failed: $cleaned (raw: ${e.message})" }
+        }
+    }
+
+    // 搜索提交：Online Tab 走远程搜索（结果替换在线列表），空查询且处于远程搜索态则恢复默认列表，其余 Tab 维持本地过滤
+    fun submitSearch(query: String) {
+        val q = query.trim()
+        if (q.isEmpty()) {
+            if (currentTab == LibraryTab.Online && (remoteSearchQuery.isNotBlank() || searchPage > 0)) {
+                remoteSearchQuery = ""
+                searchPage = 0
+                coroutineScope.launch { refreshGalleries() }
+            }
+            return
+        }
+        recordSearch(q)
+        if (currentTab == LibraryTab.Online) {
+            remoteSearch(q, page = 0)
         }
     }
 
