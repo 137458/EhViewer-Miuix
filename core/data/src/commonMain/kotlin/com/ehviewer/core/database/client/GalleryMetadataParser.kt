@@ -43,7 +43,8 @@ object GalleryMetadataParser {
                 uploader = item.uploader?.unescapeXml()
                 posted = postedFormatter.format(
                     Instant.fromEpochMilliseconds(item.posted * 1000)
-                        .toLocalDateTime(TimeZone.currentSystemDefault()),
+                        // 与 Android ParserUtils.formatDate（默认 UTC）语义一致，委托重构不得改变现网行为
+                        .toLocalDateTime(TimeZone.UTC),
                 )
                 rating = item.rating
                 simpleTags = item.tags
@@ -85,6 +86,7 @@ const val CATEGORY_COSPLAY = 0x40
 const val CATEGORY_ASIAN_PORN = 0x80
 const val CATEGORY_NON_H = 0x100
 const val CATEGORY_WESTERN = 0x200
+const val CATEGORY_PRIVATE = 0x400
 const val CATEGORY_UNKNOWN = 0x800
 
 private val CATEGORY_STRINGS = listOf(
@@ -98,6 +100,7 @@ private val CATEGORY_STRINGS = listOf(
     CATEGORY_ASIAN_PORN to arrayOf("asianporn", "Asian Porn"),
     CATEGORY_NON_H to arrayOf("non-h"),
     CATEGORY_WESTERN to arrayOf("western"),
+    CATEGORY_PRIVATE to arrayOf("private"),
     CATEGORY_UNKNOWN to arrayOf("unknown"),
 )
 

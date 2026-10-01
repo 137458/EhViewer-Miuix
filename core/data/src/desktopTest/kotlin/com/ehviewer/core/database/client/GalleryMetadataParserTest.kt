@@ -58,8 +58,8 @@ class GalleryMetadataParserTest {
         assertEquals(20, gi1.pages)
         assertEquals(4.5f, gi1.rating)
         assertEquals(listOf("language:chinese", "artist:foo"), gi1.simpleTags)
-        // posted 格式化为 yyyy-MM-dd HH:mm（UTC 由调用环境时区决定，仅验证形状）
-        assertTrue(Regex("""\d{4}-\d{2}-\d{2} \d{2}:\d{2}""").matches(gi1.posted.orEmpty()))
+        // posted 固定按 UTC 格式化为 yyyy-MM-dd HH:mm（与 Android ParserUtils.formatDate 语义一致）
+        assertEquals("2023-11-14 22:13", gi1.posted)
         // generateSLang 的 language 映射：chinese -> ZH
         assertEquals("ZH", gi1.simpleLanguage)
 
@@ -77,6 +77,8 @@ class GalleryMetadataParserTest {
         assertEquals(CATEGORY_DOUJINSHI, getCategory("Doujinshi"))
         assertEquals(CATEGORY_ARTIST_CG, getCategory("Artist CG Sets"))
         assertEquals(CATEGORY_GAME_CG, getCategory("GAMECG"))
+        // 与 EhUtils 对齐：Private 别名映射 0x400，不得落入 UNKNOWN
+        assertEquals(CATEGORY_PRIVATE, getCategory("private"))
         assertEquals(CATEGORY_UNKNOWN, getCategory("nonexistent"))
         assertEquals(CATEGORY_UNKNOWN, getCategory(null))
     }
