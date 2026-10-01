@@ -18,6 +18,10 @@ interface LocalFavoritesDao {
     @Query("SELECT LOCAL_FAVORITES.* FROM LOCAL_FAVORITES JOIN GALLERIES USING(GID) ORDER BY TIME")
     suspend fun list(): List<LocalFavoriteInfo>
 
+    // 桌面等无 Paging 环境的一次性本地收藏画廊快照（带标题等画廊字段）
+    @Query("SELECT GALLERIES.* FROM LOCAL_FAVORITES JOIN GALLERIES USING(GID) ORDER BY TIME DESC")
+    suspend fun listGalleries(): List<GalleryEntity>
+
     @Query("SELECT GALLERIES.* FROM LOCAL_FAVORITES JOIN GALLERIES USING(GID) ORDER BY TIME DESC")
     fun joinListLazy(): PagingSource<Int, GalleryEntity>
 

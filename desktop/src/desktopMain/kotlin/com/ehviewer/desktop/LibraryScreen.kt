@@ -50,6 +50,7 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.ehviewer.core.database.client.thumbUrl
 import com.ehviewer.core.database.model.GalleryEntity
+import com.ehviewer.core.database.model.LocalFavoriteInfo
 import com.ehviewer.core.i18n.MR
 import com.ehviewer.core.model.BaseGalleryInfo
 import com.ehviewer.core.network.EhCookieStore
@@ -74,6 +75,7 @@ fun formatGalleryTags(tags: List<String>?): String = tags?.joinToString(", ") ?:
 
 enum class LibraryTab {
     History,
+    Favorites,
     Online,
 }
 
@@ -92,6 +94,8 @@ fun LibraryScreen(
         .collectAsState(initial = 0)
     var currentTab by remember { mutableStateOf(LibraryTab.History) }
     var history by remember { mutableStateOf<List<GalleryEntity>>(emptyList()) }
+    var favorites by remember { mutableStateOf<List<GalleryEntity>>(emptyList()) }
+    var favoriteGids by remember { mutableStateOf<Set<Long>>(emptySet()) }
     var online by remember { mutableStateOf<List<BaseGalleryInfo>>(emptyList()) }
     var selected by remember { mutableStateOf<BaseGalleryInfo?>(null) }
     var httpStatusCode by remember { mutableStateOf<Int?>(null) }
@@ -128,6 +132,12 @@ fun LibraryScreen(
         history = withContext(Dispatchers.IO) {
             DesktopDatabase.eh.historyDao().listGalleries()
         }
+        val (faveList, faveSet) = withContext(Dispatchers.IO) {
+            val list = DesktopDatabase.eh.localFavoritesDao().listGalleries()
+            list to list.map { it.gid }.toSet()
+        }
+        favorites = faveList
+        favoriteGids = faveSet
         runCatching {
             withContext(Dispatchers.IO) {
                 desktopGet("https://e-hentai.org/home.php")
@@ -154,6 +164,35 @@ fun LibraryScreen(
         }.onFailure { e ->
             connectionError = e.message ?: e::class.simpleName
             logcat("Connection", LogPriority.WARN) { "EH_HOME failed: $connectionError" }
+        }
+    }
+
+    fun toggleFavorite(gallery: BaseGalleryInfo) {
+        val isFav = DesktopFavoritesState.isFavorite(favoriteGids, gallery.gid)
+        coroutineScope.launch {
+            if (isFav) {
+                withContext(Dispatchers.IO) {
+                    DesktopDatabase.eh.localFavoritesDao().deleteByKey(gallery.gid)
+                }
+                favoriteGids = DesktopFavoritesState.toggleFavoriteGid(favoriteGids, gallery.gid)
+                favorites = favorites.filter { it.gid != gallery.gid }
+                selected = DesktopFavoritesState.updateSelectionAfterRemoveFavorite(
+                    selected = selected,
+                    removedGid = gallery.gid,
+                    isInFavoritesTab = currentTab == LibraryTab.Favorites,
+                )
+                showNotification("Removed from favorites")
+            } else {
+                withContext(Dispatchers.IO) {
+                    val entity = DesktopFavoritesState.toGalleryEntity(gallery)
+                    DesktopDatabase.eh.galleryDao().upsert(entity)
+                    DesktopDatabase.eh.localFavoritesDao().upsert(LocalFavoriteInfo(gallery.gid))
+                }
+                favoriteGids = DesktopFavoritesState.toggleFavoriteGid(favoriteGids, gallery.gid)
+                val entity = DesktopFavoritesState.toGalleryEntity(gallery)
+                favorites = listOf(entity) + favorites.filter { it.gid != gallery.gid }
+                showNotification("Added to favorites")
+            }
         }
     }
 
@@ -235,6 +274,14 @@ fun LibraryScreen(
                                     .padding(vertical = 4.dp, horizontal = 4.dp),
                             )
                             Text(
+                                text = "${stringResource(MR.strings.local_favorites)} (${favorites.size})",
+                                color = if (currentTab == LibraryTab.Favorites) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                modifier = Modifier
+                                    .pointerHoverIcon(PointerIcon.Hand)
+                                    .clickable { currentTab = LibraryTab.Favorites }
+                                    .padding(vertical = 4.dp, horizontal = 4.dp),
+                            )
+                            Text(
                                 text = "${stringResource(MR.strings.online)} (${online.size})",
                                 color = if (currentTab == LibraryTab.Online) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                 modifier = Modifier
@@ -274,7 +321,11 @@ fun LibraryScreen(
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
                     )
                     HorizontalDivider()
-                    val currentItems: List<BaseGalleryInfo> = if (currentTab == LibraryTab.History) history else online
+                    val currentItems: List<BaseGalleryInfo> = when (currentTab) {
+                        LibraryTab.History -> history
+                        LibraryTab.Favorites -> favorites
+                        LibraryTab.Online -> online
+                    }
                     val filteredItems = remember(currentItems, searchQuery) {
                         GalleryFilter.filterGalleries(currentItems, searchQuery)
                     }
@@ -283,12 +334,12 @@ fun LibraryScreen(
                             Text(
                                 text = if (searchQuery.isNotBlank() && currentItems.isNotEmpty()) {
                                     "No matching galleries"
-                                } else if (currentTab == LibraryTab.History) {
-                                    "No history recorded"
-                                } else if (connectionError != null) {
-                                    "Offline: $connectionError"
                                 } else {
-                                    "Loading online galleries..."
+                                    when (currentTab) {
+                                        LibraryTab.History -> "No history recorded"
+                                        LibraryTab.Favorites -> "No favorites saved"
+                                        LibraryTab.Online -> if (connectionError != null) "Offline: $connectionError" else "Loading online galleries..."
+                                    }
                                 },
                                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                             )
@@ -299,6 +350,8 @@ fun LibraryScreen(
                         val openBrowserLabel = stringResource(MR.strings.open_in_browser)
                         val openInNewWindowLabel = stringResource(MR.strings.menu_new_window)
                         val deleteLabel = stringResource(MR.strings.delete)
+                        val addFavoriteLabel = stringResource(MR.strings.add_favorites_dialog_title)
+                        val deleteFavoriteLabel = stringResource(MR.strings.delete_favorites_dialog_title)
                         LazyColumn(modifier = Modifier.fillMaxSize()) {
                             items(filteredItems.size) { index ->
                                 val gallery = filteredItems[index]
@@ -317,6 +370,15 @@ fun LibraryScreen(
                                             },
                                             ContextMenuItem(openBrowserLabel) {
                                                 openBrowser(link)
+                                            },
+                                            ContextMenuItem(
+                                                if (DesktopFavoritesState.isFavorite(favoriteGids, gallery.gid)) {
+                                                    deleteFavoriteLabel
+                                                } else {
+                                                    addFavoriteLabel
+                                                },
+                                            ) {
+                                                toggleFavorite(gallery)
                                             },
                                         )
                                         if (onOpenGalleryInNewWindow != null) {
@@ -384,6 +446,8 @@ fun LibraryScreen(
                 selected?.let { gallery ->
                     GalleryDetailPane(
                         gallery = gallery,
+                        isFavorite = DesktopFavoritesState.isFavorite(favoriteGids, gallery.gid),
+                        onToggleFavorite = { toggleFavorite(gallery) },
                         onCopy = { value, label ->
                             clipboard.setText(AnnotatedString(value))
                             showNotification("Copied $label")
@@ -434,6 +498,8 @@ internal fun GalleryDetailPane(
     gallery: BaseGalleryInfo,
     onCopy: (value: String, label: String) -> Unit,
     onOpenUrl: ((url: String) -> Unit)? = null,
+    isFavorite: Boolean = false,
+    onToggleFavorite: (() -> Unit)? = null,
 ) {
     Column(
         modifier = Modifier
@@ -475,6 +541,15 @@ internal fun GalleryDetailPane(
         DetailRow(label = stringResource(MR.strings.key_pages), value = gallery.pages.toString(), onCopy = onCopy)
         DetailRow(label = stringResource(MR.strings.key_rating), value = gallery.rating.toString(), onCopy = onCopy)
         gallery.simpleLanguage?.let { DetailRow(label = stringResource(MR.strings.key_language), value = it, onCopy = onCopy) }
+        if (onToggleFavorite != null) {
+            DetailRow(
+                label = stringResource(MR.strings.favorite_name),
+                value = if (isFavorite) stringResource(MR.strings.key_favorited) else stringResource(MR.strings.not_favorited),
+                onCopy = onCopy,
+                actionText = if (isFavorite) stringResource(MR.strings.delete_favorites_dialog_title) else stringResource(MR.strings.add_favorites_dialog_title),
+                onAction = onToggleFavorite,
+            )
+        }
         DetailRow(
             label = stringResource(MR.strings.key_url),
             value = link,
@@ -498,6 +573,8 @@ private fun DetailRow(
     value: String,
     onCopy: (value: String, label: String) -> Unit,
     onOpen: (() -> Unit)? = null,
+    actionText: String? = null,
+    onAction: (() -> Unit)? = null,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -516,6 +593,15 @@ private fun DetailRow(
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f),
         )
+        if (actionText != null && onAction != null) {
+            Text(
+                text = actionText,
+                color = MiuixTheme.colorScheme.primary,
+                modifier = Modifier
+                    .pointerHoverIcon(PointerIcon.Hand)
+                    .clickable { onAction() },
+            )
+        }
         if (onOpen != null) {
             Text(
                 text = stringResource(MR.strings.open_in_browser),

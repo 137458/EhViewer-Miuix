@@ -1,5 +1,7 @@
 package com.ehviewer.core.database
 
+import com.ehviewer.core.database.model.GalleryEntity
+import com.ehviewer.core.database.model.LocalFavoriteInfo
 import com.ehviewer.core.database.model.QuickSearch
 import java.io.File
 import kotlin.test.Test
@@ -41,6 +43,47 @@ class DatabaseDesktopTest {
                     val list = dao.list()
                     assertEquals(1, list.size)
                     assertEquals("smoke", list[0].name)
+                }
+            }
+        } finally {
+            runCatching { db.close() }
+            runCatching { File(path).delete() }
+        }
+    }
+
+    @Test
+    fun insertAndListLocalFavoritesSmoke() {
+        val path = (FileSystem.SYSTEM_TEMPORARY_DIRECTORY / "ehviewer_fav_smoke_${System.currentTimeMillis()}.db").toString()
+        val db = roomDb<EhDatabase>(path)
+        try {
+            runBlocking {
+                withTimeout(10_000) {
+                    val gallery = GalleryEntity(
+                        gid = 12345L,
+                        token = "abcde",
+                        title = "Favorite Title",
+                        titleJpn = "Fav Title Jpn",
+                        thumbKey = "thumb.jpg",
+                        category = 2,
+                        posted = "2026-10-01",
+                        uploader = "tester",
+                        rating = 5.0f,
+                        simpleTags = listOf("favorite"),
+                        pages = 50,
+                        simpleLanguage = "English",
+                        favoriteSlot = -1,
+                    )
+                    db.galleryDao().upsert(gallery)
+                    db.localFavoritesDao().upsert(LocalFavoriteInfo(12345L))
+
+                    val galleries = db.localFavoritesDao().listGalleries()
+                    assertEquals(1, galleries.size)
+                    assertEquals(12345L, galleries[0].gid)
+                    assertEquals("Favorite Title", galleries[0].title)
+
+                    // 删除测试
+                    db.localFavoritesDao().deleteByKey(12345L)
+                    assertEquals(0, db.localFavoritesDao().listGalleries().size)
                 }
             }
         } finally {
