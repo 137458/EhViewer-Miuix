@@ -55,9 +55,6 @@ kotlin {
     }
 }
 
-val rustDesktopDll = rootProject.file("app/src/main/rust/target-desk/x86_64-pc-windows-gnu/release/ehviewer_rust.dll")
-
-
 compose.desktop {
     application {
         mainClass = "com.ehviewer.desktop.MainKt"

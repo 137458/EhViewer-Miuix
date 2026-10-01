@@ -3,6 +3,7 @@ package com.hippo.ehviewer.client.parser
 import com.ehviewer.core.model.BaseGalleryInfo
 import io.ktor.util.moveToByteArray
 import java.nio.ByteBuffer
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.cbor.Cbor
 import kotlinx.serialization.decodeFromByteArray
 
@@ -26,20 +27,29 @@ private fun ensureRustLoaded(): Boolean {
     }.onFailure { errors += "loadLibrary: ${it.message}" }
     runCatching {
         // 类路径资源（Gradle 构建/分发时从 Rust 产物复制）
-        Thread.currentThread().contextClassLoader.getResourceAsStream("native/ehviewer_rust.dll")?.use { input ->
-            val tmp = java.io.File.createTempFile("ehviewer_rust", ".dll")
-            input.copyTo(tmp.outputStream())
-            tmp.deleteOnExit()
-            System.load(tmp.absolutePath)
-            return true
+        val cl = Thread.currentThread().contextClassLoader
+            ?: GalleryListParserKtProbe::class.java.classLoader
+        val stream = cl?.getResourceAsStream("native/ehviewer_rust.dll")
+            ?: GalleryListParserKtProbe::class.java.getResourceAsStream("/native/ehviewer_rust.dll")
+        if (stream != null) {
+            stream.use { input ->
+                val tmp = java.io.File.createTempFile("ehviewer_rust_", ".dll")
+                tmp.deleteOnExit()
+                tmp.outputStream().use { out ->
+                    input.copyTo(out)
+                }
+                System.load(tmp.absolutePath)
+                return true
+            }
+        } else {
+            errors += "resource: not on classpath"
         }
-        errors += "resource: not on classpath"
     }.onFailure { errors += "resource: ${it.message}" }
     runCatching {
         // 兜底：环境变量/相对路径候选
         val path = candidateDllPaths().firstOrNull { java.io.File(it).exists() }
             ?: throw IllegalStateException("no candidate exists")
-        System.load(path)
+        System.load(java.io.File(path).canonicalPath)
         return true
     }.onFailure { errors += "candidates: ${it.message}" }
     lastLoadError = errors.joinToString(" | ")
@@ -49,8 +59,9 @@ private fun ensureRustLoaded(): Boolean {
 // 诊断探针
 object GalleryListParserKtProbe {
     val resAvailable: Boolean
-        get() = Thread.currentThread().contextClassLoader
-            ?.getResource("native/ehviewer_rust.dll") != null
+        get() = (Thread.currentThread().contextClassLoader ?: javaClass.classLoader)
+            ?.getResource("native/ehviewer_rust.dll") != null ||
+            javaClass.getResource("/native/ehviewer_rust.dll") != null
     val loadError: String? get() = lastLoadError
 }
 
@@ -63,10 +74,13 @@ private fun candidateDllPaths(): List<String> = buildList {
     System.getenv("EHVIEWER_RUST_DLL")?.let(::add)
     add("../../app/src/main/rust/target-desk/x86_64-pc-windows-gnu/release/ehviewer_rust.dll")
     add("../../app/src/main/rust/target/x86_64-pc-windows-gnu/release/ehviewer_rust.dll")
+    add("../app/src/main/rust/target-desk/x86_64-pc-windows-gnu/release/ehviewer_rust.dll")
+    add("../app/src/main/rust/target/x86_64-pc-windows-gnu/release/ehviewer_rust.dll")
     add("app/src/main/rust/target-desk/x86_64-pc-windows-gnu/release/ehviewer_rust.dll")
     add("app/src/main/rust/target/x86_64-pc-windows-gnu/release/ehviewer_rust.dll")
 }
 
+@Serializable
 data class GalleryListResult(
     val prev: String?,
     val next: String?,
@@ -75,11 +89,26 @@ data class GalleryListResult(
 
 external fun parseGalleryInfoList(body: ByteBuffer, size: Int = body.limit()): Int
 
-fun parseGalleryList(body: ByteBuffer): GalleryListResult = try {
-    val cborSize = parseGalleryInfoList(body, body.limit())
-    body.limit(cborSize)
-    val array = body.moveToByteArray()
-    Cbor.decodeFromByteArray<GalleryListResult>(array)
-} catch (e: Exception) {
-    throw IllegalStateException("Can't parse gallery list", e)
+fun parseGalleryList(body: ByteBuffer): GalleryListResult {
+    check(rustGalleryBindingsAvailable) {
+        "Rust bindings unavailable: ${lastLoadError ?: "unknown error"}"
+    }
+    val directBody = if (body.isDirect) {
+        body
+    } else {
+        val pos = body.position()
+        val limit = body.limit()
+        val direct = ByteBuffer.allocateDirect(limit - pos)
+        direct.put(body.duplicate())
+        direct.flip()
+        direct
+    }
+    return try {
+        val cborSize = parseGalleryInfoList(directBody, directBody.limit())
+        directBody.limit(cborSize)
+        val array = directBody.moveToByteArray()
+        Cbor.decodeFromByteArray<GalleryListResult>(array)
+    } catch (e: Exception) {
+        throw IllegalStateException("Can't parse gallery list", e)
+    }
 }

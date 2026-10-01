@@ -32,10 +32,10 @@ import androidx.compose.ui.unit.dp
 import com.ehviewer.core.database.model.GalleryEntity
 import com.ehviewer.core.model.BaseGalleryInfo
 import com.ehviewer.core.network.EhCookieStore
-import com.hippo.ehviewer.client.parser.parseGalleryList
-import com.hippo.ehviewer.client.parser.GalleryListParserKtProbe
 import com.ehviewer.core.util.LogPriority
 import com.ehviewer.core.util.logcat
+import com.hippo.ehviewer.client.parser.GalleryListParserKtProbe
+import com.hippo.ehviewer.client.parser.parseGalleryList
 import java.nio.ByteBuffer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -81,7 +81,7 @@ fun LibraryScreen() {
                     logcat("Library", LogPriority.INFO) { "ONLINE_LIST parsed=${list.size}" }
                 }.onFailure { e ->
                     logcat("Library", LogPriority.WARN) {
-                        "ONLINE_LIST parse failed: ${e} | loadErr=${GalleryListParserKtProbe.loadError} | " +
+                        "ONLINE_LIST parse failed: $e | loadErr=${GalleryListParserKtProbe.loadError} | " +
                             "res=${GalleryListParserKtProbe.resAvailable} | cwd=${java.io.File(".").absolutePath}"
                     }
                 }

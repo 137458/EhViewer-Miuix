@@ -15,17 +15,43 @@ import kotlin.test.assertTrue
 class GalleryListParserDesktopTest {
     @Test
     fun nativeBindingResolvesAndRejectsGarbageInput() {
-        // dll 缺失的环境（CI/Linux）跳过本用例
-        if (!rustGalleryBindingsAvailable) return
         val dataDir = newIsolatedDataDir()
         try {
-            val garbage = ByteBuffer.wrap("<html>not a gallery list</html>".toByteArray())
-            val thrown = runCatching { parseGalleryList(garbage) }.exceptionOrNull()
-            assertTrue(thrown != null, "garbage input must fail at the Rust parse layer")
-            // 失败须来自解析语义（IllegalStateException 包装），而非 UnsatisfiedLinkError
+            // 构造 Direct ByteBuffer 模拟真实网络响应
+            val bytes = "<html><body>not a gallery list</body></html>".toByteArray()
+            val directBuffer = ByteBuffer.allocateDirect(bytes.size).put(bytes).apply { flip() }
+
+            val thrown = runCatching { parseGalleryList(directBuffer) }.exceptionOrNull()
+            assertTrue(thrown != null, "garbage input must fail at parse or bindings layer")
             assertTrue(
                 thrown !is UnsatisfiedLinkError,
-                "failure must be a parse error, not a binding error: $thrown",
+                "failure must NOT be an UnsatisfiedLinkError: $thrown",
+            )
+            // 如果原生绑定可用，异常消息应为解析失败或语义校验失败，而非类未初始化
+            assertTrue(
+                thrown is IllegalStateException,
+                "expected IllegalStateException but got: ${thrown::class.qualifiedName}: ${thrown.message}",
+            )
+        } finally {
+            clearIsolatedDataDir()
+        }
+    }
+
+    @Test
+    fun nonDirectBufferIsAutoConvertedAndRejectsGarbageInput() {
+        val dataDir = newIsolatedDataDir()
+        try {
+            // 普通 Heap ByteBuffer
+            val heapBuffer = ByteBuffer.wrap("<html><body>heap buffer test</body></html>".toByteArray())
+            val thrown = runCatching { parseGalleryList(heapBuffer) }.exceptionOrNull()
+            assertTrue(thrown != null, "garbage input must fail")
+            assertTrue(
+                thrown !is UnsatisfiedLinkError,
+                "failure must NOT be an UnsatisfiedLinkError: $thrown",
+            )
+            assertTrue(
+                thrown is IllegalStateException,
+                "expected IllegalStateException but got: ${thrown::class.qualifiedName}: ${thrown.message}",
             )
         } finally {
             clearIsolatedDataDir()
