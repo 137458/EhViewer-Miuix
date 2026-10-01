@@ -112,9 +112,14 @@ fun LibraryScreen(
     val viewModeOrdinal by DesktopSettings.viewMode.valueFlow().collectAsState(DesktopSettings.viewMode.value)
     val viewMode = DesktopViewMode.fromOrdinal(viewModeOrdinal)
     var currentTab by remember { mutableStateOf(LibraryTab.History) }
-    var history by remember { mutableStateOf<List<GalleryEntity>>(emptyList()) }
-    var favorites by remember { mutableStateOf<List<GalleryEntity>>(emptyList()) }
-    var favoriteGids by remember { mutableStateOf<Set<Long>>(emptySet()) }
+    // 历史/收藏走 Room Flow 响应式收集：开窗/收藏/删除后跨窗口自动刷新
+    val history by DesktopDatabase.eh.historyDao()
+        .listGalleriesFlow()
+        .collectAsState(initial = emptyList())
+    val favorites by DesktopDatabase.eh.localFavoritesDao()
+        .listGalleriesFlow()
+        .collectAsState(initial = emptyList())
+    val favoriteGids = remember(favorites) { favorites.map { it.gid }.toSet() }
     var online by remember { mutableStateOf<List<BaseGalleryInfo>>(emptyList()) }
     var selected by remember { mutableStateOf<BaseGalleryInfo?>(null) }
     var connectionStatus by remember { mutableStateOf<DesktopConnectionStatus>(DesktopConnectionStatus.Checking) }
@@ -177,15 +182,6 @@ fun LibraryScreen(
 
     suspend fun refreshGalleries() {
         connectionStatus = DesktopConnectionStatus.Checking
-        history = withContext(Dispatchers.IO) {
-            DesktopDatabase.eh.historyDao().listGalleries()
-        }
-        val (faveList, faveSet) = withContext(Dispatchers.IO) {
-            val list = DesktopDatabase.eh.localFavoritesDao().listGalleries()
-            list to list.map { it.gid }.toSet()
-        }
-        favorites = faveList
-        favoriteGids = faveSet
         runCatching {
             withContext(Dispatchers.IO) {
                 desktopGet("https://e-hentai.org/home.php")
@@ -223,8 +219,6 @@ fun LibraryScreen(
                 withContext(Dispatchers.IO) {
                     DesktopDatabase.eh.localFavoritesDao().deleteByKey(gallery.gid)
                 }
-                favoriteGids = DesktopFavoritesState.toggleFavoriteGid(favoriteGids, gallery.gid)
-                favorites = favorites.filter { it.gid != gallery.gid }
                 selected = DesktopFavoritesState.updateSelectionAfterRemoveFavorite(
                     selected = selected,
                     removedGid = gallery.gid,
@@ -237,9 +231,6 @@ fun LibraryScreen(
                     DesktopDatabase.eh.galleryDao().upsert(entity)
                     DesktopDatabase.eh.localFavoritesDao().upsert(LocalFavoriteInfo(gallery.gid))
                 }
-                favoriteGids = DesktopFavoritesState.toggleFavoriteGid(favoriteGids, gallery.gid)
-                val entity = DesktopFavoritesState.toGalleryEntity(gallery)
-                favorites = listOf(entity) + favorites.filter { it.gid != gallery.gid }
                 showNotification(addedToFavoritesText)
             }
         }
@@ -477,7 +468,6 @@ fun LibraryScreen(
                                             withContext(Dispatchers.IO) {
                                                 DesktopDatabase.eh.historyDao().deleteAll()
                                             }
-                                            history = DesktopHistoryState.clearAllGalleries()
                                             selected = DesktopHistoryState.updateSelectionAfterClearAll(
                                                 currentSelected = selected,
                                                 currentTabIsHistory = true,
@@ -731,7 +721,6 @@ fun LibraryScreen(
                                             withContext(Dispatchers.IO) {
                                                 DesktopDatabase.eh.historyDao().deleteByKey(gallery.gid)
                                             }
-                                            history = DesktopHistoryState.removeGallery(history, gallery.gid)
                                             selected = DesktopHistoryState.updateSelectionAfterDelete(selected, gallery.gid)
                                             showNotification(removedFromHistoryText)
                                         }

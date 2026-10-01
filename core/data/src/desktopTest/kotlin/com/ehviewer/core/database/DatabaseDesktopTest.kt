@@ -1,11 +1,13 @@
 package com.ehviewer.core.database
 
 import com.ehviewer.core.database.model.GalleryEntity
+import com.ehviewer.core.database.model.HistoryInfo
 import com.ehviewer.core.database.model.LocalFavoriteInfo
 import com.ehviewer.core.database.model.QuickSearch
 import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import okio.FileSystem
@@ -84,6 +86,53 @@ class DatabaseDesktopTest {
                     // 删除测试
                     db.localFavoritesDao().deleteByKey(12345L)
                     assertEquals(0, db.localFavoritesDao().listGalleries().size)
+                }
+            }
+        } finally {
+            runCatching { db.close() }
+            runCatching { File(path).delete() }
+        }
+    }
+
+    @Test
+    fun historyAndFavoritesFlowsEmitOnWrite() {
+        val path = (FileSystem.SYSTEM_TEMPORARY_DIRECTORY / "ehviewer_flow_smoke_${System.currentTimeMillis()}.db").toString()
+        val db = roomDb<EhDatabase>(path)
+        try {
+            runBlocking {
+                withTimeout(10_000) {
+                    val gallery = GalleryEntity(
+                        gid = 55555L,
+                        token = "flow1234",
+                        title = "Flow Title",
+                        titleJpn = null,
+                        thumbKey = null,
+                        category = 4,
+                        posted = null,
+                        uploader = null,
+                        rating = 0.0f,
+                        simpleTags = null,
+                        pages = 1,
+                        simpleLanguage = null,
+                        favoriteSlot = -1,
+                    )
+                    // 订阅先于写入：首帧空列表
+                    val historyFlow = db.historyDao().listGalleriesFlow()
+                    val favoritesFlow = db.localFavoritesDao().listGalleriesFlow()
+                    assertEquals(0, historyFlow.first().size)
+                    assertEquals(0, favoritesFlow.first().size)
+
+                    // HISTORY 对 GALLERIES 有外键约束：须先画廊行再历史行（与桌面开窗记录顺序一致）
+                    db.galleryDao().upsert(gallery)
+                    db.historyDao().upsert(HistoryInfo(55555L))
+                    db.localFavoritesDao().upsert(LocalFavoriteInfo(55555L))
+                    assertEquals(55555L, historyFlow.first().single().gid)
+                    assertEquals(55555L, favoritesFlow.first().single().gid)
+
+                    // 历史删除后流清空且不影响收藏
+                    db.historyDao().deleteByKey(55555L)
+                    assertEquals(0, historyFlow.first().size)
+                    assertEquals(55555L, favoritesFlow.first().single().gid)
                 }
             }
         } finally {

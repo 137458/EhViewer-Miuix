@@ -22,6 +22,10 @@ interface LocalFavoritesDao {
     @Query("SELECT GALLERIES.* FROM LOCAL_FAVORITES JOIN GALLERIES USING(GID) ORDER BY TIME DESC")
     suspend fun listGalleries(): List<GalleryEntity>
 
+    // 桌面响应式本地收藏画廊流（增删改自动推送，替代手动刷新）
+    @Query("SELECT GALLERIES.* FROM LOCAL_FAVORITES JOIN GALLERIES USING(GID) ORDER BY TIME DESC")
+    fun listGalleriesFlow(): Flow<List<GalleryEntity>>
+
     @Query("SELECT GALLERIES.* FROM LOCAL_FAVORITES JOIN GALLERIES USING(GID) ORDER BY TIME DESC")
     fun joinListLazy(): PagingSource<Int, GalleryEntity>
 
