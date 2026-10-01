@@ -319,6 +319,10 @@ private fun GalleryDetailWindowContent(gallery: com.ehviewer.core.model.BaseGall
     var previewCoverUrl by remember { mutableStateOf<String?>(null) }
     var isFavorite by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
+    val addedToFavoriteText = stringResource(MR.strings.add_to_favorite_success)
+    val removedFromFavoriteText = stringResource(MR.strings.remove_from_favorite_success)
+    val noBrowserText = stringResource(MR.strings.no_browser_installed)
+    val tagLabel = stringResource(MR.strings.search_sft)
 
     LaunchedEffect(gallery.gid) {
         isFavorite = withContext(Dispatchers.IO) {
@@ -360,7 +364,7 @@ private fun GalleryDetailWindowContent(gallery: com.ehviewer.core.model.BaseGall
                 }
             }
             isFavorite = nextState
-            showNotification(if (nextState) "Added to favorites" else "Removed from favorites")
+            showNotification(if (nextState) addedToFavoriteText else removedFromFavoriteText)
         }
     }
 
@@ -375,17 +379,17 @@ private fun GalleryDetailWindowContent(gallery: com.ehviewer.core.model.BaseGall
             onToggleFavorite = { toggleFavorite() },
             onCopy = { value, label ->
                 clipboard.setText(AnnotatedString(value))
-                showNotification("Copied $label")
+                showNotification(if (label.isBlank()) value else "$label: $value")
                 logcat("DetailWindow", LogPriority.INFO) { "Copied $label" }
             },
             onOpenUrl = { url ->
                 if (!DesktopBrowser.openUrl(url)) {
-                    showNotification("Failed to open browser")
+                    showNotification(noBrowserText)
                 }
             },
             onSearchTag = { tag ->
                 clipboard.setText(AnnotatedString(tag))
-                showNotification("Copied tag: $tag")
+                showNotification("$tagLabel: $tag")
             },
             onPreviewCover = { url -> previewCoverUrl = url },
         )

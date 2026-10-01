@@ -802,6 +802,7 @@ internal fun GalleryDetailPane(
             Text(text = it, color = MiuixTheme.colorScheme.onBackground)
         }
         gallery.thumbUrl?.let { thumb ->
+            val imageState = remember(thumb) { DesktopImageStateController() }
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -816,7 +817,26 @@ internal fun GalleryDetailPane(
                     contentDescription = displayTitle,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Fit,
+                    onLoading = { imageState.onLoading() },
+                    onSuccess = { imageState.onSuccess() },
+                    onError = { err -> imageState.onError(err.result.throwable.message) },
                 )
+                if (imageState.canRetry) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(MiuixTheme.colorScheme.surfaceVariant)
+                            .pointerHoverIcon(PointerIcon.Hand)
+                            .clickable { imageState.retry() },
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = "Failed to load cover. Click to retry.",
+                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                            fontSize = 12.sp,
+                        )
+                    }
+                }
             }
         }
         HorizontalDivider()
