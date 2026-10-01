@@ -57,6 +57,7 @@ import com.ehviewer.core.database.model.LocalFavoriteInfo
 import com.ehviewer.core.i18n.MR
 import com.ehviewer.core.model.BaseGalleryInfo
 import com.ehviewer.core.network.EhCookieStore
+import com.ehviewer.core.ui.component.GalleryListCardRating
 import com.ehviewer.core.util.LogPriority
 import com.ehviewer.core.util.logcat
 import com.hippo.ehviewer.client.parser.GalleryListParserKtProbe
@@ -540,6 +541,19 @@ fun LibraryScreen(
                                                     overflow = TextOverflow.Ellipsis,
                                                     color = MiuixTheme.colorScheme.onBackground,
                                                 )
+                                                Row(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                ) {
+                                                    GalleryListCardRating(rating = gallery.rating)
+                                                    Text(
+                                                        text = DesktopRating.formatCardMeta(gallery.pages, gallery.category),
+                                                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                                        maxLines = 1,
+                                                        overflow = TextOverflow.Ellipsis,
+                                                    )
+                                                }
                                             }
                                         }
                                     }
@@ -645,7 +659,12 @@ internal fun GalleryDetailPane(
         DetailRow(label = stringResource(MR.strings.key_uploader), value = gallery.uploader.orEmpty().ifEmpty { "-" }, onCopy = onCopy)
         DetailRow(label = stringResource(MR.strings.key_category), value = getCategoryDisplayName(gallery.category), onCopy = onCopy)
         DetailRow(label = stringResource(MR.strings.key_pages), value = gallery.pages.toString(), onCopy = onCopy)
-        DetailRow(label = stringResource(MR.strings.key_rating), value = gallery.rating.toString(), onCopy = onCopy)
+        DetailRow(
+            label = stringResource(MR.strings.key_rating),
+            value = DesktopRating.formatRatingScore(gallery.rating),
+            onCopy = onCopy,
+            extraContent = { GalleryListCardRating(rating = gallery.rating) },
+        )
         gallery.simpleLanguage?.let { DetailRow(label = stringResource(MR.strings.key_language), value = it, onCopy = onCopy) }
         if (onToggleFavorite != null) {
             DetailRow(
@@ -681,6 +700,7 @@ private fun DetailRow(
     onOpen: (() -> Unit)? = null,
     actionText: String? = null,
     onAction: (() -> Unit)? = null,
+    extraContent: (@Composable () -> Unit)? = null,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -699,6 +719,9 @@ private fun DetailRow(
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f),
         )
+        if (extraContent != null) {
+            extraContent()
+        }
         if (actionText != null && onAction != null) {
             Text(
                 text = actionText,
