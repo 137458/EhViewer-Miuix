@@ -90,6 +90,13 @@ Powered by Kotlin Multiplatform and Jetpack Compose, the application integrates 
   - Comprehensive tag searching, category filtering, image reverse search, and search history.
 - **Robust Download & Archive Management**:
   - Multi-task parallel downloading, automatic retry logic, custom storage paths, and ZIP / CBZ archive export.
+- **Windows Desktop App (Kotlin Multiplatform shared core)**:
+  - Shares the same data layer (Room / DataStore / Cookie / networking) and parsing core (list, detail, page, MPV pToken and sign-in parsers live in the shared layer) with the mobile app.
+  - Multi-window: library (history / favorites / online), gallery detail and reader windows run independently with same-gallery dedupe and focus cycling (Ctrl+Tab / Ctrl+Shift+Tab).
+  - Online browsing & search: online gallery list, keyword remote search with result pagination; proxy via settings or environment variables.
+  - Reader: extracts all page links from the detail page and shows real images fullscreen; ←/→ keyboard and mouse paging, pinch zoom (1x-5x) / pan / double-tap reset, next-page prefetch, tap-to-retry on failure, jump-to-page and image context menu.
+  - Keyboard & tray: Ctrl+O quick open (URL / GID+Token), Ctrl+R/F5 refresh, Ctrl+Q quit, F1 shortcut guide, tray icon and window size memory.
+  - Session & persistence: window layout, sort and tab selection restored across sessions; cookies persisted with DPAPI encryption.
 
 ---
 
