@@ -726,7 +726,10 @@ fun LibraryScreen(
 
                         if (viewMode == DesktopViewMode.List) {
                             LazyColumn(modifier = Modifier.fillMaxSize()) {
-                                items(filteredItems.size) { index ->
+                                items(
+                                    filteredItems.size,
+                                    key = { index -> filteredItems[index].gid },
+                                ) { index ->
                                     val gallery = filteredItems[index]
                                     val title = galleryDisplayTitle(gallery.title, gallery.gid)
                                     val link = galleryWebUrl(gallery.gid, gallery.token)
@@ -775,7 +778,10 @@ fun LibraryScreen(
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                                 verticalArrangement = Arrangement.spacedBy(8.dp),
                             ) {
-                                items(filteredItems.size) { index ->
+                                items(
+                                    filteredItems.size,
+                                    key = { index -> filteredItems[index].gid },
+                                ) { index ->
                                     val gallery = filteredItems[index]
                                     val title = galleryDisplayTitle(gallery.title, gallery.gid)
                                     val link = galleryWebUrl(gallery.gid, gallery.token)
