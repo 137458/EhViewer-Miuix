@@ -111,6 +111,20 @@ fun main() {
                 }
         }
 
+        // 开窗统一入口：多窗口防重 + 既有窗口置前（菜单/快捷键/拖拽共用）
+        val openGalleryWindow: (com.ehviewer.core.model.BaseGalleryInfo) -> Unit = { gallery ->
+            val (updated, windowId) = DesktopWindowManager.openOrFocusGallery(
+                windows = windows,
+                gallery = gallery,
+                nextIdProvider = { nextWindowId++ },
+            )
+            if (updated.size > windows.size) {
+                windows.add(updated.last())
+            } else {
+                windowFrames[windowId]?.toFront()
+            }
+        }
+
         val handleClose: (ShellWindow) -> Unit = { targetWindow ->
             val behavior = if (closeToTray) CloseBehavior.MINIMIZE_TO_TRAY else CloseBehavior.EXIT
             val action = DesktopClosePolicy.evaluateClose(
@@ -235,6 +249,30 @@ fun main() {
                     )
                     if (window.kind == DesktopWindowKind.Library) {
                         SaveWindowSize(windowState)
+                        // 桌面拖拽惯例：浏览器链接等文本拖入主库窗口即解析开窗（复用快捷打开解析）
+                        DisposableEffect(window.id) {
+                            val dropTarget = java.awt.dnd.DropTarget(
+                                awtWindow,
+                                object : java.awt.dnd.DropTargetListener {
+                                    override fun dragEnter(e: java.awt.dnd.DropTargetDragEvent) {}
+                                    override fun dragOver(e: java.awt.dnd.DropTargetDragEvent) {}
+                                    override fun dragExit(e: java.awt.dnd.DropTargetEvent) {}
+                                    override fun dropActionChanged(e: java.awt.dnd.DropTargetDragEvent) {}
+                                    override fun drop(e: java.awt.dnd.DropTargetDropEvent) {
+                                        e.acceptDrop(java.awt.dnd.DnDConstants.ACTION_COPY)
+                                        val text = runCatching {
+                                            e.transferable.getTransferData(java.awt.datatransfer.DataFlavor.stringFlavor) as? String
+                                        }.getOrNull()
+                                        e.dropComplete(true)
+                                        val parsed = text?.let { DesktopOpenGalleryState.parseInput(it) } ?: return
+                                        openGalleryWindow(DesktopOpenGalleryState.createGalleryInfo(parsed))
+                                    }
+                                },
+                            )
+                            onDispose {
+                                dropTarget.setActive(false)
+                            }
+                        }
                         LaunchedEffect(Unit) {
                             logcat("Shell", LogPriority.INFO) {
                                 "SHELL_STARTED width=${DesktopSettings.windowWidth} height=${DesktopSettings.windowHeight}"
@@ -254,19 +292,7 @@ fun main() {
                                     openGalleryDialogVisible = showOpenGalleryDialog,
                                     onOpenGalleryDialogOpen = { showOpenGalleryDialog = true },
                                     onOpenGalleryDialogClose = { showOpenGalleryDialog = false },
-                                    onOpenGalleryInNewWindow = { gallery ->
-                                        val (updated, windowId) = DesktopWindowManager.openOrFocusGallery(
-                                            windows = windows,
-                                            gallery = gallery,
-                                            nextIdProvider = { nextWindowId++ },
-                                        )
-                                        if (updated.size > windows.size) {
-                                            windows.add(updated.last())
-                                        } else {
-                                            // 已开窗防重：把既有窗口带到前台
-                                            windowFrames[windowId]?.toFront()
-                                        }
-                                    },
+                                    onOpenGalleryInNewWindow = { openGalleryWindow(it) },
                                 )
                                 is DesktopWindowKind.GalleryDetail -> GalleryDetailWindowContent(
                                     gallery = kind.gallery,
