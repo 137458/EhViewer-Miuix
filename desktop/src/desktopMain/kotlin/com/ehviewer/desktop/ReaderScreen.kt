@@ -1,5 +1,7 @@
 package com.ehviewer.desktop
 
+import androidx.compose.foundation.ContextMenuArea
+import androidx.compose.foundation.ContextMenuItem
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -37,6 +39,8 @@ import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.SingletonImageLoader
@@ -72,6 +76,7 @@ fun ReaderScreen(
         ?: gallery.titleJpn?.takeIf { it.isNotBlank() }
         ?: gallery.gid.toString()
     val context = LocalPlatformContext.current
+    val clipboard = LocalClipboardManager.current
     val loadingLinksText = stringResource(MR.strings.desktop_reader_loading_links)
     val noLinksText = stringResource(MR.strings.desktop_reader_no_links)
     val loadFailedText = stringResource(MR.strings.desktop_reader_load_failed)
@@ -241,19 +246,32 @@ fun ReaderScreen(
         ) {
             val url = imageUrl
             when {
-                url != null -> AsyncImage(
-                    model = url,
-                    contentDescription = displayTitle,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .graphicsLayer {
-                            scaleX = scale
-                            scaleY = scale
-                            translationX = offset.x
-                            translationY = offset.y
-                        },
-                    contentScale = ContentScale.Fit,
-                )
+                url != null -> ContextMenuArea(
+                    items = {
+                        listOf(
+                            ContextMenuItem("Copy image URL") {
+                                clipboard.setText(AnnotatedString(url))
+                            },
+                            ContextMenuItem("Open image in browser") {
+                                DesktopBrowser.openUrl(url)
+                            },
+                        )
+                    },
+                ) {
+                    AsyncImage(
+                        model = url,
+                        contentDescription = displayTitle,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .graphicsLayer {
+                                scaleX = scale
+                                scaleY = scale
+                                translationX = offset.x
+                                translationY = offset.y
+                            },
+                        contentScale = ContentScale.Fit,
+                    )
+                }
                 imageState != null -> Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(8.dp),
