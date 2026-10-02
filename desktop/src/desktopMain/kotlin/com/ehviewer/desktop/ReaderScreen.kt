@@ -40,9 +40,11 @@ import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import coil3.SingletonImageLoader
 import coil3.compose.AsyncImage
@@ -66,9 +68,10 @@ fun ReaderScreen(
     onClose: () -> Unit,
 ) {
     var page by remember { mutableIntStateOf(1) }
-    // 图片手势状态：捏合缩放（1x-5x）+ 拖拽平移；双击重置；翻页自动重置；Ctrl+=/-/0 键盘缩放
+    // 图片手势状态：捏合缩放（1x-5x）+ 拖拽平移；双击重置；翻页自动重置；Ctrl+=/-/0 键盘缩放；缩放态方向键平移
     var scale by remember { mutableFloatStateOf(1f) }
     var offset by remember { mutableStateOf(Offset.Zero) }
+    var viewportSize by remember { mutableStateOf(IntSize.Zero) }
     var pageLinks by remember { mutableStateOf<List<GalleryDetailPageLinksParser.PageLink>>(emptyList()) }
     var linksState by remember { mutableStateOf<String?>(null) }
     var imageUrl by remember { mutableStateOf<String?>(null) }
@@ -158,6 +161,13 @@ fun ReaderScreen(
                 // 阅读器键盘翻页：←/→ 与 PageUp/PageDown/Space 相对翻页（随阅读方向反转）、Home/End 恒跳首/末页
                 // （仅 KeyDown 响应一次；跳页输入框打开时让位给文本编辑）
                 if (event.type == KeyEventType.KeyDown) {
+                    // 缩放态方向键优先平移图片（未缩放返回 null 归翻页语义；跳页输入打开时让位）
+                    if (scale > 1f && !showJumpInput) {
+                        pannedOffset(offset, event.key, scale, viewportSize)?.let {
+                            offset = it
+                            return@onPreviewKeyEvent true
+                        }
+                    }
                     when (event.key) {
                         Key.DirectionRight -> {
                             val delta = readingDirection.pageDeltaForKey(forward = true)
@@ -272,6 +282,7 @@ fun ReaderScreen(
                 .weight(1f)
                 .fillMaxWidth()
                 .background(Color.Black)
+                .onSizeChanged { viewportSize = it }
                 .pointerInput(Unit) {
                     detectTransformGestures { _, pan, zoom, _ ->
                         scale = (scale * zoom).coerceIn(1f, 5f)

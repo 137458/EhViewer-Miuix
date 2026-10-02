@@ -1,6 +1,8 @@
 package com.ehviewer.desktop
 
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.unit.IntSize
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -59,5 +61,32 @@ class DesktopReaderKeysTest {
         // 非缩放键不消费
         assertNull(resolveReaderZoom(isKeyDown = true, isCtrlPressed = true, key = Key.A))
         assertNull(resolveReaderZoom(isKeyDown = true, isCtrlPressed = true, key = Key.DirectionRight))
+    }
+
+    @Test
+    fun directionKeysPanOnlyWhenZoomed() {
+        val viewport = IntSize(1000, 800)
+        // 未缩放：方向键归翻页语义，不平移
+        assertNull(pannedOffset(Offset.Zero, Key.DirectionRight, scale = 1f, viewport = viewport))
+        // 缩放态：→ 查看右侧内容（内容左移 = translationX 减小）
+        val panned = pannedOffset(Offset.Zero, Key.DirectionRight, scale = 2f, viewport = viewport)
+        assertEquals(-100f, panned!!.x)
+        assertEquals(0f, panned.y)
+        // ↑ 查看上方内容（内容下移 = translationY 增大）
+        assertEquals(80f, pannedOffset(Offset.Zero, Key.DirectionUp, scale = 2f, viewport = viewport)!!.y)
+    }
+
+    @Test
+    fun panClampsToZoomedBounds() {
+        val viewport = IntSize(1000, 800)
+        // 钳制上界 = (scale-1)*viewport/2
+        val maxX = (2f - 1f) * 1000f / 2f
+        val clamped = pannedOffset(Offset(maxX * 2f, 0f), Key.DirectionRight, scale = 2f, viewport = viewport)
+        assertEquals(maxX, clamped!!.x)
+        // 已在右边界，继续越界方向（← 内容右移）钳在边界；远离边界方向（→）合法移动
+        assertEquals(maxX, pannedOffset(clamped, Key.DirectionLeft, scale = 2f, viewport = viewport)!!.x)
+        assertEquals(maxX - 100f, pannedOffset(clamped, Key.DirectionRight, scale = 2f, viewport = viewport)!!.x)
+        // 非方向键不消费
+        assertNull(pannedOffset(Offset.Zero, Key.A, scale = 2f, viewport = viewport))
     }
 }
