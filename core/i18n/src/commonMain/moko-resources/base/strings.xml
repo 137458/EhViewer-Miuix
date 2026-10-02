@@ -634,6 +634,7 @@
     <string name="menu_keyboard_shortcuts">Keyboard Shortcuts</string>
     <string name="menu_about">About</string>
     <string name="desktop_about_version">Version %s</string>
+    <string name="desktop_about_log">Log file</string>
     <string name="shortcut_close_window">Close window</string>
     <string name="shortcut_refresh_galleries">Refresh galleries</string>
     <string name="shortcut_open_gallery_by_link">Open gallery by URL or GID/Token</string>

@@ -43,6 +43,7 @@ import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.FrameWindowScope
@@ -55,6 +56,7 @@ import androidx.compose.ui.window.rememberWindowState
 import com.ehviewer.core.database.model.HistoryInfo
 import com.ehviewer.core.database.model.LocalFavoriteInfo
 import com.ehviewer.core.i18n.MR
+import com.ehviewer.core.util.DesktopFileLog
 import com.ehviewer.core.util.LogPriority
 import com.ehviewer.core.util.logcat
 import dev.icerock.moko.resources.compose.stringResource
@@ -481,6 +483,21 @@ private fun AboutDialog(onDismiss: () -> Unit) {
                 .pointerHoverIcon(PointerIcon.Hand)
                 .clickable { DesktopBrowser.openUrl(releasesUrl) },
         )
+        // 诊断入口：日志文件路径展示（点击复制路径），与桌面日志落盘配套
+        val clipboard = LocalClipboardManager.current
+        val logLabel = stringResource(MR.strings.desktop_about_log)
+        DesktopFileLog.defaultFile()?.let { logPath ->
+            Text(
+                text = "$logLabel: $logPath",
+                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                fontSize = 12.sp,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier
+                    .pointerHoverIcon(PointerIcon.Hand)
+                    .clickable { clipboard.setText(AnnotatedString(logPath.toString())) },
+            )
+        }
     }
 }
 

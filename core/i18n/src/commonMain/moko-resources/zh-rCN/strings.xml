@@ -708,6 +708,7 @@
     <string name="menu_keyboard_shortcuts">键盘快捷键</string>
     <string name="menu_about">关于</string>
     <string name="desktop_about_version">版本 %s</string>
+    <string name="desktop_about_log">日志文件</string>
     <string name="shortcut_close_window">关闭窗口</string>
     <string name="shortcut_refresh_galleries">刷新画廊</string>
     <string name="shortcut_open_gallery_by_link">按链接或 GID/Token 打开画廊</string>
