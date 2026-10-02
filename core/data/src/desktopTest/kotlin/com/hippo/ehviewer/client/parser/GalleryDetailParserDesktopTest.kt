@@ -1,10 +1,10 @@
 package com.hippo.ehviewer.client.parser
 
 import java.nio.ByteBuffer
-import org.junit.Assume
 import kotlin.test.Test
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
+import org.junit.Assume
 
 // Rust 详情页解析的桌面端冒烟：加载真实详情页 HTML 样本（资源文件），
 // 经 nativeParse → CBOR unmarshal 还原 GalleryDetail。
