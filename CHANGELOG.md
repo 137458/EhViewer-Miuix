@@ -4,7 +4,7 @@
 
 ### 修复
 
-- 依赖升级（第一批）：Compose Multiplatform 1.12.1（与 Coil 传递依赖运行时版本完全对齐）、Coil 3.5.0→3.6.3、Ktor 3.5.2→3.6.0、okio 3.18.2、spotless 8.10.3、xmlutil 1.0.2.1（全门禁+fat jar 冒烟验证）；Kotlin 2.4.10→2.4.20；moko-resources 0.27 因生成 API 重构（波及全部 MR.strings 调用点）暂留 0.26.4 待专项迁移。
+- 依赖升级（第一批）：Compose Multiplatform 1.12.1（与 Coil 传递依赖运行时版本完全对齐）、Coil 3.5.0→3.6.3、Ktor 3.5.2→3.6.0、okio 3.18.2、spotless 8.10.3、xmlutil 1.0.2.1（全门禁+fat jar 冒烟验证）；Kotlin 2.4.10→2.4.20、AboutLibraries 插件与库 14.2.1→15.2.0（major 升级，构建与编译验证通过）；moko-resources 0.27 因生成 API 重构（波及全部 MR.strings 调用点）暂留 0.26.4 待专项迁移。
 
 - 桌面端阅读窗口缩放角标重组优化：缩放比例经 derivedStateOf 延迟读取并抽入独立组合函数，捏合缩放期间仅角标文本逐帧重组，图片与其余内容不再参与。
 
