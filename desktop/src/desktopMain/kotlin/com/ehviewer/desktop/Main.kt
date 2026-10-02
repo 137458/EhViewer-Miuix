@@ -95,7 +95,10 @@ fun main() {
                 if (DesktopSettings.restoreSession.value) {
                     addAll(
                         DesktopWindowManager.restoreWindows(
-                            DesktopWindowManager.decodeSession(DesktopSettings.sessionGalleries.value),
+                            DesktopWindowManager.decodeSession(
+                                DesktopSettings.sessionGalleries.value,
+                                limit = DesktopWindowManager.sanitizeRestoreLimit(DesktopSettings.restoreLimit.value),
+                            ),
                         ) { nextWindowId++ },
                     )
                 }

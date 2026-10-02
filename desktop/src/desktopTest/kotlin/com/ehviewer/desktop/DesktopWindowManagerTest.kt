@@ -51,6 +51,24 @@ class DesktopWindowManagerTest {
     }
 
     @Test
+    fun sessionDecodeHonorsConfiguredLimit() {
+        val many = (1L..15L).map { DesktopWindowManager.SessionGallery(gid = it, token = "t$it", title = null, titleJpn = null) }
+        val encoded = DesktopWindowManager.encodeSession(many)
+        assertEquals(3, DesktopWindowManager.decodeSession(encoded, limit = 3).size)
+        assertEquals(15, DesktopWindowManager.decodeSession(encoded, limit = 20).size)
+    }
+
+    @Test
+    fun sanitizeRestoreLimitClampsToSaneRange() {
+        // 非法（越界/非正）回默认 10；合法区间原值保留
+        assertEquals(10, DesktopWindowManager.sanitizeRestoreLimit(0))
+        assertEquals(10, DesktopWindowManager.sanitizeRestoreLimit(-5))
+        assertEquals(10, DesktopWindowManager.sanitizeRestoreLimit(21))
+        assertEquals(5, DesktopWindowManager.sanitizeRestoreLimit(5))
+        assertEquals(20, DesktopWindowManager.sanitizeRestoreLimit(20))
+    }
+
+    @Test
     fun restoreWindowsBuildsGalleryDetailShellsPreservingOrder() {
         val saved = listOf(
             DesktopWindowManager.SessionGallery(gid = 300, token = "x", title = "X", titleJpn = null),

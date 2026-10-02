@@ -23,6 +23,10 @@ data class ShellWindow(val id: Long, val kind: DesktopWindowKind = DesktopWindow
 object DesktopWindowManager {
     // 会话恢复上限：防止异常状态积累导致启动时铺满桌面
     const val MAX_RESTORE_WINDOWS = 10
+    const val MAX_RESTORE_LIMIT = 20
+
+    // 会话恢复上限设置项的合法化：非法（非正/越界）回默认 10
+    fun sanitizeRestoreLimit(raw: Int): Int = if (raw in 1..MAX_RESTORE_LIMIT) raw else MAX_RESTORE_WINDOWS
 
     @kotlinx.serialization.Serializable
     data class SessionGallery(
@@ -45,11 +49,11 @@ object DesktopWindowManager {
 
     fun encodeSession(galleries: List<SessionGallery>): String = sessionJson.encodeToString(ListSerializer(SessionGallery.serializer()), galleries)
 
-    fun decodeSession(raw: String?): List<SessionGallery> {
+    fun decodeSession(raw: String?, limit: Int = MAX_RESTORE_WINDOWS): List<SessionGallery> {
         if (raw.isNullOrBlank()) return emptyList()
         return runCatching {
             sessionJson.decodeFromString(ListSerializer(SessionGallery.serializer()), raw)
-        }.getOrDefault(emptyList()).take(MAX_RESTORE_WINDOWS)
+        }.getOrDefault(emptyList()).take(limit)
     }
 
     fun restoreWindows(saved: List<SessionGallery>, nextIdProvider: () -> Long): List<ShellWindow> = saved.map { gallery ->

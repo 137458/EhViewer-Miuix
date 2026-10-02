@@ -59,6 +59,23 @@ fun SettingsScreen() {
             )
         }
         item {
+            // 会话恢复上限：5 → 10 → 20 循环切换（经 sanitizeRestoreLimit 合法化）
+            val restoreLimit by DesktopSettings.restoreLimit.valueFlow()
+                .collectAsState(DesktopSettings.restoreLimit.value)
+            BasicComponent(
+                title = stringResource(MR.strings.settings_restore_session),
+                summary = "${DesktopWindowManager.sanitizeRestoreLimit(restoreLimit)}",
+                onClick = {
+                    val current = DesktopWindowManager.sanitizeRestoreLimit(restoreLimit)
+                    DesktopSettings.restoreLimit.value = when (current) {
+                        5 -> 10
+                        10 -> 20
+                        else -> 5
+                    }
+                },
+            )
+        }
+        item {
             val direction by DesktopSettings.readingDirection.valueFlow()
                 .collectAsState(DesktopSettings.readingDirection.value)
             BasicComponent(
