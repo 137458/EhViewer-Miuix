@@ -78,6 +78,13 @@ val desktopFatJar = tasks.register<Jar>("desktopFatJar") {
     }
 }
 
+// :desktop:run 时把命令行 -D 系统属性透传给应用 JVM（如 ehviewer.data.dir 重定向测试数据目录）
+tasks.withType<JavaExec>().configureEach {
+    System.getProperties().forEach { (k, v) ->
+        if (k.toString().startsWith("ehviewer.")) systemProperty(k.toString(), v.toString())
+    }
+}
+
 compose.desktop {
     application {
         mainClass = "com.ehviewer.desktop.MainKt"
