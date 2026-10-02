@@ -20,6 +20,8 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -349,17 +351,11 @@ fun ReaderScreen(
                     },
                 contentAlignment = Alignment.Center,
             ) {
-                if (zoomState.scale != READER_MIN_SCALE) {
-                    Text(
-                        text = DesktopZoomController.formatZoomPercentage(zoomState.scale),
-                        color = Color.White.copy(alpha = 0.7f),
-                        fontSize = 12.sp,
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .background(Color.Black.copy(alpha = 0.4f), RoundedCornerShape(6.dp))
-                            .padding(horizontal = 8.dp, vertical = 4.dp),
-                    )
-                }
+                // 缩放角标：scale 经 derivedStateOf 延迟读取，捏合期间仅角标自身重组（Box 内容其余部分不参与）
+                ZoomBadge(
+                    zoomStateState = remember { derivedStateOf { zoomState } },
+                    modifier = Modifier.align(Alignment.TopEnd),
+                )
                 val url = imageUrl
                 val copyLinkLabel = stringResource(MR.strings.copy_link)
                 val openInBrowserLabel = stringResource(MR.strings.open_in_browser)
@@ -492,4 +488,22 @@ fun ReaderScreen(
             }
         }
     }
+}
+
+@Composable
+private fun ZoomBadge(
+    zoomStateState: State<DesktopReaderZoomState>,
+    modifier: Modifier = Modifier,
+) {
+    val visible by remember { derivedStateOf { zoomStateState.value.scale != READER_MIN_SCALE } }
+    if (!visible) return
+    val text by remember { derivedStateOf { DesktopZoomController.formatZoomPercentage(zoomStateState.value.scale) } }
+    Text(
+        text = text,
+        color = Color.White.copy(alpha = 0.7f),
+        fontSize = 12.sp,
+        modifier = modifier
+            .background(Color.Black.copy(alpha = 0.4f), RoundedCornerShape(6.dp))
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+    )
 }
