@@ -43,6 +43,13 @@ object DesktopCommentsModel {
     fun visibleCount(comments: List<GalleryComment>, expanded: Boolean): Int = if (expanded) comments.size else minOf(3, comments.size)
 
     // 评论中的 http(s) 链接：句尾标点（.,;!?）不属于链接本体；去重保序
+    // 评论时间：本地时区 yyyy-MM-dd HH:mm
+    fun formatCommentTime(epochMillis: Long): String {
+        val instant = java.time.Instant.ofEpochMilli(epochMillis)
+        val local = instant.atZone(java.time.ZoneId.systemDefault())
+        return java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm").format(local)
+    }
+
     fun extractUrls(text: String): List<String> = URL_REGEX
         .findAll(text)
         .map { it.value.trimEnd('.', ',', ';', '!', '?') }
@@ -173,6 +180,11 @@ private fun CommentItem(comment: GalleryComment) {
                     fontSize = 12.sp,
                 )
             }
+            Text(
+                text = DesktopCommentsModel.formatCommentTime(comment.time),
+                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                fontSize = 12.sp,
+            )
         }
         Text(
             text = comment.comment,

@@ -18,6 +18,7 @@
 
 ### 新增
 
+- 桌面端评论区显示评论时间（本地时区 yyyy-MM-dd HH:mm，时区无关格式化纯模型具备单元测试覆盖）。
 - 桌面端「关于」对话框显示日志文件路径（点击复制），与日志落盘配套构成诊断闭环。
 - 桌面端日志落盘：platformLog 在 stderr 之外追加写入数据区 files/logs/ehviewer.log（超 1MB 自动轮转保留一代，IO 失败静默不影响应用），用户可直接提供日志文件用于问题诊断；`:desktop:run` 现在会把命令行 `-Dehviewer.*` 系统属性透传给应用进程。
 - 桌面端新增 `desktopFatJar` 可执行胖 jar 构建（约 83MB，含全部依赖与 Rust 资源）：系统 JRE 直接 `java -jar` 运行，单文件分发不再依赖 jpackage 打包链路（冒烟验证启动正常）。

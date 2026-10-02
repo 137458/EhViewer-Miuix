@@ -3,6 +3,7 @@ package com.ehviewer.desktop
 import com.ehviewer.core.model.GalleryComment
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class DesktopCommentsModelTest {
     private fun comment(id: Long, uploader: Boolean = false) = GalleryComment(
@@ -68,5 +69,17 @@ class DesktopCommentsModelTest {
             DesktopCommentsModel.extractUrls("见 https://e-hentai.org/g/1/2. 很好 https://e-hentai.org/g/1/2"),
         )
         assertEquals(emptyList(), DesktopCommentsModel.extractUrls("没有链接 ftp://x 不算 http:// 也空"))
+    }
+
+    @Test
+    fun formatCommentTimeRendersDateAndTime() {
+        // 固定时刻：2026-10-02 12:34 UTC → 平台时区渲染含日期与时间
+        val epoch = 1791940440000L // 2026-10-02T12:34:00Z 前后（时区无关断言只查格式形状）
+        val rendered = DesktopCommentsModel.formatCommentTime(epoch)
+        assertTrue(rendered.isNotBlank())
+        assertEquals(16, rendered.length)
+        assertEquals('-', rendered[4])
+        assertEquals(' ', rendered[10])
+        assertEquals(':', rendered[13])
     }
 }
