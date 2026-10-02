@@ -78,6 +78,7 @@ fun ReaderScreen(
     // 缩放/平移统一状态模型（DesktopReaderZoomState）：手势、双击、键盘缩放/平移、翻页重置共用
     // 同一边界（1x-5x）与平移不变量（offset 恒在视口钳制内，原尺寸即零平移）
     var zoomState by remember { mutableStateOf(DesktopReaderZoomState()) }
+    val scrollPager = remember { DesktopScrollPager() }
     var viewportSize by remember { mutableStateOf(IntSize.Zero) }
     var pageLinks by remember { mutableStateOf<List<GalleryDetailPageLinksParser.PageLink>>(emptyList()) }
     var linksState by remember { mutableStateOf<String?>(null) }
@@ -296,6 +297,22 @@ fun ReaderScreen(
                     .pointerInput(Unit) {
                         detectTransformGestures { _, pan, zoom, _ ->
                             zoomState = zoomState.gestureZoom(zoomFactor = zoom, pan = pan, viewport = size)
+                        }
+                    }
+                    .pointerInput(Unit) {
+                        // 滚轮翻页（未缩放时）：小步累计越阈翻一页，向下滚 = 下一页；缩放态让位给拖拽平移
+                        awaitPointerEventScope {
+                            while (true) {
+                                val event = awaitPointerEvent()
+                                val scrollY = event.changes.firstOrNull()?.scrollDelta?.y ?: 0f
+                                if (zoomState.scale <= READER_MIN_SCALE && scrollY != 0f && pageLinks.isNotEmpty()) {
+                                    scrollPager.onDelta(scrollY)?.let { delta ->
+                                        val target = page + delta
+                                        if (target in 1..pageLinks.size) page = target
+                                    }
+                                    event.changes.forEach { it.consume() }
+                                }
+                            }
                         }
                     }
                     .pointerInput(Unit) {

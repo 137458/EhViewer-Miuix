@@ -108,3 +108,20 @@ data class DesktopReaderZoomState(
 
     private fun clampedTo(viewport: IntSize): DesktopReaderZoomState = copy(offset = clampReaderOffset(offset, scale, viewport))
 }
+
+// 滚轮翻页累计器：小步滚动累计，越过阈值触发一次翻页并清零；向下滚（正 deltaY）= 下一页
+class DesktopScrollPager(private val threshold: Float = 64f) {
+    private var accumulated = 0f
+
+    fun onDelta(deltaY: Float): Int? {
+        accumulated += deltaY
+        // floor 向负无穷取整（累积负向滚动的语义），单次至多翻一页
+        val step = kotlin.math.floor(accumulated / threshold).toInt().coerceIn(-1, 1)
+        return if (step != 0) {
+            accumulated = 0f
+            step
+        } else {
+            null
+        }
+    }
+}

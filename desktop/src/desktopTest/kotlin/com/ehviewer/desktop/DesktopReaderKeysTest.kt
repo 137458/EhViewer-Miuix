@@ -176,4 +176,25 @@ class DesktopReaderKeysTest {
         // 非方向键不消费
         assertNull(DesktopReaderZoomState(scale = 2f).panned(Key.A, viewport))
     }
+
+    @Test
+    fun scrollPagerAccumulatesAndFiresOnThreshold() {
+        val pager = DesktopScrollPager(threshold = 64f)
+        // 小步滚动不触发
+        assertNull(pager.onDelta(20f))
+        assertNull(pager.onDelta(30f))
+        // 累计越阈：向下滚 = 下一页
+        assertEquals(1, pager.onDelta(20f))
+        // 触发后清零重新累计
+        assertNull(pager.onDelta(63f))
+        assertEquals(-1, pager.onDelta(-64f))
+    }
+
+    @Test
+    fun scrollPagerFiresOncePerLargeStep() {
+        // 大步滚动一次只翻一页（不按步数放大）；方向随滚动方向（下=+1 下一页，上=-1 上一页）
+        val pager = DesktopScrollPager(threshold = 64f)
+        assertEquals(1, pager.onDelta(500f))
+        assertEquals(-1, pager.onDelta(-500f))
+    }
 }
