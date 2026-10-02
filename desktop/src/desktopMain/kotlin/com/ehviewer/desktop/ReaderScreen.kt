@@ -195,6 +195,17 @@ fun ReaderScreen(
                             }
                         }
                         when (event.key) {
+                            // F5/Ctrl+R 重载当前页（加载失败重试同通道）
+                            Key.F5 -> {
+                                reloadKey += 1
+                                true
+                            }
+                            Key.R -> if (event.isCtrlPressed) {
+                                reloadKey += 1
+                                true
+                            } else {
+                                false
+                            }
                             Key.DirectionRight -> {
                                 val delta = readingDirection.pageDeltaForKey(forward = true)
                                 if (!showJumpInput && page + delta in 1..pageLinks.size) page += delta
