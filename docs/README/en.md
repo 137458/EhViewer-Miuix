@@ -92,11 +92,13 @@ Powered by Kotlin Multiplatform and Jetpack Compose, the application integrates 
   - Multi-task parallel downloading, automatic retry logic, custom storage paths, and ZIP / CBZ archive export.
 - **Windows Desktop App (Kotlin Multiplatform shared core)**:
   - Shares the same data layer (Room / DataStore / Cookie / networking) and parsing core (list, detail, page, MPV pToken and sign-in parsers live in the shared layer) with the mobile app.
-  - Multi-window: library (history / favorites / online), gallery detail and reader windows run independently with same-gallery dedupe and focus cycling (Ctrl+Tab / Ctrl+Shift+Tab).
-  - Online browsing & search: online gallery list, keyword remote search with result pagination; proxy via settings or environment variables.
-  - Reader: extracts all page links from the detail page and shows real images fullscreen; ←/→ keyboard and mouse paging, pinch zoom (1x-5x) / pan / double-tap reset, next-page prefetch, tap-to-retry on failure, jump-to-page and image context menu.
-  - Keyboard & tray: Ctrl+O quick open (URL / GID+Token), Ctrl+R/F5 refresh, Ctrl+Q quit, F1 shortcut guide, tray icon and window size memory.
-  - Session & persistence: window layout, sort and tab selection restored across sessions; cookies persisted with DPAPI encryption.
+  - Multi-window: library (history / favorites / online), gallery detail and reader windows run independently with same-gallery dedupe and focus cycling (Ctrl+Tab / Ctrl+Shift+Tab); main-window position and size are remembered across sessions, and a single-instance lock prevents concurrent launches from corrupting data.
+  - Online browsing & search: online gallery list, keyword remote search with bidirectional cursor pagination; proxy via settings or environment variables; clicking a tag in a detail window drives the library search across windows.
+  - Gallery detail: official gdata metadata hydration, favorite toggle sync, fullscreen cover preview and comment display (uploader first, collapsible, clickable links).
+  - Reader: extracts all page links from the detail page and shows real images fullscreen; ←/→ and PageUp/PageDown/Space paging (flips with RTL reading direction), Home/End first/last page, mouse-wheel paging, pinch zoom (1x-5x) plus Ctrl+=/-/0 keyboard zoom with percentage badge, arrow-key panning while zoomed, jump-to-page, F5 reload current page, image context menu (copy URL / open in browser / save to Downloads), F11 fullscreen, tap-to-retry on failure and next-page prefetch.
+  - Keyboard & tray: Ctrl+O quick open (URL / GID+Token), Ctrl+R/F5 refresh, Ctrl+Q quit, F11 fullscreen, F1 shortcut guide (with reader section); tray icon with close-to-tray protection.
+  - Data safety: history and favorite deletions offer one-click undo in the notification, clearing all history requires confirmation, session-restore window limit is configurable, and cookies persist with DPAPI encryption.
+  - System: About dialog (version and releases page) and update check on startup.
 
 ---
 
