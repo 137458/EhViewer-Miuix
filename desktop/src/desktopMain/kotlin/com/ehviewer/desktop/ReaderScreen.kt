@@ -21,7 +21,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -30,7 +29,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.key.Key
@@ -77,9 +75,9 @@ fun ReaderScreen(
     onClose: () -> Unit,
 ) {
     var page by remember { mutableIntStateOf(1) }
-    // 图片手势状态：捏合缩放（1x-5x）+ 拖拽平移；双击重置；翻页自动重置；Ctrl+=/-/0 键盘缩放；缩放态方向键平移
-    var scale by remember { mutableFloatStateOf(1f) }
-    var offset by remember { mutableStateOf(Offset.Zero) }
+    // 缩放/平移统一状态模型（DesktopReaderZoomState）：手势、双击、键盘缩放/平移、翻页重置共用
+    // 同一边界（1x-5x）与平移不变量（offset 恒在视口钳制内，原尺寸即零平移）
+    var zoomState by remember { mutableStateOf(DesktopReaderZoomState()) }
     var viewportSize by remember { mutableStateOf(IntSize.Zero) }
     var pageLinks by remember { mutableStateOf<List<GalleryDetailPageLinksParser.PageLink>>(emptyList()) }
     var linksState by remember { mutableStateOf<String?>(null) }
@@ -127,8 +125,7 @@ fun ReaderScreen(
 
     // 翻页自动重置缩放与平移
     LaunchedEffect(page) {
-        scale = 1f
-        offset = Offset.Zero
+        zoomState = DesktopReaderZoomState()
     }
     LaunchedEffect(notifications) {
         if (notifications.isNotEmpty()) {
@@ -185,9 +182,9 @@ fun ReaderScreen(
                     // （仅 KeyDown 响应一次；跳页输入框打开时让位给文本编辑）
                     if (event.type == KeyEventType.KeyDown) {
                         // 缩放态方向键优先平移图片（未缩放返回 null 归翻页语义；跳页输入打开时让位）
-                        if (scale > 1f && !showJumpInput) {
-                            pannedOffset(offset, event.key, scale, viewportSize)?.let {
-                                offset = it
+                        if (zoomState.scale > READER_MIN_SCALE && !showJumpInput) {
+                            zoomState.panned(event.key, viewportSize)?.let {
+                                zoomState = it
                                 return@onPreviewKeyEvent true
                             }
                         }
@@ -203,24 +200,13 @@ fun ReaderScreen(
                                 !showJumpInput
                             }
                             else -> {
-                                val zoom = resolveReaderZoom(
+                                val zoomAction = resolveReaderZoom(
                                     isKeyDown = event.type == KeyEventType.KeyDown,
                                     isCtrlPressed = event.isCtrlPressed,
                                     key = event.key,
                                 )
-                                if (zoom != null) {
-                                    when (zoom) {
-                                        // 键盘缩放与手势共用 1x-5x 范围：缩小止于原尺寸，放大止于 5x
-                                        DesktopReaderZoom.In -> scale = DesktopZoomController.zoomIn(scale, maxScale = 5f)
-                                        DesktopReaderZoom.Out -> {
-                                            scale = DesktopZoomController.zoomOut(scale, minScale = 1f)
-                                            if (scale <= 1f) offset = Offset.Zero
-                                        }
-                                        DesktopReaderZoom.Reset -> {
-                                            scale = DesktopZoomController.resetZoom()
-                                            offset = Offset.Zero
-                                        }
-                                    }
+                                if (zoomAction != null) {
+                                    zoomState = zoomState.keyboardZoom(zoomAction, viewportSize)
                                     true
                                 } else {
                                     val nav = resolveReaderNav(event.key)
@@ -309,15 +295,14 @@ fun ReaderScreen(
                     .onSizeChanged { viewportSize = it }
                     .pointerInput(Unit) {
                         detectTransformGestures { _, pan, zoom, _ ->
-                            scale = (scale * zoom).coerceIn(1f, 5f)
-                            offset = if (scale > 1f) offset + pan else Offset.Zero
+                            zoomState = zoomState.gestureZoom(zoomFactor = zoom, pan = pan, viewport = size)
                         }
                     }
                     .pointerInput(Unit) {
                         detectTapGestures(
                             onTap = { tap ->
                                 // 未缩放时点击左右 1/3 区域翻页（方向随阅读方向设置）
-                                if (scale <= 1f && size.width > 0) {
+                                if (zoomState.scale <= READER_MIN_SCALE && size.width > 0) {
                                     val rightZone = tap.x > size.width / 2f
                                     val delta = readingDirection.pageDeltaForZone(rightZone = rightZone)
                                     val target = page + delta
@@ -325,16 +310,15 @@ fun ReaderScreen(
                                 }
                             },
                             onDoubleTap = {
-                                scale = if (scale > 1f) 1f else 2.5f
-                                offset = Offset.Zero
+                                zoomState = zoomState.doubleTapToggled()
                             },
                         )
                     },
                 contentAlignment = Alignment.Center,
             ) {
-                if (scale != 1f) {
+                if (zoomState.scale != READER_MIN_SCALE) {
                     Text(
-                        text = DesktopZoomController.formatZoomPercentage(scale),
+                        text = DesktopZoomController.formatZoomPercentage(zoomState.scale),
                         color = Color.White.copy(alpha = 0.7f),
                         fontSize = 12.sp,
                         modifier = Modifier
@@ -390,10 +374,10 @@ fun ReaderScreen(
                             modifier = Modifier
                                 .fillMaxSize()
                                 .graphicsLayer {
-                                    scaleX = scale
-                                    scaleY = scale
-                                    translationX = offset.x
-                                    translationY = offset.y
+                                    scaleX = zoomState.scale
+                                    scaleY = zoomState.scale
+                                    translationX = zoomState.offset.x
+                                    translationY = zoomState.offset.y
                                 },
                             contentScale = ContentScale.Fit,
                         )
