@@ -60,10 +60,51 @@ fun pannedOffset(current: Offset, key: Key, scale: Float, viewport: IntSize): Of
         else -> 0f
     }
     if (dx == 0f && dy == 0f) return null
+    return clampReaderOffset(current + Offset(dx, dy), scale, viewport)
+}
+
+// 阅读器缩放不变量的钳制：scale 缩放的内容相对视口中心最大可平移 (scale-1)*viewport/2（原尺寸即零平移）。
+// 零宽轴直接归规范 +0.0：coerceIn(-0f, 0f) 会产出 -0f，Offset 按位相等比较不认 -0f == 0f。
+fun clampReaderOffset(offset: Offset, scale: Float, viewport: IntSize): Offset {
     val maxX = (scale - 1f) * viewport.width / 2f
     val maxY = (scale - 1f) * viewport.height / 2f
     return Offset(
-        (current.x + dx).coerceIn(-maxX, maxX),
-        (current.y + dy).coerceIn(-maxY, maxY),
+        if (maxX <= 0f) 0f else offset.x.coerceIn(-maxX, maxX),
+        if (maxY <= 0f) 0f else offset.y.coerceIn(-maxY, maxY),
     )
+}
+
+// 阅读器缩放契约：手势/键盘/双击共用同一边界；offset 恒受 clampReaderOffset 约束（含回到原尺寸即归零平移）。
+const val READER_MIN_SCALE = 1f
+const val READER_MAX_SCALE = 5f
+const val READER_DOUBLE_TAP_SCALE = 2.5f
+
+data class DesktopReaderZoomState(
+    val scale: Float = READER_MIN_SCALE,
+    val offset: Offset = Offset.Zero,
+) {
+    // 键盘缩放：步进/取整复用 DesktopZoomController，边界取阅读器契约，钳制收敛平移
+    fun keyboardZoom(action: DesktopReaderZoom, viewport: IntSize): DesktopReaderZoomState = when (action) {
+        DesktopReaderZoom.In -> copy(scale = DesktopZoomController.zoomIn(scale, maxScale = READER_MAX_SCALE))
+        DesktopReaderZoom.Out -> copy(scale = DesktopZoomController.zoomOut(scale, minScale = READER_MIN_SCALE))
+        DesktopReaderZoom.Reset -> DesktopReaderZoomState()
+    }.clampedTo(viewport)
+
+    // 手势变换：缩放系数与拖拽平移一次应用，边界与平移不变量统一钳制
+    fun gestureZoom(zoomFactor: Float, pan: Offset, viewport: IntSize): DesktopReaderZoomState = copy(
+        scale = (scale * zoomFactor).coerceIn(READER_MIN_SCALE, READER_MAX_SCALE),
+        offset = offset + pan,
+    ).clampedTo(viewport)
+
+    // 双击在原尺寸与双击档位间切换（放大态双击即复位，平移随复位归零）
+    fun doubleTapToggled(): DesktopReaderZoomState = if (scale > READER_MIN_SCALE) {
+        DesktopReaderZoomState()
+    } else {
+        DesktopReaderZoomState(scale = READER_DOUBLE_TAP_SCALE)
+    }
+
+    // 键盘方向键平移：复用 pannedOffset 的步长与钳制；null 表示不消费（未缩放或非方向键）
+    fun panned(key: Key, viewport: IntSize): DesktopReaderZoomState? = pannedOffset(offset, key, scale, viewport)?.let { copy(offset = it) }
+
+    private fun clampedTo(viewport: IntSize): DesktopReaderZoomState = copy(offset = clampReaderOffset(offset, scale, viewport))
 }
