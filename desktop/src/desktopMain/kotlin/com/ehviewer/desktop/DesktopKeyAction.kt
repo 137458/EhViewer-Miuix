@@ -16,6 +16,7 @@ enum class DesktopKeyAction {
     OpenLinkDialog,
     CycleWindow,
     CycleWindowBackward,
+    ToggleFullscreen,
 }
 
 fun resolveKeyAction(
@@ -34,6 +35,7 @@ fun resolveKeyAction(
         isCtrlPressed && key == Key.O -> DesktopKeyAction.OpenLinkDialog
         isCtrlPressed && key == Key.Tab -> if (isShiftPressed) DesktopKeyAction.CycleWindowBackward else DesktopKeyAction.CycleWindow
         !isCtrlPressed && key == Key.F5 -> DesktopKeyAction.Refresh
+        !isCtrlPressed && key == Key.F11 -> DesktopKeyAction.ToggleFullscreen
         !isCtrlPressed && key == Key.F1 -> DesktopKeyAction.ShowShortcutsHelp
         !isCtrlPressed && key == Key.Escape && canCloseOnEscape -> DesktopKeyAction.CloseWindow
         !isCtrlPressed && key == Key.Escape && hasSelection -> DesktopKeyAction.ClearSelection

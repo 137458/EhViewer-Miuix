@@ -48,6 +48,7 @@ import androidx.compose.ui.window.FrameWindowScope
 import androidx.compose.ui.window.MenuBar
 import androidx.compose.ui.window.Tray
 import androidx.compose.ui.window.Window
+import androidx.compose.ui.window.WindowPlacement
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import com.ehviewer.core.database.model.HistoryInfo
@@ -211,14 +212,25 @@ fun main() {
                         )
                         when (action) {
                             DesktopKeyAction.CloseWindow -> {
-                                if (showShortcutsHelp || showOpenGalleryDialog) {
-                                    showShortcutsHelp = false
-                                    showOpenGalleryDialog = false
-                                    true
-                                } else {
-                                    handleClose(window)
-                                    true
+                                when {
+                                    showShortcutsHelp || showOpenGalleryDialog -> {
+                                        showShortcutsHelp = false
+                                        showOpenGalleryDialog = false
+                                    }
+                                    // 全屏态 Esc 惯例：先退出全屏而非关窗
+                                    windowState.placement == WindowPlacement.Fullscreen ->
+                                        windowState.placement = WindowPlacement.Floating
+                                    else -> handleClose(window)
                                 }
+                                true
+                            }
+                            DesktopKeyAction.ToggleFullscreen -> {
+                                windowState.placement = if (windowState.placement == WindowPlacement.Fullscreen) {
+                                    WindowPlacement.Floating
+                                } else {
+                                    WindowPlacement.Fullscreen
+                                }
+                                true
                             }
                             DesktopKeyAction.ShowShortcutsHelp -> {
                                 showShortcutsHelp = !showShortcutsHelp

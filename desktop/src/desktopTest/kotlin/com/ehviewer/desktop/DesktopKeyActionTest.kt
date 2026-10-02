@@ -390,4 +390,23 @@ class DesktopKeyActionTest {
         assertTrue(entries.none { it.keyCombination == "Ctrl + O" })
         assertTrue(entries.none { it.keyCombination == "Ctrl + Tab" })
     }
+
+    @Test
+    fun f11ResolvesToToggleFullscreen() {
+        assertEquals(
+            DesktopKeyAction.ToggleFullscreen,
+            resolveKeyAction(isKeyDown = true, isCtrlPressed = false, key = Key.F11),
+        )
+        // KeyUp 忽略；Ctrl+F11 不消费
+        assertEquals(
+            DesktopKeyAction.None,
+            resolveKeyAction(isKeyDown = false, isCtrlPressed = false, key = Key.F11),
+        )
+        assertEquals(
+            DesktopKeyAction.None,
+            resolveKeyAction(isKeyDown = true, isCtrlPressed = true, key = Key.F11),
+        )
+        // F11 条目进入主库快捷键指南
+        assertTrue(DesktopShortcuts.defaultEntries().any { it.keyCombination == "F11" })
+    }
 }

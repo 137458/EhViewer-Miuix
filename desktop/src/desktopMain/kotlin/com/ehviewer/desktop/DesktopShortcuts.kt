@@ -23,6 +23,7 @@ object DesktopShortcuts {
         DesktopShortcutEntry("Drag & Drop", MR.strings.shortcut_drop_link),
         DesktopShortcutEntry("Right Click", MR.strings.shortcut_context_menu),
         DesktopShortcutEntry("F1", MR.strings.shortcut_show_help),
+        DesktopShortcutEntry("F11", MR.strings.shortcut_toggle_fullscreen),
     )
 
     // 阅读窗口键位分组（F1 指南第二段）；←/→ 与 PageUp/PageDown/Space 翻页随阅读方向反转，Home/End 恒跳首/末页
