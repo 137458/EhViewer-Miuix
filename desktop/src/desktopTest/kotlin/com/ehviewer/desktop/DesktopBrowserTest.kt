@@ -49,10 +49,69 @@ class DesktopBrowserTest {
     }
 
     @Test
-    fun openUrlExceptionReturnsFalse() {
-        val result = DesktopBrowser.openUrl("https://e-hentai.org/g/123/abc/") {
+    fun openUrlBrowseFailureTriggersWindowsFallback() {
+        // "Failed to launch browser"（AWT 关联失败）→ rundll32 shell 回退仍能打开
+        var launched: List<String>? = null
+        val result = DesktopBrowser.openUrl(
+            "https://e-hentai.org/g/123/abc/",
+            launcher = { launched = it },
+            osName = "Windows 11",
+        ) {
             throw IOException("Failed to launch browser")
         }
+        assertTrue(result)
+        assertEquals(
+            listOf("rundll32", "url.dll,FileProtocolHandler", "https://e-hentai.org/g/123/abc/"),
+            launched,
+        )
+    }
+
+    @Test
+    fun openUrlFallsBackToShellWhenBrowseFails() {
+        // AWT browse 失败（如 UWP 默认浏览器关联失败）→ Windows shell 回退仍能打开
+        var fallbackCmd: List<String>? = null
+        val result = DesktopBrowser.openUrl(
+            "https://e-hentai.org/g/1/x/",
+            opener = { throw IOException("Failed to launch browser") },
+            launcher = { cmd -> fallbackCmd = cmd },
+            osName = "Windows 11",
+        )
+        assertTrue(result)
+        assertEquals(listOf("rundll32", "url.dll,FileProtocolHandler", "https://e-hentai.org/g/1/x/"), fallbackCmd)
+    }
+
+    @Test
+    fun fallbackSkippedOnNonWindows() {
+        var fallbackCmd: List<String>? = null
+        val result = DesktopBrowser.openUrl(
+            "https://e-hentai.org/g/1/x/",
+            opener = { throw IOException("no desktop") },
+            launcher = { cmd -> fallbackCmd = cmd },
+            osName = "Linux",
+        )
         assertFalse(result)
+        assertEquals(null, fallbackCmd)
+    }
+
+    @Test
+    fun fallbackCommandWindowsOnly() {
+        assertEquals(
+            listOf("rundll32", "url.dll,FileProtocolHandler", "https://a.example/"),
+            DesktopBrowser.fallbackCommand("https://a.example/", osName = "Windows 10"),
+        )
+        assertEquals(null, DesktopBrowser.fallbackCommand("https://a.example/", osName = "Mac OS X"))
+    }
+
+    @Test
+    fun openUrlSuccessSkipsFallback() {
+        var fallbackCmd: List<String>? = null
+        val result = DesktopBrowser.openUrl(
+            "https://e-hentai.org/",
+            opener = { },
+            launcher = { cmd -> fallbackCmd = cmd },
+            osName = "Windows 11",
+        )
+        assertTrue(result)
+        assertEquals(null, fallbackCmd)
     }
 }
