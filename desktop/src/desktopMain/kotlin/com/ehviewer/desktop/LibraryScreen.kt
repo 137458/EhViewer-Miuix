@@ -323,7 +323,21 @@ fun LibraryScreen(
                     removedGid = gallery.gid,
                     isInFavoritesTab = currentTab == LibraryTab.Favorites,
                 )
-                showNotification(removedFromFavoritesText)
+                // 撤销 = 重新写回收藏行（GALLERIES 行未被删除，联表视图自动恢复）
+                notifications = DesktopNotificationManager.post(
+                    current = notifications,
+                    message = removedFromFavoritesText,
+                    timestamp = System.currentTimeMillis(),
+                    idProvider = { nextNotificationId.getAndIncrement() },
+                    actionLabel = undoText,
+                    onAction = {
+                        coroutineScope.launch {
+                            withContext(Dispatchers.IO) {
+                                DesktopDatabase.eh.localFavoritesDao().upsert(LocalFavoriteInfo(gallery.gid))
+                            }
+                        }
+                    },
+                )
             } else {
                 withContext(Dispatchers.IO) {
                     val entity = DesktopFavoritesState.toGalleryEntity(gallery)
