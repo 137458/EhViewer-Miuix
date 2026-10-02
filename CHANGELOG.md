@@ -4,6 +4,7 @@
 
 ### 修复
 
+- 桌面端网络栈 User-Agent 从 Chrome/130（2024 年版本）更新至当前 Chrome 主版本，两套网络入口（HttpURLConnection 与 ktor okhttp）合并为单一共享常量，降低陈旧 UA 触发站点风控的风险。
 - 桌面端阅读窗口跳页输入框打开时按 Esc 先关闭输入框而非直接关闭整个窗口，消除输入中误触 Esc 丢失阅读会话的问题。
 - 桌面端「清空全部历史」改为需确认：点击后弹出确认对话框（取消/清空双钮），毁灭性操作不再单击即执行。
 - Android 侧 lint 巡检修复：筛选对话框与底部导航时间戳状态改用无装箱特化 State（消除冗余自动装箱与重组开销）；AccompanistWebViewClient 补充 lint 抑制标注（onRenderProcessGone 已在类内实现移除销毁 WebView，检测器对 open 覆盖链路误报）。

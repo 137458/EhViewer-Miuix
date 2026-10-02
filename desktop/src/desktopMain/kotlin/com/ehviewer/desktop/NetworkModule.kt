@@ -14,8 +14,9 @@ import io.ktor.http.userAgent
 import java.net.InetSocketAddress
 import java.net.ProxySelector
 
-private const val DESKTOP_USER_AGENT =
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36"
+// 桌面网络栈统一 UA（HttpURLConnection 与 ktor okhttp 共用）；版本随 Chrome 主版本季更
+internal const val DESKTOP_USER_AGENT =
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
 private const val CHROME_ACCEPT =
     "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8"
 
