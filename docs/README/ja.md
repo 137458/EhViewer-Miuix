@@ -114,6 +114,18 @@ Kotlin Multiplatform と Jetpack Compose を基盤とし、`top.yukonga.miuix.km
 | `EhViewer-*-marshmallow-universal.apk` | Android 6.0 ~ 7.1 (API 23+) | 汎用アーキテクチャ | 旧端末用汎用フォールバックパッケージ |
 | `EhViewer-*-mapping.txt` | 全環境共通 | シンボル表 | **インストール不可**。クラッシュログ解析用の R8 難読化マッピングファイル |
 
+### Windows デスクトップ版（ソースから実行）
+
+デスクトップのビルド済み成果物はまだ公開されていません。JDK 21+ があればソースからビルドして実行できます：
+
+```bash
+./gradlew :desktop:run            # 直接実行
+./gradlew :desktop:desktopFatJar  # 単一実行可能 jar のビルド（約 83MB）
+java -jar desktop/build/libs/desktop-all.jar
+```
+
+ファット jar には依存関係と Rust 解析ライブラリが同梱されており、実行時に MinGW ツールチェーンや jpackage は不要です。
+
 ### インストールと設定のアドバイス
 
 1. 端末に対応する `.apk` ファイルをダウンロードしてインストールします。

@@ -114,6 +114,18 @@ Download the latest distribution package from [GitHub Releases](https://github.c
 | `EhViewer-*-marshmallow-universal.apk` | Android 6.0 ~ 7.1 (API 23+) | Universal | Legacy universal fallback package |
 | `EhViewer-*-mapping.txt` | Universal | Symbols | **Not an APK**. R8 ProGuard de-obfuscation mapping table for developers to analyze crash stacks |
 
+### Windows Desktop (from source)
+
+No prebuilt desktop artifact is published yet; build and run from source with JDK 21+:
+
+```bash
+./gradlew :desktop:run          # run directly
+./gradlew :desktop:desktopFatJar # build a single runnable jar (~83MB)
+java -jar desktop/build/libs/desktop-all.jar
+```
+
+The fat jar bundles all dependencies and the Rust parsing library — no MinGW toolchain or jpackage needed at runtime.
+
 ### Installation Tips
 
 1. Download the appropriate `.apk` file and install it on your device.

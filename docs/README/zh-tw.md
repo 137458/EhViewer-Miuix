@@ -114,6 +114,18 @@
 | `EhViewer-*-marshmallow-universal.apk` | Android 6.0 ~ 7.1 (API 23+) | 通用架構 | 老舊系統通用兜底包 |
 | `EhViewer-*-mapping.txt` | 全平台通用 | 符號表 | **非安裝包**。R8 混淆對應表，僅供開發者排查崩潰堆疊，使用者無需下載 |
 
+### Windows 桌面版（原始碼執行）
+
+尚未發布桌面預先建置產物，可用 JDK 21+ 從原始碼建置執行：
+
+```bash
+./gradlew :desktop:run            # 直接執行
+./gradlew :desktop:desktopFatJar  # 建置單一可執行胖 jar（約 83MB）
+java -jar desktop/build/libs/desktop-all.jar
+```
+
+胖 jar 已內建全部相依與 Rust 解析庫，執行時無需 MinGW 工具鏈與 jpackage。
+
 ### 安裝與配置建議
 
 1. 下載對應變體的 `.apk` 安裝檔案並在裝置上完成安裝。
