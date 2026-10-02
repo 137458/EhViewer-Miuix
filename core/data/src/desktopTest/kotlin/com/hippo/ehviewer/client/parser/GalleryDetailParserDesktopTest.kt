@@ -1,7 +1,7 @@
 package com.hippo.ehviewer.client.parser
 
-import org.junit.Assume
 import java.nio.ByteBuffer
+import org.junit.Assume
 import kotlin.test.Test
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
