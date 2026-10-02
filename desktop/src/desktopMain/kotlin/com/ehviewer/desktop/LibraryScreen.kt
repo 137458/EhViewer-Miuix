@@ -359,6 +359,8 @@ fun LibraryScreen(
 
     LaunchedEffect(Unit) {
         refreshGalleries()
+        // 更新检查延后 3s：避开与在线列表首拉争抢启动期网络
+        delay(3_000L)
         checkLatestRelease()?.let { info ->
             if (isNewer(info.tag, DESKTOP_VERSION)) {
                 updateInfo = info
