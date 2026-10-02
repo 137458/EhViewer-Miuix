@@ -399,7 +399,8 @@ private fun SaveWindowSize(windowState: androidx.compose.ui.window.WindowState) 
 private fun rememberedWindowPosition(): androidx.compose.ui.window.WindowPosition {
     val x = DesktopSettings.windowX
     val y = DesktopSettings.windowY
-    return if (x >= 0 && y >= 0 && isReachableScreenPoint(x, y)) {
+    // 负数是左侧/上方显示器的合法坐标，仅以 Int.MIN_VALUE 哨兵判定「未记忆」
+    return if (x != Int.MIN_VALUE && y != Int.MIN_VALUE && isReachableScreenPoint(x, y)) {
         androidx.compose.ui.window.WindowPosition(x.dp, y.dp)
     } else {
         androidx.compose.ui.window.WindowPosition.PlatformDefault
