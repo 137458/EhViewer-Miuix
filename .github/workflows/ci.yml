@@ -79,6 +79,13 @@ jobs:
       - name: Desktop build
         run: ./gradlew :desktop:compileKotlinDesktop :desktop:desktopJar :desktop:desktopFatJar
 
+      - name: Upload desktop fat jar
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-all-${{ github.sha }}
+          path: desktop/build/libs/desktop-all.jar
+          if-no-files-found: error
+
   default:
     runs-on: ubuntu-latest
     steps:
