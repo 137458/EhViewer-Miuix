@@ -66,8 +66,7 @@ jobs:
           distribution: temurin
           java-version-file: .java-version
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+      # runner 预装 Android SDK 即可（setup-android@v3 默认安装的遗留 tools 包已从 SDK 移除，会导致 job 失败）
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v6
