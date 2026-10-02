@@ -1452,6 +1452,7 @@ internal fun GalleryDetailPane(
                     }
                 }
             }
+            DesktopCommentsSection(gallery = gallery)
         }
         VerticalScrollbar(
             adapter = rememberScrollbarAdapter(detailScrollState),

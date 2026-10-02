@@ -187,9 +187,10 @@ fun ReaderScreen(
                             )
                             if (zoom != null) {
                                 when (zoom) {
-                                    DesktopReaderZoom.In -> scale = DesktopZoomController.zoomIn(scale)
+                                    // 键盘缩放与手势共用 1x-5x 范围：缩小止于原尺寸，放大止于 5x
+                                    DesktopReaderZoom.In -> scale = DesktopZoomController.zoomIn(scale, maxScale = 5f)
                                     DesktopReaderZoom.Out -> {
-                                        scale = DesktopZoomController.zoomOut(scale)
+                                        scale = DesktopZoomController.zoomOut(scale, minScale = 1f)
                                         if (scale <= 1f) offset = Offset.Zero
                                     }
                                     DesktopReaderZoom.Reset -> {
