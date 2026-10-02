@@ -653,6 +653,7 @@
     <string name="desktop_copied">Copied</string>
     <string name="desktop_link_copied">Link copied</string>
     <string name="desktop_removed_from_history">Removed from history</string>
+    <string name="desktop_notification_undo">Undo</string>
     <string name="desktop_filter">Filter</string>
     <string name="desktop_sort">Sort</string>
     <string name="menu_read">Read</string>

@@ -4,6 +4,8 @@ data class DesktopNotification(
     val id: Long,
     val message: String,
     val timestamp: Long,
+    val actionLabel: String? = null,
+    val onAction: (() -> Unit)? = null,
 )
 
 object DesktopNotificationManager {
@@ -13,11 +15,15 @@ object DesktopNotificationManager {
         timestamp: Long,
         maxKeep: Int = 3,
         idProvider: () -> Long,
+        actionLabel: String? = null,
+        onAction: (() -> Unit)? = null,
     ): List<DesktopNotification> {
         val newNotification = DesktopNotification(
             id = idProvider(),
             message = message,
             timestamp = timestamp,
+            actionLabel = actionLabel,
+            onAction = onAction,
         )
         val combined = current + newNotification
         return if (combined.size > maxKeep) {

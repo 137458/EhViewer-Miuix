@@ -68,6 +68,7 @@ import coil3.compose.AsyncImage
 import com.ehviewer.core.database.client.getCategoryDisplayName
 import com.ehviewer.core.database.client.thumbUrl
 import com.ehviewer.core.database.model.GalleryEntity
+import com.ehviewer.core.database.model.HistoryInfo
 import com.ehviewer.core.database.model.LocalFavoriteInfo
 import com.ehviewer.core.i18n.MR
 import com.ehviewer.core.model.BaseGalleryInfo
@@ -180,6 +181,7 @@ fun LibraryScreen(
     val copiedText = stringResource(MR.strings.desktop_copied)
     val linkCopiedText = stringResource(MR.strings.desktop_link_copied)
     val removedFromHistoryText = stringResource(MR.strings.desktop_removed_from_history)
+    val undoText = stringResource(MR.strings.desktop_notification_undo)
     val filterText = stringResource(MR.strings.desktop_filter)
     val noBrowserText = stringResource(MR.strings.no_browser_installed)
 
@@ -907,7 +909,22 @@ fun LibraryScreen(
                                                 DesktopDatabase.eh.historyDao().deleteByKey(gallery.gid)
                                             }
                                             selected = DesktopHistoryState.updateSelectionAfterDelete(selected, gallery.gid)
-                                            showNotification(removedFromHistoryText)
+                                            // 撤销 = 重新写回该 gid 的历史行（时间戳刷新置顶）
+                                            notifications = DesktopNotificationManager.post(
+                                                current = notifications,
+                                                message = removedFromHistoryText,
+                                                timestamp = System.currentTimeMillis(),
+                                                idProvider = { nextNotificationId.getAndIncrement() },
+                                                actionLabel = undoText,
+                                                onAction = {
+                                                    coroutineScope.launch {
+                                                        withContext(Dispatchers.IO) {
+                                                            DesktopDatabase.eh.historyDao()
+                                                                .upsert(HistoryInfo(gallery.gid))
+                                                        }
+                                                    }
+                                                },
+                                            )
                                         }
                                     },
                                 )
@@ -1153,10 +1170,24 @@ fun LibraryScreen(
                             }
                             .padding(horizontal = 12.dp, vertical = 8.dp),
                     ) {
-                        Text(
-                            text = notice.message,
-                            color = MiuixTheme.colorScheme.onSurface,
-                        )
+                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Text(
+                                text = notice.message,
+                                color = MiuixTheme.colorScheme.onSurface,
+                            )
+                            // 带动作的通知（如历史删除撤销）：点击动作区执行并随通知一并消失
+                            if (notice.actionLabel != null) {
+                                Text(
+                                    text = notice.actionLabel,
+                                    color = MiuixTheme.colorScheme.primary,
+                                    modifier = Modifier.pointerHoverIcon(PointerIcon.Hand)
+                                        .clickable {
+                                            notice.onAction?.invoke()
+                                            notifications = DesktopNotificationManager.dismiss(notifications, notice.id)
+                                        },
+                                )
+                            }
+                        }
                     }
                 }
             }

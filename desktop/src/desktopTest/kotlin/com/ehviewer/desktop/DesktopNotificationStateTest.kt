@@ -78,4 +78,24 @@ class DesktopNotificationStateTest {
         val allExpired = DesktopNotificationManager.expire(list, currentTime = 6000L, ttlMs = 2000L)
         assertTrue(allExpired.isEmpty())
     }
+
+    @Test
+    fun postPreservesUndoAction() {
+        var undoFired = false
+        val list = DesktopNotificationManager.post(
+            current = emptyList(),
+            message = "removed",
+            timestamp = 1000L,
+            idProvider = { 7L },
+            actionLabel = "Undo",
+            onAction = { undoFired = true },
+        )
+        val notice = list.single()
+        assertEquals("Undo", notice.actionLabel)
+        // expire 不破坏 action 字段与回调
+        val survived = DesktopNotificationManager.expire(list, currentTime = 2000L, ttlMs = 2500L)
+        assertEquals("Undo", survived.single().actionLabel)
+        survived.single().onAction?.invoke()
+        assertEquals(true, undoFired)
+    }
 }

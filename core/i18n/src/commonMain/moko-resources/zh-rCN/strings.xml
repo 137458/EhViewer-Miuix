@@ -727,6 +727,7 @@
     <string name="desktop_copied">已复制</string>
     <string name="desktop_link_copied">链接已复制</string>
     <string name="desktop_removed_from_history">已从历史记录移除</string>
+    <string name="desktop_notification_undo">撤销</string>
     <string name="desktop_filter">过滤</string>
     <string name="desktop_sort">排序</string>
     <string name="menu_read">阅读</string>
