@@ -35,11 +35,18 @@ object DesktopImageSaver {
         return target
     }
 
-    fun saveDir(): Path {
-        val downloads = (System.getProperty("user.home") + "/Downloads/EhViewer").toPath()
-        if (runCatching { FileSystem.SYSTEM.createDirectories(downloads) }.isSuccess) return downloads
-        val fallback = (System.getProperty("user.home") + "/.ehviewer/EhViewer/files/saves").toPath()
-        FileSystem.SYSTEM.createDirectories(fallback)
+    fun saveDir(): Path = resolveSaveDir(DesktopSettings.imageSaveDir.value, System.getProperty("user.home"))
+
+    // 目录解析：设置项优先 → 默认下载目录 → 应用数据区兜底；上级不可建时逐级回落
+    fun resolveSaveDir(configured: String?, userHome: String, fs: FileSystem = FileSystem.SYSTEM): Path {
+        if (!configured.isNullOrBlank()) {
+            val custom = configured.replace('\\', '/').trimEnd('/').toPath()
+            if (runCatching { fs.createDirectories(custom) }.isSuccess) return custom
+        }
+        val downloads = "$userHome/Downloads/EhViewer".toPath()
+        if (runCatching { fs.createDirectories(downloads) }.isSuccess) return downloads
+        val fallback = "$userHome/.ehviewer/EhViewer/files/saves".toPath()
+        fs.createDirectories(fallback)
         return fallback
     }
 

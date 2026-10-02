@@ -65,4 +65,30 @@ class DesktopImageSaverTest {
             DesktopImageSaver.uniqueTarget(absent, "a.jpg", fs)
         }
     }
+
+    @Test
+    fun resolveSaveDirPrefersConfiguredDirectory() {
+        val home = Files.createTempDirectory("eh_saver_home").toString()
+        val configured = Files.createTempDirectory("eh_saver_configured")
+        val target = configured.resolve("pics").toString()
+        // 实现统一正斜杠风格，期望值同构
+        assertEquals(
+            target.replace('\\', '/').toPath(),
+            DesktopImageSaver.resolveSaveDir(configured = target, userHome = home),
+        )
+    }
+
+    @Test
+    fun resolveSaveDirFallsBackToDownloadsWhenUnconfiguredOrInvalid() {
+        val home = Files.createTempDirectory("eh_saver_home2").toString()
+        // 未配置：默认下载目录
+        assertEquals("$home/Downloads/EhViewer".toPath(), DesktopImageSaver.resolveSaveDir(configured = null, userHome = home))
+        // 配置不可创建（含非法字符）：回落下载目录
+        assertEquals(
+            "$home/Downloads/EhViewer".toPath(),
+            DesktopImageSaver.resolveSaveDir(configured = "\u0000illegal", userHome = home),
+        )
+        // 空白配置等同未配置
+        assertEquals("$home/Downloads/EhViewer".toPath(), DesktopImageSaver.resolveSaveDir(configured = "   ", userHome = home))
+    }
 }

@@ -85,5 +85,21 @@ fun SettingsScreen() {
                 modifier = Modifier.fillMaxWidth().padding(16.dp),
             )
         }
+        item {
+            // 图片保存目录：空 = 默认下载目录 ~/Downloads/EhViewer
+            val saveDirValue by DesktopSettings.imageSaveDir.valueFlow()
+                .collectAsState(DesktopSettings.imageSaveDir.value)
+            var saveDirText by remember(saveDirValue) { mutableStateOf(saveDirValue.orEmpty()) }
+            OutlinedTextField(
+                value = saveDirText,
+                onValueChange = {
+                    saveDirText = it
+                    DesktopSettings.imageSaveDir.value = it.trim().takeIf { v -> v.isNotEmpty() }
+                },
+                label = { Text(stringResource(MR.strings.settings_download_download_location)) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
+            )
+        }
     }
 }
