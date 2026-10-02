@@ -235,6 +235,7 @@
     <string name="format_url">URL</string>
     <string name="format_plain">Plain text</string>
     <!-- Gallery Previews -->
+    <string name="gallery_previews">Previews</string>
     <string name="go_to">Go to</string>
     <!-- Download -->
     <string name="scene_download_title">Download - %s</string>

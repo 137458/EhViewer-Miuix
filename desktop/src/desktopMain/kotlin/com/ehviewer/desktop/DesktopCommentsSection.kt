@@ -30,15 +30,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ehviewer.core.i18n.MR
-import com.ehviewer.core.model.BaseGalleryInfo
 import com.ehviewer.core.model.GalleryComment
-import com.ehviewer.core.util.LogPriority
-import com.ehviewer.core.util.logcat
-import com.hippo.ehviewer.client.parser.GalleryDetailParser
 import dev.icerock.moko.resources.compose.stringResource
-import java.nio.ByteBuffer
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 // 评论显示模型：上传者评论置顶（组内保持原相对顺序）；折叠态最多展示 3 条
@@ -60,11 +53,12 @@ object DesktopCommentsModel {
 // 详情面板评论区：拉取画廊详情页经 Rust 解析（与 Android 侧同链路），折叠展示、右键复制评论文本。
 // comments == null 表示加载中；加载失败可点击重试。
 @Composable
-fun DesktopCommentsSection(gallery: BaseGalleryInfo) {
-    var comments by remember { mutableStateOf<List<GalleryComment>?>(null) }
+fun DesktopCommentsSection(
+    comments: List<GalleryComment>?,
+    loadFailed: Boolean,
+    onRetry: () -> Unit,
+) {
     var expanded by remember { mutableStateOf(false) }
-    var loadFailed by remember { mutableStateOf(false) }
-    var reloadKey by remember { mutableIntStateOf(0) }
     val loadingText = stringResource(MR.strings.desktop_reader_loading)
     val loadFailedText = stringResource(MR.strings.desktop_reader_load_failed)
     val retryText = stringResource(MR.strings.action_retry)
@@ -73,22 +67,6 @@ fun DesktopCommentsSection(gallery: BaseGalleryInfo) {
     val moreText = stringResource(MR.strings.more_comment)
     val copyCommentText = stringResource(MR.strings.copy_comment_text)
     val clipboard = LocalClipboardManager.current
-
-    LaunchedEffect(gallery.gid, reloadKey) {
-        loadFailed = false
-        runCatching {
-            withContext(Dispatchers.IO) {
-                val response = desktopGet(galleryWebUrl(gallery.gid, gallery.token))
-                val buffer = response.toByteBuffer() ?: error("HTTP ${response.status}")
-                GalleryDetailParser.parse(buffer).detail.comments.comments
-            }
-        }.onSuccess { list ->
-            comments = list
-        }.onFailure { e ->
-            loadFailed = true
-            logcat("Comments", LogPriority.WARN) { "COMMENTS_LOAD failed ${gallery.gid}: $e" }
-        }
-    }
 
     Column(modifier = Modifier.fillMaxWidth()) {
         HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
@@ -119,7 +97,7 @@ fun DesktopCommentsSection(gallery: BaseGalleryInfo) {
                 fontSize = 12.sp,
                 modifier = Modifier
                     .pointerHoverIcon(PointerIcon.Hand)
-                    .clickable { reloadKey += 1 }
+                    .clickable(onClick = onRetry)
                     .padding(top = 4.dp),
             )
             loaded == null -> Text(

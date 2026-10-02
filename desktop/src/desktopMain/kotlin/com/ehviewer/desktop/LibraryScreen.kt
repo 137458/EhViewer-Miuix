@@ -77,6 +77,7 @@ import com.ehviewer.core.ui.component.GalleryListCardRating
 import com.ehviewer.core.ui.component.VerticalScrollbar
 import com.ehviewer.core.util.LogPriority
 import com.ehviewer.core.util.logcat
+import com.hippo.ehviewer.client.parser.GalleryDetailParser
 import com.hippo.ehviewer.client.parser.GalleryListParserKtProbe
 import com.hippo.ehviewer.client.parser.parseGalleryList
 import dev.icerock.moko.resources.compose.stringResource
@@ -1452,6 +1453,24 @@ internal fun GalleryDetailPane(
     onOpenReader: (() -> Unit)? = null,
 ) {
     val detailScrollState = rememberScrollState()
+    // 详情页单次抓取：预览与评论区共享同一份解析结果（避免两个区块重复拉取整页）
+    var detailExtras by remember(gallery.gid) { mutableStateOf<GalleryDetailParser.Result?>(null) }
+    var extrasLoadFailed by remember(gallery.gid) { mutableStateOf(false) }
+    var extrasReloadKey by remember(gallery.gid) { mutableIntStateOf(0) }
+    LaunchedEffect(gallery.gid, extrasReloadKey) {
+        extrasLoadFailed = false
+        runCatching {
+            withContext(Dispatchers.IO) {
+                val response = desktopGet(galleryWebUrl(gallery.gid, gallery.token))
+                val buffer = response.toByteBuffer() ?: error("HTTP ${response.status}")
+                GalleryDetailParser.parse(buffer)
+            }
+        }.onSuccess { result ->
+            detailExtras = result
+        }.onFailure {
+            extrasLoadFailed = true
+        }
+    }
     Row(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
@@ -1627,7 +1646,12 @@ internal fun GalleryDetailPane(
                     }
                 }
             }
-            DesktopCommentsSection(gallery = gallery)
+            DesktopPreviewsSection(previewList = detailExtras?.detail?.previewList)
+            DesktopCommentsSection(
+                comments = detailExtras?.detail?.comments?.comments,
+                loadFailed = extrasLoadFailed,
+                onRetry = { extrasReloadKey += 1 },
+            )
         }
         VerticalScrollbar(
             adapter = rememberScrollbarAdapter(detailScrollState),
