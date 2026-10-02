@@ -78,7 +78,7 @@ jobs:
         run: ./gradlew :core:common:desktopTest :core:data:desktopTest :core:ui:desktopTest :desktop:desktopTest
 
       - name: Desktop build
-        run: ./gradlew :desktop:compileKotlinDesktop :desktop:desktopJar
+        run: ./gradlew :desktop:compileKotlinDesktop :desktop:desktopJar :desktop:desktopFatJar
 
   default:
     runs-on: ubuntu-latest
