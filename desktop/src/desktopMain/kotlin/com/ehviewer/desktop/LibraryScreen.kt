@@ -215,9 +215,7 @@ fun LibraryScreen(
             }.onSuccess { response ->
                 if (response.status in 200..299) {
                     runCatching {
-                        val bytes = response.body.toByteArray()
-                        val buffer = ByteBuffer.allocateDirect(bytes.size).put(bytes).apply { flip() }
-                        parseGalleryList(buffer).galleryInfoList.toList()
+                        parseGalleryList(response.toByteBuffer()!!).galleryInfoList.toList()
                     }.onSuccess { list ->
                         online = list
                         logcat("Library", LogPriority.INFO) { "ONLINE_SEARCH parsed=${list.size} q=$query next=$nextGid" }
@@ -266,9 +264,7 @@ fun LibraryScreen(
                 runCatching {
                     // Rust 原生 HTML 解析移出主线程，避免大页面解析期间冻结 UI
                     withContext(Dispatchers.IO) {
-                        val bytes = response.body.toByteArray()
-                        val buffer = ByteBuffer.allocateDirect(bytes.size).put(bytes).apply { flip() }
-                        parseGalleryList(buffer).galleryInfoList.toList()
+                        parseGalleryList(response.toByteBuffer()!!).galleryInfoList.toList()
                     }
                 }.onSuccess { list ->
                     online = list

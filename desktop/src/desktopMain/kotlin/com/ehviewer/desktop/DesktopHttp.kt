@@ -7,10 +7,18 @@ import java.net.InetSocketAddress
 import java.net.Proxy
 import java.net.ProxySelector
 import java.net.URL
+import java.nio.ByteBuffer
 
 class DesktopResponse(val status: Int, val body: String)
 
 class DesktopBytesResponse(val status: Int, val bytes: ByteArray)
+
+// 2xx 响应体转直读 ByteBuffer（Rust 解析入口约定 flip 后的 Direct buffer）；非 2xx 返回 null
+fun DesktopResponse.toByteBuffer(): ByteBuffer? {
+    if (status !in 200..299) return null
+    val bytes = body.toByteArray()
+    return ByteBuffer.allocateDirect(bytes.size).put(bytes).apply { flip() }
+}
 
 // 代理解析：设置项 > HTTPS_PROXY/HTTP_PROXY 环境变量 > 直连（与 NetworkModule 同源规则）
 private fun resolveProxy(): Proxy? {

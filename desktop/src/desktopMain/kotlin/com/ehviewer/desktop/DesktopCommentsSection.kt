@@ -70,9 +70,7 @@ fun DesktopCommentsSection(gallery: BaseGalleryInfo) {
         runCatching {
             withContext(Dispatchers.IO) {
                 val response = desktopGet(galleryWebUrl(gallery.gid, gallery.token))
-                check(response.status in 200..299) { "HTTP ${response.status}" }
-                val bytes = response.body.toByteArray()
-                val buffer = ByteBuffer.allocateDirect(bytes.size).put(bytes).apply { flip() }
+                val buffer = response.toByteBuffer() ?: error("HTTP ${response.status}")
                 GalleryDetailParser.parse(buffer).detail.comments.comments
             }
         }.onSuccess { list ->
