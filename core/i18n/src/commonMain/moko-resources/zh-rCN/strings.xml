@@ -194,6 +194,8 @@
     <string name="comment_successfully">评论成功</string>
     <string name="comment_failed">评论失败</string>
     <string name="copy_comment_text">复制评论文字</string>
+    <string name="desktop_comment_vote_score">投票成功，当前分数：%d</string>
+    <string name="desktop_comment_vote_error">投票失败：%s</string>
     <string name="block_commenter">屏蔽评论者</string>
     <string name="block_uploader">屏蔽上传者</string>
     <string name="filter_the_commenter">屏蔽评论者“%s”？</string>

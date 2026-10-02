@@ -210,6 +210,8 @@
     <string name="comment_successfully">Comment post successfully</string>
     <string name="comment_failed">Failed to post the comment</string>
     <string name="copy_comment_text">Copy comment text</string>
+    <string name="desktop_comment_vote_score">Vote recorded, score: %d</string>
+    <string name="desktop_comment_vote_error">Vote failed: %s</string>
     <string name="block_commenter">Block the commenter</string>
     <string name="block_uploader">Block the uploader</string>
     <string name="filter_the_commenter">Block the commenter \"%s\"?</string>

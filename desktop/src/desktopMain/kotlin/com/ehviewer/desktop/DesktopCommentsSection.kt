@@ -88,13 +88,16 @@ fun DesktopCommentsSection(
     val coroutineScope = rememberCoroutineScope()
     // 投票：apiuid/apikey 就绪时可用；结果以状态行反馈（成功显分数，失败显原因）
     var votingCommentId by remember { mutableStateOf<Long?>(null) }
-    var voteStatus by remember { mutableStateOf<String?>(null) }
+    var votedScore by remember { mutableStateOf<Int?>(null) }
+    var voteError by remember { mutableStateOf<String?>(null) }
     val canVote = apiUid >= 0 && !apiKey.isNullOrEmpty()
 
     fun vote(comment: GalleryComment, vote: Int) {
         val key = apiKey ?: return
         if (votingCommentId != null) return
         votingCommentId = comment.id
+        votedScore = null
+        voteError = null
         coroutineScope.launch {
             val outcome = withContext(Dispatchers.IO) {
                 runCatching {
@@ -105,9 +108,9 @@ fun DesktopCommentsSection(
                 }
             }
             votingCommentId = null
-            voteStatus = outcome.fold(
-                onSuccess = { r -> "score: ${r.score}" },
-                onFailure = { "error: ${it.message}" },
+            outcome.fold(
+                onSuccess = { r -> votedScore = r.score },
+                onFailure = { voteError = it.message },
             )
         }
     }
@@ -140,9 +143,16 @@ fun DesktopCommentsSection(
                 fontSize = 12.sp,
             )
         }
-        voteStatus?.let { status ->
+        votedScore?.let { score ->
             Text(
-                text = status,
+                text = stringResource(MR.strings.desktop_comment_vote_score, score),
+                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                fontSize = 12.sp,
+            )
+        }
+        voteError?.let { message ->
+            Text(
+                text = stringResource(MR.strings.desktop_comment_vote_error, message),
                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 fontSize = 12.sp,
             )
@@ -250,7 +260,8 @@ private fun CommentItem(
         if (canVote) {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 listOf(1 to "▲", -1 to "▼").forEach { (value, arrow) ->
-                    val active = comment.voteState?.contains(value.toString()) == true
+                    // 已投状态取模型布尔（voteState 是投票人名单字符串，子串匹配会误报）
+                    val active = if (value == 1) comment.voteUpEd else comment.voteDownEd
                     Text(
                         text = if (isVoting) "…" else arrow,
                         color = if (active) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantSummary,
