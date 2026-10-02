@@ -44,6 +44,7 @@ import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.FrameWindowScope
 import androidx.compose.ui.window.MenuBar
 import androidx.compose.ui.window.Tray
@@ -190,6 +191,7 @@ fun main() {
                     position = rememberedWindowPosition(),
                 )
                 var showShortcutsHelp by remember { mutableStateOf(false) }
+                var showAbout by remember { mutableStateOf(false) }
                 var showOpenGalleryDialog by remember { mutableStateOf(false) }
                 Window(
                     onCloseRequest = { handleClose(window) },
@@ -278,6 +280,7 @@ fun main() {
                         onNewWindow = { windows.add(ShellWindow(nextWindowId++)) },
                         onOpenSettings = { windows.add(ShellWindow(nextWindowId++, isSettings = true)) },
                         onShowShortcutsHelp = { showShortcutsHelp = true },
+                        onShowAbout = { showAbout = true },
                         onExit = {
                             windows.clear()
                             exitApplication()
@@ -356,6 +359,9 @@ fun main() {
                             if (showShortcutsHelp) {
                                 ShortcutsHelpDialog(onDismiss = { showShortcutsHelp = false })
                             }
+                            if (showAbout) {
+                                AboutDialog(onDismiss = { showAbout = false })
+                            }
                         }
                     }
                 }
@@ -419,6 +425,7 @@ private fun FrameWindowScope.AppMenus(
     onNewWindow: () -> Unit,
     onOpenSettings: () -> Unit,
     onShowShortcutsHelp: () -> Unit,
+    onShowAbout: () -> Unit,
     onExit: () -> Unit,
     showOpenGalleryItem: Boolean = false,
     onOpenGallery: () -> Unit = {},
@@ -435,6 +442,36 @@ private fun FrameWindowScope.AppMenus(
     }
     Menu(stringResource(MR.strings.menu_help)) {
         Item("${stringResource(MR.strings.menu_keyboard_shortcuts)} (F1)", onClick = onShowShortcutsHelp)
+        Item(stringResource(MR.strings.menu_about), onClick = onShowAbout)
+    }
+}
+
+// 关于对话框：应用名 + 版本 + 仓库链接（桌面应用惯例的 Help/About 入口）
+@Composable
+private fun AboutDialog(onDismiss: () -> Unit) {
+    val versionText = stringResource(MR.strings.desktop_about_version, DESKTOP_VERSION)
+    DesktopModalCard(
+        title = stringResource(MR.strings.menu_about),
+        onDismiss = onDismiss,
+    ) {
+        Text(
+            text = "EhViewer-Miuix",
+            color = MiuixTheme.colorScheme.primary,
+            fontWeight = androidx.compose.ui.text.font.FontWeight.Medium,
+        )
+        Text(
+            text = versionText,
+            color = MiuixTheme.colorScheme.onSurface,
+        )
+        val releasesUrl = RELEASES_PAGE_URL
+        Text(
+            text = releasesUrl,
+            color = MiuixTheme.colorScheme.primary,
+            fontSize = 12.sp,
+            modifier = Modifier
+                .pointerHoverIcon(PointerIcon.Hand)
+                .clickable { DesktopBrowser.openUrl(releasesUrl) },
+        )
     }
 }
 
