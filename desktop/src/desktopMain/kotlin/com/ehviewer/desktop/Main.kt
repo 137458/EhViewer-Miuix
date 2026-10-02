@@ -81,6 +81,7 @@ private object EhViewerTrayPainter : Painter() {
 }
 
 fun main() {
+    val startupStartMs = System.currentTimeMillis()
     // 单实例锁：已有实例在运行时直接退出，防 DataStore/Room 多进程并发写坏数据
     if (!DesktopSingleInstance.tryAcquire()) {
         logcat("SingleInstance", LogPriority.WARN) { "ALREADY_RUNNING exit" }
@@ -324,7 +325,7 @@ fun main() {
                         }
                         LaunchedEffect(Unit) {
                             logcat("Shell", LogPriority.INFO) {
-                                "SHELL_STARTED width=${DesktopSettings.windowWidth} height=${DesktopSettings.windowHeight}"
+                                "SHELL_STARTED width=${DesktopSettings.windowWidth} height=${DesktopSettings.windowHeight} elapsedMs=${System.currentTimeMillis() - startupStartMs}"
                             }
                         }
                     }
