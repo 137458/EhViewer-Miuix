@@ -166,6 +166,8 @@ fun LibraryScreen(
     var previewCoverUrl by remember { mutableStateOf<String?>(null) }
     var notifications by remember { mutableStateOf<List<DesktopNotification>>(emptyList()) }
     val nextNotificationId = remember { AtomicLong(1L) }
+    // 一键清空历史前的确认对话框（毁灭性操作防误触）
+    var showClearHistoryConfirm by remember { mutableStateOf(false) }
     val clipboard = LocalClipboardManager.current
     val coroutineScope = rememberCoroutineScope()
     val historyClearedMessage = stringResource(MR.strings.search_history_cleared)
@@ -564,18 +566,7 @@ fun LibraryScreen(
                                 color = MiuixTheme.colorScheme.primary,
                                 modifier = Modifier
                                     .pointerHoverIcon(PointerIcon.Hand)
-                                    .clickable {
-                                        coroutineScope.launch {
-                                            withContext(Dispatchers.IO) {
-                                                DesktopDatabase.eh.historyDao().deleteAll()
-                                            }
-                                            selected = DesktopHistoryState.updateSelectionAfterClearAll(
-                                                currentSelected = selected,
-                                                currentTabIsHistory = true,
-                                            )
-                                            showNotification(historyClearedMessage)
-                                        }
-                                    }
+                                    .clickable { showClearHistoryConfirm = true }
                                     .padding(vertical = 4.dp, horizontal = 4.dp),
                             )
                         }
@@ -1187,6 +1178,51 @@ fun LibraryScreen(
                     onOpenGalleryInNewWindow?.invoke(DesktopOpenGalleryState.createGalleryInfo(target))
                 },
             )
+        }
+
+        if (showClearHistoryConfirm) {
+            val confirmTitle = stringResource(MR.strings.clear_all_history)
+            val cancelLabel = stringResource(MR.strings.desktop_action_cancel)
+            val clearLabel = stringResource(MR.strings.clear_all)
+            DesktopModalCard(
+                title = confirmTitle,
+                onDismiss = { showClearHistoryConfirm = false },
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End),
+                ) {
+                    Text(
+                        text = cancelLabel,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        modifier = Modifier
+                            .pointerHoverIcon(PointerIcon.Hand)
+                            .clickable { showClearHistoryConfirm = false }
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                    )
+                    Text(
+                        text = clearLabel,
+                        color = MiuixTheme.colorScheme.error,
+                        fontWeight = androidx.compose.ui.text.font.FontWeight.Medium,
+                        modifier = Modifier
+                            .pointerHoverIcon(PointerIcon.Hand)
+                            .clickable {
+                                showClearHistoryConfirm = false
+                                coroutineScope.launch {
+                                    withContext(Dispatchers.IO) {
+                                        DesktopDatabase.eh.historyDao().deleteAll()
+                                    }
+                                    selected = DesktopHistoryState.updateSelectionAfterClearAll(
+                                        currentSelected = selected,
+                                        currentTabIsHistory = true,
+                                    )
+                                    showNotification(historyClearedMessage)
+                                }
+                            }
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                    )
+                }
+            }
         }
     }
 }
