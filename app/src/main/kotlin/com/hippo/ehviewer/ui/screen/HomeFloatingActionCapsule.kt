@@ -43,10 +43,10 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 fun HomeFloatingActionCapsule(
     visible: Boolean,
     onRefresh: () -> Unit,
+    modifier: Modifier = Modifier,
     onShuffle: (() -> Unit)? = null,
     onGoTo: (() -> Unit)? = null,
     onLastPage: (() -> Unit)? = null,
-    modifier: Modifier = Modifier,
 ) {
     val haptic = LocalHapticFeedback.current
 
