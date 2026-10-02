@@ -20,6 +20,7 @@ object DesktopShortcuts {
         DesktopShortcutEntry("Home / End", MR.strings.shortcut_jump_first_last),
         DesktopShortcutEntry("Enter", MR.strings.shortcut_open_selected),
         DesktopShortcutEntry("Double Click", MR.strings.shortcut_open_gallery),
+        DesktopShortcutEntry("Ctrl + Click", MR.strings.shortcut_multi_select),
         DesktopShortcutEntry("Drag & Drop", MR.strings.shortcut_drop_link),
         DesktopShortcutEntry("Right Click", MR.strings.shortcut_context_menu),
         DesktopShortcutEntry("F1", MR.strings.shortcut_show_help),

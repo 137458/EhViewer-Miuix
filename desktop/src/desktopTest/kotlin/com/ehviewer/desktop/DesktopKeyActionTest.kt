@@ -409,4 +409,12 @@ class DesktopKeyActionTest {
         // F11 条目进入主库快捷键指南
         assertTrue(DesktopShortcuts.defaultEntries().any { it.keyCombination == "F11" })
     }
+
+    @Test
+    fun defaultEntriesContainMultiSelectEntry() {
+        // Ctrl+Click 批量多选与既有鼠标操作（双击/拖拽/右键）同录主库指南
+        val entry = DesktopShortcuts.defaultEntries().firstOrNull { it.keyCombination == "Ctrl + Click" }
+        assertTrue(entry != null)
+        assertEquals(MR.strings.shortcut_multi_select, entry.descriptionRes)
+    }
 }
