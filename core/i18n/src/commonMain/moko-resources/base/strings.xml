@@ -119,6 +119,7 @@
     <string name="translate_tag_for_tagger">Use tag translation</string>
     <string name="name_is_empty">Name is empty</string>
     <string name="delete">Delete</string>
+    <string name="desktop_delete_selected">Delete selected (%d)</string>
     <string name="add_quick_search_tip">The state of gallery list will be saved as quick search. Perform a search first to save the state of search panel.</string>
     <string name="readme">README</string>
     <string name="image_search_not_quick_search">Can\'t add image search as quick search</string>

@@ -130,9 +130,14 @@ fun LibraryScreen(
     // 游标导航栈：记录每次远程搜索请求的 next 游标（null=第一页），支撑双向翻页
     val cursorStack = remember { mutableStateListOf<Long?>(null) }
     var cursorIndex by remember { mutableIntStateOf(0) }
+    // 批量多选：Ctrl+点击 toggle，行删除同步移除，切 Tab/刷新清空
+    val multiSelection = remember { DesktopMultiSelection() }
+    // Ctrl 按住状态跟踪（根 onPreviewKeyEvent 维护，供行 Ctrl+点击多选判定）
+    var ctrlDown by remember { mutableStateOf(false) }
 
     fun switchTab(tab: LibraryTab) {
         currentTab = tab
+        multiSelection.clear()
         DesktopSettings.lastTab.value = tab.name
     }
     // 历史/收藏走 Room Flow 响应式收集：开窗/收藏/删除后跨窗口自动刷新
@@ -376,6 +381,10 @@ fun LibraryScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .onPreviewKeyEvent { event ->
+                    // 跟踪 Ctrl 按住状态（KeyDown/KeyUp 双沿），供行 Ctrl+点击批量多选判定
+                    if (event.key == Key.CtrlLeft || event.key == Key.CtrlRight) {
+                        ctrlDown = event.type == KeyEventType.KeyDown
+                    }
                     if (openGalleryDialogVisible) {
                         // 对话框打开期间只拦截 Escape 关闭，其余按键让给输入框
                         if (event.type == KeyEventType.KeyDown && !event.isCtrlPressed && event.key == Key.Escape) {
@@ -873,6 +882,7 @@ fun LibraryScreen(
                         val deleteLabel = stringResource(MR.strings.delete)
                         val addFavoriteLabel = stringResource(MR.strings.add_favorites_dialog_title)
                         val deleteFavoriteLabel = stringResource(MR.strings.delete_favorites_dialog_title)
+                        val batchDeleteLabel = stringResource(MR.strings.desktop_delete_selected, multiSelection.gids.size)
 
                         fun buildGalleryContextMenu(
                             gallery: BaseGalleryInfo,
@@ -901,6 +911,30 @@ fun LibraryScreen(
                                     toggleFavorite(gallery)
                                 },
                             )
+                            // 批量多选激活时置顶批量删除（按当前 Tab 作用于历史或收藏）
+                            if (multiSelection.isActive) {
+                                menuItems.add(
+                                    ContextMenuItem(batchDeleteLabel) {
+                                        coroutineScope.launch {
+                                            val gids = multiSelection.gids.toList()
+                                            withContext(Dispatchers.IO) {
+                                                when (currentTab) {
+                                                    LibraryTab.History -> gids.forEach {
+                                                        DesktopDatabase.eh.historyDao().deleteByKey(it)
+                                                    }
+                                                    LibraryTab.Favorites -> gids.forEach {
+                                                        DesktopDatabase.eh.localFavoritesDao().deleteByKey(it)
+                                                    }
+                                                    else -> return@withContext
+                                                }
+                                            }
+                                            multiSelection.clear()
+                                            selected = null
+                                            showNotification(batchDeleteLabel)
+                                        }
+                                    },
+                                )
+                            }
                             if (onOpenReader != null) {
                                 menuItems.add(
                                     ContextMenuItem(readLabel) {
@@ -964,17 +998,26 @@ fun LibraryScreen(
                                                 modifier = Modifier.fillMaxWidth()
                                                     .pointerHoverIcon(PointerIcon.Hand)
                                                     .combinedClickable(
-                                                        onClick = { selected = gallery },
+                                                        onClick = {
+                                                            // Ctrl+点击进入/退出批量多选；普通点击收敛多选并单选（组合期捕获 WindowInfo，点击时读实时修饰键）
+                                                            if (ctrlDown) {
+                                                                multiSelection.toggle(gallery.gid)
+                                                            } else {
+                                                                multiSelection.clear()
+                                                                selected = gallery
+                                                            }
+                                                        },
                                                         onDoubleClick = {
+                                                            multiSelection.clear()
                                                             selected = gallery
                                                             onOpenGalleryInNewWindow?.invoke(gallery)
                                                         },
                                                     )
                                                     .background(
-                                                        if (selected?.gid == gallery.gid) {
-                                                            MiuixTheme.colorScheme.secondaryContainer
-                                                        } else {
-                                                            Color.Unspecified
+                                                        when {
+                                                            gallery.gid in multiSelection.gids -> MiuixTheme.colorScheme.primaryContainer
+                                                            selected?.gid == gallery.gid -> MiuixTheme.colorScheme.secondaryContainer
+                                                            else -> Color.Unspecified
                                                         },
                                                     )
                                                     .padding(horizontal = 8.dp, vertical = 6.dp),
@@ -1059,17 +1102,26 @@ fun LibraryScreen(
                                                     .clip(RoundedCornerShape(8.dp))
                                                     .pointerHoverIcon(PointerIcon.Hand)
                                                     .combinedClickable(
-                                                        onClick = { selected = gallery },
+                                                        onClick = {
+                                                            // Ctrl+点击进入/退出批量多选；普通点击收敛多选并单选（组合期捕获 WindowInfo，点击时读实时修饰键）
+                                                            if (ctrlDown) {
+                                                                multiSelection.toggle(gallery.gid)
+                                                            } else {
+                                                                multiSelection.clear()
+                                                                selected = gallery
+                                                            }
+                                                        },
                                                         onDoubleClick = {
+                                                            multiSelection.clear()
                                                             selected = gallery
                                                             onOpenGalleryInNewWindow?.invoke(gallery)
                                                         },
                                                     )
                                                     .background(
-                                                        if (selected?.gid == gallery.gid) {
-                                                            MiuixTheme.colorScheme.secondaryContainer
-                                                        } else {
-                                                            MiuixTheme.colorScheme.surfaceVariant
+                                                        when {
+                                                            gallery.gid in multiSelection.gids -> MiuixTheme.colorScheme.primaryContainer
+                                                            selected?.gid == gallery.gid -> MiuixTheme.colorScheme.secondaryContainer
+                                                            else -> MiuixTheme.colorScheme.surfaceVariant
                                                         },
                                                     )
                                                     .padding(8.dp),
