@@ -60,6 +60,24 @@ kotlin {
     }
 }
 
+// 可执行胖 jar：单文件分发（系统 JRE 即可运行，绕开 jpackage 依赖）。
+// 解包 desktop-desktop.jar + runtime classpath；Rust dll 已随资源在薄 jar 内。
+val desktopJarTask = tasks.named<Jar>("desktopJar")
+val desktopRuntimeClasspath: FileCollection = configurations.getByName("desktopRuntimeClasspath")
+
+val desktopFatJar = tasks.register<Jar>("desktopFatJar") {
+    archiveClassifier.set("all")
+    manifest {
+        attributes["Main-Class"] = "com.ehviewer.desktop.MainKt"
+    }
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    dependsOn(desktopJarTask)
+    from(zipTree(desktopJarTask.map { it.archiveFile }))
+    from(desktopRuntimeClasspath.map { if (it.isDirectory) it else zipTree(it) }) {
+        exclude("META-INF/*.SF", "META-INF/*.DSA", "META-INF/*.RSA", "META-INF/versions/**/module-info.class", "module-info.class")
+    }
+}
+
 compose.desktop {
     application {
         mainClass = "com.ehviewer.desktop.MainKt"
