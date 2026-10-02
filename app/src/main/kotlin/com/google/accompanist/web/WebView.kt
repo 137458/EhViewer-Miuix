@@ -242,6 +242,8 @@ fun WebView(
  * As Accompanist Web needs to set its own web client to function, it provides this intermediary
  * class that can be overriden if further custom behaviour is required.
  */
+// onRenderProcessGone 已在本类内实现（移除并销毁 WebView），lint 对 open 覆盖链路存在误报
+@android.annotation.SuppressLint("MissingOnRenderProcessGone")
 open class AccompanistWebViewClient : WebViewClient() {
     open lateinit var state: WebViewState
         internal set

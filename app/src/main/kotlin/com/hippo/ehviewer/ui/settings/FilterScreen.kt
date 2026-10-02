@@ -22,6 +22,7 @@ import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.currentRecomposeScope
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -96,7 +97,7 @@ fun AnimatedVisibilityScope.FilterScreen(navigator: DestinationsNavigator) = Scr
         launch {
             dialog { cont ->
                 val types = stringArrayResource(id = com.hippo.ehviewer.R.array.filter_entries)
-                var selectedTypeIndex by remember { mutableStateOf(0) }
+                var selectedTypeIndex by remember { mutableIntStateOf(0) }
                 val state = rememberTextFieldState()
                 var error by remember { mutableStateOf<String?>(null) }
                 fun invalidateAndSave() {

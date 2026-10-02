@@ -71,6 +71,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.currentCompositeKeyHashCode
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -436,7 +437,7 @@ class MainActivity : AppCompatActivity() {
                 currentDestination,
                 primaryNavItems.map { it.first },
             )
-            var lastNavTime by remember { mutableStateOf(0L) }
+            var lastNavTime by remember { mutableLongStateOf(0L) }
             fun navigateToTab(direction: Direction) {
                 if (currentDestination?.route == direction.route) {
                     return
