@@ -411,6 +411,28 @@ private fun ShortcutsHelpDialog(onDismiss: () -> Unit) {
                 )
             }
         }
+        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+        Text(
+            text = stringResource(MR.strings.desktop_shortcuts_reader_section),
+            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+            modifier = Modifier.padding(bottom = 4.dp),
+        )
+        DesktopShortcuts.readerEntries().forEach { entry ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = entry.keyCombination,
+                    color = MiuixTheme.colorScheme.primary,
+                )
+                Text(
+                    text = stringResource(entry.descriptionRes),
+                    color = MiuixTheme.colorScheme.onSurface,
+                )
+            }
+        }
     }
 }
 

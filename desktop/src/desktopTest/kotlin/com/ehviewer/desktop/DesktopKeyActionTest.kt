@@ -361,4 +361,24 @@ class DesktopKeyActionTest {
         assertEquals(null, DesktopNavigation.nextSelection(emptyList(), null))
         assertEquals(null, DesktopNavigation.previousSelection(emptyList(), null))
     }
+
+    @Test
+    fun readerEntriesContainReaderWindowKeys() {
+        val entries = DesktopShortcuts.readerEntries()
+        assertTrue(entries.isNotEmpty())
+        // 相对翻页键位组合（随阅读方向反转）
+        assertTrue(entries.any { it.keyCombination.contains("PageUp") && it.keyCombination.contains("Space") })
+        // Home/End 独立条目、Escape 复用既有词条
+        assertTrue(entries.any { it.keyCombination == "Home / End" })
+        assertSame(MR.strings.shortcut_escape, entries.first { it.keyCombination == "Escape" }.descriptionRes)
+    }
+
+    @Test
+    fun readerEntriesExcludeLibraryOnlyKeys() {
+        val entries = DesktopShortcuts.readerEntries()
+        // 主库专属键位不得串入阅读分组
+        assertTrue(entries.none { it.keyCombination.startsWith("Ctrl + W") })
+        assertTrue(entries.none { it.keyCombination == "Ctrl + O" })
+        assertTrue(entries.none { it.keyCombination == "Ctrl + Tab" })
+    }
 }

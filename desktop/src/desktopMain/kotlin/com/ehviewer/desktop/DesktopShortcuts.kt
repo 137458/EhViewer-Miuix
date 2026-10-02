@@ -24,4 +24,12 @@ object DesktopShortcuts {
         DesktopShortcutEntry("Right Click", MR.strings.shortcut_context_menu),
         DesktopShortcutEntry("F1", MR.strings.shortcut_show_help),
     )
+
+    // 阅读窗口键位分组（F1 指南第二段）；←/→ 与 PageUp/PageDown/Space 翻页随阅读方向反转，Home/End 恒跳首/末页
+    fun readerEntries(): List<DesktopShortcutEntry> = listOf(
+        DesktopShortcutEntry("← / → / PageUp / PageDown / Space", MR.strings.shortcut_reader_paging),
+        DesktopShortcutEntry("Home / End", MR.strings.shortcut_reader_jump_first_last),
+        DesktopShortcutEntry("Escape", MR.strings.shortcut_escape),
+        DesktopShortcutEntry("F1", MR.strings.shortcut_show_help),
+    )
 }

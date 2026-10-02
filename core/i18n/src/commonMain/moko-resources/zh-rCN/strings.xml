@@ -717,6 +717,9 @@
     <string name="shortcut_drop_link">把画廊链接拖入窗口</string>
     <string name="shortcut_context_menu">右键菜单（复制、浏览器打开、删除）</string>
     <string name="shortcut_show_help">显示键盘快捷键</string>
+    <string name="shortcut_reader_paging">翻页（随阅读方向反转）</string>
+    <string name="shortcut_reader_jump_first_last">跳转第一页 / 最后一页</string>
+    <string name="desktop_shortcuts_reader_section">阅读窗口</string>
     <string name="settings_restore_session">恢复上次会话窗口</string>
     <string name="desktop_untitled">（未命名）</string>
     <string name="desktop_copied">已复制</string>
