@@ -3,6 +3,7 @@ package com.ehviewer.desktop
 import com.ehviewer.core.util.LogPriority
 import com.ehviewer.core.util.logcat
 import java.awt.Desktop
+import java.lang.ProcessBuilder
 import java.net.URI
 
 object DesktopBrowser {
@@ -17,7 +18,8 @@ object DesktopBrowser {
 
     fun openUrl(
         url: String,
-        launcher: (List<String>) -> Unit = {},
+        // 生产默认真实拉起进程；测试注入记录型 lambda（空实现会使回退假成功）
+        launcher: (List<String>) -> Unit = { commands -> ProcessBuilder(commands).start() },
         osName: String = System.getProperty("os.name", ""),
         opener: (URI) -> Unit = { Desktop.getDesktop().browse(it) },
     ): Boolean {
