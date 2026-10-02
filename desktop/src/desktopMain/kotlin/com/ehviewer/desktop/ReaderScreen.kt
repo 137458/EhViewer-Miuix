@@ -32,6 +32,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.isCtrlPressed
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
@@ -65,6 +66,9 @@ fun ReaderScreen(
     onClose: () -> Unit,
 ) {
     var page by remember { mutableIntStateOf(1) }
+    // 图片手势状态：捏合缩放（1x-5x）+ 拖拽平移；双击重置；翻页自动重置；Ctrl+=/-/0 键盘缩放
+    var scale by remember { mutableFloatStateOf(1f) }
+    var offset by remember { mutableStateOf(Offset.Zero) }
     var pageLinks by remember { mutableStateOf<List<GalleryDetailPageLinksParser.PageLink>>(emptyList()) }
     var linksState by remember { mutableStateOf<String?>(null) }
     var imageUrl by remember { mutableStateOf<String?>(null) }
@@ -106,6 +110,11 @@ fun ReaderScreen(
         }
     }
 
+    // 翻页自动重置缩放与平移
+    LaunchedEffect(page) {
+        scale = 1f
+        offset = Offset.Zero
+    }
     val currentLink = pageLinks.getOrNull(page - 1)
     LaunchedEffect(currentLink, reloadKey) {
         val link = currentLink ?: return@LaunchedEffect
@@ -161,21 +170,41 @@ fun ReaderScreen(
                             !showJumpInput
                         }
                         else -> {
-                            val nav = resolveReaderNav(event.key)
-                            if (nav != null && !showJumpInput && pageLinks.isNotEmpty()) {
-                                when (nav) {
-                                    DesktopReaderNav.FirstPage -> page = 1
-                                    DesktopReaderNav.LastPage -> page = pageLinks.size
-                                    DesktopReaderNav.RelativeForward,
-                                    DesktopReaderNav.RelativeBackward,
-                                    -> {
-                                        val delta = readingDirection.pageDeltaForNav(nav)
-                                        if (page + delta in 1..pageLinks.size) page += delta
+                            val zoom = resolveReaderZoom(
+                                isKeyDown = event.type == KeyEventType.KeyDown,
+                                isCtrlPressed = event.isCtrlPressed,
+                                key = event.key,
+                            )
+                            if (zoom != null) {
+                                when (zoom) {
+                                    DesktopReaderZoom.In -> scale = DesktopZoomController.zoomIn(scale)
+                                    DesktopReaderZoom.Out -> {
+                                        scale = DesktopZoomController.zoomOut(scale)
+                                        if (scale <= 1f) offset = Offset.Zero
+                                    }
+                                    DesktopReaderZoom.Reset -> {
+                                        scale = DesktopZoomController.resetZoom()
+                                        offset = Offset.Zero
                                     }
                                 }
                                 true
                             } else {
-                                false
+                                val nav = resolveReaderNav(event.key)
+                                if (nav != null && !showJumpInput && pageLinks.isNotEmpty()) {
+                                    when (nav) {
+                                        DesktopReaderNav.FirstPage -> page = 1
+                                        DesktopReaderNav.LastPage -> page = pageLinks.size
+                                        DesktopReaderNav.RelativeForward,
+                                        DesktopReaderNav.RelativeBackward,
+                                        -> {
+                                            val delta = readingDirection.pageDeltaForNav(nav)
+                                            if (page + delta in 1..pageLinks.size) page += delta
+                                        }
+                                    }
+                                    true
+                                } else {
+                                    false
+                                }
                             }
                         }
                     }
@@ -238,13 +267,6 @@ fun ReaderScreen(
         }
         HorizontalDivider()
 
-        // 图片手势状态：捏合缩放（1x-5x）+ 拖拽平移；双击重置；翻页自动重置
-        var scale by remember { mutableFloatStateOf(1f) }
-        var offset by remember { mutableStateOf(Offset.Zero) }
-        LaunchedEffect(page) {
-            scale = 1f
-            offset = Offset.Zero
-        }
         Box(
             modifier = Modifier
                 .weight(1f)

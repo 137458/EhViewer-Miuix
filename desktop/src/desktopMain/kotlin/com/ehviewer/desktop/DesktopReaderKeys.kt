@@ -25,3 +25,20 @@ fun DesktopReadingDirection.pageDeltaForNav(nav: DesktopReaderNav): Int = when (
     DesktopReaderNav.FirstPage -> -1
     DesktopReaderNav.LastPage -> 1
 }
+
+enum class DesktopReaderZoom {
+    In,
+    Out,
+    Reset,
+}
+
+// 缩放键位：Ctrl+=/Ctrl+小键盘+ 放大、Ctrl+-/Ctrl+小键盘- 缩小、Ctrl+0/Ctrl+小键盘0 重置；无 Ctrl 不消费
+fun resolveReaderZoom(isKeyDown: Boolean, isCtrlPressed: Boolean, key: Key): DesktopReaderZoom? {
+    if (!isKeyDown || !isCtrlPressed) return null
+    return when (key) {
+        Key.Equals, Key.NumPadAdd -> DesktopReaderZoom.In
+        Key.Minus, Key.NumPadSubtract -> DesktopReaderZoom.Out
+        Key.Zero, Key.NumPad0 -> DesktopReaderZoom.Reset
+        else -> null
+    }
+}
