@@ -374,6 +374,15 @@ class DesktopKeyActionTest {
     }
 
     @Test
+    fun readerEntriesContainZoomKeys() {
+        val entries = DesktopShortcuts.readerEntries()
+        // 缩放键位条目：+/-/0 三组键同时出现
+        val zoomEntry = entries.first { it.keyCombination.contains("Ctrl") && it.keyCombination.contains("0") }
+        assertTrue(zoomEntry.keyCombination.contains("="))
+        assertTrue(zoomEntry.keyCombination.contains("-"))
+    }
+
+    @Test
     fun readerEntriesExcludeLibraryOnlyKeys() {
         val entries = DesktopShortcuts.readerEntries()
         // 主库专属键位不得串入阅读分组

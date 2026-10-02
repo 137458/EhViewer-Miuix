@@ -29,6 +29,7 @@ object DesktopShortcuts {
     fun readerEntries(): List<DesktopShortcutEntry> = listOf(
         DesktopShortcutEntry("← / → / PageUp / PageDown / Space", MR.strings.shortcut_reader_paging),
         DesktopShortcutEntry("Home / End", MR.strings.shortcut_reader_jump_first_last),
+        DesktopShortcutEntry("Ctrl + = / Ctrl + - / Ctrl + 0", MR.strings.desktop_reader_zoom),
         DesktopShortcutEntry("Escape", MR.strings.shortcut_escape),
         DesktopShortcutEntry("F1", MR.strings.shortcut_show_help),
     )

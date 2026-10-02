@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -46,6 +47,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import coil3.SingletonImageLoader
 import coil3.compose.AsyncImage
 import coil3.compose.LocalPlatformContext
@@ -309,6 +311,17 @@ fun ReaderScreen(
                 },
             contentAlignment = Alignment.Center,
         ) {
+            if (scale != 1f) {
+                Text(
+                    text = DesktopZoomController.formatZoomPercentage(scale),
+                    color = Color.White.copy(alpha = 0.7f),
+                    fontSize = 12.sp,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .background(Color.Black.copy(alpha = 0.4f), RoundedCornerShape(6.dp))
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                )
+            }
             val url = imageUrl
             val copyLinkLabel = stringResource(MR.strings.copy_link)
             val openInBrowserLabel = stringResource(MR.strings.open_in_browser)

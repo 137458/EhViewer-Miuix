@@ -646,6 +646,7 @@
     <string name="shortcut_reader_paging">Turn pages (reversed in RTL reading direction)</string>
     <string name="shortcut_reader_jump_first_last">Jump to first / last page</string>
     <string name="desktop_shortcuts_reader_section">Reader Window</string>
+    <string name="desktop_reader_zoom">Zoom in / out / reset</string>
     <string name="settings_restore_session">Restore last session windows</string>
     <string name="desktop_untitled">(Untitled)</string>
     <string name="desktop_copied">Copied</string>
