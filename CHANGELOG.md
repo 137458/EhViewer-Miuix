@@ -4,6 +4,7 @@
 
 ### 修复
 
+- 桌面端「清空全部历史」改为需确认：点击后弹出确认对话框（取消/清空双钮），毁灭性操作不再单击即执行。
 - Android 侧 lint 巡检修复：筛选对话框与底部导航时间戳状态改用无装箱特化 State（消除冗余自动装箱与重组开销）；AccompanistWebViewClient 补充 lint 抑制标注（onRenderProcessGone 已在类内实现移除销毁 WebView，检测器对 open 覆盖链路误报）。
 
 ### 新增
