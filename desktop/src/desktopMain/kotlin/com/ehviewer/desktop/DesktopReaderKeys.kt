@@ -109,8 +109,10 @@ data class DesktopReaderZoomState(
     private fun clampedTo(viewport: IntSize): DesktopReaderZoomState = copy(offset = clampReaderOffset(offset, scale, viewport))
 }
 
-// 滚轮翻页累计器：小步滚动累计，越过阈值触发一次翻页并清零；向下滚（正 deltaY）= 下一页
-class DesktopScrollPager(private val threshold: Float = 64f) {
+// 滚轮翻页累计器：越过阈值触发一次翻页并清零；向下滚（正 deltaY）= 下一页。
+// 默认阈值 1：Compose Desktop 鼠标滚轮每格 scrollDelta = ±1.0（离散事件），一格即一页；
+// 触控板为像素级小步流，需要平滑累计的调用方可显式传入更大的像素阈值。
+class DesktopScrollPager(private val threshold: Float = 1f) {
     private var accumulated = 0f
 
     fun onDelta(deltaY: Float): Int? {

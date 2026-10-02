@@ -197,4 +197,12 @@ class DesktopReaderKeysTest {
         assertEquals(1, pager.onDelta(500f))
         assertEquals(-1, pager.onDelta(-500f))
     }
+
+    @Test
+    fun wheelNotchPagesPerNotchWithDefaultThreshold() {
+        // Compose Desktop 鼠标滚轮每格 scrollDelta = ±1.0：默认阈值下一格即翻一页（无需 64 格）
+        val pager = DesktopScrollPager()
+        assertEquals(1, pager.onDelta(1f))
+        assertEquals(-1, pager.onDelta(-1f))
+    }
 }
