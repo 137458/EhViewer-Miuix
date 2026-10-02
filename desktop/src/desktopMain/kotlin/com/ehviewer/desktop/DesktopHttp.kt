@@ -10,6 +10,8 @@ import java.net.URL
 
 class DesktopResponse(val status: Int, val body: String)
 
+class DesktopBytesResponse(val status: Int, val bytes: ByteArray)
+
 // 代理解析：设置项 > HTTPS_PROXY/HTTP_PROXY 环境变量 > 直连（与 NetworkModule 同源规则）
 private fun resolveProxy(): Proxy? {
     DesktopSettings.proxy.value?.trim()?.takeIf { it.isNotEmpty() }?.let { configured ->
@@ -60,6 +62,9 @@ private fun openDesktopConnection(url: String, method: String, body: String?): H
 
 fun desktopGet(url: String): DesktopResponse = readDesktopResponse(openDesktopConnection(url, "GET", null))
 
+// 图片等二进制资源抓取：desktopGet 的 String body 经字符解码会损坏字节，二进制走本入口
+fun desktopGetBytes(url: String): DesktopBytesResponse = readDesktopBytesResponse(openDesktopConnection(url, "GET", null))
+
 // gdata 等 JSON API 的 POST 入口，代理/Cookie/UA 规则与 desktopGet 完全一致
 fun desktopPost(url: String, body: String): DesktopResponse = readDesktopResponse(openDesktopConnection(url, "POST", body))
 
@@ -68,6 +73,13 @@ private fun readDesktopResponse(conn: HttpURLConnection): DesktopResponse {
     val stream = if (status in 200..299) conn.inputStream else conn.errorStream
     val body = stream?.bufferedReader()?.use { it.readText() }.orEmpty()
     return DesktopResponse(status, body)
+}
+
+private fun readDesktopBytesResponse(conn: HttpURLConnection): DesktopBytesResponse {
+    val status = conn.responseCode
+    val stream = if (status in 200..299) conn.inputStream else conn.errorStream
+    val bytes = stream?.use { it.readBytes() } ?: ByteArray(0)
+    return DesktopBytesResponse(status, bytes)
 }
 
 // 诊断辅助：桌面数据目录（与 DesktopDirs 约定一致的只读入口）
