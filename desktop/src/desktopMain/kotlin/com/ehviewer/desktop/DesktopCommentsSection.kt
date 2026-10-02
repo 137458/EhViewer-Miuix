@@ -18,6 +18,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -29,9 +30,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ehviewer.core.database.client.VoteCommentRequest
 import com.ehviewer.core.i18n.MR
+import com.ehviewer.core.model.BaseGalleryInfo
 import com.ehviewer.core.model.GalleryComment
+import com.hippo.ehviewer.client.parser.GalleryDetailParser
 import dev.icerock.moko.resources.compose.stringResource
+import java.nio.ByteBuffer
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 // 评论显示模型：上传者评论置顶（组内保持原相对顺序）；折叠态最多展示 3 条
@@ -61,9 +69,12 @@ object DesktopCommentsModel {
 // comments == null 表示加载中；加载失败可点击重试。
 @Composable
 fun DesktopCommentsSection(
+    gallery: BaseGalleryInfo,
     comments: List<GalleryComment>?,
     loadFailed: Boolean,
     onRetry: () -> Unit,
+    apiUid: Long = -1L,
+    apiKey: String? = null,
 ) {
     var expanded by remember { mutableStateOf(false) }
     val loadingText = stringResource(MR.strings.desktop_reader_loading)
@@ -74,6 +85,32 @@ fun DesktopCommentsSection(
     val moreText = stringResource(MR.strings.more_comment)
     val copyCommentText = stringResource(MR.strings.copy_comment_text)
     val clipboard = LocalClipboardManager.current
+    val coroutineScope = rememberCoroutineScope()
+    // 投票：apiuid/apikey 就绪时可用；结果以状态行反馈（成功显分数，失败显原因）
+    var votingCommentId by remember { mutableStateOf<Long?>(null) }
+    var voteStatus by remember { mutableStateOf<String?>(null) }
+    val canVote = apiUid >= 0 && !apiKey.isNullOrEmpty()
+
+    fun vote(comment: GalleryComment, vote: Int) {
+        val key = apiKey ?: return
+        if (votingCommentId != null) return
+        votingCommentId = comment.id
+        coroutineScope.launch {
+            val outcome = withContext(Dispatchers.IO) {
+                runCatching {
+                    val response = desktopPost(DesktopGalleryHydrator.GDATA_URL, VoteCommentRequest.json(apiUid, key, gallery.gid, gallery.token, comment.id, vote))
+                    val parsed = VoteCommentRequest.parseResult(response.body)
+                        ?: error("HTTP ${response.status} / unexpected body")
+                    parsed
+                }
+            }
+            votingCommentId = null
+            voteStatus = outcome.fold(
+                onSuccess = { r -> "score: ${r.score}" },
+                onFailure = { "error: ${it.message}" },
+            )
+        }
+    }
 
     Column(modifier = Modifier.fillMaxWidth()) {
         HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
@@ -95,6 +132,20 @@ fun DesktopCommentsSection(
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 )
             }
+        }
+        if (votingCommentId != null) {
+            Text(
+                text = loadingText,
+                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                fontSize = 12.sp,
+            )
+        }
+        voteStatus?.let { status ->
+            Text(
+                text = status,
+                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                fontSize = 12.sp,
+            )
         }
         val loaded = comments
         when {
@@ -134,7 +185,12 @@ fun DesktopCommentsSection(
                                 )
                             },
                         ) {
-                            CommentItem(comment = item)
+                            CommentItem(
+                                comment = item,
+                                canVote = canVote,
+                                isVoting = votingCommentId == item.id,
+                                onVote = { vote(item, it) },
+                            )
                         }
                     }
                     if (loaded.size > display.size) {
@@ -155,7 +211,12 @@ fun DesktopCommentsSection(
 }
 
 @Composable
-private fun CommentItem(comment: GalleryComment) {
+private fun CommentItem(
+    comment: GalleryComment,
+    canVote: Boolean = false,
+    isVoting: Boolean = false,
+    onVote: (Int) -> Unit = {},
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -185,6 +246,21 @@ private fun CommentItem(comment: GalleryComment) {
                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 fontSize = 12.sp,
             )
+        }
+        if (canVote) {
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                listOf(1 to "▲", -1 to "▼").forEach { (value, arrow) ->
+                    val active = comment.voteState?.contains(value.toString()) == true
+                    Text(
+                        text = if (isVoting) "…" else arrow,
+                        color = if (active) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        fontSize = 12.sp,
+                        modifier = Modifier
+                            .pointerHoverIcon(PointerIcon.Hand)
+                            .clickable(enabled = !isVoting) { onVote(value) },
+                    )
+                }
+            }
         }
         Text(
             text = comment.comment,

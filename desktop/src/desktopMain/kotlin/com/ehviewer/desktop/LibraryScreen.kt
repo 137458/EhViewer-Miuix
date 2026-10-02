@@ -1650,9 +1650,12 @@ internal fun GalleryDetailPane(
             }
             DesktopPreviewsSection(previewList = detailExtras?.detail?.previewList)
             DesktopCommentsSection(
+                gallery = gallery,
                 comments = detailExtras?.detail?.comments?.comments,
                 loadFailed = extrasLoadFailed,
                 onRetry = { extrasReloadKey += 1 },
+                apiUid = detailExtras?.detail?.apiUid ?: -1L,
+                apiKey = detailExtras?.detail?.apiKey,
             )
         }
         VerticalScrollbar(
