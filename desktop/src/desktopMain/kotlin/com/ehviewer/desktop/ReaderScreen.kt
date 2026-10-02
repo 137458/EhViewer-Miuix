@@ -182,6 +182,11 @@ fun ReaderScreen(
                     // 阅读器键盘翻页：←/→ 与 PageUp/PageDown/Space 相对翻页（随阅读方向反转）、Home/End 恒跳首/末页
                     // （仅 KeyDown 响应一次；跳页输入框打开时让位给文本编辑）
                     if (event.type == KeyEventType.KeyDown) {
+                        // 跳页输入打开时 Esc 先关闭输入框，避免误触直接关掉整个阅读窗口
+                        if (event.key == Key.Escape && showJumpInput) {
+                            showJumpInput = false
+                            return@onPreviewKeyEvent true
+                        }
                         // 缩放态方向键优先平移图片（未缩放返回 null 归翻页语义；跳页输入打开时让位）
                         if (zoomState.scale > READER_MIN_SCALE && !showJumpInput) {
                             zoomState.panned(event.key, viewportSize)?.let {
