@@ -81,6 +81,11 @@ private object EhViewerTrayPainter : Painter() {
 }
 
 fun main() {
+    // 单实例锁：已有实例在运行时直接退出，防 DataStore/Room 多进程并发写坏数据
+    if (!DesktopSingleInstance.tryAcquire()) {
+        logcat("SingleInstance", LogPriority.WARN) { "ALREADY_RUNNING exit" }
+        return
+    }
     DesktopImageLoader.init()
     application {
         var nextWindowId by remember { mutableStateOf(1L) }
