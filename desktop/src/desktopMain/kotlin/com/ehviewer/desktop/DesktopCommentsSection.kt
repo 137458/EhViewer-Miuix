@@ -42,10 +42,19 @@ import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 // 评论显示模型：上传者评论置顶（组内保持原相对顺序）；折叠态最多展示 3 条
+private val URL_REGEX = Regex("""https?://[^\s<>"')\]]+""")
+
 object DesktopCommentsModel {
     fun sortForDisplay(comments: List<GalleryComment>): List<GalleryComment> = comments.sortedBy { !it.uploader }
 
     fun visibleCount(comments: List<GalleryComment>, expanded: Boolean): Int = if (expanded) comments.size else minOf(3, comments.size)
+
+    // 评论中的 http(s) 链接：句尾标点（.,;!?）不属于链接本体；去重保序
+    fun extractUrls(text: String): List<String> = URL_REGEX
+        .findAll(text)
+        .map { it.value.trimEnd('.', ',', ';', '!', '?') }
+        .distinct()
+        .toList()
 }
 
 // 详情面板评论区：拉取画廊详情页经 Rust 解析（与 Android 侧同链路），折叠展示、右键复制评论文本。
@@ -192,5 +201,18 @@ private fun CommentItem(comment: GalleryComment) {
             color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
             fontSize = 12.sp,
         )
+        // 评论内链接点击即经系统浏览器打开（链接本体仍随右键菜单可复制）
+        remember(comment.comment) { DesktopCommentsModel.extractUrls(comment.comment) }.forEach { url ->
+            Text(
+                text = url,
+                color = MiuixTheme.colorScheme.primary,
+                fontSize = 12.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier
+                    .pointerHoverIcon(PointerIcon.Hand)
+                    .clickable { DesktopBrowser.openUrl(url) },
+            )
+        }
     }
 }

@@ -47,4 +47,26 @@ class DesktopCommentsModelTest {
         assertEquals(2, DesktopCommentsModel.visibleCount(all.take(2), expanded = false))
         assertEquals(0, DesktopCommentsModel.visibleCount(emptyList(), expanded = false))
     }
+
+    @Test
+    fun extractUrlsFindsHttpLinks() {
+        assertEquals(
+            listOf("https://e-hentai.org/g/1/2/"),
+            DesktopCommentsModel.extractUrls("来源: https://e-hentai.org/g/1/2/ 看这个"),
+        )
+        assertEquals(
+            listOf("http://a.example/x.jpg", "https://b.example/y"),
+            DesktopCommentsModel.extractUrls("http://a.example/x.jpg 和 https://b.example/y"),
+        )
+    }
+
+    @Test
+    fun extractUrlsTrimsTrailingPunctuationAndDedupes() {
+        // 句尾标点不属于 URL；重复链接去重保序
+        assertEquals(
+            listOf("https://e-hentai.org/g/1/2"),
+            DesktopCommentsModel.extractUrls("见 https://e-hentai.org/g/1/2. 很好 https://e-hentai.org/g/1/2"),
+        )
+        assertEquals(emptyList(), DesktopCommentsModel.extractUrls("没有链接 ftp://x 不算 http:// 也空"))
+    }
 }
