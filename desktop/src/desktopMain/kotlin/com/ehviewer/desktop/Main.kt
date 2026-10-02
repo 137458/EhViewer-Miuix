@@ -186,6 +186,7 @@ fun main() {
                 val windowState = rememberWindowState(
                     width = DesktopSettings.windowWidth.dp,
                     height = DesktopSettings.windowHeight.dp,
+                    position = rememberedWindowPosition(),
                 )
                 var showShortcutsHelp by remember { mutableStateOf(false) }
                 var showOpenGalleryDialog by remember { mutableStateOf(false) }
@@ -363,7 +364,42 @@ private fun SaveWindowSize(windowState: androidx.compose.ui.window.WindowState) 
                 DesktopSettings.windowHeight = size.height.value.toInt()
             }
     }
+    // 位置仅在浮动态记录（最大化/最小化的系统偏移坐标不落盘；PlatformDefault 的 x/y 非有限值同样排除）
+    LaunchedEffect(windowState) {
+        snapshotFlow { windowState.position to windowState.placement }
+            .drop(1)
+            .debounce(500)
+            .collect { (position, placement) ->
+                val x = position.x.value
+                val y = position.y.value
+                if (placement == androidx.compose.ui.window.WindowPlacement.Floating &&
+                    x.isFinite() && y.isFinite()
+                ) {
+                    DesktopSettings.windowX = x.toInt()
+                    DesktopSettings.windowY = y.toInt()
+                }
+            }
+    }
 }
+
+// 恢复记忆位置；坐标落在任何已接显示器边界外（如拔掉外接屏）时回退平台默认，防窗口飘出可达区域
+@Composable
+private fun rememberedWindowPosition(): androidx.compose.ui.window.WindowPosition {
+    val x = DesktopSettings.windowX
+    val y = DesktopSettings.windowY
+    return if (x >= 0 && y >= 0 && isReachableScreenPoint(x, y)) {
+        androidx.compose.ui.window.WindowPosition(x.dp, y.dp)
+    } else {
+        androidx.compose.ui.window.WindowPosition.PlatformDefault
+    }
+}
+
+private fun isReachableScreenPoint(x: Int, y: Int): Boolean = runCatching {
+    java.awt.GraphicsEnvironment.getLocalGraphicsEnvironment().screenDevices.any { device ->
+        val b = device.defaultConfiguration.bounds
+        x >= b.x - 200 && x < b.x + b.width && y >= b.y - 100 && y < b.y + b.height
+    }
+}.getOrDefault(false)
 
 @Composable
 private fun FrameWindowScope.AppMenus(

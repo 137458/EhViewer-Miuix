@@ -7,6 +7,10 @@ object DesktopSettings : DataStorePreferences("desktop") {
     var windowWidth by intPref("window_width", 1280)
     var windowHeight by intPref("window_height", 800)
 
+    // 主窗口位置（dp）；-1 表示未记忆（跟随平台默认位置）
+    var windowX by intPref("window_x", -1)
+    var windowY by intPref("window_y", -1)
+
     // 0 = 跟随系统，1 = 浅色，2 = 深色；以 delegate 暴露供响应式消费（与 app Settings 惯例一致）
     val themeMode = intPref("theme_mode", 0)
 
