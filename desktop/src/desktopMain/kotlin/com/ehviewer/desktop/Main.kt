@@ -584,6 +584,8 @@ private fun GalleryDetailWindowContent(
             },
             onSearchTag = { tag ->
                 clipboard.setText(AnnotatedString(tag))
+                // 双通道：复制到剪贴板 + 跨窗口搜索总线（主库 Online Tab 远程搜索 / 其余 Tab 本地过滤）
+                DesktopSearchBus.request(tag)
                 showNotification("$tagLabel: $tag")
             },
             onPreviewCover = { url -> previewCoverUrl = url },

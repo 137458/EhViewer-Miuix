@@ -303,6 +303,14 @@ fun LibraryScreen(
         }
     }
 
+    // 跨窗口搜索总线：详情窗口标签点击等场景发起的搜索在此消费（一次性，消费即清空）
+    LaunchedEffect(DesktopSearchBus.pendingQuery) {
+        val requested = DesktopSearchBus.pendingQuery ?: return@LaunchedEffect
+        searchQuery = requested
+        submitSearch(requested)
+        DesktopSearchBus.consume()
+    }
+
     fun toggleFavorite(gallery: BaseGalleryInfo) {
         val isFav = DesktopFavoritesState.isFavorite(favoriteGids, gallery.gid)
         coroutineScope.launch {
