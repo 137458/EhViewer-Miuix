@@ -91,6 +91,8 @@ fun SettingsScreen() {
             )
         }
         item {
+            // 非空但无法解析为 host:port 时标错（运行时会静默直连，此处给出可见反馈）
+            val proxyInvalid = proxyText.isNotBlank() && parseHostPort(proxyText.trim()) == null
             OutlinedTextField(
                 value = proxyText,
                 onValueChange = {
@@ -98,6 +100,12 @@ fun SettingsScreen() {
                     DesktopSettings.proxy.value = it.trim().takeIf { v -> v.isNotEmpty() }
                 },
                 label = { Text(stringResource(MR.strings.settings_proxy)) },
+                isError = proxyInvalid,
+                supportingText = if (proxyInvalid) {
+                    { Text(stringResource(MR.strings.settings_proxy_invalid)) }
+                } else {
+                    null
+                },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth().padding(16.dp),
             )

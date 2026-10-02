@@ -742,6 +742,7 @@
     <string name="desktop_search_no_results">无搜索结果</string>
     <string name="settings_theme">主题</string>
     <string name="settings_proxy">代理 (host:port，留空为直连)</string>
+    <string name="settings_proxy_invalid">格式：主机:端口</string>
     <string name="theme_follow_system">跟随系统</string>
     <string name="theme_light">浅色</string>
     <string name="theme_dark">深色</string>

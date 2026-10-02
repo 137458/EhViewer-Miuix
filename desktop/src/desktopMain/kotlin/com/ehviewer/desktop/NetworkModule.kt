@@ -32,13 +32,6 @@ private fun resolveProxySelector(): ProxySelector? {
     return null
 }
 
-private fun parseHostPort(value: String): InetSocketAddress? {
-    val match = Regex("^(https?://)?([^:/]+):(\\d+)$").matchEntire(value) ?: return null
-    val (scheme, host, port) = match.destructured
-    if (!scheme.isBlank() && !scheme.startsWith("http")) return null
-    return runCatching { InetSocketAddress(host, port.toInt()) }.getOrNull()
-}
-
 // 桌面网络栈：与 Android 侧共享 EhCookieStore(ktor CookiesStorage)，
 // 引擎用 okhttp（Cronet 仅 Android 可用），UA 固定桌面 Chrome。
 // 代理在设置页修改后自动重建客户端。

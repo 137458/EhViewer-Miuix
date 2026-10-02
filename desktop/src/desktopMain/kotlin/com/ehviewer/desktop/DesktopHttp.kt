@@ -32,7 +32,7 @@ private fun resolveProxy(): Proxy? {
     return null
 }
 
-private fun parseHostPort(value: String): InetSocketAddress? {
+internal fun parseHostPort(value: String): InetSocketAddress? {
     val match = Regex("^(https?://)?([^:/]+):(\\d+)$").matchEntire(value) ?: return null
     val (scheme, host, port) = match.destructured
     if (!scheme.isBlank() && !scheme.startsWith("http")) return null
