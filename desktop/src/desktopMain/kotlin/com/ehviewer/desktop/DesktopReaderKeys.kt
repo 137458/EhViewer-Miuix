@@ -24,8 +24,8 @@ fun resolveReaderNav(key: Key): DesktopReaderNav? = when (key) {
 fun DesktopReadingDirection.pageDeltaForNav(nav: DesktopReaderNav): Int = when (nav) {
     DesktopReaderNav.RelativeForward -> pageDeltaForKey(forward = true)
     DesktopReaderNav.RelativeBackward -> pageDeltaForKey(forward = false)
-    DesktopReaderNav.FirstPage -> -1
-    DesktopReaderNav.LastPage -> 1
+    // 绝对跳转不经页码增量（调用方直取目标页），0 保证误用无害
+    DesktopReaderNav.FirstPage, DesktopReaderNav.LastPage -> 0
 }
 
 enum class DesktopReaderZoom {
