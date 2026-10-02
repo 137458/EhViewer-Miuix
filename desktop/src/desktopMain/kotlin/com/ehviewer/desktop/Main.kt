@@ -9,12 +9,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -398,25 +395,17 @@ private fun ShortcutsHelpDialog(onDismiss: () -> Unit) {
         title = stringResource(MR.strings.menu_keyboard_shortcuts),
         onDismiss = onDismiss,
     ) {
-        // 条目较多：限高 + 可滚动，保证最小窗口（560x400）下卡片不溢出裁切
-        Column(
-            modifier = Modifier
-                .heightIn(max = 280.dp)
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            DesktopShortcuts.defaultEntries().forEach { entry ->
-                ShortcutEntryRow(entry)
-            }
-            HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-            Text(
-                text = stringResource(MR.strings.desktop_shortcuts_reader_section),
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                modifier = Modifier.padding(top = 4.dp),
-            )
-            DesktopShortcuts.readerEntries().forEach { entry ->
-                ShortcutEntryRow(entry)
-            }
+        DesktopShortcuts.defaultEntries().forEach { entry ->
+            ShortcutEntryRow(entry)
+        }
+        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+        Text(
+            text = stringResource(MR.strings.desktop_shortcuts_reader_section),
+            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+            modifier = Modifier.padding(bottom = 4.dp),
+        )
+        DesktopShortcuts.readerEntries().forEach { entry ->
+            ShortcutEntryRow(entry)
         }
     }
 }

@@ -5,12 +5,15 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -25,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 // 桌面模态对话框统一骨架：半透明遮罩点击关闭 + Miuix surface 圆角卡片 + 标题行与关闭钮。
+// 内容区限高滚动：卡片整体不超过窗口，标题与关闭钮恒可见，调用方内容再多也无需自处理溢出。
 // 全屏型预览（CoverPreviewDialog 的 0.85 黑底看图场景）不套用本骨架。
 @Composable
 fun DesktopModalCard(
@@ -32,7 +36,7 @@ fun DesktopModalCard(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
     cardWidth: Dp = 420.dp,
-    content: @Composable () -> Unit,
+    content: @Composable ColumnScope.() -> Unit,
 ) {
     Box(
         modifier = Modifier
@@ -68,7 +72,11 @@ fun DesktopModalCard(
                 )
             }
             HorizontalDivider()
-            content()
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                content = content,
+            )
         }
     }
 }
