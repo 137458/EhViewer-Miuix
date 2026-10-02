@@ -174,6 +174,8 @@ fun LibraryScreen(
     val nextNotificationId = remember { AtomicLong(1L) }
     // 一键清空历史前的确认对话框（毁灭性操作防误触）
     var showClearHistoryConfirm by remember { mutableStateOf(false) }
+    // 批量删除选中项前的确认对话框（比单条删除波及更广，与清空历史同级防护）
+    var showBatchDeleteConfirm by remember { mutableStateOf(false) }
     val clipboard = LocalClipboardManager.current
     val coroutineScope = rememberCoroutineScope()
     val historyClearedMessage = stringResource(MR.strings.search_history_cleared)
@@ -911,27 +913,11 @@ fun LibraryScreen(
                                     toggleFavorite(gallery)
                                 },
                             )
-                            // 批量多选激活时置顶批量删除（按当前 Tab 作用于历史或收藏）
+                            // 批量多选激活时置顶批量删除（按当前 Tab 作用于历史或收藏）；毁灭性操作先确认
                             if (multiSelection.isActive) {
                                 menuItems.add(
                                     ContextMenuItem(batchDeleteLabel) {
-                                        coroutineScope.launch {
-                                            val gids = multiSelection.gids.toList()
-                                            withContext(Dispatchers.IO) {
-                                                when (currentTab) {
-                                                    LibraryTab.History -> gids.forEach {
-                                                        DesktopDatabase.eh.historyDao().deleteByKey(it)
-                                                    }
-                                                    LibraryTab.Favorites -> gids.forEach {
-                                                        DesktopDatabase.eh.localFavoritesDao().deleteByKey(it)
-                                                    }
-                                                    else -> return@withContext
-                                                }
-                                            }
-                                            multiSelection.clear()
-                                            selected = null
-                                            showNotification(batchDeleteLabel)
-                                        }
+                                        showBatchDeleteConfirm = true
                                     },
                                 )
                             }
@@ -1314,6 +1300,58 @@ fun LibraryScreen(
                                         currentTabIsHistory = true,
                                     )
                                     showNotification(historyClearedMessage)
+                                }
+                            }
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                    )
+                }
+            }
+        }
+
+        if (showBatchDeleteConfirm) {
+            val confirmTitle = stringResource(MR.strings.desktop_delete_selected, multiSelection.gids.size)
+            val cancelLabel = stringResource(MR.strings.desktop_action_cancel)
+            val deleteLabel = stringResource(MR.strings.delete)
+            DesktopModalCard(
+                title = confirmTitle,
+                onDismiss = { showBatchDeleteConfirm = false },
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End),
+                ) {
+                    Text(
+                        text = cancelLabel,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        modifier = Modifier
+                            .pointerHoverIcon(PointerIcon.Hand)
+                            .clickable { showBatchDeleteConfirm = false }
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                    )
+                    Text(
+                        text = deleteLabel,
+                        color = MiuixTheme.colorScheme.error,
+                        fontWeight = androidx.compose.ui.text.font.FontWeight.Medium,
+                        modifier = Modifier
+                            .pointerHoverIcon(PointerIcon.Hand)
+                            .clickable {
+                                showBatchDeleteConfirm = false
+                                coroutineScope.launch {
+                                    val gids = multiSelection.gids.toList()
+                                    withContext(Dispatchers.IO) {
+                                        when (currentTab) {
+                                            LibraryTab.History -> gids.forEach {
+                                                DesktopDatabase.eh.historyDao().deleteByKey(it)
+                                            }
+                                            LibraryTab.Favorites -> gids.forEach {
+                                                DesktopDatabase.eh.localFavoritesDao().deleteByKey(it)
+                                            }
+                                            else -> return@withContext
+                                        }
+                                    }
+                                    multiSelection.clear()
+                                    selected = null
+                                    showNotification(confirmTitle)
                                 }
                             }
                             .padding(horizontal = 8.dp, vertical = 4.dp),
