@@ -146,7 +146,8 @@ fun ReaderScreen(
             .fillMaxSize()
             .background(MiuixTheme.colorScheme.background)
             .onPreviewKeyEvent { event ->
-                // 阅读器键盘翻页：←/→（仅 KeyDown 响应一次；跳页输入框打开时让位给文本编辑）
+                // 阅读器键盘翻页：←/→ 与 PageUp/PageDown/Space 相对翻页（随阅读方向反转）、Home/End 恒跳首/末页
+                // （仅 KeyDown 响应一次；跳页输入框打开时让位给文本编辑）
                 if (event.type == KeyEventType.KeyDown) {
                     when (event.key) {
                         Key.DirectionRight -> {
@@ -159,7 +160,24 @@ fun ReaderScreen(
                             if (!showJumpInput && page + delta in 1..pageLinks.size) page += delta
                             !showJumpInput
                         }
-                        else -> false
+                        else -> {
+                            val nav = resolveReaderNav(event.key)
+                            if (nav != null && !showJumpInput && pageLinks.isNotEmpty()) {
+                                when (nav) {
+                                    DesktopReaderNav.FirstPage -> page = 1
+                                    DesktopReaderNav.LastPage -> page = pageLinks.size
+                                    DesktopReaderNav.RelativeForward,
+                                    DesktopReaderNav.RelativeBackward,
+                                    -> {
+                                        val delta = readingDirection.pageDeltaForNav(nav)
+                                        if (page + delta in 1..pageLinks.size) page += delta
+                                    }
+                                }
+                                true
+                            } else {
+                                false
+                            }
+                        }
                     }
                 } else {
                     false
