@@ -197,7 +197,7 @@ fun UpdateDialog(
                         .padding(horizontal = 8.dp, vertical = 2.dp),
                 ) {
                     val channelText = when {
-                        isSimulated -> "Sandbox Preview"
+                        isSimulated -> stringResource(R.string.update_channel_simulated)
                         release.isCI -> stringResource(R.string.update_channel_ci)
                         else -> stringResource(R.string.update_channel_official)
                     }

@@ -343,7 +343,7 @@ object EhEngine {
         val catStr: String = when (dstCat) {
             -1 -> "favdel"
             in 0..9 -> dstCat.toString()
-            else -> throw EhException("Invalid dstCat: $dstCat")
+            else -> throw EhException(R.string.invalid_dst_cat)
         }
         val url = EhUrl.getAddFavorites(gid, token)
         ehRequest(url, url, EhUrl.origin) {
@@ -383,7 +383,7 @@ object EhEngine {
                 // Wait for the server to prepare archives
                 delay(1000)
                 result = request.fetchUsingAsByteBuffer(ArchiveParser::parseArchiveUrl)
-                if (result == null) throw EhException("Archive unavailable")
+                if (result == null) throw EhException(R.string.archive_unavailable)
             }
             return result
         }
@@ -403,7 +403,7 @@ object EhEngine {
         val catStr: String = when (dstCat) {
             -1 -> "delete"
             in 0..9 -> "fav$dstCat"
-            else -> throw EhException("Invalid dstCat: $dstCat")
+            else -> throw EhException(R.string.invalid_dst_cat)
         }
         return ehRequest(url, url, EhUrl.origin) {
             formBody {

@@ -165,7 +165,7 @@ object UpdateDownloadManager {
                     isDownloading = false
                     downloadJob = null
                     if (e !is CancellationException) {
-                        downloadError = e.localizedMessage ?: "Download failed"
+                        downloadError = e.localizedMessage ?: context.getString(R.string.update_download_failed)
                     }
                 }
             }

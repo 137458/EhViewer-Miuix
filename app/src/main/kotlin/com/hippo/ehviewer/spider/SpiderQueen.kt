@@ -685,11 +685,6 @@ class SpiderQueen private constructor(val galleryInfo: GalleryInfo) : CoroutineS
             }.onFailure {
                 if (it is FatalException) notifyFatal(it)
                 error = it.displayString()
-                if (error == "Invalid page.") {
-                    pTokenLock.withLock {
-                        spiderInfo.pTokenMap.remove(index)
-                    }
-                }
             }
             updatePageState(index, STATE_FAILED, error)
         }

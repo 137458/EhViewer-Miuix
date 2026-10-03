@@ -255,7 +255,7 @@ private suspend fun doModifyFavorites(
             favoriteNote = note
             true
         }
-        else -> throw EhException("Invalid favorite slot!")
+        else -> throw EhException(R.string.invalid_favorite_slot)
     }
     FavouriteStatusRouter.notify(galleryInfo)
     add

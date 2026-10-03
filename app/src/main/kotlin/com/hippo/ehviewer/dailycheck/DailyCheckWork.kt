@@ -19,9 +19,10 @@ import androidx.work.PeriodicWorkRequest
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
+import com.ehviewer.core.i18n.R
 import com.ehviewer.core.util.logcat
 import com.ehviewer.core.util.withIOContext
-import com.hippo.ehviewer.R
+import com.hippo.ehviewer.R as AppR
 import com.hippo.ehviewer.Settings
 import com.hippo.ehviewer.client.EhEngine
 import java.time.Duration
@@ -99,13 +100,13 @@ fun showEventNotification(html: String) {
     val notificationManager = NotificationManagerCompat.from(appCtx)
     val chan = NotificationChannelCompat
         .Builder(CHANNEL_ID, NotificationManagerCompat.IMPORTANCE_LOW)
-        .setName(CHANNEL_ID)
+        .setName(appCtx.getString(R.string.notification_channel_dailycheck))
         .build()
     notificationManager.createNotificationChannel(chan)
     val text = html.parseAsHtml()
     val msg = NotificationCompat.Builder(appCtx, CHANNEL_ID)
         .setAutoCancel(true)
-        .setSmallIcon(R.drawable.ic_launcher_monochrome)
+        .setSmallIcon(AppR.drawable.ic_launcher_monochrome)
         .setContentText(text)
         .setStyle(NotificationCompat.BigTextStyle())
     val urls = text.getSpans<URLSpan>(0, text.length)
