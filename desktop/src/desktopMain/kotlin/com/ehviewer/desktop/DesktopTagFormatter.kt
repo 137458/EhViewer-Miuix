@@ -1,6 +1,14 @@
 package com.ehviewer.desktop
 
-import com.ehviewer.core.database.client.getCategoryDisplayName
+// 分享摘要的栏目标签包：由界面层注入本地化文案，保持本对象无 i18n 依赖
+data class ShareSummaryLabels(
+    val url: String,
+    val rating: String,
+    val pages: String,
+    val category: String,
+    val tags: String,
+    val none: String,
+)
 
 object DesktopTagFormatter {
 
@@ -76,7 +84,7 @@ object DesktopTagFormatter {
     }
 
     /**
-     * 生成结构化画廊摘要（便于一键复制与分享）
+     * 生成结构化画廊摘要（便于一键复制与分享）；类目显示名与栏目标签由调用方注入
      */
     fun generateShareSummary(
         title: String,
@@ -84,20 +92,20 @@ object DesktopTagFormatter {
         token: String,
         rating: Float,
         pages: Int,
-        category: Int,
+        categoryName: String,
         tags: List<String>?,
+        labels: ShareSummaryLabels,
     ): String {
         val url = galleryWebUrl(gid, token)
         val score = DesktopRating.formatRatingScore(rating)
-        val categoryName = getCategoryDisplayName(category)
         val cleanTags = splitTags(tags)
-        val tagsString = if (cleanTags.isNotEmpty()) cleanTags.joinToString(", ") else "None"
+        val tagsString = if (cleanTags.isNotEmpty()) cleanTags.joinToString(", ") else labels.none
 
         return buildString {
             appendLine(title)
-            appendLine("URL: $url")
-            appendLine("Rating: $score | Pages: $pages | Category: $categoryName")
-            append("Tags: $tagsString")
+            appendLine("${labels.url}: $url")
+            appendLine("${labels.rating}: $score | ${labels.pages}: $pages | ${labels.category}: $categoryName")
+            append("${labels.tags}: $tagsString")
         }
     }
 }

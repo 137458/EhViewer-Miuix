@@ -30,22 +30,15 @@
     <string name="sign_in_via_webview">Mit WebView anmelden</string>
     <string name="sign_in_first">Melde dich zunächst an</string>
     <string name="text_is_empty">Der Text wird nicht eingegeben</string>
-    <string name="waring">Achtung</string>
     <string name="warning">Achtung</string>
     <string name="invalid_download_location">Der Downloadpfad ist nicht verfügbar. Geh zu die Einstellungen und stelle einen neue Pfad fest.</string>
     <string name="error_timeout">Timeout</string>
-    <string name="error_unknown_host">Unbekannter Hostcomputer</string>
-    <string name="error_redirection">Zu viele Umleitungen</string>
-    <string name="error_socket">Netwerkfehler</string>
     <string name="error_unknown">Unbekannter Fehler</string>
     <string name="error_cant_find_activity">Die Application wurde nicht gefunden</string>
     <string name="error_cannot_parse_the_url">Die URL konnte analysiert nicht werden</string>
-    <string name="error_decoding_failed">Dekodierung fehlgeschlagen</string>
-    <string name="error_reading_failed">Lesefehler</string>
     <string name="error_out_of_range">Außer Reichweite</string>
     <string name="error_parse_error">Analyzierungfehler</string>
     <string name="error_509">509</string>
-    <string name="error_invalid_url">URL ungültig</string>
     <string name="error_get_ptoken_error">Fehler beim Erhalten pTokens</string>
     <string name="error_cant_save_image">Das Bild konnte nicht gespeichert werden</string>
     <string name="error_invalid_number">Nummer ungültig</string>
@@ -88,7 +81,6 @@
     <string name="share">Teilen</string>
     <string name="rate">Bewerten</string>
     <string name="similar_gallery">Ähnlich</string>
-    <string name="search_cover">Nach dem Umschlag suchen</string>
     <string name="no_tags">Kein Etikett</string>
     <string name="no_comments">Kein Kommentar</string>
     <string name="no_more_comments">Keine weiteren Kommentare</string>
@@ -118,7 +110,6 @@
     <string name="rating3">SCHRECKLICH</string>
     <string name="rating2">PEINLICH</string>
     <string name="rating1">UNERTRÄGLICH</string>
-    <string name="rating0">KATASTROPHE</string>
     <string name="gallery_info">Galeriesinfomationen</string>
     <string name="copied_to_clipboard">Text in Zwischenablage kopiert</string>
     <string name="key_gid">Gid</string>
@@ -288,7 +279,6 @@
     <string name="settings_privacy">Datenschutzoptionen</string>
     <string name="settings_privacy_secure">Screenshot verhindern</string>
     <string name="settings_privacy_secure_summary">Screenshots werden verhindert. Inhalt der App wird in Aktuelle Apps-Liste nicht angezeigt.</string>
-    <string name="app_waring">Inhalt dieser App kommt aus dem Internet, von dem einige dir körperlichen oder emotionalen Schaden zufügen kann. Du hast es wirklich erfahrt und möchtest immer noch fortsetzen.</string>
     <string name="app_warning">Inhalt dieser App kommt aus dem Internet, von dem einige dir körperlichen oder emotionalen Schaden zufügen kann. Du hast es wirklich erfahrt und möchtest immer noch fortsetzen.</string>
     <string name="error_username_cannot_empty">Gibt den Nutzername ein</string>
     <string name="error_password_cannot_empty">Gibt das Passwort ein</string>

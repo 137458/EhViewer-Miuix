@@ -7,6 +7,12 @@ import kotlin.test.assertTrue
 
 class DesktopWindowManagerTest {
 
+    // windowTitle 标签注入等价物（生产代码经 stringResource 注入）
+    private val UNTITLED = "(Untitled)"
+    private val SETTINGS = "Settings"
+    private val READING = "Reading"
+    private val LIB = DesktopWindowKind.Library
+
     @Test
     fun sessionSnapshotExtractsGalleryDetailWindowsInOrder() {
         val windows = listOf(
@@ -89,8 +95,20 @@ class DesktopWindowManagerTest {
 
     @Test
     fun testWindowTitleForLibraryAndSettings() {
-        assertEquals("EhViewer", DesktopWindowManager.windowTitle(DesktopWindowKind.Library))
-        assertEquals("EhViewer Settings", DesktopWindowManager.windowTitle(DesktopWindowKind.Settings))
+        // 界面层经 i18n 注入标签；此处用等价英文断言纯逻辑
+        assertEquals(
+            "EhViewer",
+            DesktopWindowManager.windowTitle(LIB, UNTITLED, SETTINGS, READING),
+        )
+        assertEquals(
+            "EhViewer Settings",
+            DesktopWindowManager.windowTitle(DesktopWindowKind.Settings, UNTITLED, SETTINGS, READING),
+        )
+        // 中文标签注入等价成立
+        assertEquals(
+            "EhViewer 設定",
+            DesktopWindowManager.windowTitle(DesktopWindowKind.Settings, "（未命名）", "設定", "閱讀中"),
+        )
     }
 
     @Test
@@ -98,19 +116,19 @@ class DesktopWindowManagerTest {
         val galleryWithTitle = BaseGalleryInfo(gid = 1001, token = "tok1", title = "Touhou Project Manga")
         assertEquals(
             "Touhou Project Manga - EhViewer",
-            DesktopWindowManager.windowTitle(DesktopWindowKind.GalleryDetail(galleryWithTitle)),
+            DesktopWindowManager.windowTitle(DesktopWindowKind.GalleryDetail(galleryWithTitle), UNTITLED, SETTINGS, READING),
         )
 
         val galleryWithJpnTitle = BaseGalleryInfo(gid = 1002, token = "tok2", title = null, titleJpn = "東方Project")
         assertEquals(
             "東方Project - EhViewer",
-            DesktopWindowManager.windowTitle(DesktopWindowKind.GalleryDetail(galleryWithJpnTitle)),
+            DesktopWindowManager.windowTitle(DesktopWindowKind.GalleryDetail(galleryWithJpnTitle), UNTITLED, SETTINGS, READING),
         )
 
         val galleryNoTitle = BaseGalleryInfo(gid = 1003, token = "tok3", title = null, titleJpn = null)
         assertEquals(
             "(Untitled) - EhViewer",
-            DesktopWindowManager.windowTitle(DesktopWindowKind.GalleryDetail(galleryNoTitle)),
+            DesktopWindowManager.windowTitle(DesktopWindowKind.GalleryDetail(galleryNoTitle), UNTITLED, SETTINGS, READING),
         )
     }
 
@@ -119,13 +137,13 @@ class DesktopWindowManagerTest {
         val gallery = BaseGalleryInfo(gid = 5001, token = "rtok", title = "Readable Manga")
         assertEquals(
             "Readable Manga - Reading",
-            DesktopWindowManager.windowTitle(DesktopWindowKind.Reader(gallery)),
+            DesktopWindowManager.windowTitle(DesktopWindowKind.Reader(gallery), UNTITLED, SETTINGS, READING),
         )
         // 无标题画廊阅读窗口回退 GID
         val noTitle = BaseGalleryInfo(gid = 5002, token = "t2")
         assertEquals(
             "5002 - Reading",
-            DesktopWindowManager.windowTitle(DesktopWindowKind.Reader(noTitle)),
+            DesktopWindowManager.windowTitle(DesktopWindowKind.Reader(noTitle), UNTITLED, SETTINGS, READING),
         )
     }
 

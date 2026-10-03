@@ -72,50 +72,67 @@ class DesktopConnectionStateTest {
 
     @Test
     fun cleanErrorMessage_parsesAndSanitizesErrors() {
+        // 界面层经 i18n 注入标签；此处用等价英文断言纯逻辑
+        val labels = DesktopConnectionErrorLabels(
+            networkUnavailable = "Network unavailable",
+            dnsUnresolved = "DNS / Host unresolved",
+            connectionRefused = "Connection refused",
+            connectionTimedOut = "Connection timed out",
+            sslHandshakeFailed = "SSL handshake failed",
+        )
+
         // 边界：null 或 blank
-        assertEquals("Network unavailable", DesktopConnectionState.cleanErrorMessage(null))
-        assertEquals("Network unavailable", DesktopConnectionState.cleanErrorMessage(""))
-        assertEquals("Network unavailable", DesktopConnectionState.cleanErrorMessage("   "))
+        assertEquals("Network unavailable", DesktopConnectionState.cleanErrorMessage(null, labels))
+        assertEquals("Network unavailable", DesktopConnectionState.cleanErrorMessage("", labels))
+        assertEquals("Network unavailable", DesktopConnectionState.cleanErrorMessage("   ", labels))
 
         // DNS / Host 解析失败
         assertEquals(
             "DNS / Host unresolved",
-            DesktopConnectionState.cleanErrorMessage("java.net.UnknownHostException: e-hentai.org"),
+            DesktopConnectionState.cleanErrorMessage("java.net.UnknownHostException: e-hentai.org", labels),
         )
         assertEquals(
             "DNS / Host unresolved",
-            DesktopConnectionState.cleanErrorMessage("Unable to resolve host \"e-hentai.org\": No address associated with hostname"),
+            DesktopConnectionState.cleanErrorMessage("Unable to resolve host \"e-hentai.org\": No address associated with hostname", labels),
         )
 
         // 连接拒绝
         assertEquals(
             "Connection refused",
-            DesktopConnectionState.cleanErrorMessage("java.net.ConnectException: Failed to connect to /104.20.134.21:443"),
+            DesktopConnectionState.cleanErrorMessage("java.net.ConnectException: Failed to connect to /104.20.134.21:443", labels),
         )
 
         // 超时
         assertEquals(
             "Connection timed out",
-            DesktopConnectionState.cleanErrorMessage("java.net.SocketTimeoutException: timeout"),
+            DesktopConnectionState.cleanErrorMessage("java.net.SocketTimeoutException: timeout", labels),
         )
         assertEquals(
             "Connection timed out",
-            DesktopConnectionState.cleanErrorMessage("connect timed out"),
+            DesktopConnectionState.cleanErrorMessage("connect timed out", labels),
         )
 
         // SSL 握手失败
         assertEquals(
             "SSL handshake failed",
-            DesktopConnectionState.cleanErrorMessage("javax.net.ssl.SSLHandshakeException: Handshake failed"),
+            DesktopConnectionState.cleanErrorMessage("javax.net.ssl.SSLHandshakeException: Handshake failed", labels),
         )
+
+        // 中文标签注入等价成立
+        val zhLabels = labels.copy(
+            networkUnavailable = "网络不可用",
+            connectionRefused = "连接被拒绝",
+        )
+        assertEquals("连接被拒绝", DesktopConnectionState.cleanErrorMessage("java.net.ConnectException: refused", zhLabels))
+        assertEquals("网络不可用", DesktopConnectionState.cleanErrorMessage(null, zhLabels))
 
         // 通用异常剥离类名前缀与超长截断
         assertEquals(
             "Stream closed",
-            DesktopConnectionState.cleanErrorMessage("java.io.IOException: Stream closed"),
+            DesktopConnectionState.cleanErrorMessage("java.io.IOException: Stream closed", labels),
         )
         val longError = "An extremely long and verbose error message that exceeds forty characters completely"
-        val cleanedLong = DesktopConnectionState.cleanErrorMessage(longError)
+        val cleanedLong = DesktopConnectionState.cleanErrorMessage(longError, labels)
         assertTrue(cleanedLong.endsWith("..."))
         assertTrue(cleanedLong.length <= 40)
     }

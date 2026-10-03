@@ -1,6 +1,9 @@
 package com.ehviewer.desktop
 
 import androidx.compose.ui.input.key.Key
+import com.ehviewer.core.i18n.MR
+import dev.icerock.moko.resources.desc.ResourceFormatted
+import dev.icerock.moko.resources.desc.StringDesc
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -101,17 +104,19 @@ class DesktopOpenGalleryStateTest {
     @Test
     fun createGalleryInfo_buildsExpectedModel() {
         val target = GalleryParsedTarget(gid = 778899L, token = "1234567890")
+        // 占位标题经 moko 本地化（跟随系统语言），期望值经同一 API 解析保证断言与语言环境无关
+        val fallbackTitle = StringDesc.ResourceFormatted(MR.strings.desktop_gallery_numbered, 778899L).localized()
         val infoDefault = DesktopOpenGalleryState.createGalleryInfo(target)
         assertEquals(778899L, infoDefault.gid)
         assertEquals("1234567890", infoDefault.token)
-        assertEquals("Gallery 778899", infoDefault.title)
+        assertEquals(fallbackTitle, infoDefault.title)
 
         val infoCustom = DesktopOpenGalleryState.createGalleryInfo(target, customTitle = "My Custom Title")
         assertEquals("My Custom Title", infoCustom.title)
 
         // 三角验证：空标题或空白标题回退默认
         val infoBlank = DesktopOpenGalleryState.createGalleryInfo(target, customTitle = "   ")
-        assertEquals("Gallery 778899", infoBlank.title)
+        assertEquals(fallbackTitle, infoBlank.title)
     }
 
     @Test

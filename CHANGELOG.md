@@ -4,6 +4,10 @@
 
 ### 修复
 
+- 桌面端与 Android 侧硬编码文案全面接入字符串资源：桌面端连接错误分类（DNS 解析失败/连接拒绝/超时/SSL 握手失败）、原生窗口标题（设置/阅读中）、评论匿名兜底、分享摘要模板、类目显示名、图片保存与页面加载失败提示、链接拖入占位标题等改经 moko 资源本地化（纯逻辑对象改为本地化标签注入模式，类目显示名收敛到桌面层 DesktopCategories，数据层不再输出英文显示名；阅读页图片解析失败不再经字符串哨兵中转）；Android 侧 Enable Cronet 开关、沙盒预览更新通道、下载失败兜底、收藏槽位/归档校验异常、每日检查通知渠道名同步资源化。
+
+- 桌面端字符串资源补齐 zh-rTW/zh-rHK/ja 翻译（desktop_* 全部键此前仅 base/zh-rCN 覆盖，其余语言整界面回落英文）；新增 i18n 资源守卫测试，锁定 desktop_* 键在维护语言（base/zh-rCN/zh-rTW/zh-rHK/ja）的完整覆盖与各语言占位符同 base 一致；清理 12 个语言文件中 146 条无引用字符串（含 waring 拼写重复对与被新更新设置取代的旧键），并移除 SpiderQueen 对已不存在文案 "Invalid page." 的死比较。
+
 - 桌面端「浏览器打开」增加 Windows shell 回退：AWT Desktop.browse 因默认浏览器关联失败（UWP 浏览器等场景）抛「Failed to launch browser」时，自动经 rundll32 url.dll 协议处理器兜底打开，非 Windows 平台行为不变（回退决策与命令构造具备单元测试覆盖，含真实失败场景回归用例）。
 
 - 依赖升级（第一批）：Compose Multiplatform 1.12.1（与 Coil 传递依赖运行时版本完全对齐）、Coil 3.5.0→3.6.3、Ktor 3.5.2→3.6.0、okio 3.18.2、spotless 8.10.3、xmlutil 1.0.2.1（全门禁+fat jar 冒烟验证）；Kotlin 2.4.10→2.4.20、AboutLibraries 插件与库 14.2.1→15.2.0（major 升级，构建与编译验证通过）；moko-resources 0.27 因生成 API 重构（波及全部 MR.strings 调用点）暂留 0.26.4 待专项迁移。

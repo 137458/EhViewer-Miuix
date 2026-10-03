@@ -34,7 +34,6 @@
     <string name="sign_in_first">โปรดลงชื่อเข้าใช้ก่อนเป็นอันดับแรก</string>
 
     <string name="text_is_empty">ข้อความห้ามเว้นว่างไว้</string>
-    <string name="waring">คำเตือน</string>
     <string name="warning">คำเตือน</string>
 
     <string name="invalid_download_location">ดูเหมือนที่อยู่ในการดาวน์โหลดนั้นไม่พร้อมใช้งาน โปรดตั้งค่าในเมนูการตั้งค่า</string>
@@ -43,23 +42,16 @@
     <string name="clipboard_gallery_url_snack_action">ดู</string>
 
     <string name="error_timeout">หมดเวลา</string>
-    <string name="error_unknown_host">ไม่รู้จักโฮสต์</string>
-    <string name="error_redirection">มีการเปลี่ยนทางเยอะเกินไป</string>
-    <string name="error_socket">เน็ตเวิร์คเกิดข้อผิดพลาด</string>
     <string name="error_unknown">มันแปลกๆนะ</string>
     <string name="error_cant_find_activity">หาแอปพลิเคชั่นไม่เจอ</string>
     <string name="error_cannot_parse_the_url">ไม่สามารถวิเคราะห์ URL </string>
-    <string name="error_decoding_failed">การถอดรหัสล้มเหลว</string>
-    <string name="error_reading_failed">การอ่านล้มเหลว</string>
     <string name="error_out_of_range">ไม่อยู่ในขอบเขต</string>
     <string name="error_parse_error">การวิเคราะห์ผิดพลาด</string>
     <string name="error_509">509</string>
-    <string name="error_invalid_url">URL ไม่ถูกต้อง</string>
     <string name="error_get_ptoken_error">การรับ pToken มีปัญหา</string>
     <string name="error_cant_save_image">ไม่สามารถบันทึกรูปภาพได้</string>
     <string name="error_invalid_number">จำนวนไม่ถูกต้อง</string>
 
-    <string name="app_waring">เนื้อหาภายในแอปพลิเคชั่นนี้มาจากอินเทอร์เน็ตทั้งหมด อาจมีเนื้อหาบางอย่างที่มีผลต่อร่างกายหรือจิตใจของคุณ คุณจะต้องยอมรับความเสี่ยงที่ดังกล่าว และดำเนินการต่อไป</string>
     <string name="app_warning">เนื้อหาภายในแอปพลิเคชั่นนี้มาจากอินเทอร์เน็ตทั้งหมด อาจมีเนื้อหาบางอย่างที่มีผลต่อร่างกายหรือจิตใจของคุณ คุณจะต้องยอมรับความเสี่ยงที่ดังกล่าว และดำเนินการต่อไป</string>
     <string name="error_username_cannot_empty">ชื่อผู้ใช้ห้ามเว้นว่างไว้</string>
     <string name="error_password_cannot_empty">รหัสผ่านห้ามเว้นว่างไว้</string>
@@ -115,7 +107,6 @@
     <string name="share">แชร์</string>
     <string name="rate">คะแนน</string>
     <string name="similar_gallery">เหมือน</string>
-    <string name="search_cover">ค้นหาปก</string>
     <string name="no_tags">ไม่มีแท็ก</string>
     <string name="no_comments">ไม่มีความคิดเห็น</string>
     <string name="no_more_comments">ไม่มีความเห็นเพิ่มเติมแล้ว</string>
@@ -144,7 +135,6 @@
     <string name="rating3">แย่มาก/กลัวแล้ว</string>
     <string name="rating2">โอ๊ยยย~</string>
     <string name="rating1">ไม่ไหวแล้วนะ!</string>
-    <string name="rating0">พังพินาศสุดๆไปเลย!</string>
 
     <!-- Gallery Info -->
     <string name="gallery_info">ข้อมูลแกลเลอรี่</string>

@@ -1,7 +1,6 @@
 package com.ehviewer.desktop
 
 import com.ehviewer.core.database.client.GalleryDetailUrlParser
-import com.ehviewer.core.database.client.getCategoryDisplayName
 import com.ehviewer.core.database.client.getCategoryName
 import com.ehviewer.core.model.BaseGalleryInfo
 
@@ -26,7 +25,7 @@ object GalleryFilter {
                         item.gid.toString().contains(trimmed) ||
                         item.simpleTags?.any { it.contains(trimmed, ignoreCase = true) } == true ||
                         getCategoryName(item.category).contains(trimmed, ignoreCase = true) ||
-                        getCategoryDisplayName(item.category).contains(trimmed, ignoreCase = true)
+                        DesktopCategories.displayName(item.category).contains(trimmed, ignoreCase = true)
                 }
             }
         }

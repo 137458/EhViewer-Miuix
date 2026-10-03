@@ -1,6 +1,5 @@
 package com.ehviewer.desktop
 
-import com.ehviewer.core.database.client.CATEGORY_MANGA
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -29,13 +28,14 @@ class DesktopRatingTest {
 
     @Test
     fun formatCardMetaProducesReadableSummary() {
-        val meta = DesktopRating.formatCardMeta(pages = 25, category = CATEGORY_MANGA)
-        assertEquals("25P · Manga", meta)
+        // 类目显示名由调用方经 DesktopCategories 注入；此处用等价字符串断言纯逻辑
+        val meta = DesktopRating.formatCardMeta(pages = 25, categoryName = "MANGA")
+        assertEquals("25P · MANGA", meta)
 
-        val metaZeroPages = DesktopRating.formatCardMeta(pages = 0, category = CATEGORY_MANGA)
-        assertEquals("Manga", metaZeroPages)
+        val metaZeroPages = DesktopRating.formatCardMeta(pages = 0, categoryName = "MANGA")
+        assertEquals("MANGA", metaZeroPages)
 
-        val metaNegativePages = DesktopRating.formatCardMeta(pages = -5, category = CATEGORY_MANGA)
-        assertEquals("Manga", metaNegativePages)
+        val metaNegativePages = DesktopRating.formatCardMeta(pages = -5, categoryName = "MANGA")
+        assertEquals("MANGA", metaNegativePages)
     }
 }

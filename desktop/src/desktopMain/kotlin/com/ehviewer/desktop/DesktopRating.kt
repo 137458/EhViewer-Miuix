@@ -1,6 +1,5 @@
 package com.ehviewer.desktop
 
-import com.ehviewer.core.database.client.getCategoryDisplayName
 import kotlin.math.roundToInt
 
 object DesktopRating {
@@ -14,12 +13,12 @@ object DesktopRating {
         return "$integerPart.${if (fractionalPart < 10) "0$fractionalPart" else "$fractionalPart"}"
     }
 
-    fun formatCardMeta(pages: Int, category: Int): String {
-        val catName = getCategoryDisplayName(category)
+    // 类目显示名由调用方经 DesktopCategories 注入
+    fun formatCardMeta(pages: Int, categoryName: String): String {
         return if (pages > 0) {
-            "${pages}P · $catName"
+            "${pages}P · $categoryName"
         } else {
-            catName
+            categoryName
         }
     }
 }

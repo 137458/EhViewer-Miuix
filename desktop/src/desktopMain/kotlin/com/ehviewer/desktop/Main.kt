@@ -211,6 +211,8 @@ fun main() {
                     title = DesktopWindowManager.windowTitle(
                         window.kind,
                         untitledLabel = stringResource(MR.strings.desktop_untitled),
+                        settingsLabel = stringResource(MR.strings.menu_settings),
+                        readingLabel = stringResource(MR.strings.desktop_window_reading),
                     ),
                     onKeyEvent = { event ->
                         val action = resolveKeyAction(

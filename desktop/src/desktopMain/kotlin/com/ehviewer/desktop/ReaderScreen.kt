@@ -121,7 +121,9 @@ fun ReaderScreen(
                 linksState = null
             }
         }.onFailure {
-            linksState = "$loadFailedText: ${it.message}"
+            linksState = it.message
+                ?.let { message -> StringDesc.ResourceFormatted(MR.strings.desktop_reader_load_failed_reason, message).localized() }
+                ?: loadFailedText
             imageState = null
         }
     }
@@ -145,19 +147,24 @@ fun ReaderScreen(
         val link = currentLink ?: return@LaunchedEffect
         imageState = loadingImageText
         imageUrl = null
-        withContext(Dispatchers.IO) {
+        val outcome = withContext(Dispatchers.IO) {
             runCatching {
                 val pageResponse = desktopGet(link.pageUrl)
                 GalleryPageParser.parse(pageResponse.body)?.imageUrl
-            }.getOrElse { "ERROR: ${it.message}" }
-        }.let { result ->
-            if (result?.startsWith("ERROR:") == true) {
-                imageState = result.removePrefix("ERROR: ")
-            } else {
-                imageState = null
-                imageUrl = result
             }
         }
+        outcome.fold(
+            onSuccess = { url ->
+                imageState = null
+                imageUrl = url
+            },
+            onFailure = { cause ->
+                // 解析/网络异常经本地化模板展示，原始异常文本作为占位参数
+                imageState = cause.message
+                    ?.let { message -> StringDesc.ResourceFormatted(MR.strings.desktop_reader_load_failed_reason, message).localized() }
+                    ?: loadFailedText
+            },
+        )
     }
 
     // 预取下一页图片地址与本体：翻页时免等待（图片本体进 Coil 磁盘/内存缓存）
@@ -384,10 +391,15 @@ fun ReaderScreen(
                                                 timestamp = System.currentTimeMillis(),
                                                 idProvider = { nextNotificationId.getAndIncrement() },
                                             )
-                                        }.onFailure {
+                                        }.onFailure { cause ->
+                                            val detail = cause.message
                                             notifications = DesktopNotificationManager.post(
                                                 current = notifications,
-                                                message = "$saveFailedText: ${it.message}",
+                                                message = if (detail == null) {
+                                                    saveFailedText
+                                                } else {
+                                                    StringDesc.ResourceFormatted(MR.strings.desktop_save_failed_reason, detail).localized()
+                                                },
                                                 timestamp = System.currentTimeMillis(),
                                                 idProvider = { nextNotificationId.getAndIncrement() },
                                             )

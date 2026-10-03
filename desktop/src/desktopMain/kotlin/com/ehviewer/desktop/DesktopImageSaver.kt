@@ -1,5 +1,8 @@
 package com.ehviewer.desktop
 
+import com.ehviewer.core.i18n.MR
+import dev.icerock.moko.resources.desc.ResourceFormatted
+import dev.icerock.moko.resources.desc.StringDesc
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okio.FileSystem
@@ -22,7 +25,11 @@ object DesktopImageSaver {
     }
 
     fun uniqueTarget(dir: Path, name: String, fs: FileSystem = FileSystem.SYSTEM): Path {
-        if (!fs.exists(dir)) throw java.io.IOException("save dir missing: $dir")
+        if (!fs.exists(dir)) {
+            // 该异常会经阅读器保存失败通知直接展示给用户，文案走本地化资源
+            val message = StringDesc.ResourceFormatted(MR.strings.desktop_save_dir_missing, dir.toString()).localized()
+            throw java.io.IOException(message)
+        }
         var target = dir / name
         var counter = 1
         val base = name.substringBeforeLast('.', missingDelimiterValue = name)

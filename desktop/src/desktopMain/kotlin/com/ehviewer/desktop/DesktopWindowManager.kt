@@ -69,10 +69,12 @@ object DesktopWindowManager {
 
     fun windowTitle(
         kind: DesktopWindowKind,
-        untitledLabel: String = "(Untitled)",
+        untitledLabel: String,
+        settingsLabel: String,
+        readingLabel: String,
     ): String = when (kind) {
         DesktopWindowKind.Library -> "EhViewer"
-        DesktopWindowKind.Settings -> "EhViewer Settings"
+        DesktopWindowKind.Settings -> "EhViewer $settingsLabel"
         is DesktopWindowKind.GalleryDetail -> {
             val gallery = kind.gallery
             val displayTitle = gallery.title?.takeIf { it.isNotBlank() }
@@ -85,7 +87,7 @@ object DesktopWindowManager {
             val displayTitle = gallery.title?.takeIf { it.isNotBlank() }
                 ?: gallery.titleJpn?.takeIf { it.isNotBlank() }
                 ?: gallery.gid.toString()
-            "$displayTitle - Reading"
+            "$displayTitle - $readingLabel"
         }
     }
 

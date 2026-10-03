@@ -103,7 +103,7 @@ fun DesktopCommentsSection(
                 runCatching {
                     val response = desktopPost(DesktopGalleryHydrator.GDATA_URL, VoteCommentRequest.json(apiUid, key, gallery.gid, gallery.token, comment.id, vote))
                     val parsed = VoteCommentRequest.parseResult(response.body)
-                        ?: error("HTTP ${response.status} / unexpected body")
+                        ?: error("HTTP ${response.status}")
                     parsed
                 }
             }
@@ -235,9 +235,10 @@ private fun CommentItem(
             .padding(8.dp),
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
+        val anonymousText = stringResource(MR.strings.desktop_anonymous)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(
-                text = comment.user.orEmpty().ifEmpty { "Anonymous" },
+                text = comment.user.orEmpty().ifEmpty { anonymousText },
                 color = MiuixTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.Medium,
                 maxLines = 1,

@@ -35,29 +35,21 @@
     <string name="sign_in_first">Por favor, inicie sesión primero</string>
 
     <string name="text_is_empty">El texto está vacío</string>
-    <string name="waring">Advertencia</string>
     <string name="warning">Advertencia</string>
 
     <string name="invalid_download_location">Parece que la ubicación de descarga no está disponible. Establece la ubicación en Configuración.</string>
 
     <string name="error_timeout">Sin tiempo</string>
-    <string name="error_unknown_host">Host desconocido</string>
-    <string name="error_redirection">Demasiadas redirecciones</string>
-    <string name="error_socket">Error de Red</string>
     <string name="error_unknown">Raro</string>
     <string name="error_cant_find_activity">No se encuentra la aplicación</string>
     <string name="error_cannot_parse_the_url">No se puede analizar el URL</string>
-    <string name="error_decoding_failed">Decodificación fallida</string>
-    <string name="error_reading_failed">Lectura Fallida</string>
     <string name="error_out_of_range">Fuera de rango</string>
     <string name="error_parse_error">Análisis erróneo</string>
     <string name="error_509">509</string>
-    <string name="error_invalid_url">Url invalida</string>
     <string name="error_get_ptoken_error">Error al obtener token</string>
     <string name="error_cant_save_image">Imposible guardar la imagen</string>
     <string name="error_invalid_number">Número invalido</string>
 
-    <string name="app_waring">El contenido de esta aplicación es de Internet. Algunas de ellas pueden causarle daño psicológico. Ahora sabes los riesgos anteriormente mencionado y te gustaría asumirlos</string>
     <string name="app_warning">El contenido de esta aplicación es de Internet. Algunas de ellas pueden causarle daño psicológico. Ahora sabes los riesgos anteriormente mencionado y te gustaría asumirlos</string>
     <string name="error_username_cannot_empty">El usuario no puede estar vacío</string>
     <string name="guest_mode">Saltar inicio de sesión</string>
@@ -111,7 +103,6 @@
     <string name="share">Compartir</string>
     <string name="rate">Valorar</string>
     <string name="similar_gallery">Similar</string>
-    <string name="search_cover">Buscar portada</string>
     <string name="no_tags">Sin etiquetas</string>
     <string name="no_comments">Sin comentarios</string>
     <string name="no_more_comments">No hay más comentarios</string>
@@ -139,7 +130,6 @@
     <string name="rating3">HORRIBLE</string>
     <string name="rating2">DOLOROSO</string>
     <string name="rating1">INSORPOTABLE</string>
-    <string name="rating0">DESASTRE</string>
 
     <!-- Gallery Info -->
     <string name="gallery_info">Información de la galería</string>

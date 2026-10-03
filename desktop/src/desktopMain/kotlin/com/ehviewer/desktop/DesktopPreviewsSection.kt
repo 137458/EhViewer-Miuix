@@ -58,7 +58,7 @@ fun DesktopPreviewsSection(previewList: List<GalleryPreview>?) {
                 fontSize = 12.sp,
             )
             previews.isEmpty() -> Text(
-                text = stringResource(MR.strings.no_comments),
+                text = stringResource(MR.strings.desktop_no_previews),
                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 fontSize = 12.sp,
             )

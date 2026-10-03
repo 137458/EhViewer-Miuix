@@ -14,23 +14,17 @@
     <string name="register">Kaydol</string>
     <string name="sign_in_via_webview">WebView aracılığıyla giriş yap</string>
     <string name="sign_in_first">Lütfen önce giriş yap</string>
-    <string name="waring">Uyarı</string>
     <string name="warning">Uyarı</string>
     <string name="invalid_download_location">İndirme konumu kullanılamıyor. Lütfen Ayarlardan ayarlayın.</string>
     <string name="clipboard_gallery_url_snack_message">Panoda galeri bağlantısı var</string>
     <string name="clipboard_gallery_url_snack_action">Görüntüle</string>
     <string name="error_timeout">Zaman aşımı oluştu</string>
-    <string name="error_redirection">Çok fazla yönlendirme yapıldı</string>
-    <string name="error_socket">Ağ hatası</string>
     <string name="error_unknown">Tuhaf</string>
     <string name="error_cant_find_activity">Uygulama bulunamıyor</string>
     <string name="error_cannot_parse_the_url">Bağlantı ayrıştırılamıyor</string>
-    <string name="error_decoding_failed">Decode işlemi başarısız</string>
-    <string name="error_reading_failed">Okuma başarısız</string>
     <string name="error_out_of_range">Kapsam dışı</string>
     <string name="error_parse_error">Ayrıştırma hatası</string>
     <string name="error_509">509</string>
-    <string name="error_invalid_url">Geçersiz bağlantı</string>
     <string name="error_get_ptoken_error">pToken alınamadı</string>
     <string name="error_cant_save_image">Görsel kaydedilemiyor</string>
     <string name="error_invalid_number">Geçersiz numara</string>
@@ -65,7 +59,6 @@
     <string name="image_search_not_quick_search">Görsel arama, hızlı arama olarak eklenemez</string>
     <string name="duplicate_name">Ad zaten kullanımda.</string>
     <string name="text_is_empty">Yazı boş</string>
-    <string name="error_unknown_host">Bilinmeyen host</string>
     <string name="app_waring">Bu uygulamadaki içerikler internetten alınmaktadır. Bazı içerikler fiziksel veya zihinsel olarak size zararlı gelebilir.Yukarıda, riskleri öğrendiniz ve üstleneceksiniz.
 \nKullanmaya devam ederek, yukarıdaki koşulları kabul edersiniz.</string>
     <string name="app_warning">Bu uygulamadaki içerikler internetten alınmaktadır. Bazı içerikler fiziksel veya zihinsel olarak size zararlı gelebilir.Yukarıda, riskleri öğrendiniz ve üstleneceksiniz.

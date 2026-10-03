@@ -6,27 +6,36 @@ sealed interface DesktopConnectionStatus {
     data class Offline(val reason: String) : DesktopConnectionStatus
 }
 
+// 连接错误标签包：由界面层注入本地化文案，保持本对象无 i18n 依赖（与 formatStatus 的标签注入同模式）
+data class DesktopConnectionErrorLabels(
+    val networkUnavailable: String,
+    val dnsUnresolved: String,
+    val connectionRefused: String,
+    val connectionTimedOut: String,
+    val sslHandshakeFailed: String,
+)
+
 object DesktopConnectionState {
-    fun cleanErrorMessage(rawMessage: String?): String {
-        if (rawMessage.isNullOrBlank()) return "Network unavailable"
+    fun cleanErrorMessage(rawMessage: String?, labels: DesktopConnectionErrorLabels): String {
+        if (rawMessage.isNullOrBlank()) return labels.networkUnavailable
         val trimmed = rawMessage.trim()
         val firstLine = trimmed.lines().firstOrNull()?.trim() ?: ""
         return when {
             firstLine.contains("UnknownHostException", ignoreCase = true) ||
                 firstLine.contains("Unable to resolve host", ignoreCase = true) ||
                 firstLine.contains("No address associated with hostname", ignoreCase = true) ->
-                "DNS / Host unresolved"
+                labels.dnsUnresolved
             firstLine.contains("ConnectException", ignoreCase = true) ||
                 firstLine.contains("Connection refused", ignoreCase = true) ->
-                "Connection refused"
+                labels.connectionRefused
             firstLine.contains("SocketTimeoutException", ignoreCase = true) ||
                 firstLine.contains("timed out", ignoreCase = true) ||
                 firstLine.contains("TimeoutException", ignoreCase = true) ->
-                "Connection timed out"
+                labels.connectionTimedOut
             firstLine.contains("SSLHandshakeException", ignoreCase = true) ||
                 firstLine.contains("CertPathValidatorException", ignoreCase = true) ||
                 firstLine.contains("SSLPeerUnverifiedException", ignoreCase = true) ->
-                "SSL handshake failed"
+                labels.sslHandshakeFailed
             firstLine.contains("HttpException", ignoreCase = true) ||
                 firstLine.contains("HTTP ", ignoreCase = true) -> {
                 val cleaned = firstLine.replace(Regex("^[a-zA-Z0-9_.]*HttpException:\\s*"), "").trim()

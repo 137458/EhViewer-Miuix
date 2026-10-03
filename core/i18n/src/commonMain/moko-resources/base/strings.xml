@@ -54,31 +54,26 @@
     <string name="category_all">All</string>
     <string name="sign_in_first">Please sign in first</string>
     <string name="text_is_empty">Text is empty</string>
-    <string name="waring">Warning</string>
     <string name="warning">Warning</string>
     <string name="invalid_download_location">It seems download location is not available. Please set it in Settings.</string>
     <string name="clipboard_gallery_url_snack_message">There is a gallery URL in the clipboard</string>
     <string name="clipboard_gallery_url_snack_action">View</string>
     <string name="error_timeout">Timeout</string>
-    <string name="error_unknown_host">Unknown host</string>
-    <string name="error_redirection">Too many redirections</string>
-    <string name="error_socket">Network error</string>
     <string name="error_unknown">Weird</string>
     <string name="error_cant_find_activity">Can\'t find the application</string>
     <string name="error_cannot_parse_the_url">Can\'t parse the URL</string>
-    <string name="error_decoding_failed">Decoding failed</string>
-    <string name="error_reading_failed">Reading Failed</string>
     <string name="error_out_of_range">Out of range</string>
     <string name="error_parse_error">Parse error</string>
+    <string name="archive_unavailable">Archive unavailable</string>
+    <string name="invalid_dst_cat">Invalid destination category</string>
+    <string name="invalid_favorite_slot">Invalid favorite slot!</string>
+    <string name="notification_channel_dailycheck">Daily check</string>
     <string name="error_509">Image quota exhausted</string>
     <string name="error_ip_banned">IP banned</string>
-    <string name="error_invalid_url">Invalid URL</string>
     <string name="error_get_ptoken_error">Get pToken error</string>
     <string name="error_cant_save_image">Can\'t save image</string>
     <string name="error_invalid_number">Invalid number</string>
-    <string name="app_waring">The content of this application is from the Internet. Some of it may do physical or mental harm to you. You have learnt the risks above and would like to undertake them. By continuing to use it, you agree to the above terms.</string>
     <string name="app_warning">The content of this application is from the Internet. Some of it may do physical or mental harm to you. You have learnt the risks above and would like to undertake them. By continuing to use it, you agree to the above terms.</string>
-    <string name="app_waring_2">By continuing to use it, you agree to the above terms.</string>
     <string name="app_warning_2">By continuing to use it, you agree to the above terms.</string>
     <string name="error_username_cannot_empty">Username cannot be empty</string>
     <string name="error_password_cannot_empty">Password cannot be empty</string>
@@ -143,7 +138,6 @@
     <string name="share">Share</string>
     <string name="rate">Rate</string>
     <string name="similar_gallery">Similar</string>
-    <string name="search_cover">Search Cover</string>
     <string name="no_tags">No tags</string>
     <string name="no_comments">No comments</string>
     <string name="no_more_comments">No more comments</string>
@@ -180,7 +174,6 @@
     <string name="rating3">AWFUL</string>
     <string name="rating2">PAINFUL</string>
     <string name="rating1">UNBEARABLE</string>
-    <string name="rating0">DISASTER</string>
     <string name="rating_none" translatable="false">(´_ゝ`)</string>
     <!-- Gallery Info -->
     <string name="gallery_info">Gallery Info</string>
@@ -405,6 +398,7 @@
     <string name="settings_advanced_read_cache_size">Read cache size</string>
     <string name="settings_advanced_app_language_title">App language</string>
     <string name="settings_advanced_enable_quic">QUIC support</string>
+    <string name="settings_advanced_enable_cronet">Enable Cronet</string>
     <string name="settings_advanced_hardware_bitmap_threshold">Hardware bitmap (better performance) threshold</string>
     <string name="settings_advanced_hardware_bitmap_threshold_summary">Try decreasing this if long images fail to load</string>
     <string name="settings_advanced_export_data">Export data</string>
@@ -425,7 +419,6 @@
     <string name="settings_advanced_deep_clean_confirm">Are you sure you want to perform deep cleaning? This will clear caches, remove dead download records whose files are missing, and compact the database.</string>
     <string name="settings_advanced_deep_clean_done">Deep clean completed: %d dead downloads removed</string>
     <string name="settings_about">About</string>
-    <string name="settings_about_declaration" translatable="false">EhViewer MIUIX</string>
     <string name="settings_about_declaration_summary">EhViewer MIUIX is not affiliated with E-Hentai.org in any way</string>
     <string name="settings_about_disclaimer">Disclaimer</string>
     <string name="settings_about_disclaimer_content">1. Academic Research: This project is a non-commercial open-source exploration for studying modern Android UI architectures and graphic rendering paradigms.\n2. Client-Only: The application is purely a client tool and does not host, provide, or distribute copyrighted media resources.\n3. No Affiliation: This project is not affiliated with, authorized, or sponsored by E-Hentai.org or ExHentai.org.\n4. User Responsibility: Users must strictly comply with local laws and regulations. Any legal consequences arising from the use of this software are solely the user\'s responsibility.\n5. AS-IS: In accordance with GPLv3, this software is provided on an "AS-IS" basis without warranties of any kind.</string>
@@ -563,7 +556,6 @@
     <string name="update_frequency_biweekly">Biweekly</string>
     <string name="update_frequency_monthly">Monthly</string>
     <string name="update_failed">Update failed: %s</string>
-    <string name="new_version_available">New version available!</string>
     <string name="already_latest_version">Already the latest version</string>
     <!-- Software Update -->
     <string name="update_screen_title">Software Update</string>
@@ -573,23 +565,14 @@
     <string name="update_changelog_title_new">Changelog (%1$s)</string>
     <string name="update_changelog_title_current">Release Notes (%1$s)</string>
     <string name="update_release_default_title">Release Highlights</string>
-    <string name="update_downloading_hint">Downloading update…</string>
-    <string name="update_btn_install_now">Install Now</string>
     <string name="update_btn_download_now">Download Update</string>
     <string name="update_section_settings">Update Settings</string>
-    <string name="update_pref_auto_check_title">Check for updates automatically</string>
-    <string name="update_pref_auto_check_summary">Automatically check for new releases upon application launch</string>
     <string name="update_pref_ignore_title">Ignore this version</string>
-    <string name="update_pref_ignore_checking">Checking…</string>
-    <string name="update_pref_ignore_already_latest">Currently on latest version</string>
     <string name="update_pref_ignore_ignored">Ignored version %1$s</string>
-    <string name="update_pref_ignore_desc">Ignore update alerts for %1$s</string>
     <string name="update_section_channel">Channels &amp; Operations</string>
     <string name="update_pref_manual_check_title">Check for updates</string>
     <string name="update_pref_manual_check_busy">Checking remote releases…</string>
     <string name="update_pref_manual_check_idle">Fetch the latest release information</string>
-    <string name="update_pref_test_dialog_title">Test Update Dialog</string>
-    <string name="update_pref_test_dialog_summary">Simulate new version detected with interactive sandbox</string>
     <string name="update_pref_github_releases">GitHub Releases</string>
     <string name="update_pref_github_releases_summary">View all published historical releases on GitHub</string>
     <string name="update_pref_github_ci">GitHub Actions CI</string>
@@ -597,6 +580,8 @@
     <string name="update_badge_new">NEW</string>
     <string name="update_channel_official">Official Release</string>
     <string name="update_channel_ci">CI Snapshot</string>
+    <string name="update_channel_simulated">Sandbox Preview</string>
+    <string name="update_download_failed">Download failed</string>
     <string name="update_dialog_title">New Version Available</string>
     <string name="update_dialog_no_changelog">No detailed changelog provided</string>
     <string name="update_dialog_downloading">Downloading update%1$s</string>
@@ -709,6 +694,23 @@
     <string name="desktop_online_next">Next ▶</string>
     <string name="desktop_notification_opening_gallery">Opening gallery</string>
     <string name="desktop_gallery_metadata_loading">Gallery metadata is loading, please retry later</string>
+    <string name="desktop_error_network_unavailable">Network unavailable</string>
+    <string name="desktop_error_dns_unresolved">DNS / Host unresolved</string>
+    <string name="desktop_error_connection_refused">Connection refused</string>
+    <string name="desktop_error_connection_timed_out">Connection timed out</string>
+    <string name="desktop_error_ssl_handshake_failed">SSL handshake failed</string>
+    <string name="desktop_anonymous">Anonymous</string>
+    <string name="desktop_window_reading">Reading</string>
+    <string name="desktop_gallery_numbered">Gallery %1$d</string>
+    <string name="desktop_status_ehentai">e-hentai: %1$s</string>
+    <string name="desktop_share_tags">Tags</string>
+    <string name="desktop_share_none">None</string>
+    <string name="desktop_reader_load_failed_reason">Load failed: %1$s</string>
+    <string name="desktop_save_failed_reason">Save failed: %1$s</string>
+    <string name="desktop_save_dir_missing">Save directory missing: %1$s</string>
+    <string name="desktop_category_private">Private</string>
+    <string name="desktop_category_unknown">Unknown</string>
+    <string name="desktop_no_previews">No previews</string>
     <string name="search_hint">Filter title, tag, uploader...</string>
     <string name="open_in_browser">Open in browser</string>
     <string name="copy_link">Copy link</string>
@@ -799,7 +801,6 @@
     <string name="action_copy">Copy</string>
     <string name="action_save">Save</string>
     <string name="action_save_to">Save to…</string>
-    <string name="wide_color_gamut">Use Display P3 color space</string>
     <string name="settings_eh_request_news_timepicker">Set time to request news</string>
     <string name="dark_theme_follow_system">Follow system</string>
     <string name="dark_theme_off">Always off</string>

@@ -130,21 +130,6 @@ fun getCategoryName(category: Int): String = when (category) {
     else -> "unknown"
 }
 
-fun getCategoryDisplayName(category: Int): String = when (category) {
-    CATEGORY_MISC -> "Misc"
-    CATEGORY_DOUJINSHI -> "Doujinshi"
-    CATEGORY_MANGA -> "Manga"
-    CATEGORY_ARTIST_CG -> "Artist CG"
-    CATEGORY_GAME_CG -> "Game CG"
-    CATEGORY_IMAGE_SET -> "Image Set"
-    CATEGORY_COSPLAY -> "Cosplay"
-    CATEGORY_ASIAN_PORN -> "Asian Porn"
-    CATEGORY_NON_H -> "Non-H"
-    CATEGORY_WESTERN -> "Western"
-    CATEGORY_PRIVATE -> "Private"
-    else -> "Unknown"
-}
-
 // 与 EhCacheKeyFactory 对齐
 const val URL_PREFIX_THUMB_E = "https://ehgt.org/"
 const val URL_PREFIX_THUMB_EX = "https://s.exhentai.org/"

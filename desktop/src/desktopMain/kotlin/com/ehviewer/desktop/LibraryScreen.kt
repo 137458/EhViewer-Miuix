@@ -65,7 +65,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
-import com.ehviewer.core.database.client.getCategoryDisplayName
 import com.ehviewer.core.database.client.thumbUrl
 import com.ehviewer.core.database.model.GalleryEntity
 import com.ehviewer.core.database.model.HistoryInfo
@@ -192,6 +191,14 @@ fun LibraryScreen(
     val undoText = stringResource(MR.strings.desktop_notification_undo)
     val filterText = stringResource(MR.strings.desktop_filter)
     val noBrowserText = stringResource(MR.strings.no_browser_installed)
+    // 连接错误标签包：cleanErrorMessage 无组合语境，经注入走 i18n
+    val connectionErrorLabels = DesktopConnectionErrorLabels(
+        networkUnavailable = stringResource(MR.strings.desktop_error_network_unavailable),
+        dnsUnresolved = stringResource(MR.strings.desktop_error_dns_unresolved),
+        connectionRefused = stringResource(MR.strings.desktop_error_connection_refused),
+        connectionTimedOut = stringResource(MR.strings.desktop_error_connection_timed_out),
+        sslHandshakeFailed = stringResource(MR.strings.desktop_error_ssl_handshake_failed),
+    )
 
     fun showNotification(message: String) {
         val now = System.currentTimeMillis()
@@ -238,7 +245,7 @@ fun LibraryScreen(
                     logcat("Library", LogPriority.WARN) { "ONLINE_SEARCH status=${response.status}" }
                 }
             }.onFailure { e ->
-                val cleaned = DesktopConnectionState.cleanErrorMessage(e.message ?: e::class.simpleName)
+                val cleaned = DesktopConnectionState.cleanErrorMessage(e.message ?: e::class.simpleName, connectionErrorLabels)
                 connectionStatus = DesktopConnectionStatus.Offline(cleaned)
                 logcat("Library", LogPriority.WARN) { "ONLINE_SEARCH failed: $cleaned" }
             }
@@ -289,7 +296,7 @@ fun LibraryScreen(
                 }
             }
         }.onFailure { e ->
-            val cleaned = DesktopConnectionState.cleanErrorMessage(e.message ?: e::class.simpleName)
+            val cleaned = DesktopConnectionState.cleanErrorMessage(e.message ?: e::class.simpleName, connectionErrorLabels)
             connectionStatus = DesktopConnectionStatus.Offline(cleaned)
             logcat("Connection", LogPriority.WARN) { "EH_HOME failed: $cleaned (raw: ${e.message})" }
         }
@@ -476,10 +483,13 @@ fun LibraryScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    val statusText = "e-hentai: " + DesktopConnectionState.formatStatus(
-                        status = connectionStatus,
-                        checkingLabel = stringResource(MR.strings.desktop_status_checking),
-                        offlineLabel = stringResource(MR.strings.desktop_status_offline),
+                    val statusText = stringResource(
+                        MR.strings.desktop_status_ehentai,
+                        DesktopConnectionState.formatStatus(
+                            status = connectionStatus,
+                            checkingLabel = stringResource(MR.strings.desktop_status_checking),
+                            offlineLabel = stringResource(MR.strings.desktop_status_offline),
+                        ),
                     )
                     val isOffline = DesktopConnectionState.isOffline(connectionStatus)
                     val statusBgColor = when (connectionStatus) {
@@ -770,7 +780,7 @@ fun LibraryScreen(
                                     .padding(horizontal = 4.dp),
                             )
                             Text(
-                                text = "◀ Prev",
+                                text = stringResource(MR.strings.desktop_reader_prev),
                                 color = if (cursorIndex > 0) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                 modifier = Modifier
                                     .pointerHoverIcon(PointerIcon.Hand)
@@ -1053,7 +1063,7 @@ fun LibraryScreen(
                                                     )
                                                 }
                                                 Text(
-                                                    text = getCategoryDisplayName(gallery.category),
+                                                    text = DesktopCategories.displayName(gallery.category),
                                                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                                 )
                                             }
@@ -1148,7 +1158,7 @@ fun LibraryScreen(
                                                     ) {
                                                         GalleryListCardRating(rating = gallery.rating)
                                                         Text(
-                                                            text = DesktopRating.formatCardMeta(gallery.pages, gallery.category),
+                                                            text = DesktopRating.formatCardMeta(gallery.pages, DesktopCategories.displayName(gallery.category)),
                                                             color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                                             maxLines = 1,
                                                             overflow = TextOverflow.Ellipsis,
@@ -1455,6 +1465,15 @@ internal fun GalleryDetailPane(
     onOpenReader: (() -> Unit)? = null,
 ) {
     val detailScrollState = rememberScrollState()
+    // 分享摘要栏目标签包：generateShareSummary 无组合语境，经注入走 i18n
+    val shareSummaryLabels = ShareSummaryLabels(
+        url = stringResource(MR.strings.key_url),
+        rating = stringResource(MR.strings.key_rating),
+        pages = stringResource(MR.strings.key_pages),
+        category = stringResource(MR.strings.key_category),
+        tags = stringResource(MR.strings.desktop_share_tags),
+        none = stringResource(MR.strings.desktop_share_none),
+    )
     // 详情页单次抓取：预览与评论区共享同一份解析结果（避免两个区块重复拉取整页）
     var detailExtras by remember(gallery.gid) { mutableStateOf<GalleryDetailParser.Result?>(null) }
     var extrasLoadFailed by remember(gallery.gid) { mutableStateOf(false) }
@@ -1536,7 +1555,7 @@ internal fun GalleryDetailPane(
             DetailRow(label = stringResource(MR.strings.key_gid), value = gallery.gid.toString(), onCopy = onCopy)
             DetailRow(label = stringResource(MR.strings.key_token), value = gallery.token, onCopy = onCopy)
             DetailRow(label = stringResource(MR.strings.key_uploader), value = gallery.uploader.orEmpty().ifEmpty { "-" }, onCopy = onCopy)
-            DetailRow(label = stringResource(MR.strings.key_category), value = getCategoryDisplayName(gallery.category), onCopy = onCopy)
+            DetailRow(label = stringResource(MR.strings.key_category), value = DesktopCategories.displayName(gallery.category), onCopy = onCopy)
             DetailRow(label = stringResource(MR.strings.key_pages), value = gallery.pages.toString(), onCopy = onCopy)
             DetailRow(
                 label = stringResource(MR.strings.key_rating),
@@ -1582,8 +1601,9 @@ internal fun GalleryDetailPane(
                         token = gallery.token,
                         rating = gallery.rating,
                         pages = gallery.pages,
-                        category = gallery.category,
+                        categoryName = DesktopCategories.displayName(gallery.category),
                         tags = gallery.simpleTags?.toList(),
+                        labels = shareSummaryLabels,
                     )
                     onCopy(summary, "")
                 },

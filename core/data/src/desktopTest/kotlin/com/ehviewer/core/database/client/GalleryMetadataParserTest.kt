@@ -84,35 +84,22 @@ class GalleryMetadataParserTest {
     }
 
     @Test
-    fun categoryNameAndDisplayNameMapping() {
+    fun categoryNameMapping() {
+        // 显示名经桌面端 DesktopCategories 走 moko 资源本地化，数据层仅保留 token 名映射
         assertEquals("doujinshi", getCategoryName(CATEGORY_DOUJINSHI))
-        assertEquals("Doujinshi", getCategoryDisplayName(CATEGORY_DOUJINSHI))
         assertEquals("manga", getCategoryName(CATEGORY_MANGA))
-        assertEquals("Manga", getCategoryDisplayName(CATEGORY_MANGA))
         assertEquals("artistcg", getCategoryName(CATEGORY_ARTIST_CG))
-        assertEquals("Artist CG", getCategoryDisplayName(CATEGORY_ARTIST_CG))
         assertEquals("gamecg", getCategoryName(CATEGORY_GAME_CG))
-        assertEquals("Game CG", getCategoryDisplayName(CATEGORY_GAME_CG))
         assertEquals("imageset", getCategoryName(CATEGORY_IMAGE_SET))
-        assertEquals("Image Set", getCategoryDisplayName(CATEGORY_IMAGE_SET))
         assertEquals("cosplay", getCategoryName(CATEGORY_COSPLAY))
-        assertEquals("Cosplay", getCategoryDisplayName(CATEGORY_COSPLAY))
         assertEquals("asianporn", getCategoryName(CATEGORY_ASIAN_PORN))
-        assertEquals("Asian Porn", getCategoryDisplayName(CATEGORY_ASIAN_PORN))
         assertEquals("non-h", getCategoryName(CATEGORY_NON_H))
-        assertEquals("Non-H", getCategoryDisplayName(CATEGORY_NON_H))
         assertEquals("western", getCategoryName(CATEGORY_WESTERN))
-        assertEquals("Western", getCategoryDisplayName(CATEGORY_WESTERN))
         assertEquals("misc", getCategoryName(CATEGORY_MISC))
-        assertEquals("Misc", getCategoryDisplayName(CATEGORY_MISC))
         assertEquals("private", getCategoryName(CATEGORY_PRIVATE))
-        assertEquals("Private", getCategoryDisplayName(CATEGORY_PRIVATE))
         assertEquals("unknown", getCategoryName(CATEGORY_UNKNOWN))
-        assertEquals("Unknown", getCategoryDisplayName(CATEGORY_UNKNOWN))
         assertEquals("unknown", getCategoryName(0))
-        assertEquals("Unknown", getCategoryDisplayName(0))
         assertEquals("unknown", getCategoryName(-1))
-        assertEquals("Unknown", getCategoryDisplayName(-1))
     }
 
     @Test

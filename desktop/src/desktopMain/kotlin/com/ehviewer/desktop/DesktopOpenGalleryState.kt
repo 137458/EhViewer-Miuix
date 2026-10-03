@@ -1,7 +1,10 @@
 package com.ehviewer.desktop
 
 import com.ehviewer.core.database.client.GalleryDetailUrlParser
+import com.ehviewer.core.i18n.MR
 import com.ehviewer.core.model.BaseGalleryInfo
+import dev.icerock.moko.resources.desc.ResourceFormatted
+import dev.icerock.moko.resources.desc.StringDesc
 
 data class GalleryParsedTarget(
     val gid: Long,
@@ -51,6 +54,8 @@ object DesktopOpenGalleryState {
     fun createGalleryInfo(target: GalleryParsedTarget, customTitle: String? = null): BaseGalleryInfo = BaseGalleryInfo(
         gid = target.gid,
         token = target.token,
-        title = customTitle?.takeIf { it.isNotBlank() } ?: "Gallery ${target.gid}",
+        // 占位标题（元数据 hydrate 前的临时显示）走本地化资源
+        title = customTitle?.takeIf { it.isNotBlank() }
+            ?: StringDesc.ResourceFormatted(MR.strings.desktop_gallery_numbered, target.gid).localized(),
     )
 }

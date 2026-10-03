@@ -35,7 +35,6 @@
     <string name="sign_in_first">請先登錄</string>
 
     <string name="text_is_empty">文本為空</string>
-    <string name="waring">警告</string>
     <string name="warning">警告</string>
 
     <string name="invalid_download_location">似乎下載路徑不可用。請到重新設置下載路徑。</string>
@@ -44,23 +43,16 @@
     <string name="clipboard_gallery_url_snack_action">查看</string>
 
     <string name="error_timeout">超時</string>
-    <string name="error_unknown_host">未知主機</string>
-    <string name="error_redirection">太多重定向</string>
-    <string name="error_socket">網絡錯誤</string>
     <string name="error_unknown">奇怪的錯誤</string>
     <string name="error_cant_find_activity">找不到相應的應用</string>
     <string name="error_cannot_parse_the_url">無法解析鏈接</string>
-    <string name="error_decoding_failed">解碼失敗</string>
-    <string name="error_reading_failed">讀取失敗</string>
     <string name="error_out_of_range">越界</string>
     <string name="error_parse_error">解析失敗</string>
     <string name="error_509">509</string>
-    <string name="error_invalid_url">無效鏈接</string>
     <string name="error_get_ptoken_error">獲取 pToken 錯誤</string>
     <string name="error_cant_save_image">無法保存圖片</string>
     <string name="error_invalid_number">非法數字</string>
 
-    <string name="app_waring">本應用中內容來自互聯網，部分內容可能對您的生理及心理造成難以恢復的傷害。本應用作者不會對由本應用造成的任何後果負責。\n\n未成年人應在監護人指導下使用本應用。</string>
     <string name="app_warning">本應用中內容來自互聯網，部分內容可能對您的生理及心理造成難以恢復的傷害。本應用作者不會對由本應用造成的任何後果負責。\n\n未成年人應在監護人指導下使用本應用。</string>
     <string name="error_username_cannot_empty">用户名不可為空</string>
     <string name="error_password_cannot_empty">密碼不可為空</string>
@@ -126,7 +118,6 @@
     <string name="share">分享</string>
     <string name="rate">評分</string>
     <string name="similar_gallery">相似畫廊</string>
-    <string name="search_cover">搜索封面</string>
     <string name="no_tags">暫無標籤</string>
     <string name="no_comments">暫無評論</string>
     <string name="no_more_comments">已顯示所有評論</string>
@@ -158,7 +149,6 @@
     <string name="rating3">糟糕</string>
     <string name="rating2">瞎眼</string>
     <string name="rating1">快要窒息了</string>
-    <string name="rating0">…</string>
 
     <!-- Gallery Info -->
     <string name="gallery_info">畫廊信息</string>
@@ -496,4 +486,68 @@
     <string name="rotation_reverse_portrait">顛倒直向</string>
     <string name="disabled_nav">停用</string>
     <!-- Tachiyomi Reader End-->
+    <!-- Desktop -->
+    <string name="desktop_about_log">日誌檔案</string>
+    <string name="desktop_about_version">版本 %s</string>
+    <string name="desktop_action_cancel">取消</string>
+    <string name="desktop_anonymous">匿名</string>
+    <string name="desktop_category_private">私人</string>
+    <string name="desktop_category_unknown">未知</string>
+    <string name="desktop_comment_vote_error">投票失敗：%s</string>
+    <string name="desktop_comment_vote_score">投票成功，目前分數：%d</string>
+    <string name="desktop_copied">已複製</string>
+    <string name="desktop_delete_selected">刪除所選（%d）</string>
+    <string name="desktop_empty_no_favorites">尚無收藏</string>
+    <string name="desktop_empty_no_history">尚無歷史紀錄</string>
+    <string name="desktop_empty_no_match">沒有符合的畫廊</string>
+    <string name="desktop_error_connection_refused">連接被拒絕</string>
+    <string name="desktop_error_connection_timed_out">連接超時</string>
+    <string name="desktop_error_dns_unresolved">DNS / 主機解析失敗</string>
+    <string name="desktop_error_network_unavailable">網絡無法使用</string>
+    <string name="desktop_error_ssl_handshake_failed">SSL 握手失敗</string>
+    <string name="desktop_filter">篩選</string>
+    <string name="desktop_gallery_metadata_loading">畫廊中繼資料載入中，請稍後再試</string>
+    <string name="desktop_gallery_numbered">畫廊 %1$d</string>
+    <string name="desktop_library_status_bar">|  已登入：%1$s  |  下載群組：%2$d  |  收藏：%3$d  |  版本：%4$s</string>
+    <string name="desktop_link_copied">連結已複製</string>
+    <string name="desktop_no_previews">暫無預覽</string>
+    <string name="desktop_notification_opening_gallery">正在開啟畫廊</string>
+    <string name="desktop_notification_undo">復原</string>
+    <string name="desktop_online_connecting">正在連接 E-Hentai…</string>
+    <string name="desktop_online_empty">找不到線上畫廊</string>
+    <string name="desktop_online_next">下一頁 ▶</string>
+    <string name="desktop_online_page_n">第 %1$d 頁</string>
+    <string name="desktop_open_gallery_action_open">開啟</string>
+    <string name="desktop_open_gallery_empty_input">請輸入畫廊連結或 GID/Token</string>
+    <string name="desktop_open_gallery_hint">畫廊連結或 GID/Token（Ctrl+V 貼上）</string>
+    <string name="desktop_open_gallery_invalid_input">無效的畫廊連結或 GID/Token</string>
+    <string name="desktop_open_gallery_title">開啟畫廊</string>
+    <string name="desktop_reader_load_failed">畫廊載入失敗</string>
+    <string name="desktop_reader_load_failed_reason">載入失敗：%1$s</string>
+    <string name="desktop_reader_loading">載入中…</string>
+    <string name="desktop_reader_loading_image">正在載入圖片…</string>
+    <string name="desktop_reader_loading_links">正在取得頁面連結…</string>
+    <string name="desktop_reader_next">下一頁 ▶</string>
+    <string name="desktop_reader_no_links">找不到頁面連結（需要登入或解析失敗）</string>
+    <string name="desktop_reader_page_progress">第 %1$d / %2$d 頁</string>
+    <string name="desktop_reader_prev">◀ 上一頁</string>
+    <string name="desktop_reader_zoom">放大 / 縮小 / 重設縮放</string>
+    <string name="desktop_removed_from_history">已從歷史紀錄移除</string>
+    <string name="desktop_save_dir_missing">儲存目錄不存在：%1$s</string>
+    <string name="desktop_save_failed_reason">儲存失敗：%1$s</string>
+    <string name="desktop_search_no_results">沒有搜尋結果</string>
+    <string name="desktop_share_none">無</string>
+    <string name="desktop_share_tags">標籤</string>
+    <string name="desktop_shortcuts_reader_section">閱讀視窗</string>
+    <string name="desktop_site">桌面版網站</string>
+    <string name="desktop_site_summary">更高的預設圖片解像度\n如未能繞過 Cloudflare 驗證請嘗試停用此項</string>
+    <string name="desktop_sort">排序</string>
+    <string name="desktop_status_checking">檢查連接中…</string>
+    <string name="desktop_status_ehentai">e-hentai：%1$s</string>
+    <string name="desktop_status_offline">離線</string>
+    <string name="desktop_untitled">（未命名）</string>
+    <string name="desktop_update_available">有可用更新：%1$s</string>
+    <string name="desktop_view_grid">格狀</string>
+    <string name="desktop_view_list">清單</string>
+    <string name="desktop_window_reading">閱讀中</string>
 </resources>

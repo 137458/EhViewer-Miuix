@@ -35,29 +35,21 @@
     <string name="sign_in_first">Connectez-vous pour continuer</string>
 
     <string name="text_is_empty">Entrez le texte.</string>
-    <string name="waring">Attention</string>
     <string name="warning">Attention</string>
 
     <string name="invalid_download_location">La location de téléchargement actuelle n\'est pas disponible. Choissez-en une à nouveau dans les Paramétres.</string>
 
     <string name="error_timeout">Time-out</string>
-    <string name="error_unknown_host">Hôte inconnu</string>
-    <string name="error_redirection">Trop de redirections</string>
-    <string name="error_socket">Erreur de network</string>
     <string name="error_unknown">Erreur inconnue</string>
     <string name="error_cant_find_activity">Impossible de trouver l\'application</string>
     <string name="error_cannot_parse_the_url">Impossible de parser le lien URL</string>
-    <string name="error_decoding_failed">Échec de décodage</string>
-    <string name="error_reading_failed">Échec de lecture</string>
     <string name="error_out_of_range">Hors de portée</string>
     <string name="error_parse_error">Échec d\'analyse syntaxique</string>
     <string name="error_509">509</string>
-    <string name="error_invalid_url">URL invalide</string>
     <string name="error_get_ptoken_error">Échec d\'obtention de pToken</string>
     <string name="error_cant_save_image">Impossible d\'enregistrer l\'image</string>
     <string name="error_invalid_number">Nombre invalide</string>
 
-    <string name="app_waring">Le contenu de l\'application provient de l\'Internet, dont quelque chose peut vous causer le dommage physique ou mentale. Vous l\'avez bien compris et voulez continuer quand même.</string>
     <string name="app_warning">Le contenu de l\'application provient de l\'Internet, dont quelque chose peut vous causer le dommage physique ou mentale. Vous l\'avez bien compris et voulez continuer quand même.</string>
     <string name="error_username_cannot_empty">Nom d\'ultilisateur ne doit pas être une chaîne vide</string>
     <string name="error_password_cannot_empty">Mot de passe ne doit pas être une chaîne vide</string>
@@ -120,7 +112,6 @@
     <string name="share">Partager</string>
     <string name="rate">Noter</string>
     <string name="similar_gallery">Similaire(s)</string>
-    <string name="search_cover">Chercher le couverture</string>
     <string name="no_tags">Aucun tag</string>
     <string name="no_comments">Aucun commentaire</string>
     <string name="no_more_comments">Pas d\'autres commentaires</string>
@@ -152,7 +143,6 @@
     <string name="rating3">TRÈS MAL</string>
     <string name="rating2">PEINE</string>
     <string name="rating1">INSUPPORTABLE</string>
-    <string name="rating0">FUYEZ !</string>
 
     <!-- Gallery Info -->
     <string name="gallery_info">Infos de la galerie</string>
