@@ -5,35 +5,19 @@ enum class CloseBehavior {
     MINIMIZE_TO_TRAY,
 }
 
-data class WindowManagerAction(
-    val shouldExitApp: Boolean,
-    val shouldKeepTray: Boolean,
-    val remainingWindowsCount: Int,
-)
+sealed interface CloseDecision {
+    data object Exit : CloseDecision
+    data object HideToTray : CloseDecision
+}
 
+// 单窗口关闭决策：关窗按钮/Esc-在根页 的统一出口——配置托盘驻留且托盘可用则隐藏窗口，否则退出应用
 object DesktopClosePolicy {
     fun evaluateClose(
-        currentWindowCount: Int,
         behavior: CloseBehavior,
         isTrayAvailable: Boolean,
-    ): WindowManagerAction {
-        val remaining = maxOf(0, currentWindowCount - 1)
-        return when {
-            remaining > 0 -> WindowManagerAction(
-                shouldExitApp = false,
-                shouldKeepTray = isTrayAvailable,
-                remainingWindowsCount = remaining,
-            )
-            behavior == CloseBehavior.MINIMIZE_TO_TRAY && isTrayAvailable -> WindowManagerAction(
-                shouldExitApp = false,
-                shouldKeepTray = true,
-                remainingWindowsCount = 0,
-            )
-            else -> WindowManagerAction(
-                shouldExitApp = true,
-                shouldKeepTray = false,
-                remainingWindowsCount = 0,
-            )
-        }
+    ): CloseDecision = if (behavior == CloseBehavior.MINIMIZE_TO_TRAY && isTrayAvailable) {
+        CloseDecision.HideToTray
+    } else {
+        CloseDecision.Exit
     }
 }

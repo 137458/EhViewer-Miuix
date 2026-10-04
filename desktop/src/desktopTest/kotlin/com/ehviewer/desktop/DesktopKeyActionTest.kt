@@ -15,20 +15,12 @@ class DesktopKeyActionTest {
     }
 
     @Test
-    fun ctrlTabResolvesToCycleWindow() {
-        val action = resolveKeyAction(
-            isKeyDown = true,
-            isCtrlPressed = true,
-            key = Key.Tab,
-        )
-        assertEquals(DesktopKeyAction.CycleWindow, action)
-
-        // KeyUp 忽略
+    fun ctrlTabIsNotHijacked() {
+        // 单窗口页面导航后 Ctrl+Tab 让位给焦点导航
         assertEquals(
             DesktopKeyAction.None,
-            resolveKeyAction(isKeyDown = false, isCtrlPressed = true, key = Key.Tab),
+            resolveKeyAction(isKeyDown = true, isCtrlPressed = true, key = Key.Tab),
         )
-        // 无 Ctrl 的 Tab 不触发（避免劫持焦点导航）
         assertEquals(
             DesktopKeyAction.None,
             resolveKeyAction(isKeyDown = true, isCtrlPressed = false, key = Key.Tab),
@@ -36,65 +28,52 @@ class DesktopKeyActionTest {
     }
 
     @Test
-    fun cycleWindowIdRotatesThroughOpenWindows() {
-        val ids = listOf(0L, 5L, 9L)
-        // 依次向后轮转
-        assertEquals(5L, cycleWindowId(ids, 0L))
-        assertEquals(9L, cycleWindowId(ids, 5L))
-        // 回绕到第一个
-        assertEquals(0L, cycleWindowId(ids, 9L))
-        // 单窗口或空列表：无需轮转
-        assertEquals(null, cycleWindowId(listOf(3L), 3L))
-        assertEquals(null, cycleWindowId(emptyList(), 3L))
-        // 当前窗口不在列表中（已关闭）：回到第一个
-        assertEquals(0L, cycleWindowId(ids, 42L))
-    }
-
-    @Test
     fun defaultEntriesContainCoreShortcuts() {
         val entries = DesktopShortcuts.defaultEntries()
         val combinations = entries.map { it.keyCombination }
-        assertTrue(combinations.any { it.contains("Ctrl + W") || it.contains("Ctrl + Q") })
+        assertTrue(combinations.any { it.contains("Ctrl + W") })
+        assertTrue(combinations.any { it.contains("Ctrl + Q") })
         assertTrue(combinations.any { it.contains("F5") || it.contains("Ctrl + R") })
         assertTrue(combinations.any { it.contains("Ctrl + O") })
-        assertTrue(combinations.any { it.contains("Ctrl + Tab") })
-        assertTrue(combinations.any { it.contains("Ctrl + Shift + Tab") })
         assertTrue(combinations.any { it.contains("Drag") })
         assertTrue(combinations.any { it.contains("Escape") })
         assertTrue(combinations.any { it.contains("F1") })
+        // 多窗口轮转键位已随单窗口化移除
+        assertTrue(entries.none { it.keyCombination.contains("Ctrl + Tab") })
 
         // 描述已资源化：两两不同（moko object 单例同一性，防复制粘贴错串）并抽查关键映射
         val descriptions = entries.map { it.descriptionRes }
         assertEquals(descriptions.size, descriptions.toSet().size)
-        assertSame(MR.strings.shortcut_cycle_window, entries.first { it.keyCombination == "Ctrl + Tab" }.descriptionRes)
+        assertSame(MR.strings.shortcut_close_page, entries.first { it.keyCombination == "Ctrl + W" }.descriptionRes)
+        assertSame(MR.strings.menu_exit, entries.first { it.keyCombination == "Ctrl + Q" }.descriptionRes)
         assertSame(MR.strings.shortcut_show_help, entries.first { it.keyCombination == "F1" }.descriptionRes)
         assertSame(MR.strings.shortcut_open_gallery_by_link, entries.first { it.keyCombination == "Ctrl + O" }.descriptionRes)
     }
 
     @Test
-    fun ctrlQResolvesToCloseWindow() {
+    fun ctrlQResolvesToExitApp() {
         val action = resolveKeyAction(
             isKeyDown = true,
             isCtrlPressed = true,
             key = Key.Q,
             hasSelection = false,
         )
-        assertEquals(DesktopKeyAction.CloseWindow, action)
+        assertEquals(DesktopKeyAction.ExitApp, action)
     }
 
     @Test
-    fun ctrlWResolvesToCloseWindow() {
+    fun ctrlWResolvesToClosePage() {
         val action = resolveKeyAction(
             isKeyDown = true,
             isCtrlPressed = true,
             key = Key.W,
             hasSelection = false,
         )
-        assertEquals(DesktopKeyAction.CloseWindow, action)
+        assertEquals(DesktopKeyAction.ClosePage, action)
     }
 
     @Test
-    fun escapeWithCanCloseOnEscapeResolvesToCloseWindow() {
+    fun escapeWithCanCloseOnEscapeResolvesToClosePage() {
         val action = resolveKeyAction(
             isKeyDown = true,
             isCtrlPressed = false,
@@ -102,7 +81,7 @@ class DesktopKeyActionTest {
             hasSelection = false,
             canCloseOnEscape = true,
         )
-        assertEquals(DesktopKeyAction.CloseWindow, action)
+        assertEquals(DesktopKeyAction.ClosePage, action)
 
         val actionWithBoth = resolveKeyAction(
             isKeyDown = true,
@@ -111,7 +90,7 @@ class DesktopKeyActionTest {
             hasSelection = true,
             canCloseOnEscape = true,
         )
-        assertEquals(DesktopKeyAction.CloseWindow, actionWithBoth)
+        assertEquals(DesktopKeyAction.ClosePage, actionWithBoth)
 
         val actionClear = resolveKeyAction(
             isKeyDown = true,
@@ -306,37 +285,6 @@ class DesktopKeyActionTest {
     }
 
     @Test
-    fun ctrlShiftTabResolvesToCycleWindowBackward() {
-        assertEquals(
-            DesktopKeyAction.CycleWindowBackward,
-            resolveKeyAction(isKeyDown = true, isCtrlPressed = true, isShiftPressed = true, key = Key.Tab),
-        )
-        // 无 Shift 的 Ctrl+Tab 仍是正向轮转
-        assertEquals(
-            DesktopKeyAction.CycleWindow,
-            resolveKeyAction(isKeyDown = true, isCtrlPressed = true, isShiftPressed = false, key = Key.Tab),
-        )
-        // KeyUp 忽略
-        assertEquals(
-            DesktopKeyAction.None,
-            resolveKeyAction(isKeyDown = false, isCtrlPressed = true, isShiftPressed = true, key = Key.Tab),
-        )
-    }
-
-    @Test
-    fun cycleWindowIdBackwardRotatesReverse() {
-        val ids = listOf(0L, 5L, 9L)
-        assertEquals(9L, cycleWindowId(ids, 0L, forward = false))
-        assertEquals(0L, cycleWindowId(ids, 5L, forward = false))
-        assertEquals(5L, cycleWindowId(ids, 9L, forward = false))
-        // 单窗口/空列表不轮转
-        assertEquals(null, cycleWindowId(listOf(3L), 3L, forward = false))
-        assertEquals(null, cycleWindowId(emptyList(), 3L, forward = false))
-        // 未知当前窗口：反向回最后一个
-        assertEquals(9L, cycleWindowId(ids, 42L, forward = false))
-    }
-
-    @Test
     fun desktopNavigationSelectsNextAndPrevious() {
         val g1 = com.ehviewer.core.model.BaseGalleryInfo(gid = 1L)
         val g2 = com.ehviewer.core.model.BaseGalleryInfo(gid = 2L)
@@ -363,7 +311,7 @@ class DesktopKeyActionTest {
     }
 
     @Test
-    fun readerEntriesContainReaderWindowKeys() {
+    fun readerEntriesContainReaderPageKeys() {
         val entries = DesktopShortcuts.readerEntries()
         assertTrue(entries.isNotEmpty())
         // 相对翻页键位组合（随阅读方向反转）
@@ -388,7 +336,7 @@ class DesktopKeyActionTest {
         // 主库专属键位不得串入阅读分组
         assertTrue(entries.none { it.keyCombination.startsWith("Ctrl + W") })
         assertTrue(entries.none { it.keyCombination == "Ctrl + O" })
-        assertTrue(entries.none { it.keyCombination == "Ctrl + Tab" })
+        assertTrue(entries.none { it.keyCombination.contains("Ctrl + Tab") })
     }
 
     @Test

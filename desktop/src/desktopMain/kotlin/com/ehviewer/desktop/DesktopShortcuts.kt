@@ -10,11 +10,10 @@ data class DesktopShortcutEntry(
 
 object DesktopShortcuts {
     fun defaultEntries(): List<DesktopShortcutEntry> = listOf(
-        DesktopShortcutEntry("Ctrl + W / Ctrl + Q", MR.strings.shortcut_close_window),
+        DesktopShortcutEntry("Ctrl + W", MR.strings.shortcut_close_page),
+        DesktopShortcutEntry("Ctrl + Q", MR.strings.menu_exit),
         DesktopShortcutEntry("Ctrl + R / F5", MR.strings.shortcut_refresh_galleries),
         DesktopShortcutEntry("Ctrl + O", MR.strings.shortcut_open_gallery_by_link),
-        DesktopShortcutEntry("Ctrl + Tab", MR.strings.shortcut_cycle_window),
-        DesktopShortcutEntry("Ctrl + Shift + Tab", MR.strings.shortcut_cycle_window_reverse),
         DesktopShortcutEntry("Escape", MR.strings.shortcut_escape),
         DesktopShortcutEntry("↑ / ↓", MR.strings.shortcut_navigate_list),
         DesktopShortcutEntry("Home / End", MR.strings.shortcut_jump_first_last),

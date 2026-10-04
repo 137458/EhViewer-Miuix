@@ -64,9 +64,9 @@ fun SettingsScreen() {
                 .collectAsState(DesktopSettings.restoreLimit.value)
             BasicComponent(
                 title = stringResource(MR.strings.settings_restore_session),
-                summary = "${DesktopWindowManager.sanitizeRestoreLimit(restoreLimit)}",
+                summary = "${DesktopPageStack.sanitizeRestoreLimit(restoreLimit)}",
                 onClick = {
-                    val current = DesktopWindowManager.sanitizeRestoreLimit(restoreLimit)
+                    val current = DesktopPageStack.sanitizeRestoreLimit(restoreLimit)
                     DesktopSettings.restoreLimit.value = when (current) {
                         5 -> 10
                         10 -> 20

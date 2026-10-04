@@ -110,7 +110,7 @@ enum class LibraryTab {
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun LibraryScreen(
-    onOpenGalleryInNewWindow: ((BaseGalleryInfo) -> Unit)? = null,
+    onOpenGallery: ((BaseGalleryInfo) -> Unit)? = null,
     onOpenReader: ((BaseGalleryInfo) -> Unit)? = null,
     openGalleryDialogVisible: Boolean = false,
     onOpenGalleryDialogOpen: () -> Unit = {},
@@ -451,7 +451,7 @@ fun LibraryScreen(
                                     submitSearch(searchQuery)
                                 }
                                 selected?.let { gallery ->
-                                    onOpenGalleryInNewWindow?.invoke(gallery)
+                                    onOpenGallery?.invoke(gallery)
                                 }
                                 true
                             }
@@ -885,7 +885,7 @@ fun LibraryScreen(
                         val copyTitleLabel = stringResource(MR.strings.copy_title)
                         val copyLinkLabel = stringResource(MR.strings.copy_link)
                         val openBrowserLabel = stringResource(MR.strings.open_in_browser)
-                        val openInNewWindowLabel = stringResource(MR.strings.menu_new_window)
+                        val openGalleryLabel = stringResource(MR.strings.desktop_open_gallery_title)
                         val readLabel = stringResource(MR.strings.menu_read)
                         val deleteLabel = stringResource(MR.strings.delete)
                         val addFavoriteLabel = stringResource(MR.strings.add_favorites_dialog_title)
@@ -935,10 +935,10 @@ fun LibraryScreen(
                                     },
                                 )
                             }
-                            if (onOpenGalleryInNewWindow != null) {
+                            if (onOpenGallery != null) {
                                 menuItems.add(
-                                    ContextMenuItem(openInNewWindowLabel) {
-                                        onOpenGalleryInNewWindow(gallery)
+                                    ContextMenuItem(openGalleryLabel) {
+                                        onOpenGallery(gallery)
                                     },
                                 )
                             }
@@ -1003,7 +1003,7 @@ fun LibraryScreen(
                                                         onDoubleClick = {
                                                             multiSelection.clear()
                                                             selected = gallery
-                                                            onOpenGalleryInNewWindow?.invoke(gallery)
+                                                            onOpenGallery?.invoke(gallery)
                                                         },
                                                     )
                                                     .background(
@@ -1107,7 +1107,7 @@ fun LibraryScreen(
                                                         onDoubleClick = {
                                                             multiSelection.clear()
                                                             selected = gallery
-                                                            onOpenGalleryInNewWindow?.invoke(gallery)
+                                                            onOpenGallery?.invoke(gallery)
                                                         },
                                                     )
                                                     .background(
@@ -1265,7 +1265,7 @@ fun LibraryScreen(
                 onOpen = { target ->
                     onOpenGalleryDialogClose()
                     showNotification("$openingGalleryText ${target.gid}")
-                    onOpenGalleryInNewWindow?.invoke(DesktopOpenGalleryState.createGalleryInfo(target))
+                    onOpenGallery?.invoke(DesktopOpenGalleryState.createGalleryInfo(target))
                 },
             )
         }
