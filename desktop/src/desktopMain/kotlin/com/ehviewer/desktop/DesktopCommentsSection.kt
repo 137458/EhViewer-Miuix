@@ -10,6 +10,7 @@ import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -135,58 +136,45 @@ fun DesktopCommentsSection(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            val headerInteraction = remember { MutableInteractionSource() }
-            val headerHovered by headerInteraction.collectIsHoveredAsState()
             val hasComments = !comments.isNullOrEmpty()
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                modifier = Modifier
-                    .clip(SquircleShape(4.dp))
-                    .background(if (headerHovered && hasComments) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
-                    .pointerHoverIcon(if (hasComments) PointerIcon.Hand else PointerIcon.Default)
-                    .clickable(
-                        interactionSource = headerInteraction,
-                        indication = null,
-                        enabled = hasComments,
-                    ) { expanded = !expanded }
-                    .padding(horizontal = 4.dp, vertical = 2.dp),
+            DesktopHoverPill(
+                onClick = { expanded = !expanded },
+                enabled = hasComments,
+                shape = SquircleShape(4.dp),
+                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 2.dp),
             ) {
-                Text(
-                    text = headerText,
-                    color = MiuixTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Medium,
-                )
-                if (!comments.isNullOrEmpty()) {
-                    Box(
-                        modifier = Modifier
-                            .clip(SquircleShape(4.dp))
-                            .background(MiuixTheme.colorScheme.primary.copy(alpha = 0.12f))
-                            .padding(horizontal = 6.dp, vertical = 2.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(
-                            text = "${comments.size}",
-                            color = MiuixTheme.colorScheme.primary,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Medium,
-                        )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    Text(
+                        text = headerText,
+                        color = MiuixTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Medium,
+                    )
+                    if (!comments.isNullOrEmpty()) {
+                        Box(
+                            modifier = Modifier
+                                .clip(SquircleShape(4.dp))
+                                .background(MiuixTheme.colorScheme.primary.copy(alpha = 0.12f))
+                                .padding(horizontal = 6.dp, vertical = 2.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(
+                                text = "${comments.size}",
+                                color = MiuixTheme.colorScheme.primary,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Medium,
+                            )
+                        }
                     }
                 }
             }
             if (!comments.isNullOrEmpty() && comments.size > 3) {
-                val arrowHover = remember { MutableInteractionSource() }
-                val arrowHovered by arrowHover.collectIsHoveredAsState()
-                Box(
-                    modifier = Modifier
-                        .clip(SquircleShape(6.dp))
-                        .background(MiuixTheme.colorScheme.surfaceContainerHighest)
-                        .background(if (arrowHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
-                        .hoverable(arrowHover)
-                        .pointerHoverIcon(PointerIcon.Hand)
-                        .clickable { expanded = !expanded }
-                        .padding(horizontal = 8.dp, vertical = 3.dp),
-                    contentAlignment = Alignment.Center,
+                DesktopHoverPill(
+                    onClick = { expanded = !expanded },
+                    containerColor = MiuixTheme.colorScheme.surfaceContainerHighest,
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 3.dp),
                 ) {
                     Text(
                         text = if (expanded) "▲" else "▼",
@@ -230,18 +218,10 @@ fun DesktopCommentsSection(
                     color = MiuixTheme.colorScheme.error,
                     fontSize = 12.sp,
                 )
-                val retryHover = remember { MutableInteractionSource() }
-                val retryHovered by retryHover.collectIsHoveredAsState()
-                Box(
-                    modifier = Modifier
-                        .clip(SquircleShape(6.dp))
-                        .background(MiuixTheme.colorScheme.surfaceContainerHighest)
-                        .background(if (retryHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
-                        .hoverable(retryHover)
-                        .pointerHoverIcon(PointerIcon.Hand)
-                        .clickable(onClick = onRetry)
-                        .padding(horizontal = 10.dp, vertical = 4.dp),
-                    contentAlignment = Alignment.Center,
+                DesktopHoverPill(
+                    onClick = onRetry,
+                    containerColor = MiuixTheme.colorScheme.surfaceContainerHighest,
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
                 ) {
                     Text(
                         text = retryText,
@@ -288,19 +268,12 @@ fun DesktopCommentsSection(
                         }
                     }
                     if (loaded.size > display.size) {
-                        val moreHover = remember { MutableInteractionSource() }
-                        val moreHovered by moreHover.collectIsHoveredAsState()
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(SquircleShape(8.dp))
-                                .background(MiuixTheme.colorScheme.surfaceContainerHighest)
-                                .background(if (moreHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
-                                .hoverable(moreHover)
-                                .pointerHoverIcon(PointerIcon.Hand)
-                                .clickable { expanded = true }
-                                .padding(vertical = 8.dp),
-                            contentAlignment = Alignment.Center,
+                        DesktopHoverPill(
+                            onClick = { expanded = true },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = SquircleShape(8.dp),
+                            containerColor = MiuixTheme.colorScheme.surfaceContainerHighest,
+                            contentPadding = PaddingValues(vertical = 8.dp),
                         ) {
                             Text(
                                 text = "$moreText (${loaded.size})",
@@ -310,19 +283,12 @@ fun DesktopCommentsSection(
                             )
                         }
                     } else if (expanded && loaded.size > 3) {
-                        val lessHover = remember { MutableInteractionSource() }
-                        val lessHovered by lessHover.collectIsHoveredAsState()
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(SquircleShape(8.dp))
-                                .background(MiuixTheme.colorScheme.surfaceContainerHighest)
-                                .background(if (lessHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
-                                .hoverable(lessHover)
-                                .pointerHoverIcon(PointerIcon.Hand)
-                                .clickable { expanded = false }
-                                .padding(vertical = 8.dp),
-                            contentAlignment = Alignment.Center,
+                        DesktopHoverPill(
+                            onClick = { expanded = false },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = SquircleShape(8.dp),
+                            containerColor = MiuixTheme.colorScheme.surfaceContainerHighest,
+                            contentPadding = PaddingValues(vertical = 8.dp),
                         ) {
                             Text(
                                 text = "▲",
