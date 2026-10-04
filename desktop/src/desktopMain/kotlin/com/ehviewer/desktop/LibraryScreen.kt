@@ -239,7 +239,10 @@ fun LibraryScreen(
         DesktopSettings.searchHistory.value = DesktopSearchHistory.encode(updated)
     }
 
+    // 远程搜索防重入：连按 Enter 时忽略后续触发，避免慢请求完成后覆盖新请求结果（数据错位）
+    var remoteSearching by remember { mutableStateOf(false) }
     fun remoteSearch(query: String, nextGid: Long? = null, pushCursor: Boolean = true) {
+        if (remoteSearching) return
         val url = DesktopSearchUrl.build(query, nextGid = nextGid) ?: return
         remoteSearchQuery = query
         if (pushCursor) {
@@ -250,30 +253,35 @@ fun LibraryScreen(
         }
         // 列表即将被新页替换，清除跨页残留的选中态
         selected = null
+        remoteSearching = true
         coroutineScope.launch {
-            online = emptyList()
-            connectionStatus = DesktopConnectionStatus.Checking
-            runCatching {
-                withContext(Dispatchers.IO) { desktopGet(url) }
-            }.onSuccess { response ->
-                // 与 refreshGalleries 同约定：拿到响应即定状态，避免非 2xx/解析失败时卡在 Checking 且无重试入口
-                connectionStatus = DesktopConnectionStatus.Online(response.status)
-                if (response.status in 200..299) {
-                    runCatching {
-                        parseGalleryList(response.toByteBuffer() ?: error("HTTP ${response.status}")).galleryInfoList.toList()
-                    }.onSuccess { list ->
-                        online = list
-                        logcat("Library", LogPriority.INFO) { "ONLINE_SEARCH parsed=${list.size} q=$query next=$nextGid" }
-                    }.onFailure { e ->
-                        logcat("Library", LogPriority.WARN) { "ONLINE_SEARCH parse failed: $e" }
+            try {
+                online = emptyList()
+                connectionStatus = DesktopConnectionStatus.Checking
+                runCatching {
+                    withContext(Dispatchers.IO) { desktopGet(url) }
+                }.onSuccess { response ->
+                    // 与 refreshGalleries 同约定：拿到响应即定状态，避免非 2xx/解析失败时卡在 Checking 且无重试入口
+                    connectionStatus = DesktopConnectionStatus.Online(response.status)
+                    if (response.status in 200..299) {
+                        runCatching {
+                            parseGalleryList(response.toByteBuffer() ?: error("HTTP ${response.status}")).galleryInfoList.toList()
+                        }.onSuccess { list ->
+                            online = list
+                            logcat("Library", LogPriority.INFO) { "ONLINE_SEARCH parsed=${list.size} q=$query next=$nextGid" }
+                        }.onFailure { e ->
+                            logcat("Library", LogPriority.WARN) { "ONLINE_SEARCH parse failed: $e" }
+                        }
+                    } else {
+                        logcat("Library", LogPriority.WARN) { "ONLINE_SEARCH status=${response.status}" }
                     }
-                } else {
-                    logcat("Library", LogPriority.WARN) { "ONLINE_SEARCH status=${response.status}" }
+                }.onFailure { e ->
+                    val cleaned = DesktopConnectionState.cleanErrorMessage(e.message ?: e::class.simpleName, connectionErrorLabels)
+                    connectionStatus = DesktopConnectionStatus.Offline(cleaned)
+                    logcat("Library", LogPriority.WARN) { "ONLINE_SEARCH failed: $cleaned" }
                 }
-            }.onFailure { e ->
-                val cleaned = DesktopConnectionState.cleanErrorMessage(e.message ?: e::class.simpleName, connectionErrorLabels)
-                connectionStatus = DesktopConnectionStatus.Offline(cleaned)
-                logcat("Library", LogPriority.WARN) { "ONLINE_SEARCH failed: $cleaned" }
+            } finally {
+                remoteSearching = false
             }
         }
     }
