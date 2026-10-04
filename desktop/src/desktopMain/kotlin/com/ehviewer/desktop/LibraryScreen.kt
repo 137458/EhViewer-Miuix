@@ -1472,10 +1472,14 @@ fun LibraryScreen(
                             fontWeight = FontWeight.Bold,
                         )
                     }
+                    val cancelHover = remember { MutableInteractionSource() }
+                    val cancelHovered by cancelHover.collectIsHoveredAsState()
                     Box(
                         modifier = Modifier
                             .clip(SquircleShape(8.dp))
                             .background(MiuixTheme.colorScheme.surface)
+                            .background(if (cancelHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
+                            .hoverable(cancelHover)
                             .pointerHoverIcon(PointerIcon.Hand)
                             .clickable { multiSelection.clear() }
                             .padding(horizontal = 12.dp, vertical = 6.dp),
@@ -1488,10 +1492,13 @@ fun LibraryScreen(
                             fontWeight = FontWeight.Medium,
                         )
                     }
+                    val deleteHover = remember { MutableInteractionSource() }
+                    val deleteHovered by deleteHover.collectIsHoveredAsState()
                     Box(
                         modifier = Modifier
                             .clip(SquircleShape(8.dp))
-                            .background(MiuixTheme.colorScheme.error.copy(alpha = 0.15f))
+                            .background(MiuixTheme.colorScheme.error.copy(alpha = if (deleteHovered) 0.25f else 0.15f))
+                            .hoverable(deleteHover)
                             .pointerHoverIcon(PointerIcon.Hand)
                             .clickable { showBatchDeleteConfirm = true }
                             .padding(horizontal = 12.dp, vertical = 6.dp),
@@ -1517,10 +1524,14 @@ fun LibraryScreen(
                 horizontalAlignment = Alignment.End,
             ) {
                 notifications.forEach { notice ->
+                    val noticeHover = remember { MutableInteractionSource() }
+                    val noticeHovered by noticeHover.collectIsHoveredAsState()
                     Box(
                         modifier = Modifier
                             .clip(SquircleShape(8.dp))
                             .background(MiuixTheme.colorScheme.surfaceContainerHighest)
+                            .background(if (noticeHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
+                            .hoverable(noticeHover)
                             .pointerHoverIcon(PointerIcon.Hand)
                             .clickable {
                                 notifications = DesktopNotificationManager.dismiss(notifications, notice.id)
