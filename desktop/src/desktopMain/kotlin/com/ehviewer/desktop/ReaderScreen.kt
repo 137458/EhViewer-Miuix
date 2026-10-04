@@ -33,6 +33,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.key.Key
@@ -300,23 +302,78 @@ fun ReaderScreen(
                     }
                 }
                 if (showJumpInput && pageLinks.isNotEmpty()) {
-                    TextField(
-                        state = jumpFieldState,
-                        lineLimits = TextFieldLineLimits.SingleLine,
+                    val jumpFocusRequester = remember { FocusRequester() }
+                    LaunchedEffect(Unit) {
+                        jumpFocusRequester.requestFocus()
+                    }
+                    val executeJump = {
+                        jumpInput.toIntOrNull()?.let { target ->
+                            page = target.coerceIn(1, pageLinks.size)
+                        }
+                        showJumpInput = false
+                    }
+                    Row(
                         modifier = Modifier
-                            .width(72.dp)
-                            .onPreviewKeyEvent { event ->
-                                if (event.type == KeyEventType.KeyDown && event.key == Key.Enter) {
-                                    jumpInput.toIntOrNull()?.let { target ->
-                                        page = target.coerceIn(1, pageLinks.size)
+                            .clip(SquircleShape(8.dp))
+                            .background(MiuixTheme.colorScheme.surfaceContainerHighest)
+                            .padding(start = 6.dp, end = 4.dp, top = 2.dp, bottom = 2.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        TextField(
+                            state = jumpFieldState,
+                            lineLimits = TextFieldLineLimits.SingleLine,
+                            modifier = Modifier
+                                .width(56.dp)
+                                .focusRequester(jumpFocusRequester)
+                                .onPreviewKeyEvent { event ->
+                                    if (event.type == KeyEventType.KeyDown) {
+                                        when (event.key) {
+                                            Key.Enter, Key.NumPadEnter -> {
+                                                executeJump()
+                                                true
+                                            }
+                                            Key.Escape -> {
+                                                showJumpInput = false
+                                                true
+                                            }
+                                            else -> false
+                                        }
+                                    } else {
+                                        false
                                     }
-                                    showJumpInput = false
-                                    true
-                                } else {
-                                    false
-                                }
-                            },
-                    )
+                                },
+                        )
+                        Box(
+                            modifier = Modifier
+                                .clip(SquircleShape(6.dp))
+                                .background(MiuixTheme.colorScheme.primary)
+                                .pointerHoverIcon(PointerIcon.Hand)
+                                .clickable { executeJump() }
+                                .padding(horizontal = 8.dp, vertical = 4.dp),
+                        ) {
+                            Text(
+                                text = stringResource(MR.strings.go_to),
+                                color = MiuixTheme.colorScheme.onPrimary,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium,
+                            )
+                        }
+                        Box(
+                            modifier = Modifier
+                                .clip(SquircleShape(6.dp))
+                                .background(MiuixTheme.colorScheme.surfaceContainer)
+                                .pointerHoverIcon(PointerIcon.Hand)
+                                .clickable { showJumpInput = false }
+                                .padding(horizontal = 6.dp, vertical = 4.dp),
+                        ) {
+                            Text(
+                                text = stringResource(MR.strings.desktop_action_cancel),
+                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                fontSize = 12.sp,
+                            )
+                        }
+                    }
                 }
                 IconButton(
                     onClick = onClose,
@@ -381,7 +438,10 @@ fun ReaderScreen(
                 // 缩放角标：scale 经 derivedStateOf 延迟读取，捏合期间仅角标自身重组（Box 内容其余部分不参与）
                 ZoomBadge(
                     zoomStateState = remember { derivedStateOf { zoomState } },
-                    modifier = Modifier.align(Alignment.TopEnd),
+                    onReset = { zoomState = DesktopReaderZoomState() },
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(12.dp),
                 )
                 val url = imageUrl
                 val copyLinkLabel = stringResource(MR.strings.copy_link)
@@ -517,11 +577,24 @@ fun ReaderScreen(
                     )
                 }
                 if (pageLinks.isNotEmpty()) {
-                    Text(
-                        text = "$page / ${pageLinks.size}",
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        fontSize = 12.sp,
-                    )
+                    Box(
+                        modifier = Modifier
+                            .clip(SquircleShape(6.dp))
+                            .background(MiuixTheme.colorScheme.surfaceContainerHighest)
+                            .pointerHoverIcon(PointerIcon.Hand)
+                            .clickable {
+                                jumpFieldState.setTextAndPlaceCursorAtEnd(page.toString())
+                                showJumpInput = !showJumpInput
+                            }
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                    ) {
+                        Text(
+                            text = "$page / ${pageLinks.size}",
+                            color = MiuixTheme.colorScheme.onSurface,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium,
+                        )
+                    }
                 }
                 Box(
                     modifier = Modifier
@@ -594,6 +667,7 @@ fun ReaderScreen(
 @Composable
 private fun ZoomBadge(
     zoomStateState: State<DesktopReaderZoomState>,
+    onReset: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val visible by remember { derivedStateOf { zoomStateState.value.scale != READER_MIN_SCALE } }
@@ -601,10 +675,13 @@ private fun ZoomBadge(
     val text by remember { derivedStateOf { DesktopZoomController.formatZoomPercentage(zoomStateState.value.scale) } }
     Text(
         text = text,
-        color = Color.White.copy(alpha = 0.7f),
+        color = Color.White.copy(alpha = 0.85f),
         fontSize = 12.sp,
+        fontWeight = FontWeight.Medium,
         modifier = modifier
-            .background(Color.Black.copy(alpha = 0.4f), SquircleShape(6.dp))
+            .background(Color.Black.copy(alpha = 0.55f), SquircleShape(6.dp))
+            .pointerHoverIcon(PointerIcon.Hand)
+            .clickable { onReset() }
             .padding(horizontal = 8.dp, vertical = 4.dp),
     )
 }
