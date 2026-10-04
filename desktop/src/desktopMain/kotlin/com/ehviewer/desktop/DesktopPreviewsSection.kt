@@ -11,6 +11,7 @@ import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -81,17 +82,10 @@ fun DesktopPreviewsSection(
                     fontSize = 12.sp,
                 )
                 if (onRetry != null) {
-                    val retryHover = remember { MutableInteractionSource() }
-                    val retryHovered by retryHover.collectIsHoveredAsState()
-                    Box(
-                        modifier = Modifier
-                            .clip(SquircleShape(6.dp))
-                            .background(MiuixTheme.colorScheme.surfaceContainerHighest)
-                            .background(if (retryHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
-                            .hoverable(retryHover)
-                            .pointerHoverIcon(PointerIcon.Hand)
-                            .clickable(onClick = onRetry)
-                            .padding(horizontal = 10.dp, vertical = 4.dp),
+                    DesktopHoverPill(
+                        onClick = onRetry,
+                        containerColor = MiuixTheme.colorScheme.surfaceContainerHighest,
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
                     ) {
                         Text(
                             text = retryText,
@@ -151,33 +145,32 @@ private fun PreviewCell(
             )
         },
     ) {
-        val hoverInteraction = remember { MutableInteractionSource() }
-        val hovered by hoverInteraction.collectIsHoveredAsState()
+        val openPreview: () -> Unit = {
+            if (onPreviewImage != null) {
+                onPreviewImage(preview.url)
+            } else {
+                DesktopBrowser.openUrl(preview.url)
+            }
+        }
         when (preview) {
-            is V1GalleryPreview -> Box(
-                modifier = Modifier
-                    .clip(SquircleShape(8.dp))
-                    .pointerHoverIcon(PointerIcon.Hand)
-                    .clickable(
-                        interactionSource = hoverInteraction,
-                        indication = null,
-                    ) {
-                        if (onPreviewImage != null) {
-                            onPreviewImage(preview.url)
-                        } else {
-                            DesktopBrowser.openUrl(preview.url)
-                        }
-                    }
-                    .width(100.dp)
-                    .height(PREVIEW_DISPLAY_HEIGHT.dp),
-            ) {
-                AsyncImage(
-                    model = preview.url,
-                    contentDescription = headerText,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize(),
-                )
-                PreviewHoverOverlay(hovered)
+            is V1GalleryPreview -> DesktopHoverPill(
+                onClick = openPreview,
+                shape = SquircleShape(8.dp),
+                contentPadding = PaddingValues(0.dp),
+            ) { hovered ->
+                Box(
+                    modifier = Modifier
+                        .width(100.dp)
+                        .height(PREVIEW_DISPLAY_HEIGHT.dp),
+                ) {
+                    AsyncImage(
+                        model = preview.url,
+                        contentDescription = headerText,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                    PreviewHoverOverlay(hovered)
+                }
             }
             is V2GalleryPreview -> {
                 // 雪碧图单格：按显示高推算缩放，整图按位移裁出当前格（点击全屏预览或浏览器打开）
@@ -187,32 +180,26 @@ private fun PreviewCell(
                     clipHeight = preview.clipHeight,
                     displayHeight = PREVIEW_DISPLAY_HEIGHT.toFloat(),
                 ) ?: return@ContextMenuArea
-                Box(
-                    modifier = Modifier
-                        .clip(SquircleShape(8.dp))
-                        .pointerHoverIcon(PointerIcon.Hand)
-                        .clickable(
-                            interactionSource = hoverInteraction,
-                            indication = null,
-                        ) {
-                            if (onPreviewImage != null) {
-                                onPreviewImage(preview.url)
-                            } else {
-                                DesktopBrowser.openUrl(preview.url)
-                            }
-                        }
-                        .width(cell.width.dp)
-                        .height(cell.height.dp),
-                ) {
-                    AsyncImage(
-                        model = preview.url,
-                        contentDescription = headerText,
-                        contentScale = ContentScale.FillHeight,
+                DesktopHoverPill(
+                    onClick = openPreview,
+                    shape = SquircleShape(8.dp),
+                    contentPadding = PaddingValues(0.dp),
+                ) { hovered ->
+                    Box(
                         modifier = Modifier
-                            .height(PREVIEW_DISPLAY_HEIGHT.dp)
-                            .offset(x = cell.offsetX.dp),
-                    )
-                    PreviewHoverOverlay(hovered)
+                            .width(cell.width.dp)
+                            .height(cell.height.dp),
+                    ) {
+                        AsyncImage(
+                            model = preview.url,
+                            contentDescription = headerText,
+                            contentScale = ContentScale.FillHeight,
+                            modifier = Modifier
+                                .height(PREVIEW_DISPLAY_HEIGHT.dp)
+                                .offset(x = cell.offsetX.dp),
+                        )
+                        PreviewHoverOverlay(hovered)
+                    }
                 }
             }
         }
