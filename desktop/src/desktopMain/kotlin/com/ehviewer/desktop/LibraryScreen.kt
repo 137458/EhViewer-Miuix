@@ -612,14 +612,17 @@ fun LibraryScreen(
                             Box(
                                 modifier = Modifier
                                     .clip(SquircleShape(6.dp))
+                                    .background(MiuixTheme.colorScheme.surfaceContainerHighest)
                                     .pointerHoverIcon(PointerIcon.Hand)
                                     .clickable { showClearHistoryConfirm = true }
-                                    .padding(horizontal = 6.dp, vertical = 4.dp),
+                                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                                contentAlignment = Alignment.Center,
                             ) {
                                 Text(
                                     text = stringResource(MR.strings.clear_all),
                                     color = MiuixTheme.colorScheme.primary,
                                     fontSize = 12.sp,
+                                    fontWeight = FontWeight.Medium,
                                 )
                             }
                         }
@@ -757,9 +760,11 @@ fun LibraryScreen(
                             Box(
                                 modifier = Modifier
                                     .clip(SquircleShape(4.dp))
+                                    .background(MiuixTheme.colorScheme.surfaceContainerHighest)
                                     .pointerHoverIcon(PointerIcon.Hand)
                                     .clickable { clearSearchHistory() }
-                                    .padding(horizontal = 4.dp, vertical = 2.dp),
+                                    .padding(horizontal = 6.dp, vertical = 2.dp),
+                                contentAlignment = Alignment.Center,
                             ) {
                                 Text(
                                     text = "✕",
@@ -785,11 +790,10 @@ fun LibraryScreen(
                                 overflow = TextOverflow.Ellipsis,
                                 modifier = Modifier.weight(1f, fill = false),
                             )
-                            Text(
-                                text = "✕",
-                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                fontSize = 11.sp,
+                            Box(
                                 modifier = Modifier
+                                    .clip(SquircleShape(4.dp))
+                                    .background(MiuixTheme.colorScheme.surfaceContainerHighest)
                                     .pointerHoverIcon(PointerIcon.Hand)
                                     .clickable {
                                         remoteSearchQuery = ""
@@ -798,29 +802,44 @@ fun LibraryScreen(
                                         cursorIndex = 0
                                         coroutineScope.launch { refreshGalleries() }
                                     }
-                                    .padding(horizontal = 4.dp),
-                            )
-                            Text(
-                                text = stringResource(MR.strings.desktop_reader_prev),
-                                color = if (cursorIndex > 0) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                    .padding(horizontal = 6.dp, vertical = 2.dp),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    text = "✕",
+                                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                    fontSize = 11.sp,
+                                )
+                            }
+                            Box(
                                 modifier = Modifier
+                                    .clip(SquircleShape(6.dp))
+                                    .background(MiuixTheme.colorScheme.surfaceContainerHighest)
                                     .pointerHoverIcon(PointerIcon.Hand)
                                     .clickable(enabled = cursorIndex > 0) {
                                         cursorIndex -= 1
                                         remoteSearch(remoteSearchQuery, nextGid = cursorStack[cursorIndex], pushCursor = false)
                                     }
                                     .padding(horizontal = 8.dp, vertical = 4.dp),
-                            )
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    text = stringResource(MR.strings.desktop_reader_prev),
+                                    color = if (cursorIndex > 0) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.5f),
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Medium,
+                                )
+                            }
                             Text(
                                 text = stringResource(MR.strings.desktop_online_page_n, cursorIndex + 1),
                                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                 fontSize = 11.sp,
                             )
                             Box(modifier = Modifier.weight(1f))
-                            Text(
-                                text = stringResource(MR.strings.desktop_online_next),
-                                color = if (online.isNotEmpty()) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                            Box(
                                 modifier = Modifier
+                                    .clip(SquircleShape(6.dp))
+                                    .background(MiuixTheme.colorScheme.surfaceContainerHighest)
                                     .pointerHoverIcon(PointerIcon.Hand)
                                     .clickable(enabled = online.isNotEmpty()) {
                                         val lastGid = online.lastOrNull()?.gid
@@ -832,7 +851,15 @@ fun LibraryScreen(
                                         }
                                     }
                                     .padding(horizontal = 8.dp, vertical = 4.dp),
-                            )
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    text = stringResource(MR.strings.desktop_online_next),
+                                    color = if (online.isNotEmpty()) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.5f),
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Medium,
+                                )
+                            }
                         }
                     }
                     HorizontalDivider()
