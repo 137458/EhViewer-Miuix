@@ -785,10 +785,14 @@ fun LibraryScreen(
                                             )
                                         },
                                     ) {
+                                        val chipHover = remember { MutableInteractionSource() }
+                                        val chipHovered by chipHover.collectIsHoveredAsState()
                                         Row(
                                             modifier = Modifier
                                                 .clip(SquircleShape(6.dp))
                                                 .background(MiuixTheme.colorScheme.surfaceContainerHighest)
+                                                .background(if (chipHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
+                                                .hoverable(chipHover)
                                                 .pointerHoverIcon(PointerIcon.Hand)
                                                 .clickable {
                                                     searchFieldState.setTextAndPlaceCursorAtEnd(suggestion)
@@ -805,9 +809,13 @@ fun LibraryScreen(
                                                 maxLines = 1,
                                                 overflow = TextOverflow.Ellipsis,
                                             )
+                                            val chipDeleteHover = remember { MutableInteractionSource() }
+                                            val chipDeleteHovered by chipDeleteHover.collectIsHoveredAsState()
                                             Box(
                                                 modifier = Modifier
                                                     .clip(SquircleShape(4.dp))
+                                                    .background(if (chipDeleteHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
+                                                    .hoverable(chipDeleteHover)
                                                     .pointerHoverIcon(PointerIcon.Hand)
                                                     .clickable {
                                                         val updated = DesktopSearchHistory.removeQuery(searchHistoryList, suggestion)
@@ -826,10 +834,14 @@ fun LibraryScreen(
                                     }
                                 }
                             }
+                            val clearHistoryHover = remember { MutableInteractionSource() }
+                            val clearHistoryHovered by clearHistoryHover.collectIsHoveredAsState()
                             Box(
                                 modifier = Modifier
                                     .clip(SquircleShape(6.dp))
                                     .background(MiuixTheme.colorScheme.surfaceContainerHighest)
+                                    .background(if (clearHistoryHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
+                                    .hoverable(clearHistoryHover)
                                     .pointerHoverIcon(PointerIcon.Hand)
                                     .clickable { clearSearchHistory() }
                                     .padding(horizontal = 6.dp, vertical = 2.dp),
@@ -860,10 +872,14 @@ fun LibraryScreen(
                                 overflow = TextOverflow.Ellipsis,
                                 modifier = Modifier.weight(1f, fill = false),
                             )
+                            val remoteResetHover = remember { MutableInteractionSource() }
+                            val remoteResetHovered by remoteResetHover.collectIsHoveredAsState()
                             Box(
                                 modifier = Modifier
                                     .clip(SquircleShape(4.dp))
                                     .background(MiuixTheme.colorScheme.surfaceContainerHighest)
+                                    .background(if (remoteResetHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
+                                    .hoverable(remoteResetHover)
                                     .pointerHoverIcon(PointerIcon.Hand)
                                     .clickable {
                                         remoteSearchQuery = ""
