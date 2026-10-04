@@ -408,29 +408,44 @@ private fun SaveWindowSize(windowState: androidx.compose.ui.window.WindowState) 
                 DesktopSettings.windowHeight = size.height.value.toInt()
             }
     }
-    // 位置仅在浮动态记录（最大化/最小化的系统偏移坐标不落盘；PlatformDefault 的 x/y 非有限值同样排除）
+    // 位置仅在浮动态记录（最大化/最小化的系统偏移坐标不落盘；PlatformDefault 的 x/y 非有限值同样排除；拔除显示器后残留坐标不落盘）
     LaunchedEffect(windowState) {
         snapshotFlow { windowState.position to windowState.placement }
             .drop(1)
             .debounce(500)
             .collect { (position, placement) ->
-                if (placement == WindowPlacement.Floating && position.x.value.isFinite() && position.y.value.isFinite()) {
-                    DesktopSettings.windowX = position.x.value.toInt()
-                    DesktopSettings.windowY = position.y.value.toInt()
+                val x = position.x.value.toInt()
+                val y = position.y.value.toInt()
+                if (placement == WindowPlacement.Floating &&
+                    position.x.value.isFinite() &&
+                    position.y.value.isFinite() &&
+                    isPositionWithinScreens(x, y, visibleScreenBounds())
+                ) {
+                    DesktopSettings.windowX = x
+                    DesktopSettings.windowY = y
                 }
             }
     }
 }
 
+// 屏幕.bounds 枚举失败（headless 等异常环境）时返回空表 → 一律不更新位置，保持上次已知安全值
+private fun visibleScreenBounds(): List<java.awt.Rectangle> = runCatching {
+    java.awt.GraphicsEnvironment.getLocalGraphicsEnvironment()
+        .screenDevices.map { it.defaultConfiguration.bounds }
+}.getOrDefault(emptyList())
+
 private fun saveWindowPlacement(windowState: androidx.compose.ui.window.WindowState) {
     DesktopSettings.windowWidth = windowState.size.width.value.toInt()
     DesktopSettings.windowHeight = windowState.size.height.value.toInt()
+    val x = windowState.position.x.value.toInt()
+    val y = windowState.position.y.value.toInt()
     if (windowState.placement == WindowPlacement.Floating &&
         windowState.position.x.value.isFinite() &&
-        windowState.position.y.value.isFinite()
+        windowState.position.y.value.isFinite() &&
+        isPositionWithinScreens(x, y, visibleScreenBounds())
     ) {
-        DesktopSettings.windowX = windowState.position.x.value.toInt()
-        DesktopSettings.windowY = windowState.position.y.value.toInt()
+        DesktopSettings.windowX = x
+        DesktopSettings.windowY = y
     }
 }
 
