@@ -113,7 +113,7 @@ fun DesktopModalCard(
                 }
             }
             HorizontalDivider(color = MiuixTheme.colorScheme.outline.copy(alpha = 0.15f))
-            // 内容区限高滚动并挂载 Miuix 配色滚动条（由根节点 LocalScrollbarStyle 提供样式），长内容滚动可见
+            // 内容区限高滚动并挂载 Miuix 配色滚动条（由根节点 LocalScrollbarStyle 提供样式），仅在内容溢出时挂载避免不可滚动弹窗出现全高假滚动条
             val contentScrollState = rememberScrollState()
             Row(modifier = Modifier.fillMaxWidth()) {
                 Column(
@@ -124,11 +124,13 @@ fun DesktopModalCard(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     content = content,
                 )
-                VerticalScrollbar(
-                    adapter = rememberScrollbarAdapter(contentScrollState),
-                    isScrollInProgress = contentScrollState.isScrollInProgress,
-                    modifier = Modifier.fillMaxHeight().padding(end = 2.dp),
-                )
+                if (contentScrollState.maxValue > 0) {
+                    VerticalScrollbar(
+                        adapter = rememberScrollbarAdapter(contentScrollState),
+                        isScrollInProgress = contentScrollState.isScrollInProgress,
+                        modifier = Modifier.fillMaxHeight().padding(end = 2.dp),
+                    )
+                }
             }
         }
     }
