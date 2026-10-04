@@ -2,6 +2,7 @@ package com.ehviewer.desktop
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -702,10 +703,14 @@ private fun GalleryDetailPageContent(
                     .weight(1f)
                     .padding(start = if (onBack != null) 4.dp else 0.dp, end = 8.dp),
             )
+            val browserHover = remember { MutableInteractionSource() }
+            val browserHovered by browserHover.collectIsHoveredAsState()
             Box(
                 modifier = Modifier
                     .clip(SquircleShape(8.dp))
                     .background(MiuixTheme.colorScheme.surfaceContainerHighest)
+                    .background(if (browserHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
+                    .hoverable(browserHover)
                     .clickable {
                         DesktopBrowser.openUrl(galleryWebUrl(currentGallery.gid, currentGallery.token))
                     }
@@ -721,10 +726,14 @@ private fun GalleryDetailPageContent(
                 )
             }
             if (onOpenReader != null) {
+                val readHover = remember { MutableInteractionSource() }
+                val readHovered by readHover.collectIsHoveredAsState()
                 Box(
                     modifier = Modifier
                         .clip(SquircleShape(8.dp))
                         .background(MiuixTheme.colorScheme.primary)
+                        .background(if (readHovered) Color.White.copy(alpha = 0.12f) else Color.Transparent)
+                        .hoverable(readHover)
                         .clickable { onOpenReader(currentGallery) }
                         .pointerHoverIcon(PointerIcon.Hand)
                         .padding(horizontal = 14.dp, vertical = 6.dp),
