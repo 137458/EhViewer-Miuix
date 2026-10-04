@@ -8,12 +8,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.scrollbar.rememberScrollbarAdapter
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -38,6 +40,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ehviewer.core.ui.component.SquircleShape
+import com.ehviewer.core.ui.component.VerticalScrollbar
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -110,14 +113,23 @@ fun DesktopModalCard(
                 }
             }
             HorizontalDivider(color = MiuixTheme.colorScheme.outline.copy(alpha = 0.15f))
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState())
-                    .padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                content = content,
-            )
+            // 内容区限高滚动并挂载 Miuix 配色滚动条（由根节点 LocalScrollbarStyle 提供样式），长内容滚动可见
+            val contentScrollState = rememberScrollState()
+            Row(modifier = Modifier.fillMaxWidth()) {
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .verticalScroll(contentScrollState)
+                        .padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    content = content,
+                )
+                VerticalScrollbar(
+                    adapter = rememberScrollbarAdapter(contentScrollState),
+                    isScrollInProgress = contentScrollState.isScrollInProgress,
+                    modifier = Modifier.fillMaxHeight().padding(end = 2.dp),
+                )
+            }
         }
     }
 }
