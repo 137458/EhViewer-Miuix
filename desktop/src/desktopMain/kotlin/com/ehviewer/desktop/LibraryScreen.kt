@@ -709,18 +709,19 @@ fun LibraryScreen(
                         Row(
                             modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
                         ) {
                             Text(
                                 text = "${stringResource(MR.strings.history)}:",
                                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                 fontSize = 11.sp,
+                                fontWeight = FontWeight.Medium,
                             )
                             Row(
                                 modifier = Modifier
                                     .weight(1f)
                                     .horizontalScroll(rememberScrollState()),
-                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 val deleteLabel = stringResource(MR.strings.delete)
@@ -735,16 +736,18 @@ fun LibraryScreen(
                                             )
                                         },
                                     ) {
-                                        Box(
+                                        Row(
                                             modifier = Modifier
-                                                .clip(SquircleShape(4.dp))
+                                                .clip(SquircleShape(6.dp))
                                                 .background(MiuixTheme.colorScheme.surfaceContainerHighest)
                                                 .pointerHoverIcon(PointerIcon.Hand)
                                                 .clickable {
                                                     searchFieldState.setTextAndPlaceCursorAtEnd(suggestion)
                                                     submitSearch(suggestion)
                                                 }
-                                                .padding(horizontal = 6.dp, vertical = 2.dp),
+                                                .padding(start = 8.dp, end = 4.dp, top = 2.dp, bottom = 2.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(4.dp),
                                         ) {
                                             Text(
                                                 text = suggestion,
@@ -753,13 +756,30 @@ fun LibraryScreen(
                                                 maxLines = 1,
                                                 overflow = TextOverflow.Ellipsis,
                                             )
+                                            Box(
+                                                modifier = Modifier
+                                                    .clip(SquircleShape(4.dp))
+                                                    .pointerHoverIcon(PointerIcon.Hand)
+                                                    .clickable {
+                                                        val updated = DesktopSearchHistory.removeQuery(searchHistoryList, suggestion)
+                                                        DesktopSettings.searchHistory.value = DesktopSearchHistory.encode(updated)
+                                                    }
+                                                    .padding(horizontal = 4.dp, vertical = 2.dp),
+                                                contentAlignment = Alignment.Center,
+                                            ) {
+                                                Text(
+                                                    text = "✕",
+                                                    fontSize = 9.sp,
+                                                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                                )
+                                            }
                                         }
                                     }
                                 }
                             }
                             Box(
                                 modifier = Modifier
-                                    .clip(SquircleShape(4.dp))
+                                    .clip(SquircleShape(6.dp))
                                     .background(MiuixTheme.colorScheme.surfaceContainerHighest)
                                     .pointerHoverIcon(PointerIcon.Hand)
                                     .clickable { clearSearchHistory() }
@@ -767,9 +787,10 @@ fun LibraryScreen(
                                 contentAlignment = Alignment.Center,
                             ) {
                                 Text(
-                                    text = "✕",
+                                    text = stringResource(MR.strings.clear_all),
                                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                     fontSize = 11.sp,
+                                    fontWeight = FontWeight.Medium,
                                 )
                             }
                         }

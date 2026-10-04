@@ -4,6 +4,7 @@
 
 ### 新增
 
+- 桌面端画廊库搜索历史与建议下拉浮层 Miuix 规范化：搜索建议芯片升级为超椭圆 Squircle 胶囊卡片（SquircleShape(6.dp) + surfaceContainerHighest 衬底 + 主色加粗字样），每个建议项补齐行内独立关闭按钮（✕ + Hand 悬停手型 + 单击即删），清空全部按钮升级为规范文本胶囊，大幅降低搜索历史管理心智负担。
 - 桌面端阅读器页码跳转与缩放控制 Miuix 规范化：页码跳转输入栏升级为 Miuix 超椭圆胶囊容器（Squircle 容器 + surfaceContainerHighest 衬底 + FocusRequester 自动聚焦 + Enter/Escape 双键盘监听 + 前往/取消超椭圆按钮与 Hand 悬停手型），底部页码指示器升级为可点击胶囊触发跳页，缩放比例角标补齐 Hand 悬停手型与点击即时重置 100% 缩放交互。
 - 桌面端画廊库辅助控制项 Miuix 规范化：历史清空按钮、搜索建议一键清空按钮、远程过滤重置按钮以及在线画廊翻页按钮（上一页/下一页）全量升级为 Miuix 超椭圆胶囊卡片（Squircle 容器 + surfaceContainerHighest 衬底 + Hand 悬停手型 + 中粗字样），交互触感与视觉层次完整对齐。
 - 桌面端加载异常与重试操作 Miuix 规范化：阅读器图片载入失败重试与画廊详情页评论加载失败重试由裸文本升级为 Miuix 超椭圆胶囊按钮（Squircle 容器 + Hand 悬停手型 + 中粗主色字样），优化弱网与断网恢复交互体验。
