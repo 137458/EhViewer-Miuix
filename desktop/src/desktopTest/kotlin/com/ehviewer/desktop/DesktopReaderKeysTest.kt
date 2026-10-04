@@ -5,9 +5,30 @@ import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.unit.IntSize
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class DesktopReaderKeysTest {
+    @Test
+    fun navigationBoundaryChecksRespectPageLimits() {
+        // 首页或越界：无上一页
+        assertFalse(canNavigatePrev(1))
+        assertFalse(canNavigatePrev(0))
+        assertFalse(canNavigatePrev(-1))
+        // 超过首页：有上一页
+        assertTrue(canNavigatePrev(2))
+        assertTrue(canNavigatePrev(10))
+
+        // 空列表或越界：无下一页
+        assertFalse(canNavigateNext(1, 0))
+        assertFalse(canNavigateNext(10, 10))
+        assertFalse(canNavigateNext(11, 10))
+        // 尾页前：有下一页
+        assertTrue(canNavigateNext(1, 10))
+        assertTrue(canNavigateNext(9, 10))
+    }
+
     @Test
     fun pagingKeysResolveToRelativeNav() {
         assertEquals(DesktopReaderNav.RelativeForward, resolveReaderNav(Key.PageDown))

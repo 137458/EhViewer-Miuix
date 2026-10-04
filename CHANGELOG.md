@@ -2,6 +2,8 @@
 
 ### 新增
 
+- 支持了桌面端阅读器底部导航栏首尾翻页按钮视觉统一：禁用状态保持超椭圆胶囊轮廓（半透明 surfaceContainerHighest 衬底 + Default 默认光标），优化边缘翻页防穿透与视觉完整度。
+
 - 支持了桌面端设置页「帮助与关于」卡片与弹窗联动：新增包含键盘快捷键指南（F1）与关于本软件（版本与日志入口）的 Miuix ArrowPreference 卡片区，点击即可直接唤起对应模态对话框。
 - 支持了桌面端独立画廊详情页顶部导航栏「在浏览器打开」快捷操作：新增 Miuix 超椭圆胶囊按钮（SquircleShape(8.dp) + surfaceContainerHighest 衬底 + Hand 悬停手型），方便快速直达原站网页。
 - 支持了桌面端阅读器顶部控制栏 Miuix 返回导航按钮与标题规范呈现：新增 MiuixIcons.Back 返回图标按钮与 Hand 悬停手型，标题文字遵循 onSurface 规范颜色并保持单行溢出省略。

@@ -609,17 +609,28 @@ fun ReaderScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
+                val canGoPrev = canNavigatePrev(page)
                 Box(
                     modifier = Modifier
                         .clip(SquircleShape(8.dp))
-                        .background(if (page > 1) MiuixTheme.colorScheme.surfaceContainerHighest else Color.Transparent)
-                        .then(if (page > 1) Modifier.pointerHoverIcon(PointerIcon.Hand) else Modifier)
-                        .clickable(enabled = page > 1) { page -= 1 }
+                        .background(
+                            if (canGoPrev) {
+                                MiuixTheme.colorScheme.surfaceContainerHighest
+                            } else {
+                                MiuixTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.35f)
+                            },
+                        )
+                        .pointerHoverIcon(if (canGoPrev) PointerIcon.Hand else PointerIcon.Default)
+                        .clickable(enabled = canGoPrev) { page -= 1 }
                         .padding(horizontal = 12.dp, vertical = 6.dp),
                 ) {
                     Text(
                         text = stringResource(MR.strings.desktop_reader_prev),
-                        color = if (page > 1) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.5f),
+                        color = if (canGoPrev) {
+                            MiuixTheme.colorScheme.primary
+                        } else {
+                            MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.4f)
+                        },
                         fontSize = 13.sp,
                     )
                 }
@@ -643,17 +654,28 @@ fun ReaderScreen(
                         )
                     }
                 }
+                val canGoNext = canNavigateNext(page, pageLinks.size)
                 Box(
                     modifier = Modifier
                         .clip(SquircleShape(8.dp))
-                        .background(if (page < pageLinks.size) MiuixTheme.colorScheme.surfaceContainerHighest else Color.Transparent)
-                        .then(if (page < pageLinks.size) Modifier.pointerHoverIcon(PointerIcon.Hand) else Modifier)
-                        .clickable(enabled = page < pageLinks.size) { page += 1 }
+                        .background(
+                            if (canGoNext) {
+                                MiuixTheme.colorScheme.surfaceContainerHighest
+                            } else {
+                                MiuixTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.35f)
+                            },
+                        )
+                        .pointerHoverIcon(if (canGoNext) PointerIcon.Hand else PointerIcon.Default)
+                        .clickable(enabled = canGoNext) { page += 1 }
                         .padding(horizontal = 12.dp, vertical = 6.dp),
                 ) {
                     Text(
                         text = stringResource(MR.strings.desktop_reader_next),
-                        color = if (page < pageLinks.size) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.5f),
+                        color = if (canGoNext) {
+                            MiuixTheme.colorScheme.primary
+                        } else {
+                            MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.4f)
+                        },
                         fontSize = 13.sp,
                     )
                 }

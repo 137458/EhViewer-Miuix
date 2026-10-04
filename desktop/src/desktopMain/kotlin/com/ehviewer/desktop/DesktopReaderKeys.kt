@@ -28,6 +28,10 @@ fun DesktopReadingDirection.pageDeltaForNav(nav: DesktopReaderNav): Int = when (
     DesktopReaderNav.FirstPage, DesktopReaderNav.LastPage -> 0
 }
 
+// 阅读器导航边界判定：首页无上一页，尾页无下一页
+fun canNavigatePrev(page: Int): Boolean = page > 1
+fun canNavigateNext(page: Int, totalPages: Int): Boolean = totalPages > 0 && page < totalPages
+
 enum class DesktopReaderZoom {
     In,
     Out,
