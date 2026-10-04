@@ -449,6 +449,18 @@ fun LibraryScreen(
                                 searchFocusRequester.requestFocus()
                                 true
                             }
+                            DesktopKeyAction.SwitchTabHistory -> {
+                                switchTab(LibraryTab.History)
+                                true
+                            }
+                            DesktopKeyAction.SwitchTabFavorites -> {
+                                switchTab(LibraryTab.Favorites)
+                                true
+                            }
+                            DesktopKeyAction.SwitchTabOnline -> {
+                                switchTab(LibraryTab.Online)
+                                true
+                            }
                             DesktopKeyAction.SelectNext -> {
                                 val next = DesktopNavigation.nextSelection(filteredItems, selected)
                                 if (next != null) {

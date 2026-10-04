@@ -390,4 +390,14 @@ class DesktopKeyActionTest {
         assertTrue(entry != null)
         assertSame(MR.strings.shortcut_focus_search, entry.descriptionRes)
     }
+
+    @Test
+    fun ctrl123ResolveToTabSwitch() {
+        // Ctrl+1/2/3 直达 历史/收藏/在线 三个库 Tab；KeyUp 与无 Ctrl 数字不消费（避免劫持输入）
+        assertEquals(DesktopKeyAction.SwitchTabHistory, resolveKeyAction(isKeyDown = true, isCtrlPressed = true, key = Key.One))
+        assertEquals(DesktopKeyAction.SwitchTabFavorites, resolveKeyAction(isKeyDown = true, isCtrlPressed = true, key = Key.Two))
+        assertEquals(DesktopKeyAction.SwitchTabOnline, resolveKeyAction(isKeyDown = true, isCtrlPressed = true, key = Key.Three))
+        assertEquals(DesktopKeyAction.None, resolveKeyAction(isKeyDown = false, isCtrlPressed = true, key = Key.One))
+        assertEquals(DesktopKeyAction.None, resolveKeyAction(isKeyDown = true, isCtrlPressed = false, key = Key.One))
+    }
 }

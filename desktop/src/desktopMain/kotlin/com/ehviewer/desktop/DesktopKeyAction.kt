@@ -17,6 +17,9 @@ enum class DesktopKeyAction {
     OpenLinkDialog,
     ToggleFullscreen,
     FocusSearch,
+    SwitchTabHistory,
+    SwitchTabFavorites,
+    SwitchTabOnline,
 }
 
 // 单窗口页面导航键位：Esc/Ctrl+W 关闭当前页（栈根不响应），Ctrl+Q 退出应用，窗口级全屏/刷新/指南不变
@@ -35,6 +38,9 @@ fun resolveKeyAction(
         isCtrlPressed && key == Key.R -> DesktopKeyAction.Refresh
         isCtrlPressed && key == Key.O -> DesktopKeyAction.OpenLinkDialog
         isCtrlPressed && key == Key.F -> DesktopKeyAction.FocusSearch
+        isCtrlPressed && key == Key.One -> DesktopKeyAction.SwitchTabHistory
+        isCtrlPressed && key == Key.Two -> DesktopKeyAction.SwitchTabFavorites
+        isCtrlPressed && key == Key.Three -> DesktopKeyAction.SwitchTabOnline
         !isCtrlPressed && key == Key.F5 -> DesktopKeyAction.Refresh
         !isCtrlPressed && key == Key.F11 -> DesktopKeyAction.ToggleFullscreen
         !isCtrlPressed && key == Key.F1 -> DesktopKeyAction.ShowShortcutsHelp
