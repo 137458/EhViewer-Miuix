@@ -659,6 +659,7 @@ private fun GalleryDetailPageContent(
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             if (onBack != null) {
                 IconButton(
@@ -681,8 +682,26 @@ private fun GalleryDetailPageContent(
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier
                     .weight(1f)
-                    .padding(start = if (onBack != null) 8.dp else 0.dp, end = 12.dp),
+                    .padding(start = if (onBack != null) 4.dp else 0.dp, end = 8.dp),
             )
+            Box(
+                modifier = Modifier
+                    .clip(SquircleShape(8.dp))
+                    .background(MiuixTheme.colorScheme.surfaceContainerHighest)
+                    .clickable {
+                        DesktopBrowser.openUrl(galleryWebUrl(currentGallery.gid, currentGallery.token))
+                    }
+                    .pointerHoverIcon(PointerIcon.Hand)
+                    .padding(horizontal = 12.dp, vertical = 6.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = stringResource(MR.strings.open_in_browser),
+                    color = MiuixTheme.colorScheme.onSurface,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium,
+                )
+            }
             if (onOpenReader != null) {
                 Box(
                     modifier = Modifier

@@ -2,6 +2,7 @@
 
 ### 新增
 
+- 支持了桌面端独立画廊详情页顶部导航栏「在浏览器打开」快捷操作：新增 Miuix 超椭圆胶囊按钮（SquircleShape(8.dp) + surfaceContainerHighest 衬底 + Hand 悬停手型），方便快速直达原站网页。
 - 支持了桌面端阅读器顶部控制栏 Miuix 返回导航按钮与标题规范呈现：新增 MiuixIcons.Back 返回图标按钮与 Hand 悬停手型，标题文字遵循 onSurface 规范颜色并保持单行溢出省略。
 - 支持了桌面端批量多选操作浮动底栏与快捷取消：激活多选时在底部悬浮显示超椭圆控制栏（选中数量徽章、取消选择胶囊、批量删除确认胶囊），支持 Esc 键优先退出多选。
 - 支持了桌面端画廊详情页评论区控制项 Miuix 规范化：顶部折叠/展开切换按钮与底部「查看更多评论」条形卡片升级为超椭圆 Squircle 胶囊按钮（SquircleShape(6.dp/8.dp) + surfaceContainerHighest 衬底 + Hand 悬停手型），标题行补充评论总数计数徽章。
