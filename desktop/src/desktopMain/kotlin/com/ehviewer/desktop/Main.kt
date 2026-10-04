@@ -756,42 +756,50 @@ private fun GalleryDetailPageContent(
 
     AutoExpireNotifications(notifications) { notifications = it }
 
+    // 收藏切换防重入：连点时忽略后续触发，避免基于过期 isFavorite 取反导致状态错乱
+    var favoriteInFlight by remember { mutableStateOf(false) }
     fun toggleFavorite() {
+        if (favoriteInFlight) return
+        favoriteInFlight = true
         coroutineScope.launch {
-            // 元数据未回填（离线等场景）时禁止把占位假数据写入画廊库/收藏
-            if (DesktopGalleryHydrator.needsHydration(currentGallery)) {
-                showNotification(metadataLoadingText)
-                return@launch
-            }
-            val nextState = !isFavorite
-            withContext(Dispatchers.IO) {
-                if (nextState) {
-                    val entity = DesktopFavoritesState.toGalleryEntity(currentGallery)
-                    DesktopDatabase.eh.galleryDao().upsert(entity)
-                    DesktopDatabase.eh.localFavoritesDao().upsert(LocalFavoriteInfo(currentGallery.gid))
-                } else {
-                    DesktopDatabase.eh.localFavoritesDao().deleteByKey(currentGallery.gid)
+            try {
+                // 元数据未回填（离线等场景）时禁止把占位假数据写入画廊库/收藏
+                if (DesktopGalleryHydrator.needsHydration(currentGallery)) {
+                    showNotification(metadataLoadingText)
+                    return@launch
                 }
-            }
-            isFavorite = nextState
-            if (nextState) {
-                showNotification(addedToFavoriteText)
-            } else {
-                notifications = DesktopNotificationManager.post(
-                    current = notifications,
-                    message = removedFromFavoriteText,
-                    timestamp = System.currentTimeMillis(),
-                    idProvider = { nextNotificationId.getAndIncrement() },
-                    actionLabel = undoText,
-                    onAction = {
-                        coroutineScope.launch {
-                            withContext(Dispatchers.IO) {
-                                DesktopDatabase.eh.localFavoritesDao().upsert(LocalFavoriteInfo(currentGallery.gid))
+                val nextState = !isFavorite
+                withContext(Dispatchers.IO) {
+                    if (nextState) {
+                        val entity = DesktopFavoritesState.toGalleryEntity(currentGallery)
+                        DesktopDatabase.eh.galleryDao().upsert(entity)
+                        DesktopDatabase.eh.localFavoritesDao().upsert(LocalFavoriteInfo(currentGallery.gid))
+                    } else {
+                        DesktopDatabase.eh.localFavoritesDao().deleteByKey(currentGallery.gid)
+                    }
+                }
+                isFavorite = nextState
+                if (nextState) {
+                    showNotification(addedToFavoriteText)
+                } else {
+                    notifications = DesktopNotificationManager.post(
+                        current = notifications,
+                        message = removedFromFavoriteText,
+                        timestamp = System.currentTimeMillis(),
+                        idProvider = { nextNotificationId.getAndIncrement() },
+                        actionLabel = undoText,
+                        onAction = {
+                            coroutineScope.launch {
+                                withContext(Dispatchers.IO) {
+                                    DesktopDatabase.eh.localFavoritesDao().upsert(LocalFavoriteInfo(currentGallery.gid))
+                                }
+                                isFavorite = true
                             }
-                            isFavorite = true
-                        }
-                    },
-                )
+                        },
+                    )
+                }
+            } finally {
+                favoriteInFlight = false
             }
         }
     }

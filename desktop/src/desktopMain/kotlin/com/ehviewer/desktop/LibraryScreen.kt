@@ -369,40 +369,48 @@ fun LibraryScreen(
         DesktopSearchBus.consume()
     }
 
+    // 收藏切换防重入：连点时忽略后续触发，避免基于过期 favoriteGids 快照取反导致状态错乱
+    var favoriteInFlight by remember { mutableStateOf(false) }
     fun toggleFavorite(gallery: BaseGalleryInfo) {
-        val isFav = DesktopFavoritesState.isFavorite(favoriteGids, gallery.gid)
+        if (favoriteInFlight) return
+        favoriteInFlight = true
         coroutineScope.launch {
-            if (isFav) {
-                withContext(Dispatchers.IO) {
-                    DesktopDatabase.eh.localFavoritesDao().deleteByKey(gallery.gid)
-                }
-                selected = DesktopFavoritesState.updateSelectionAfterRemoveFavorite(
-                    selected = selected,
-                    removedGid = gallery.gid,
-                    isInFavoritesTab = currentTab == LibraryTab.Favorites,
-                )
-                // 撤销 = 重新写回收藏行（GALLERIES 行未被删除，联表视图自动恢复）
-                notifications = DesktopNotificationManager.post(
-                    current = notifications,
-                    message = removedFromFavoritesText,
-                    timestamp = System.currentTimeMillis(),
-                    idProvider = { nextNotificationId.getAndIncrement() },
-                    actionLabel = undoText,
-                    onAction = {
-                        coroutineScope.launch {
-                            withContext(Dispatchers.IO) {
-                                DesktopDatabase.eh.localFavoritesDao().upsert(LocalFavoriteInfo(gallery.gid))
+            try {
+                val isFav = DesktopFavoritesState.isFavorite(favoriteGids, gallery.gid)
+                if (isFav) {
+                    withContext(Dispatchers.IO) {
+                        DesktopDatabase.eh.localFavoritesDao().deleteByKey(gallery.gid)
+                    }
+                    selected = DesktopFavoritesState.updateSelectionAfterRemoveFavorite(
+                        selected = selected,
+                        removedGid = gallery.gid,
+                        isInFavoritesTab = currentTab == LibraryTab.Favorites,
+                    )
+                    // 撤销 = 重新写回收藏行（GALLERIES 行未被删除，联表视图自动恢复）
+                    notifications = DesktopNotificationManager.post(
+                        current = notifications,
+                        message = removedFromFavoritesText,
+                        timestamp = System.currentTimeMillis(),
+                        idProvider = { nextNotificationId.getAndIncrement() },
+                        actionLabel = undoText,
+                        onAction = {
+                            coroutineScope.launch {
+                                withContext(Dispatchers.IO) {
+                                    DesktopDatabase.eh.localFavoritesDao().upsert(LocalFavoriteInfo(gallery.gid))
+                                }
                             }
-                        }
-                    },
-                )
-            } else {
-                withContext(Dispatchers.IO) {
-                    val entity = DesktopFavoritesState.toGalleryEntity(gallery)
-                    DesktopDatabase.eh.galleryDao().upsert(entity)
-                    DesktopDatabase.eh.localFavoritesDao().upsert(LocalFavoriteInfo(gallery.gid))
+                        },
+                    )
+                } else {
+                    withContext(Dispatchers.IO) {
+                        val entity = DesktopFavoritesState.toGalleryEntity(gallery)
+                        DesktopDatabase.eh.galleryDao().upsert(entity)
+                        DesktopDatabase.eh.localFavoritesDao().upsert(LocalFavoriteInfo(gallery.gid))
+                    }
+                    showNotification(addedToFavoritesText)
                 }
-                showNotification(addedToFavoritesText)
+            } finally {
+                favoriteInFlight = false
             }
         }
     }
