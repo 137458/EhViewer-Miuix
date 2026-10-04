@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -67,7 +66,11 @@ import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 // 桌面壳骨架：单窗口页面栈（库 → 详情 → 阅读；设置）+ Miuix 主题三态 + 菜单栏 + 托盘驻留 + 尺寸记忆 + 会话恢复
@@ -300,6 +303,7 @@ fun main() {
                             DesktopPage.Settings -> SettingsScreen(onBack = popPage)
                             is DesktopPage.GalleryDetail -> GalleryDetailPageContent(
                                 gallery = page.gallery,
+                                onBack = popPage,
                                 onGalleryUpdated = { updated ->
                                     // hydrate 回写：栈顶详情页替换为真实元数据，窗口标题随之更新
                                     pages = DesktopPageStack.updateTopGallery(pages, updated)
@@ -519,6 +523,7 @@ private fun ShortcutEntryRow(entry: DesktopShortcutEntry) {
 @Composable
 private fun GalleryDetailPageContent(
     gallery: BaseGalleryInfo,
+    onBack: (() -> Unit)? = null,
     onGalleryUpdated: ((BaseGalleryInfo) -> Unit)? = null,
     onOpenReader: ((BaseGalleryInfo) -> Unit)? = null,
     onSearchTag: ((String) -> Unit)? = null,
@@ -626,66 +631,122 @@ private fun GalleryDetailPageContent(
         }
     }
 
-    Box(
+    Column(
         modifier = Modifier
             .fillMaxSize()
             .background(MiuixTheme.colorScheme.background),
     ) {
-        GalleryDetailPane(
-            gallery = currentGallery,
-            isFavorite = isFavorite,
-            onToggleFavorite = { toggleFavorite() },
-            onCopy = { value, label ->
-                clipboard.setText(AnnotatedString(value))
-                showNotification(if (label.isBlank()) value else "$label: $value")
-                logcat("DetailPage", LogPriority.INFO) { "Copied $label" }
-            },
-            onOpenUrl = { url ->
-                if (!DesktopBrowser.openUrl(url)) {
-                    showNotification(noBrowserText)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (onBack != null) {
+                IconButton(
+                    onClick = onBack,
+                    modifier = Modifier.pointerHoverIcon(PointerIcon.Hand),
+                ) {
+                    Icon(
+                        imageVector = MiuixIcons.Back,
+                        contentDescription = null,
+                        tint = MiuixTheme.colorScheme.onSurface,
+                    )
                 }
-            },
-            onSearchTag = { tag ->
-                clipboard.setText(AnnotatedString(tag))
-                showNotification("$tagLabel: $tag")
-                onSearchTag?.invoke(tag)
-            },
-            onPreviewCover = { url -> previewCoverUrl = url },
-            onOpenReader = onOpenReader?.let { opener -> { opener(gallery) } },
-        )
-        if (notifications.isNotEmpty()) {
-            Column(
+            }
+            Text(
+                text = galleryDisplayTitle(currentGallery.title, currentGallery.gid),
+                fontSize = 18.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = MiuixTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
                 modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                horizontalAlignment = Alignment.End,
-            ) {
-                notifications.forEach { notice ->
-                    Box(
-                        modifier = Modifier
-                            .clip(SquircleShape(8.dp))
-                            .background(MiuixTheme.colorScheme.surfaceContainerHighest)
-                            .pointerHoverIcon(PointerIcon.Hand)
-                            .clickable {
-                                notifications = DesktopNotificationManager.dismiss(notifications, notice.id)
-                            }
-                            .padding(horizontal = 12.dp, vertical = 8.dp),
-                    ) {
-                        Text(
-                            text = notice.message,
-                            color = MiuixTheme.colorScheme.onSurface,
-                        )
-                    }
+                    .weight(1f)
+                    .padding(start = if (onBack != null) 8.dp else 0.dp, end = 12.dp),
+            )
+            if (onOpenReader != null) {
+                Box(
+                    modifier = Modifier
+                        .clip(SquircleShape(8.dp))
+                        .background(MiuixTheme.colorScheme.primary)
+                        .clickable { onOpenReader(currentGallery) }
+                        .pointerHoverIcon(PointerIcon.Hand)
+                        .padding(horizontal = 14.dp, vertical = 6.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = stringResource(MR.strings.menu_read),
+                        color = MiuixTheme.colorScheme.onPrimary,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium,
+                    )
                 }
             }
         }
+        HorizontalDivider(color = MiuixTheme.colorScheme.outline.copy(alpha = 0.2f))
 
-        previewCoverUrl?.let { coverUrl ->
-            CoverPreviewDialog(
-                imageUrl = coverUrl,
-                onDismiss = { previewCoverUrl = null },
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f),
+        ) {
+            GalleryDetailPane(
+                gallery = currentGallery,
+                isFavorite = isFavorite,
+                onToggleFavorite = { toggleFavorite() },
+                onCopy = { value, label ->
+                    clipboard.setText(AnnotatedString(value))
+                    showNotification(if (label.isBlank()) value else "$label: $value")
+                    logcat("DetailPage", LogPriority.INFO) { "Copied $label" }
+                },
+                onOpenUrl = { url ->
+                    if (!DesktopBrowser.openUrl(url)) {
+                        showNotification(noBrowserText)
+                    }
+                },
+                onSearchTag = { tag ->
+                    clipboard.setText(AnnotatedString(tag))
+                    showNotification("$tagLabel: $tag")
+                    onSearchTag?.invoke(tag)
+                },
+                onPreviewCover = { url -> previewCoverUrl = url },
+                onOpenReader = onOpenReader?.let { opener -> { opener(currentGallery) } },
             )
+            if (notifications.isNotEmpty()) {
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalAlignment = Alignment.End,
+                ) {
+                    notifications.forEach { notice ->
+                        Box(
+                            modifier = Modifier
+                                .clip(SquircleShape(8.dp))
+                                .background(MiuixTheme.colorScheme.surfaceContainerHighest)
+                                .pointerHoverIcon(PointerIcon.Hand)
+                                .clickable {
+                                    notifications = DesktopNotificationManager.dismiss(notifications, notice.id)
+                                }
+                                .padding(horizontal = 12.dp, vertical = 8.dp),
+                        ) {
+                            Text(
+                                text = notice.message,
+                                color = MiuixTheme.colorScheme.onSurface,
+                            )
+                        }
+                    }
+                }
+            }
+
+            previewCoverUrl?.let { coverUrl ->
+                CoverPreviewDialog(
+                    imageUrl = coverUrl,
+                    onDismiss = { previewCoverUrl = null },
+                )
+            }
         }
     }
 }
