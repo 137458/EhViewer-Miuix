@@ -128,8 +128,8 @@ fun ReaderScreen(
     val isRtl = readingDirection == DesktopReadingDirection.RTL
     val prevDelta = readingDirection.pageDeltaForNav(DesktopReaderNav.RelativeBackward)
     val nextDelta = readingDirection.pageDeltaForNav(DesktopReaderNav.RelativeForward)
-    val canPrev = if (isRtl) page < pageLinks.size else page > 1
-    val canNext = if (isRtl) page > 1 else page < pageLinks.size
+    val canPrev = canNavigateByDelta(page, prevDelta, pageLinks.size)
+    val canNext = canNavigateByDelta(page, nextDelta, pageLinks.size)
     val prevPageLabel = stringResource(if (isRtl) MR.strings.desktop_reader_prev_rtl else MR.strings.desktop_reader_prev)
     val nextPageLabel = stringResource(if (isRtl) MR.strings.desktop_reader_next_rtl else MR.strings.desktop_reader_next)
     val clipboard = LocalClipboardManager.current

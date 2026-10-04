@@ -12,21 +12,27 @@ import kotlin.test.assertTrue
 class DesktopReaderKeysTest {
     @Test
     fun navigationBoundaryChecksRespectPageLimits() {
-        // 首页或越界：无上一页
-        assertFalse(canNavigatePrev(1))
-        assertFalse(canNavigatePrev(0))
-        assertFalse(canNavigatePrev(-1))
-        // 超过首页：有上一页
-        assertTrue(canNavigatePrev(2))
-        assertTrue(canNavigatePrev(10))
+        // LTR 增量（prev=-1 / next=+1）：首页无上一页，尾页无下一页
+        assertTrue(canNavigateByDelta(page = 2, delta = -1, totalPages = 10))
+        assertFalse(canNavigateByDelta(page = 1, delta = -1, totalPages = 10))
+        assertFalse(canNavigateByDelta(page = 10, delta = 1, totalPages = 10))
+        assertTrue(canNavigateByDelta(page = 9, delta = 1, totalPages = 10))
 
-        // 空列表或越界：无下一页
-        assertFalse(canNavigateNext(1, 0))
-        assertFalse(canNavigateNext(10, 10))
-        assertFalse(canNavigateNext(11, 10))
-        // 尾页前：有下一页
-        assertTrue(canNavigateNext(1, 10))
-        assertTrue(canNavigateNext(9, 10))
+        // RTL 增量反转（prev=+1 / next=-1）：末页无上一页，首页无下一页
+        assertFalse(canNavigateByDelta(page = 10, delta = 1, totalPages = 10))
+        assertFalse(canNavigateByDelta(page = 1, delta = -1, totalPages = 10))
+
+        // 多页增量同样受边界钳制，不针对 ±1 特化
+        assertFalse(canNavigateByDelta(page = 9, delta = 2, totalPages = 10))
+        assertFalse(canNavigateByDelta(page = 2, delta = -3, totalPages = 10))
+        assertTrue(canNavigateByDelta(page = 3, delta = -2, totalPages = 10))
+
+        // 空列表无任何合法目标页
+        assertFalse(canNavigateByDelta(page = 1, delta = 1, totalPages = 0))
+        assertFalse(canNavigateByDelta(page = 5, delta = -1, totalPages = 0))
+        // 判定对象是目标页：越界当前页退回合法页仍允许，越界页继续越界则拒绝
+        assertTrue(canNavigateByDelta(page = 11, delta = -1, totalPages = 10))
+        assertFalse(canNavigateByDelta(page = 11, delta = 1, totalPages = 10))
     }
 
     @Test
