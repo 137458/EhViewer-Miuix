@@ -2,6 +2,8 @@ package com.ehviewer.desktop
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -442,6 +444,8 @@ private fun AboutDialog(onDismiss: () -> Unit) {
                 fontSize = 13.sp,
             )
             val releasesUrl = RELEASES_PAGE_URL
+            val releasesInteraction = remember { MutableInteractionSource() }
+            val releasesHovered by releasesInteraction.collectIsHoveredAsState()
             Text(
                 text = releasesUrl,
                 color = MiuixTheme.colorScheme.primary,
@@ -449,8 +453,12 @@ private fun AboutDialog(onDismiss: () -> Unit) {
                 modifier = Modifier
                     .clip(SquircleShape(6.dp))
                     .background(MiuixTheme.colorScheme.surfaceContainerHighest)
+                    .background(if (releasesHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
                     .pointerHoverIcon(PointerIcon.Hand)
-                    .clickable { DesktopBrowser.openUrl(releasesUrl) }
+                    .clickable(
+                        interactionSource = releasesInteraction,
+                        indication = null,
+                    ) { DesktopBrowser.openUrl(releasesUrl) }
                     .padding(horizontal = 8.dp, vertical = 4.dp),
             )
             val clipboard = LocalClipboardManager.current
@@ -458,17 +466,23 @@ private fun AboutDialog(onDismiss: () -> Unit) {
             val copiedText = stringResource(MR.strings.copied_to_clipboard)
             var copiedLog by remember { mutableStateOf(false) }
             DesktopFileLog.defaultFile()?.let { logPath ->
+                val logInteraction = remember { MutableInteractionSource() }
+                val logHovered by logInteraction.collectIsHoveredAsState()
                 Text(
                     text = if (copiedLog) copiedText else "$logLabel: $logPath",
-                    color = if (copiedLog) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    color = if (copiedLog || logHovered) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     fontSize = 12.sp,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier
                         .clip(SquircleShape(6.dp))
                         .background(MiuixTheme.colorScheme.surfaceContainerHighest)
+                        .background(if (logHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
                         .pointerHoverIcon(PointerIcon.Hand)
-                        .clickable {
+                        .clickable(
+                            interactionSource = logInteraction,
+                            indication = null,
+                        ) {
                             clipboard.setText(AnnotatedString(logPath.toString()))
                             copiedLog = true
                         }
@@ -766,12 +780,18 @@ private fun GalleryDetailPageContent(
                     horizontalAlignment = Alignment.End,
                 ) {
                     notifications.forEach { notice ->
+                        val noticeInteraction = remember { MutableInteractionSource() }
+                        val noticeHovered by noticeInteraction.collectIsHoveredAsState()
                         Box(
                             modifier = Modifier
                                 .clip(SquircleShape(8.dp))
                                 .background(MiuixTheme.colorScheme.surfaceContainerHighest)
+                                .background(if (noticeHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
                                 .pointerHoverIcon(PointerIcon.Hand)
-                                .clickable {
+                                .clickable(
+                                    interactionSource = noticeInteraction,
+                                    indication = null,
+                                ) {
                                     notifications = DesktopNotificationManager.dismiss(notifications, notice.id)
                                 }
                                 .padding(horizontal = 12.dp, vertical = 8.dp),
