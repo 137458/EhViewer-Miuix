@@ -1806,6 +1806,7 @@ private fun OpenGalleryDialog(
     }
     val title = stringResource(MR.strings.desktop_open_gallery_title)
     val hint = stringResource(MR.strings.desktop_open_gallery_hint)
+    val pasteLabel = stringResource(MR.strings.desktop_open_gallery_paste)
     val cancelLabel = stringResource(MR.strings.desktop_action_cancel)
     val openLabel = stringResource(MR.strings.desktop_open_gallery_action_open)
 
@@ -1814,16 +1815,49 @@ private fun OpenGalleryDialog(
         onDismiss = onDismiss,
         cardWidth = 440.dp,
     ) {
-        TextField(
-            state = inputState,
-            label = hint,
-            lineLimits = TextFieldLineLimits.SingleLine,
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-            onKeyboardAction = {
-                if (target != null) onOpen(target) else attempted = true
-            },
+        Row(
             modifier = Modifier.fillMaxWidth(),
-        )
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            TextField(
+                state = inputState,
+                label = hint,
+                lineLimits = TextFieldLineLimits.SingleLine,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                onKeyboardAction = {
+                    if (target != null) onOpen(target) else attempted = true
+                },
+                modifier = Modifier.weight(1f),
+            )
+            val pasteHover = remember { MutableInteractionSource() }
+            val pasteHovered by pasteHover.collectIsHoveredAsState()
+            Box(
+                modifier = Modifier
+                    .clip(SquircleShape(6.dp))
+                    .background(MiuixTheme.colorScheme.surfaceContainerHighest)
+                    .background(if (pasteHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
+                    .hoverable(pasteHover)
+                    .pointerHoverIcon(PointerIcon.Hand)
+                    .clickable {
+                        val pasted = runCatching {
+                            java.awt.Toolkit.getDefaultToolkit().systemClipboard
+                                .getData(java.awt.datatransfer.DataFlavor.stringFlavor) as? String
+                        }.getOrNull()
+                        if (!pasted.isNullOrBlank()) {
+                            inputState.setTextAndPlaceCursorAtEnd(pasted.trim())
+                        }
+                    }
+                    .padding(horizontal = 10.dp, vertical = 8.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = pasteLabel,
+                    color = MiuixTheme.colorScheme.primary,
+                    fontSize = 12.sp,
+                )
+            }
+        }
         if (errorText != null) {
             Text(
                 text = errorText,
@@ -1836,9 +1870,13 @@ private fun OpenGalleryDialog(
             horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            val cancelHover = remember { MutableInteractionSource() }
+            val cancelHovered by cancelHover.collectIsHoveredAsState()
             Box(
                 modifier = Modifier
                     .clip(SquircleShape(8.dp))
+                    .background(if (cancelHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
+                    .hoverable(cancelHover)
                     .pointerHoverIcon(PointerIcon.Hand)
                     .clickable(onClick = onDismiss)
                     .padding(horizontal = 14.dp, vertical = 7.dp),
