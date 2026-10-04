@@ -157,6 +157,7 @@ fun ReaderScreen(
             } else {
                 pageLinks = links
                 linksState = null
+                linksStateIsError = false
                 // 跨会话阅读进度：从持久化 "gid:page" 记录恢复上次读到的一页（越界钳制）
                 val savedPage = DesktopReadingProgress.decode(DesktopSettings.readingProgress.value)[gallery.gid] ?: 1
                 page = savedPage.coerceIn(1, links.size)
