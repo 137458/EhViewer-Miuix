@@ -470,7 +470,7 @@ fun ReaderScreen(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Close,
-                        contentDescription = null,
+                        contentDescription = stringResource(MR.strings.desktop_a11y_close),
                         tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     )
                 }

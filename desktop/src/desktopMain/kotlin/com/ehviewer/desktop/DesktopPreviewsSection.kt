@@ -135,6 +135,7 @@ private fun PreviewCell(
     onPreviewImage: ((url: String) -> Unit)? = null,
 ) {
     val clipboard = LocalClipboardManager.current
+    val headerText = stringResource(MR.strings.gallery_previews)
     val copyLinkText = stringResource(MR.strings.copy_link)
     val openInBrowserText = stringResource(MR.strings.open_in_browser)
 
@@ -172,7 +173,7 @@ private fun PreviewCell(
             ) {
                 AsyncImage(
                     model = preview.url,
-                    contentDescription = null,
+                    contentDescription = headerText,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize(),
                 )
@@ -205,7 +206,7 @@ private fun PreviewCell(
                 ) {
                     AsyncImage(
                         model = preview.url,
-                        contentDescription = null,
+                        contentDescription = headerText,
                         contentScale = ContentScale.FillHeight,
                         modifier = Modifier
                             .height(PREVIEW_DISPLAY_HEIGHT.dp)
