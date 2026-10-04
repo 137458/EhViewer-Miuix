@@ -150,7 +150,7 @@ fun SettingsScreen(
                         )
                         if (restoreSession) {
                             BasicComponent(
-                                title = stringResource(MR.strings.settings_restore_session),
+                                title = stringResource(MR.strings.desktop_restore_limit),
                                 summary = "${DesktopPageStack.sanitizeRestoreLimit(restoreLimit)} (5 / 10 / 20)",
                                 onClick = {
                                     val current = DesktopPageStack.sanitizeRestoreLimit(restoreLimit)

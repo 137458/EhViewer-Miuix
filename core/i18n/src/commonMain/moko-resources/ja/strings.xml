@@ -650,6 +650,7 @@
     <string name="desktop_reader_prev">◀ 前のページ</string>
     <string name="desktop_reader_zoom">拡大 / 縮小 / リセット</string>
     <string name="desktop_removed_from_history">履歴から削除しました</string>
+    <string name="desktop_restore_limit">セッション復元数の上限</string>
     <string name="desktop_save_dir_missing">保存ディレクトリが見つかりません：%1$s</string>
     <string name="desktop_save_failed_reason">保存に失敗しました：%1$s</string>
     <string name="desktop_search_no_results">結果なし</string>
