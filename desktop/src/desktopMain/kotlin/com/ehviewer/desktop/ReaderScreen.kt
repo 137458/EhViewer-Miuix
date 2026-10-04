@@ -106,6 +106,8 @@ fun ReaderScreen(
     var imageState by remember { mutableStateOf<String?>(null) }
     // imageState 同时承载加载中与失败文案，error 标记区分二者以应用语义色
     var imageStateIsError by remember { mutableStateOf(false) }
+    // linksState 承载无链接提示（中性）与链接解析失败（error），error 标记区分并决定是否提供重试
+    var linksStateIsError by remember { mutableStateOf(false) }
     var reloadKey by remember { mutableIntStateOf(0) }
     var showJumpInput by remember { mutableStateOf(false) }
     val jumpFieldState = rememberTextFieldState()
@@ -148,6 +150,7 @@ fun ReaderScreen(
         }.onSuccess { links ->
             if (links.isEmpty()) {
                 linksState = noLinksText
+                linksStateIsError = false
                 imageState = null
             } else {
                 pageLinks = links
@@ -157,6 +160,7 @@ fun ReaderScreen(
             linksState = it.message
                 ?.let { message -> StringDesc.ResourceFormatted(MR.strings.desktop_reader_load_failed_reason, message).localized() }
                 ?: loadFailedText
+            linksStateIsError = true
             imageState = null
         }
     }
@@ -596,6 +600,50 @@ fun ReaderScreen(
                                 },
                             contentScale = ContentScale.Fit,
                         )
+                    }
+                    // 无链接 / 链接解析失败此前仅赋值未渲染（用户只见空白视口），补齐可见占位卡；失败时提供重载
+                    linksState != null && imageState == null -> Box(
+                        modifier = Modifier
+                            .clip(SquircleShape(12.dp))
+                            .background(MiuixTheme.colorScheme.surface.copy(alpha = 0.85f))
+                            .padding(horizontal = 24.dp, vertical = 20.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            Text(
+                                text = linksState!!,
+                                color = if (linksStateIsError) {
+                                    MiuixTheme.colorScheme.error
+                                } else {
+                                    MiuixTheme.colorScheme.onSurface
+                                },
+                                fontSize = 13.sp,
+                            )
+                            if (linksStateIsError) {
+                                val linksRetryHover = remember { MutableInteractionSource() }
+                                val linksRetryHovered by linksRetryHover.collectIsHoveredAsState()
+                                Box(
+                                    modifier = Modifier
+                                        .clip(SquircleShape(8.dp))
+                                        .background(MiuixTheme.colorScheme.surfaceContainerHighest)
+                                        .background(if (linksRetryHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
+                                        .hoverable(linksRetryHover)
+                                        .pointerHoverIcon(PointerIcon.Hand)
+                                        .clickable { reloadKey += 1 }
+                                        .padding(horizontal = 16.dp, vertical = 6.dp),
+                                ) {
+                                    Text(
+                                        text = retryLabel,
+                                        color = MiuixTheme.colorScheme.primary,
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Medium,
+                                    )
+                                }
+                            }
+                        }
                     }
                     imageState != null -> Box(
                         modifier = Modifier
