@@ -293,7 +293,7 @@ fun main() {
                                 onOpenGallery = openGallery,
                                 onOpenReader = openReader,
                             )
-                            DesktopPage.Settings -> SettingsScreen()
+                            DesktopPage.Settings -> SettingsScreen(onBack = popPage)
                             is DesktopPage.GalleryDetail -> GalleryDetailPageContent(
                                 gallery = page.gallery,
                                 onGalleryUpdated = { updated ->
