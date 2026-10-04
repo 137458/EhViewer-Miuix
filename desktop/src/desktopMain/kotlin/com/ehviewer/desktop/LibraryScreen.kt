@@ -898,6 +898,8 @@ fun LibraryScreen(
                                 )
                             }
                             val canGoPrev = DesktopOnlinePagination.canNavigatePrev(cursorIndex)
+                            val onlinePrevHover = remember { MutableInteractionSource() }
+                            val onlinePrevHovered by onlinePrevHover.collectIsHoveredAsState()
                             Box(
                                 modifier = Modifier
                                     .clip(SquircleShape(6.dp))
@@ -908,6 +910,8 @@ fun LibraryScreen(
                                             MiuixTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.35f)
                                         },
                                     )
+                                    .background(if (onlinePrevHovered && canGoPrev) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
+                                    .hoverable(onlinePrevHover)
                                     .pointerHoverIcon(if (canGoPrev) PointerIcon.Hand else PointerIcon.Default)
                                     .clickable(enabled = canGoPrev) {
                                         cursorIndex -= 1
@@ -943,6 +947,8 @@ fun LibraryScreen(
                             }
                             Box(modifier = Modifier.weight(1f))
                             val canGoNext = DesktopOnlinePagination.canNavigateNext(online.isNotEmpty())
+                            val onlineNextHover = remember { MutableInteractionSource() }
+                            val onlineNextHovered by onlineNextHover.collectIsHoveredAsState()
                             Box(
                                 modifier = Modifier
                                     .clip(SquircleShape(6.dp))
@@ -953,6 +959,8 @@ fun LibraryScreen(
                                             MiuixTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.35f)
                                         },
                                     )
+                                    .background(if (onlineNextHovered && canGoNext) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
+                                    .hoverable(onlineNextHover)
                                     .pointerHoverIcon(if (canGoNext) PointerIcon.Hand else PointerIcon.Default)
                                     .clickable(enabled = canGoNext) {
                                         val lastGid = online.lastOrNull()?.gid
