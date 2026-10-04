@@ -25,7 +25,6 @@ import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.scrollbar.rememberScrollbarAdapter
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.text.input.clearText
@@ -73,6 +72,7 @@ import com.ehviewer.core.i18n.MR
 import com.ehviewer.core.model.BaseGalleryInfo
 import com.ehviewer.core.network.EhCookieStore
 import com.ehviewer.core.ui.component.GalleryListCardRating
+import com.ehviewer.core.ui.component.SquircleShape
 import com.ehviewer.core.ui.component.VerticalScrollbar
 import com.ehviewer.core.util.LogPriority
 import com.ehviewer.core.util.logcat
@@ -490,9 +490,9 @@ fun LibraryScreen(
                     )
                     val isOffline = DesktopConnectionState.isOffline(connectionStatus)
                     val statusBgColor = when (connectionStatus) {
-                        is DesktopConnectionStatus.Online -> MiuixTheme.colorScheme.surfaceVariant
+                        is DesktopConnectionStatus.Online -> MiuixTheme.colorScheme.surfaceContainerHighest
                         is DesktopConnectionStatus.Offline -> MiuixTheme.colorScheme.error.copy(alpha = 0.12f)
-                        DesktopConnectionStatus.Checking -> MiuixTheme.colorScheme.surfaceVariant
+                        DesktopConnectionStatus.Checking -> MiuixTheme.colorScheme.surfaceContainerHighest
                     }
                     val statusTextColor = when (connectionStatus) {
                         is DesktopConnectionStatus.Online -> MiuixTheme.colorScheme.onBackground
@@ -501,7 +501,7 @@ fun LibraryScreen(
                     }
                     Box(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(4.dp))
+                            .clip(SquircleShape(4.dp))
                             .background(statusBgColor)
                             .then(
                                 if (DesktopConnectionState.canRetry(connectionStatus)) {
@@ -702,8 +702,8 @@ fun LibraryScreen(
                                     ) {
                                         Box(
                                             modifier = Modifier
-                                                .clip(RoundedCornerShape(4.dp))
-                                                .background(MiuixTheme.colorScheme.surfaceVariant)
+                                                .clip(SquircleShape(4.dp))
+                                                .background(MiuixTheme.colorScheme.surfaceContainerHighest)
                                                 .pointerHoverIcon(PointerIcon.Hand)
                                                 .clickable {
                                                     searchFieldState.setTextAndPlaceCursorAtEnd(suggestion)
@@ -724,7 +724,7 @@ fun LibraryScreen(
                             }
                             Box(
                                 modifier = Modifier
-                                    .clip(RoundedCornerShape(4.dp))
+                                    .clip(SquircleShape(4.dp))
                                     .pointerHoverIcon(PointerIcon.Hand)
                                     .clickable { clearSearchHistory() }
                                     .padding(horizontal = 4.dp, vertical = 2.dp),
@@ -841,8 +841,8 @@ fun LibraryScreen(
                                                     )
                                                     Box(
                                                         modifier = Modifier
-                                                            .clip(RoundedCornerShape(6.dp))
-                                                            .background(MiuixTheme.colorScheme.surfaceVariant)
+                                                            .clip(SquircleShape(6.dp))
+                                                            .background(MiuixTheme.colorScheme.surfaceContainerHighest)
                                                             .pointerHoverIcon(PointerIcon.Hand)
                                                             .clickable {
                                                                 coroutineScope.launch {
@@ -893,32 +893,10 @@ fun LibraryScreen(
                             title: String,
                             link: String,
                         ): List<ContextMenuItem> {
-                            val menuItems = mutableListOf(
-                                ContextMenuItem(copyTitleLabel) {
-                                    clipboard.setText(AnnotatedString(title))
-                                    showNotification("$copiedText: $title")
-                                },
-                                ContextMenuItem(copyLinkLabel) {
-                                    clipboard.setText(AnnotatedString(link))
-                                    showNotification(linkCopiedText)
-                                },
-                                ContextMenuItem(openBrowserLabel) {
-                                    DesktopBrowser.openUrl(link)
-                                },
-                                ContextMenuItem(
-                                    if (DesktopFavoritesState.isFavorite(favoriteGids, gallery.gid)) {
-                                        deleteFavoriteLabel
-                                    } else {
-                                        addFavoriteLabel
-                                    },
-                                ) {
-                                    toggleFavorite(gallery)
-                                },
-                            )
+                            val menuItems = mutableListOf<ContextMenuItem>()
                             // 批量多选激活时置顶批量删除（按当前 Tab 作用于历史或收藏）；毁灭性操作先确认
                             if (multiSelection.isActive && (currentTab == LibraryTab.History || currentTab == LibraryTab.Favorites)) {
                                 menuItems.add(
-                                    0,
                                     ContextMenuItem(batchDeleteLabel) {
                                         showBatchDeleteConfirm = true
                                     },
@@ -938,6 +916,34 @@ fun LibraryScreen(
                                     },
                                 )
                             }
+                            menuItems.add(
+                                ContextMenuItem(
+                                    if (DesktopFavoritesState.isFavorite(favoriteGids, gallery.gid)) {
+                                        deleteFavoriteLabel
+                                    } else {
+                                        addFavoriteLabel
+                                    },
+                                ) {
+                                    toggleFavorite(gallery)
+                                },
+                            )
+                            menuItems.add(
+                                ContextMenuItem(copyTitleLabel) {
+                                    clipboard.setText(AnnotatedString(title))
+                                    showNotification("$copiedText: $title")
+                                },
+                            )
+                            menuItems.add(
+                                ContextMenuItem(copyLinkLabel) {
+                                    clipboard.setText(AnnotatedString(link))
+                                    showNotification(linkCopiedText)
+                                },
+                            )
+                            menuItems.add(
+                                ContextMenuItem(openBrowserLabel) {
+                                    DesktopBrowser.openUrl(link)
+                                },
+                            )
                             if (currentTab == LibraryTab.History) {
                                 menuItems.add(
                                     ContextMenuItem(deleteLabel) {
@@ -985,6 +991,7 @@ fun LibraryScreen(
                                         ) {
                                             Row(
                                                 modifier = Modifier.fillMaxWidth()
+                                                    .clip(SquircleShape(8.dp))
                                                     .pointerHoverIcon(PointerIcon.Hand)
                                                     .combinedClickable(
                                                         onClick = {
@@ -1004,9 +1011,9 @@ fun LibraryScreen(
                                                     )
                                                     .background(
                                                         when {
-                                                            gallery.gid in multiSelection.gids -> MiuixTheme.colorScheme.primaryContainer
-                                                            selected?.gid == gallery.gid -> MiuixTheme.colorScheme.secondaryContainer
-                                                            else -> Color.Unspecified
+                                                            gallery.gid in multiSelection.gids -> MiuixTheme.colorScheme.primary.copy(alpha = 0.20f)
+                                                            selected?.gid == gallery.gid -> MiuixTheme.colorScheme.primary.copy(alpha = 0.12f)
+                                                            else -> Color.Transparent
                                                         },
                                                     )
                                                     .padding(horizontal = 8.dp, vertical = 6.dp),
@@ -1020,7 +1027,7 @@ fun LibraryScreen(
                                                         modifier = Modifier
                                                             .width(42.dp)
                                                             .height(56.dp)
-                                                            .clip(RoundedCornerShape(4.dp)),
+                                                            .clip(SquircleShape(4.dp)),
                                                         contentScale = ContentScale.Crop,
                                                     )
                                                 }
@@ -1088,7 +1095,7 @@ fun LibraryScreen(
                                             Box(
                                                 modifier = Modifier
                                                     .fillMaxWidth()
-                                                    .clip(RoundedCornerShape(8.dp))
+                                                    .clip(SquircleShape(8.dp))
                                                     .pointerHoverIcon(PointerIcon.Hand)
                                                     .combinedClickable(
                                                         onClick = {
@@ -1108,9 +1115,9 @@ fun LibraryScreen(
                                                     )
                                                     .background(
                                                         when {
-                                                            gallery.gid in multiSelection.gids -> MiuixTheme.colorScheme.primaryContainer
-                                                            selected?.gid == gallery.gid -> MiuixTheme.colorScheme.secondaryContainer
-                                                            else -> MiuixTheme.colorScheme.surfaceVariant
+                                                            gallery.gid in multiSelection.gids -> MiuixTheme.colorScheme.primary.copy(alpha = 0.20f)
+                                                            selected?.gid == gallery.gid -> MiuixTheme.colorScheme.primary.copy(alpha = 0.12f)
+                                                            else -> MiuixTheme.colorScheme.surfaceContainerHighest
                                                         },
                                                     )
                                                     .padding(8.dp),
@@ -1124,7 +1131,7 @@ fun LibraryScreen(
                                                             modifier = Modifier
                                                                 .fillMaxWidth()
                                                                 .height(110.dp)
-                                                                .clip(RoundedCornerShape(6.dp)),
+                                                                .clip(SquircleShape(6.dp)),
                                                             contentAlignment = Alignment.Center,
                                                         ) {
                                                             AsyncImage(
@@ -1217,7 +1224,7 @@ fun LibraryScreen(
                 notifications.forEach { notice ->
                     Box(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
+                            .clip(SquircleShape(8.dp))
                             .background(MiuixTheme.colorScheme.surfaceContainerHighest)
                             .pointerHoverIcon(PointerIcon.Hand)
                             .clickable {
@@ -1502,7 +1509,7 @@ internal fun GalleryDetailPane(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(200.dp)
-                        .clip(RoundedCornerShape(8.dp))
+                        .clip(SquircleShape(8.dp))
                         .pointerHoverIcon(PointerIcon.Hand)
                         .clickable { onPreviewCover?.invoke(thumb) },
                     contentAlignment = Alignment.Center,
@@ -1522,7 +1529,7 @@ internal fun GalleryDetailPane(
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .background(MiuixTheme.colorScheme.surfaceVariant)
+                                .background(MiuixTheme.colorScheme.surfaceContainerHighest)
                                 .pointerHoverIcon(PointerIcon.Hand)
                                 .clickable { imageState.retry() },
                             contentAlignment = Alignment.Center,
@@ -1627,8 +1634,8 @@ internal fun GalleryDetailPane(
                                         val fullTag = DesktopTagFormatter.formatTagQuery(namespace, tagName)
                                         Box(
                                             modifier = Modifier
-                                                .clip(RoundedCornerShape(4.dp))
-                                                .background(MiuixTheme.colorScheme.surfaceVariant)
+                                                .clip(SquircleShape(4.dp))
+                                                .background(MiuixTheme.colorScheme.surfaceContainerHighest)
                                                 .pointerHoverIcon(PointerIcon.Hand)
                                                 .clickable {
                                                     if (onSearchTag != null) {
@@ -1778,7 +1785,7 @@ internal fun CoverPreviewDialog(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .padding(bottom = 24.dp)
-                .clip(RoundedCornerShape(24.dp))
+                .clip(SquircleShape(24.dp))
                 .background(MiuixTheme.colorScheme.surfaceContainerHighest)
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
