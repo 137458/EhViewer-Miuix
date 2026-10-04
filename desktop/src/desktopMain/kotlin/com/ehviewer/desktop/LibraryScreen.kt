@@ -928,10 +928,32 @@ fun LibraryScreen(
                     if (filteredItems.isEmpty()) {
                         Box(modifier = Modifier.fillMaxSize().padding(16.dp), contentAlignment = Alignment.Center) {
                             if (searchQuery.isNotBlank() && currentItems.isNotEmpty()) {
-                                Text(
-                                    text = stringResource(MR.strings.desktop_empty_no_match),
-                                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                )
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                                ) {
+                                    Text(
+                                        text = stringResource(MR.strings.desktop_empty_no_match),
+                                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                        fontSize = 13.sp,
+                                    )
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(SquircleShape(8.dp))
+                                            .background(MiuixTheme.colorScheme.surfaceContainerHighest)
+                                            .pointerHoverIcon(PointerIcon.Hand)
+                                            .clickable { searchFieldState.clearText() }
+                                            .padding(horizontal = 14.dp, vertical = 6.dp),
+                                        contentAlignment = Alignment.Center,
+                                    ) {
+                                        Text(
+                                            text = stringResource(MR.strings.clear_all),
+                                            color = MiuixTheme.colorScheme.primary,
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.Medium,
+                                        )
+                                    }
+                                }
                             } else {
                                 when (currentTab) {
                                     LibraryTab.History -> Text(
