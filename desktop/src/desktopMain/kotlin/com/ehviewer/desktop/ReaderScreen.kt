@@ -108,6 +108,8 @@ fun ReaderScreen(
     var imageStateIsError by remember { mutableStateOf(false) }
     // linksState 承载无链接提示（中性）与链接解析失败（error），error 标记区分并决定是否提供重试
     var linksStateIsError by remember { mutableStateOf(false) }
+    // 链接加载重试通道：与图片重载（reloadKey）分离，链接失败态的重试/F5 走此键才会重新解析画廊页
+    var linksReloadKey by remember { mutableIntStateOf(0) }
     var reloadKey by remember { mutableIntStateOf(0) }
     var showJumpInput by remember { mutableStateOf(false) }
     val jumpFieldState = rememberTextFieldState()
@@ -137,7 +139,7 @@ fun ReaderScreen(
     val loadingImageText = stringResource(MR.strings.desktop_reader_loading_image)
     val loadingText = stringResource(MR.strings.desktop_reader_loading)
 
-    LaunchedEffect(gallery.gid) {
+    LaunchedEffect(gallery.gid, linksReloadKey) {
         imageState = loadingLinksText
         imageStateIsError = false
         runCatching {
@@ -246,13 +248,13 @@ fun ReaderScreen(
                             }
                         }
                         when (event.key) {
-                            // F5/Ctrl+R 重载当前页（加载失败重试同通道）
+                            // F5/Ctrl+R 重载当前页（加载失败重试同通道）；链接解析失败态走链接重试通道
                             Key.F5 -> {
-                                reloadKey += 1
+                                if (linksStateIsError) linksReloadKey += 1 else reloadKey += 1
                                 true
                             }
                             Key.R -> if (event.isCtrlPressed) {
-                                reloadKey += 1
+                                if (linksStateIsError) linksReloadKey += 1 else reloadKey += 1
                                 true
                             } else {
                                 false
@@ -642,8 +644,9 @@ fun ReaderScreen(
                                         .background(if (linksRetryHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
                                         .hoverable(linksRetryHover)
                                         .pointerHoverIcon(PointerIcon.Hand)
-                                        .clickable { reloadKey += 1 }
+                                        .clickable { linksReloadKey += 1 }
                                         .padding(horizontal = 16.dp, vertical = 6.dp),
+                                    contentAlignment = Alignment.Center,
                                 ) {
                                     Text(
                                         text = retryLabel,

@@ -2,6 +2,8 @@
 
 ### 新增
 
+- 修复了桌面端阅读器链接失败重载无效的问题：链接解析失败占位卡的重载胶囊与 F5/Ctrl+R 此前递增图片重载键，不会重新解析画廊页链接；现以独立 linksReloadKey 驱动链接加载，链接失败态下胶囊与键盘重试均生效。
+
 - 优化了桌面端 i18n 资源卫生：清理设置页显式化后闲置的词条（desktop_restore_limit 五语言、settings_close_behavior/settings_close_exit 双语言）及其存在性测试断言，托盘最小化等在用词条不受影响。
 
 - 优化了桌面端阅读进度记忆实现：改用既有的 DesktopReadingProgress 编解码设施（"gid:page" 文本）经 DataStore 配置键跨会话续读，替换 Round 71 重复引入的内存轮子并删除之（原有会话内恢复能力不变，且升级为跨会话生效、上限 50 条）。
