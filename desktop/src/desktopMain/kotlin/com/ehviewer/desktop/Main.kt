@@ -524,40 +524,29 @@ private fun AboutDialog(onDismiss: () -> Unit) {
             val upToDateText = stringResource(MR.strings.desktop_update_up_to_date)
             val unavailableText = stringResource(MR.strings.desktop_update_check_failed)
             var updateCheckState by remember { mutableStateOf<AboutUpdateCheckState?>(null) }
-            val updateCheckHover = remember { MutableInteractionSource() }
-            val updateCheckHovered by updateCheckHover.collectIsHoveredAsState()
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Box(
-                    modifier = Modifier
-                        .clip(SquircleShape(6.dp))
-                        .background(MiuixTheme.colorScheme.surfaceContainerHighest)
-                        .background(if (updateCheckHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
-                        .hoverable(updateCheckHover)
-                        .pointerHoverIcon(PointerIcon.Hand)
-                        .clickable(
-                            interactionSource = updateCheckHover,
-                            indication = null,
-                        ) {
-                            if (updateCheckState != AboutUpdateCheckState.Checking) {
-                                coroutineScope.launch {
-                                    updateCheckState = AboutUpdateCheckState.Checking
-                                    updateCheckState = when (val result = checkLatestReleaseStatus(DESKTOP_VERSION)) {
-                                        is UpdateCheckResult.Available -> AboutUpdateCheckState.Available(
-                                            label = StringDesc.ResourceFormatted(MR.strings.desktop_update_available, result.info.tag).localized(),
-                                            tag = result.info.tag,
-                                        )
-                                        UpdateCheckResult.UpToDate -> AboutUpdateCheckState.UpToDate(upToDateText)
-                                        UpdateCheckResult.Unavailable -> AboutUpdateCheckState.Unavailable(unavailableText)
-                                    }
+                DesktopHoverPill(
+                    onClick = {
+                        if (updateCheckState != AboutUpdateCheckState.Checking) {
+                            coroutineScope.launch {
+                                updateCheckState = AboutUpdateCheckState.Checking
+                                updateCheckState = when (val result = checkLatestReleaseStatus(DESKTOP_VERSION)) {
+                                    is UpdateCheckResult.Available -> AboutUpdateCheckState.Available(
+                                        label = StringDesc.ResourceFormatted(MR.strings.desktop_update_available, result.info.tag).localized(),
+                                        tag = result.info.tag,
+                                    )
+                                    UpdateCheckResult.UpToDate -> AboutUpdateCheckState.UpToDate(upToDateText)
+                                    UpdateCheckResult.Unavailable -> AboutUpdateCheckState.Unavailable(unavailableText)
                                 }
                             }
                         }
-                        .padding(horizontal = 10.dp, vertical = 5.dp),
-                    contentAlignment = Alignment.Center,
+                    },
+                    containerColor = MiuixTheme.colorScheme.surfaceContainerHighest,
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 5.dp),
                 ) {
                     Text(
                         text = checkLabel,
