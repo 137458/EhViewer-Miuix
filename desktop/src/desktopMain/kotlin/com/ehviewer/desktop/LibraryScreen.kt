@@ -1641,6 +1641,10 @@ fun LibraryScreen(
                 title = confirmTitle,
                 onDismiss = { showClearHistoryConfirm = false },
             ) {
+                val clearCancelHover = remember { MutableInteractionSource() }
+                val clearCancelHovered by clearCancelHover.collectIsHoveredAsState()
+                val clearConfirmHover = remember { MutableInteractionSource() }
+                val clearConfirmHovered by clearConfirmHover.collectIsHoveredAsState()
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End),
@@ -1649,6 +1653,9 @@ fun LibraryScreen(
                         text = cancelLabel,
                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                         modifier = Modifier
+                            .clip(SquircleShape(8.dp))
+                            .background(if (clearCancelHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
+                            .hoverable(clearCancelHover)
                             .pointerHoverIcon(PointerIcon.Hand)
                             .clickable { showClearHistoryConfirm = false }
                             .padding(horizontal = 8.dp, vertical = 4.dp),
@@ -1658,6 +1665,9 @@ fun LibraryScreen(
                         color = MiuixTheme.colorScheme.error,
                         fontWeight = androidx.compose.ui.text.font.FontWeight.Medium,
                         modifier = Modifier
+                            .clip(SquircleShape(8.dp))
+                            .background(if (clearConfirmHovered) MiuixTheme.colorScheme.error.copy(alpha = 0.12f) else Color.Transparent)
+                            .hoverable(clearConfirmHover)
                             .pointerHoverIcon(PointerIcon.Hand)
                             .clickable {
                                 showClearHistoryConfirm = false
@@ -1691,9 +1701,13 @@ fun LibraryScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
+                    val batchCancelHover = remember { MutableInteractionSource() }
+                    val batchCancelHovered by batchCancelHover.collectIsHoveredAsState()
                     Box(
                         modifier = Modifier
                             .clip(SquircleShape(8.dp))
+                            .background(if (batchCancelHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
+                            .hoverable(batchCancelHover)
                             .pointerHoverIcon(PointerIcon.Hand)
                             .clickable { showBatchDeleteConfirm = false }
                             .padding(horizontal = 14.dp, vertical = 7.dp),
@@ -1704,10 +1718,13 @@ fun LibraryScreen(
                             fontSize = 13.sp,
                         )
                     }
+                    val batchDeleteHover = remember { MutableInteractionSource() }
+                    val batchDeleteHovered by batchDeleteHover.collectIsHoveredAsState()
                     Box(
                         modifier = Modifier
                             .clip(SquircleShape(8.dp))
-                            .background(MiuixTheme.colorScheme.error.copy(alpha = 0.12f))
+                            .background(MiuixTheme.colorScheme.error.copy(alpha = if (batchDeleteHovered) 0.24f else 0.12f))
+                            .hoverable(batchDeleteHover)
                             .pointerHoverIcon(PointerIcon.Hand)
                             .clickable {
                                 showBatchDeleteConfirm = false
@@ -1891,11 +1908,15 @@ internal fun GalleryDetailPane(
                 val imageState = remember(thumb) { DesktopImageStateController() }
                 val decodeErrorText = stringResource(MR.strings.decode_image_error)
                 val retryActionText = stringResource(MR.strings.action_retry)
+                val coverHover = remember { MutableInteractionSource() }
+                val coverHovered by coverHover.collectIsHoveredAsState()
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(200.dp)
                         .clip(SquircleShape(8.dp))
+                        .background(if (coverHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
+                        .hoverable(coverHover)
                         .pointerHoverIcon(PointerIcon.Hand)
                         .clickable {
                             val allUrls = listOfNotNull(thumb) + (detailExtras?.detail?.previewList?.map { it.url } ?: emptyList())
@@ -2069,10 +2090,14 @@ internal fun GalleryDetailPane(
                                                 )
                                             },
                                         ) {
+                                            val tagHover = remember { MutableInteractionSource() }
+                                            val tagHovered by tagHover.collectIsHoveredAsState()
                                             Box(
                                                 modifier = Modifier
                                                     .clip(SquircleShape(6.dp))
                                                     .background(MiuixTheme.colorScheme.surfaceContainerHighest)
+                                                    .background(if (tagHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
+                                                    .hoverable(tagHover)
                                                     .pointerHoverIcon(PointerIcon.Hand)
                                                     .clickable {
                                                         if (onSearchTag != null) {
