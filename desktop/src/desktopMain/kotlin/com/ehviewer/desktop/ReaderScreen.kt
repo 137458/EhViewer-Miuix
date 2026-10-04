@@ -13,11 +13,13 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
@@ -57,6 +59,7 @@ import com.ehviewer.core.database.client.GalleryDetailPageLinksParser
 import com.ehviewer.core.database.client.GalleryPageParser
 import com.ehviewer.core.i18n.MR
 import com.ehviewer.core.model.BaseGalleryInfo
+import com.ehviewer.core.ui.component.SquircleShape
 import com.ehviewer.core.util.LogPriority
 import com.ehviewer.core.util.logcat
 import dev.icerock.moko.resources.compose.stringResource
@@ -68,6 +71,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -261,27 +266,38 @@ fun ReaderScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                    .background(MiuixTheme.colorScheme.surface)
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
                     text = displayTitle,
                     color = MiuixTheme.colorScheme.primary,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Medium,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f),
                 )
-                Text(
-                    text = if (pageLinks.isEmpty()) "" else stringResource(MR.strings.desktop_reader_page_progress, page, pageLinks.size),
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    modifier = Modifier
-                        .pointerHoverIcon(PointerIcon.Hand)
-                        .clickable(enabled = pageLinks.isNotEmpty()) {
-                            jumpFieldState.setTextAndPlaceCursorAtEnd(page.toString())
-                            showJumpInput = !showJumpInput
-                        },
-                )
+                if (pageLinks.isNotEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .clip(SquircleShape(6.dp))
+                            .background(MiuixTheme.colorScheme.surfaceContainerHighest)
+                            .pointerHoverIcon(PointerIcon.Hand)
+                            .clickable {
+                                jumpFieldState.setTextAndPlaceCursorAtEnd(page.toString())
+                                showJumpInput = !showJumpInput
+                            }
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                    ) {
+                        Text(
+                            text = stringResource(MR.strings.desktop_reader_page_progress, page, pageLinks.size),
+                            color = MiuixTheme.colorScheme.onSurface,
+                            fontSize = 12.sp,
+                        )
+                    }
+                }
                 if (showJumpInput && pageLinks.isNotEmpty()) {
                     TextField(
                         state = jumpFieldState,
@@ -301,13 +317,18 @@ fun ReaderScreen(
                             },
                     )
                 }
-                Text(
-                    text = "✕",
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                IconButton(
+                    onClick = onClose,
                     modifier = Modifier
-                        .pointerHoverIcon(PointerIcon.Hand)
-                        .clickable(onClick = onClose),
-                )
+                        .size(32.dp)
+                        .pointerHoverIcon(PointerIcon.Hand),
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = null,
+                        tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    )
+                }
             }
             HorizontalDivider()
 
@@ -366,45 +387,61 @@ fun ReaderScreen(
                 val openInBrowserLabel = stringResource(MR.strings.open_in_browser)
                 val saveLabel = stringResource(MR.strings.action_save)
                 val saveFailedText = stringResource(MR.strings.error_cant_save_image)
+                val prevPageLabel = stringResource(MR.strings.desktop_reader_prev)
+                val nextPageLabel = stringResource(MR.strings.desktop_reader_next)
+                val retryLabel = stringResource(MR.strings.action_retry)
                 val coroutineScope = rememberCoroutineScope()
                 when {
                     url != null -> ContextMenuArea(
                         items = {
-                            listOf(
-                                ContextMenuItem(copyLinkLabel) {
-                                    clipboard.setText(AnnotatedString(url))
-                                },
-                                ContextMenuItem(openInBrowserLabel) {
-                                    DesktopBrowser.openUrl(url)
-                                },
-                                ContextMenuItem(saveLabel) {
-                                    coroutineScope.launch {
-                                        runCatching {
-                                            DesktopImageSaver.saveImage(url, gallery.gid, page)
-                                        }.onSuccess { target ->
-                                            // image_saved 模板含 %s 路径占位；点击回调非组合语境，经 StringDesc 本地化
-                                            notifications = DesktopNotificationManager.post(
-                                                current = notifications,
-                                                message = StringDesc.ResourceFormatted(MR.strings.image_saved, target.toString()).localized(),
-                                                timestamp = System.currentTimeMillis(),
-                                                idProvider = { nextNotificationId.getAndIncrement() },
-                                            )
-                                        }.onFailure { cause ->
-                                            val detail = cause.message
-                                            notifications = DesktopNotificationManager.post(
-                                                current = notifications,
-                                                message = if (detail == null) {
-                                                    saveFailedText
-                                                } else {
-                                                    StringDesc.ResourceFormatted(MR.strings.desktop_save_failed_reason, detail).localized()
-                                                },
-                                                timestamp = System.currentTimeMillis(),
-                                                idProvider = { nextNotificationId.getAndIncrement() },
-                                            )
+                            buildList {
+                                if (page > 1) {
+                                    add(ContextMenuItem(prevPageLabel) { page -= 1 })
+                                }
+                                if (page < pageLinks.size) {
+                                    add(ContextMenuItem(nextPageLabel) { page += 1 })
+                                }
+                                add(ContextMenuItem(retryLabel) { reloadKey += 1 })
+                                add(
+                                    ContextMenuItem(copyLinkLabel) {
+                                        clipboard.setText(AnnotatedString(url))
+                                    },
+                                )
+                                add(
+                                    ContextMenuItem(openInBrowserLabel) {
+                                        DesktopBrowser.openUrl(url)
+                                    },
+                                )
+                                add(
+                                    ContextMenuItem(saveLabel) {
+                                        coroutineScope.launch {
+                                            runCatching {
+                                                DesktopImageSaver.saveImage(url, gallery.gid, page)
+                                            }.onSuccess { target ->
+                                                // image_saved 模板含 %s 路径占位；点击回调非组合语境，经 StringDesc 本地化
+                                                notifications = DesktopNotificationManager.post(
+                                                    current = notifications,
+                                                    message = StringDesc.ResourceFormatted(MR.strings.image_saved, target.toString()).localized(),
+                                                    timestamp = System.currentTimeMillis(),
+                                                    idProvider = { nextNotificationId.getAndIncrement() },
+                                                )
+                                            }.onFailure { cause ->
+                                                val detail = cause.message
+                                                notifications = DesktopNotificationManager.post(
+                                                    current = notifications,
+                                                    message = if (detail == null) {
+                                                        saveFailedText
+                                                    } else {
+                                                        StringDesc.ResourceFormatted(MR.strings.desktop_save_failed_reason, detail).localized()
+                                                    },
+                                                    timestamp = System.currentTimeMillis(),
+                                                    idProvider = { nextNotificationId.getAndIncrement() },
+                                                )
+                                            }
                                         }
-                                    }
-                                },
-                            )
+                                    },
+                                )
+                            }
                         },
                     ) {
                         AsyncImage(
@@ -445,30 +482,50 @@ fun ReaderScreen(
                 }
             }
 
+            HorizontalDivider()
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    .background(MiuixTheme.colorScheme.surface)
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(
-                    text = stringResource(MR.strings.desktop_reader_prev),
-                    color = if (page > 1) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                Box(
                     modifier = Modifier
-                        .pointerHoverIcon(PointerIcon.Hand)
+                        .clip(SquircleShape(8.dp))
+                        .background(if (page > 1) MiuixTheme.colorScheme.surfaceContainerHighest else Color.Transparent)
+                        .then(if (page > 1) Modifier.pointerHoverIcon(PointerIcon.Hand) else Modifier)
                         .clickable(enabled = page > 1) { page -= 1 }
-                        .padding(horizontal = 8.dp, vertical = 4.dp),
-                )
-                Box(modifier = Modifier.weight(1f))
-                Text(
-                    text = stringResource(MR.strings.desktop_reader_next),
-                    color = if (page < pageLinks.size) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                ) {
+                    Text(
+                        text = stringResource(MR.strings.desktop_reader_prev),
+                        color = if (page > 1) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.5f),
+                        fontSize = 13.sp,
+                    )
+                }
+                if (pageLinks.isNotEmpty()) {
+                    Text(
+                        text = "$page / ${pageLinks.size}",
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        fontSize = 12.sp,
+                    )
+                }
+                Box(
                     modifier = Modifier
-                        .pointerHoverIcon(PointerIcon.Hand)
+                        .clip(SquircleShape(8.dp))
+                        .background(if (page < pageLinks.size) MiuixTheme.colorScheme.surfaceContainerHighest else Color.Transparent)
+                        .then(if (page < pageLinks.size) Modifier.pointerHoverIcon(PointerIcon.Hand) else Modifier)
                         .clickable(enabled = page < pageLinks.size) { page += 1 }
-                        .padding(horizontal = 8.dp, vertical = 4.dp),
-                )
+                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                ) {
+                    Text(
+                        text = stringResource(MR.strings.desktop_reader_next),
+                        color = if (page < pageLinks.size) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.5f),
+                        fontSize = 13.sp,
+                    )
+                }
             }
         }
         if (notifications.isNotEmpty()) {
@@ -487,7 +544,7 @@ fun ReaderScreen(
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
+                            .clip(SquircleShape(8.dp))
                             .background(MiuixTheme.colorScheme.surfaceContainerHighest)
                             .clickable {
                                 notifications = DesktopNotificationManager.dismiss(notifications, notice.id)
@@ -513,7 +570,7 @@ private fun ZoomBadge(
         color = Color.White.copy(alpha = 0.7f),
         fontSize = 12.sp,
         modifier = modifier
-            .background(Color.Black.copy(alpha = 0.4f), RoundedCornerShape(6.dp))
+            .background(Color.Black.copy(alpha = 0.4f), SquircleShape(6.dp))
             .padding(horizontal = 8.dp, vertical = 4.dp),
     )
 }
