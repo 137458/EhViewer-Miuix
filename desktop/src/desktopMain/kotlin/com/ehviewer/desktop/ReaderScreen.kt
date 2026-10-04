@@ -48,6 +48,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
@@ -537,20 +538,43 @@ fun ReaderScreen(
                 horizontalAlignment = Alignment.End,
             ) {
                 notifications.forEach { notice ->
-                    Text(
-                        text = notice.message,
-                        color = MiuixTheme.colorScheme.onSurface,
-                        fontSize = 12.sp,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
+                    Box(
                         modifier = Modifier
                             .clip(SquircleShape(8.dp))
                             .background(MiuixTheme.colorScheme.surfaceContainerHighest)
+                            .pointerHoverIcon(PointerIcon.Hand)
                             .clickable {
                                 notifications = DesktopNotificationManager.dismiss(notifications, notice.id)
                             }
                             .padding(horizontal = 12.dp, vertical = 8.dp),
-                    )
+                    ) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                text = notice.message,
+                                color = MiuixTheme.colorScheme.onSurface,
+                                fontSize = 12.sp,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                            if (notice.actionLabel != null) {
+                                Text(
+                                    text = notice.actionLabel,
+                                    color = MiuixTheme.colorScheme.primary,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    modifier = Modifier
+                                        .pointerHoverIcon(PointerIcon.Hand)
+                                        .clickable {
+                                            notice.onAction?.invoke()
+                                            notifications = DesktopNotificationManager.dismiss(notifications, notice.id)
+                                        },
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }

@@ -451,10 +451,12 @@ private fun AboutDialog(onDismiss: () -> Unit) {
             )
             val clipboard = LocalClipboardManager.current
             val logLabel = stringResource(MR.strings.desktop_about_log)
+            val copiedText = stringResource(MR.strings.copied_to_clipboard)
+            var copiedLog by remember { mutableStateOf(false) }
             DesktopFileLog.defaultFile()?.let { logPath ->
                 Text(
-                    text = "$logLabel: $logPath",
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    text = if (copiedLog) copiedText else "$logLabel: $logPath",
+                    color = if (copiedLog) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     fontSize = 12.sp,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
@@ -462,7 +464,10 @@ private fun AboutDialog(onDismiss: () -> Unit) {
                         .clip(SquircleShape(6.dp))
                         .background(MiuixTheme.colorScheme.surfaceContainerHighest)
                         .pointerHoverIcon(PointerIcon.Hand)
-                        .clickable { clipboard.setText(AnnotatedString(logPath.toString())) }
+                        .clickable {
+                            clipboard.setText(AnnotatedString(logPath.toString()))
+                            copiedLog = true
+                        }
                         .padding(horizontal = 8.dp, vertical = 4.dp),
                 )
             }
@@ -732,10 +737,28 @@ private fun GalleryDetailPageContent(
                                 }
                                 .padding(horizontal = 12.dp, vertical = 8.dp),
                         ) {
-                            Text(
-                                text = notice.message,
-                                color = MiuixTheme.colorScheme.onSurface,
-                            )
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Text(
+                                    text = notice.message,
+                                    color = MiuixTheme.colorScheme.onSurface,
+                                )
+                                if (notice.actionLabel != null) {
+                                    Text(
+                                        text = notice.actionLabel,
+                                        color = MiuixTheme.colorScheme.primary,
+                                        fontWeight = FontWeight.Medium,
+                                        modifier = Modifier
+                                            .pointerHoverIcon(PointerIcon.Hand)
+                                            .clickable {
+                                                notice.onAction?.invoke()
+                                                notifications = DesktopNotificationManager.dismiss(notifications, notice.id)
+                                            },
+                                    )
+                                }
+                            }
                         }
                     }
                 }
