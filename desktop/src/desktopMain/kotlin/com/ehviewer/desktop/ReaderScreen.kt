@@ -6,6 +6,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -626,37 +628,24 @@ fun ReaderScreen(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 val canGoPrev = canNavigatePrev(page)
-                Box(
-                    modifier = Modifier
-                        .clip(SquircleShape(8.dp))
-                        .background(
-                            if (canGoPrev) {
-                                MiuixTheme.colorScheme.surfaceContainerHighest
-                            } else {
-                                MiuixTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.35f)
-                            },
-                        )
-                        .pointerHoverIcon(if (canGoPrev) PointerIcon.Hand else PointerIcon.Default)
-                        .clickable(enabled = canGoPrev) { page -= 1 }
-                        .padding(horizontal = 12.dp, vertical = 6.dp),
-                ) {
-                    Text(
-                        text = stringResource(MR.strings.desktop_reader_prev),
-                        color = if (canGoPrev) {
-                            MiuixTheme.colorScheme.primary
-                        } else {
-                            MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.4f)
-                        },
-                        fontSize = 13.sp,
-                    )
-                }
+                ReaderNavPill(
+                    text = stringResource(MR.strings.desktop_reader_prev),
+                    enabled = canGoPrev,
+                    onClick = { page -= 1 },
+                )
                 if (pageLinks.isNotEmpty()) {
+                    val jumpInteraction = remember { MutableInteractionSource() }
+                    val jumpHovered by jumpInteraction.collectIsHoveredAsState()
                     Box(
                         modifier = Modifier
                             .clip(SquircleShape(6.dp))
                             .background(MiuixTheme.colorScheme.surfaceContainerHighest)
+                            .background(if (jumpHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
                             .pointerHoverIcon(PointerIcon.Hand)
-                            .clickable {
+                            .clickable(
+                                interactionSource = jumpInteraction,
+                                indication = null,
+                            ) {
                                 jumpFieldState.setTextAndPlaceCursorAtEnd(page.toString())
                                 showJumpInput = !showJumpInput
                             }
@@ -671,30 +660,11 @@ fun ReaderScreen(
                     }
                 }
                 val canGoNext = canNavigateNext(page, pageLinks.size)
-                Box(
-                    modifier = Modifier
-                        .clip(SquircleShape(8.dp))
-                        .background(
-                            if (canGoNext) {
-                                MiuixTheme.colorScheme.surfaceContainerHighest
-                            } else {
-                                MiuixTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.35f)
-                            },
-                        )
-                        .pointerHoverIcon(if (canGoNext) PointerIcon.Hand else PointerIcon.Default)
-                        .clickable(enabled = canGoNext) { page += 1 }
-                        .padding(horizontal = 12.dp, vertical = 6.dp),
-                ) {
-                    Text(
-                        text = stringResource(MR.strings.desktop_reader_next),
-                        color = if (canGoNext) {
-                            MiuixTheme.colorScheme.primary
-                        } else {
-                            MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.4f)
-                        },
-                        fontSize = 13.sp,
-                    )
-                }
+                ReaderNavPill(
+                    text = stringResource(MR.strings.desktop_reader_next),
+                    enabled = canGoNext,
+                    onClick = { page += 1 },
+                )
             }
         }
         if (notifications.isNotEmpty()) {
@@ -706,12 +676,18 @@ fun ReaderScreen(
                 horizontalAlignment = Alignment.End,
             ) {
                 notifications.forEach { notice ->
+                    val noticeInteraction = remember { MutableInteractionSource() }
+                    val noticeHovered by noticeInteraction.collectIsHoveredAsState()
                     Box(
                         modifier = Modifier
                             .clip(SquircleShape(8.dp))
                             .background(MiuixTheme.colorScheme.surfaceContainerHighest)
+                            .background(if (noticeHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
                             .pointerHoverIcon(PointerIcon.Hand)
-                            .clickable {
+                            .clickable(
+                                interactionSource = noticeInteraction,
+                                indication = null,
+                            ) {
                                 notifications = DesktopNotificationManager.dismiss(notifications, notice.id)
                             }
                             .padding(horizontal = 12.dp, vertical = 8.dp),
@@ -769,4 +745,45 @@ private fun ZoomBadge(
             .clickable { onReset() }
             .padding(horizontal = 8.dp, vertical = 4.dp),
     )
+}
+
+// 底部导航翻页胶囊：禁用态半透明衬底 + Default 光标，悬停 primary 半透明叠加与全局操作按钮 token 一致
+@Composable
+private fun ReaderNavPill(
+    text: String,
+    enabled: Boolean,
+    onClick: () -> Unit,
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isHovered by interactionSource.collectIsHoveredAsState()
+    Box(
+        modifier = Modifier
+            .clip(SquircleShape(8.dp))
+            .background(
+                if (enabled) {
+                    MiuixTheme.colorScheme.surfaceContainerHighest
+                } else {
+                    MiuixTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.35f)
+                },
+            )
+            .background(if (isHovered && enabled) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
+            .pointerHoverIcon(if (enabled) PointerIcon.Hand else PointerIcon.Default)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                enabled = enabled,
+                onClick = onClick,
+            )
+            .padding(horizontal = 12.dp, vertical = 6.dp),
+    ) {
+        Text(
+            text = text,
+            color = if (enabled) {
+                MiuixTheme.colorScheme.primary
+            } else {
+                MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.4f)
+            },
+            fontSize = 13.sp,
+        )
+    }
 }
