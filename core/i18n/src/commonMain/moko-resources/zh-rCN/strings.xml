@@ -739,6 +739,7 @@
     <string name="settings_close_exit">直接退出应用</string>
     <string name="tray_open_app">打开 EhViewer</string>
     <string name="desktop_open_gallery_title">打开画廊</string>
+    <string name="desktop_drop_to_open">松开以打开画廊</string>
     <string name="desktop_open_gallery_hint">画廊链接或 GID/Token（Ctrl+V 粘贴）</string>
     <string name="desktop_open_gallery_empty_input">请输入画廊链接或 GID/Token</string>
     <string name="desktop_open_gallery_invalid_input">无效的画廊链接或 GID/Token</string>

@@ -634,6 +634,7 @@
     <string name="desktop_open_gallery_hint">畫廊連結或 GID/Token（Ctrl+V 貼上）</string>
     <string name="desktop_open_gallery_invalid_input">無效的畫廊連結或 GID/Token</string>
     <string name="desktop_open_gallery_title">開啟畫廊</string>
+    <string name="desktop_drop_to_open">放開以開啟畫廊</string>
     <string name="desktop_reader_load_failed">畫廊載入失敗</string>
     <string name="desktop_reader_load_failed_reason">載入失敗：%1$s</string>
     <string name="desktop_reader_loading">載入中…</string>

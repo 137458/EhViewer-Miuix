@@ -665,6 +665,7 @@
     <string name="settings_close_exit">Exit application</string>
     <string name="tray_open_app">Open EhViewer</string>
     <string name="desktop_open_gallery_title">Open Gallery</string>
+    <string name="desktop_drop_to_open">Drop to open gallery</string>
     <string name="desktop_open_gallery_hint">Gallery URL or GID/Token (Ctrl+V to paste)</string>
     <string name="desktop_open_gallery_empty_input">Please enter a gallery URL or GID/Token</string>
     <string name="desktop_open_gallery_invalid_input">Invalid gallery URL or GID/Token</string>

@@ -1,6 +1,7 @@
 package com.ehviewer.desktop
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -27,6 +28,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
@@ -255,16 +257,32 @@ fun main() {
                     onExit = { exitApplication() },
                     onOpenGallery = { showOpenGalleryDialog = true },
                 )
-                // 桌面拖拽惯例：浏览器链接等文本拖入窗口即解析打开画廊（任意页面均可）
+                // 桌面拖拽惯例：浏览器链接等文本拖入窗口即解析打开画廊（任意页面均可），拖入期间显示放置高亮
+                var dragHovering by remember { mutableStateOf(false) }
                 DisposableEffect(awtWindow) {
                     val dropTarget = java.awt.dnd.DropTarget(
                         awtWindow,
                         object : java.awt.dnd.DropTargetListener {
-                            override fun dragEnter(e: java.awt.dnd.DropTargetDragEvent) {}
-                            override fun dragOver(e: java.awt.dnd.DropTargetDragEvent) {}
-                            override fun dragExit(e: java.awt.dnd.DropTargetEvent) {}
+                            override fun dragEnter(e: java.awt.dnd.DropTargetDragEvent) {
+                                if (e.isDataFlavorSupported(java.awt.datatransfer.DataFlavor.stringFlavor)) {
+                                    dragHovering = true
+                                }
+                            }
+
+                            override fun dragOver(e: java.awt.dnd.DropTargetDragEvent) {
+                                if (e.isDataFlavorSupported(java.awt.datatransfer.DataFlavor.stringFlavor)) {
+                                    dragHovering = true
+                                }
+                            }
+
+                            override fun dragExit(e: java.awt.dnd.DropTargetEvent) {
+                                dragHovering = false
+                            }
+
                             override fun dropActionChanged(e: java.awt.dnd.DropTargetDragEvent) {}
+
                             override fun drop(e: java.awt.dnd.DropTargetDropEvent) {
+                                dragHovering = false
                                 e.acceptDrop(java.awt.dnd.DnDConstants.ACTION_COPY)
                                 val text = runCatching {
                                     e.transferable.getTransferData(java.awt.datatransfer.DataFlavor.stringFlavor) as? String
@@ -327,6 +345,32 @@ fun main() {
                                 gallery = page.gallery,
                                 onClose = popPage,
                             )
+                        }
+                        if (dragHovering) {
+                            // 拖拽放置高亮：全窗口主色描边 + 半透明衬底与居中提示胶囊（穿透点击，不拦截落点）
+                            val dropHintText = stringResource(MR.strings.desktop_drop_to_open)
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(MiuixTheme.colorScheme.primary.copy(alpha = 0.08f))
+                                    .border(2.dp, MiuixTheme.colorScheme.primary.copy(alpha = 0.6f)),
+                            )
+                            Box(
+                                modifier = Modifier.align(Alignment.Center),
+                            ) {
+                                Text(
+                                    text = dropHintText,
+                                    color = MiuixTheme.colorScheme.primary,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    modifier = Modifier
+                                        .shadow(8.dp, SquircleShape(12.dp))
+                                        .clip(SquircleShape(12.dp))
+                                        .background(MiuixTheme.colorScheme.surface)
+                                        .border(1.dp, MiuixTheme.colorScheme.outline.copy(alpha = 0.15f), SquircleShape(12.dp))
+                                        .padding(horizontal = 20.dp, vertical = 12.dp),
+                                )
+                            }
                         }
                         if (showShortcutsHelp) {
                             ShortcutsHelpDialog(onDismiss = { showShortcutsHelp = false })
