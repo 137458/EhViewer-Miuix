@@ -120,17 +120,17 @@ fun SettingsScreen(
                             .padding(horizontal = 16.dp, vertical = 4.dp),
                     ) {
                         // 三态显式选择替代循环点击：目标状态可见可直达，选中行以 ✓ 标识
-                        ThemeModeRow(
+                        SelectionRow(
                             title = stringResource(MR.strings.theme_follow_system),
                             selected = themeMode == 0,
                             onClick = { DesktopSettings.themeMode.value = 0 },
                         )
-                        ThemeModeRow(
+                        SelectionRow(
                             title = stringResource(MR.strings.theme_light),
                             selected = themeMode == 1,
                             onClick = { DesktopSettings.themeMode.value = 1 },
                         )
-                        ThemeModeRow(
+                        SelectionRow(
                             title = stringResource(MR.strings.theme_dark),
                             selected = themeMode == 2,
                             onClick = { DesktopSettings.themeMode.value = 2 },
@@ -155,18 +155,21 @@ fun SettingsScreen(
                             modifier = Modifier.pointerHoverIcon(PointerIcon.Hand),
                         )
                         if (restoreSession) {
-                            BasicComponent(
-                                title = stringResource(MR.strings.desktop_restore_limit),
-                                summary = "${DesktopPageStack.sanitizeRestoreLimit(restoreLimit)} (5 / 10 / 20)",
-                                onClick = {
-                                    val current = DesktopPageStack.sanitizeRestoreLimit(restoreLimit)
-                                    DesktopSettings.restoreLimit.value = when (current) {
-                                        5 -> 10
-                                        10 -> 20
-                                        else -> 5
-                                    }
-                                },
-                                modifier = Modifier.pointerHoverIcon(PointerIcon.Hand),
+                            // 会话恢复数量显式三选（5/10/20），替代点击循环
+                            SelectionRow(
+                                title = "5",
+                                selected = DesktopPageStack.sanitizeRestoreLimit(restoreLimit) == 5,
+                                onClick = { DesktopSettings.restoreLimit.value = 5 },
+                            )
+                            SelectionRow(
+                                title = "10",
+                                selected = DesktopPageStack.sanitizeRestoreLimit(restoreLimit) == 10,
+                                onClick = { DesktopSettings.restoreLimit.value = 10 },
+                            )
+                            SelectionRow(
+                                title = "20",
+                                selected = DesktopPageStack.sanitizeRestoreLimit(restoreLimit) == 20,
+                                onClick = { DesktopSettings.restoreLimit.value = 20 },
                             )
                         }
                     }
@@ -183,17 +186,16 @@ fun SettingsScreen(
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp, vertical = 4.dp),
                     ) {
-                        BasicComponent(
-                            title = stringResource(MR.strings.settings_reading_direction),
-                            summary = if (direction == "RTL") {
-                                stringResource(MR.strings.settings_reading_direction_rtl)
-                            } else {
-                                stringResource(MR.strings.settings_reading_direction_ltr)
-                            },
-                            onClick = {
-                                DesktopSettings.readingDirection.value = if (direction == "RTL") "LTR" else "RTL"
-                            },
-                            modifier = Modifier.pointerHoverIcon(PointerIcon.Hand),
+                        // 两态显式选择替代点击翻转，与主题/关闭行为交互范式一致
+                        SelectionRow(
+                            title = stringResource(MR.strings.settings_reading_direction_ltr),
+                            selected = direction == "LTR",
+                            onClick = { DesktopSettings.readingDirection.value = "LTR" },
+                        )
+                        SelectionRow(
+                            title = stringResource(MR.strings.settings_reading_direction_rtl),
+                            selected = direction == "RTL",
+                            onClick = { DesktopSettings.readingDirection.value = "RTL" },
                         )
                     }
                 }
@@ -398,9 +400,9 @@ private fun SettingsFieldActionButton(
     }
 }
 
-// 主题三态选择行：选中行尾部 ✓ 标识（BasicComponent endActions 插槽），点击直达目标主题
+// 通用选择行：选中行尾部 ✓ 标识（BasicComponent endActions 插槽），点击直达目标值
 @Composable
-private fun ThemeModeRow(
+private fun SelectionRow(
     title: String,
     selected: Boolean,
     onClick: () -> Unit,
