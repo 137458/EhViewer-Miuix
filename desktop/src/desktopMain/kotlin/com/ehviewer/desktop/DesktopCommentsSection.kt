@@ -30,6 +30,7 @@ import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -439,15 +440,19 @@ private fun CommentItem(
             fontSize = 12.sp,
         )
 
-        // 评论内链接点击即经系统浏览器打开（链接本体仍随右键菜单可复制）
+        // 评论内链接点击即经系统浏览器打开（链接本体仍随右键菜单可复制），悬停下划线提示可点击
         remember(comment.comment) { DesktopCommentsModel.extractUrls(comment.comment) }.forEach { url ->
+            val urlHover = remember { MutableInteractionSource() }
+            val urlHovered by urlHover.collectIsHoveredAsState()
             Text(
                 text = url,
                 color = MiuixTheme.colorScheme.primary,
                 fontSize = 12.sp,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
+                textDecoration = if (urlHovered) TextDecoration.Underline else null,
                 modifier = Modifier
+                    .hoverable(urlHover)
                     .pointerHoverIcon(PointerIcon.Hand)
                     .clickable { DesktopBrowser.openUrl(url) },
             )

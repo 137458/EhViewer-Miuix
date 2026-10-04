@@ -42,6 +42,7 @@ import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -858,11 +859,15 @@ private fun GalleryDetailPageContent(
                                     color = MiuixTheme.colorScheme.onSurface,
                                 )
                                 if (notice.actionLabel != null) {
+                                    val actionHover = remember { MutableInteractionSource() }
+                                    val actionHovered by actionHover.collectIsHoveredAsState()
                                     Text(
                                         text = notice.actionLabel,
                                         color = MiuixTheme.colorScheme.primary,
                                         fontWeight = FontWeight.Medium,
+                                        textDecoration = if (actionHovered) TextDecoration.Underline else null,
                                         modifier = Modifier
+                                            .hoverable(actionHover)
                                             .pointerHoverIcon(PointerIcon.Hand)
                                             .clickable {
                                                 notice.onAction?.invoke()

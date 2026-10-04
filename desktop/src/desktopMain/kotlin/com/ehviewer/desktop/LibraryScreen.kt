@@ -73,6 +73,7 @@ import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.TextUnit
@@ -1581,12 +1582,17 @@ fun LibraryScreen(
                                 text = notice.message,
                                 color = MiuixTheme.colorScheme.onSurface,
                             )
-                            // 带动作的通知（如历史删除撤销）：点击动作区执行并随通知一并消失
+                            // 带动作的通知（如历史删除撤销）：点击动作区执行并随通知一并消失，悬停下划线提示可点击
                             if (notice.actionLabel != null) {
+                                val actionHover = remember { MutableInteractionSource() }
+                                val actionHovered by actionHover.collectIsHoveredAsState()
                                 Text(
                                     text = notice.actionLabel,
                                     color = MiuixTheme.colorScheme.primary,
-                                    modifier = Modifier.pointerHoverIcon(PointerIcon.Hand)
+                                    textDecoration = if (actionHovered) TextDecoration.Underline else null,
+                                    modifier = Modifier
+                                        .hoverable(actionHover)
+                                        .pointerHoverIcon(PointerIcon.Hand)
                                         .clickable {
                                             notice.onAction?.invoke()
                                             notifications = DesktopNotificationManager.dismiss(notifications, notice.id)

@@ -55,6 +55,7 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
@@ -725,12 +726,16 @@ fun ReaderScreen(
                                 overflow = TextOverflow.Ellipsis,
                             )
                             if (notice.actionLabel != null) {
+                                val actionHover = remember { MutableInteractionSource() }
+                                val actionHovered by actionHover.collectIsHoveredAsState()
                                 Text(
                                     text = notice.actionLabel,
                                     color = MiuixTheme.colorScheme.primary,
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.Medium,
+                                    textDecoration = if (actionHovered) TextDecoration.Underline else null,
                                     modifier = Modifier
+                                        .hoverable(actionHover)
                                         .pointerHoverIcon(PointerIcon.Hand)
                                         .clickable {
                                             notice.onAction?.invoke()
