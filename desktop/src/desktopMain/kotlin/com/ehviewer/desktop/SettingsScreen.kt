@@ -1,23 +1,33 @@
 package com.ehviewer.desktop
 
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.ehviewer.core.i18n.MR
 import dev.icerock.moko.resources.compose.stringResource
+import kotlinx.coroutines.FlowPreview
 import top.yukonga.miuix.kmp.basic.BasicComponent
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TextField
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 // 桌面设置页：写入共享偏好层后主题、代理等消费方即时生效
+@OptIn(FlowPreview::class)
 @Composable
 fun SettingsScreen() {
     val themeMode by DesktopSettings.themeMode.valueFlow().collectAsState(DesktopSettings.themeMode.value)
@@ -26,9 +36,8 @@ fun SettingsScreen() {
         2 -> stringResource(MR.strings.theme_dark)
         else -> stringResource(MR.strings.theme_follow_system)
     }
-    val proxyValue by DesktopSettings.proxy.valueFlow().collectAsState(DesktopSettings.proxy.value)
-    var proxyText by remember(proxyValue) { mutableStateOf(proxyValue.orEmpty()) }
     val closeToTray by DesktopSettings.closeToTray.valueFlow().collectAsState(DesktopSettings.closeToTray.value)
+    val blackDarkTheme by DesktopSettings.blackDarkTheme.valueFlow().collectAsState(DesktopSettings.blackDarkTheme.value)
 
     LazyColumn(modifier = Modifier.fillMaxWidth()) {
         item {
@@ -36,6 +45,13 @@ fun SettingsScreen() {
                 title = stringResource(MR.strings.settings_theme),
                 summary = themeLabel,
                 onClick = { DesktopSettings.themeMode.value = (themeMode + 1) % 3 },
+            )
+        }
+        item {
+            BasicComponent(
+                title = stringResource(MR.strings.black_dark_theme),
+                summary = if (blackDarkTheme) "✓" else "—",
+                onClick = { DesktopSettings.blackDarkTheme.value = !blackDarkTheme },
             )
         }
         item {
@@ -91,40 +107,63 @@ fun SettingsScreen() {
             )
         }
         item {
-            // 非空但无法解析为 host:port 时标错（运行时会静默直连，此处给出可见反馈）
-            val proxyInvalid = proxyText.isNotBlank() && parseHostPort(proxyText.trim()) == null
-            OutlinedTextField(
-                value = proxyText,
-                onValueChange = {
-                    proxyText = it
-                    DesktopSettings.proxy.value = it.trim().takeIf { v -> v.isNotEmpty() }
-                },
-                label = { Text(stringResource(MR.strings.settings_proxy)) },
-                isError = proxyInvalid,
-                supportingText = if (proxyInvalid) {
-                    { Text(stringResource(MR.strings.settings_proxy_invalid)) }
-                } else {
-                    null
-                },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth().padding(16.dp),
-            )
+            ProxySettingField()
         }
         item {
-            // 图片保存目录：空 = 默认下载目录 ~/Downloads/EhViewer
-            val saveDirValue by DesktopSettings.imageSaveDir.valueFlow()
-                .collectAsState(DesktopSettings.imageSaveDir.value)
-            var saveDirText by remember(saveDirValue) { mutableStateOf(saveDirValue.orEmpty()) }
-            OutlinedTextField(
-                value = saveDirText,
-                onValueChange = {
-                    saveDirText = it
-                    DesktopSettings.imageSaveDir.value = it.trim().takeIf { v -> v.isNotEmpty() }
-                },
-                label = { Text(stringResource(MR.strings.settings_download_download_location)) },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth().padding(16.dp),
+            ImageSaveDirField()
+        }
+    }
+}
+
+// 代理输入：非空但无法解析为 host:port 时给出可见反馈（运行时会静默直连）
+@OptIn(FlowPreview::class)
+@Composable
+private fun ProxySettingField() {
+    val proxyState = rememberTextFieldState(DesktopSettings.proxy.value.orEmpty())
+    LaunchedEffect(Unit) {
+        snapshotFlow { proxyState.text }
+            .collect { text ->
+                DesktopSettings.proxy.value = text.toString().trim().takeIf { v -> v.isNotEmpty() }
+            }
+    }
+    val proxyInvalid = remember(proxyState.text) {
+        proxyState.text.isNotBlank() && parseHostPort(proxyState.text.toString().trim()) == null
+    }
+    Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+        TextField(
+            state = proxyState,
+            label = stringResource(MR.strings.settings_proxy),
+            lineLimits = TextFieldLineLimits.SingleLine,
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+            modifier = Modifier.fillMaxWidth(),
+        )
+        if (proxyInvalid) {
+            Text(
+                text = stringResource(MR.strings.settings_proxy_invalid),
+                color = Color.Red.copy(alpha = 0.8f),
+                fontSize = 12.sp,
+                modifier = Modifier.padding(top = 4.dp),
             )
         }
     }
+}
+
+// 图片保存目录：空 = 默认下载目录 ~/Downloads/EhViewer
+@OptIn(FlowPreview::class)
+@Composable
+private fun ImageSaveDirField() {
+    val saveDirState = rememberTextFieldState(DesktopSettings.imageSaveDir.value.orEmpty())
+    LaunchedEffect(Unit) {
+        snapshotFlow { saveDirState.text }
+            .collect { text ->
+                DesktopSettings.imageSaveDir.value = text.toString().trim().takeIf { v -> v.isNotEmpty() }
+            }
+    }
+    TextField(
+        state = saveDirState,
+        label = stringResource(MR.strings.settings_download_download_location),
+        lineLimits = TextFieldLineLimits.SingleLine,
+        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+        modifier = Modifier.fillMaxWidth().padding(16.dp),
+    )
 }

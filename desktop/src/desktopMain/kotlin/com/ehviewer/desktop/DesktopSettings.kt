@@ -14,6 +14,9 @@ object DesktopSettings : DataStorePreferences("desktop") {
     // 0 = 跟随系统，1 = 浅色，2 = 深色；以 delegate 暴露供响应式消费（与 app Settings 惯例一致）
     val themeMode = intPref("theme_mode", 0)
 
+    // 深色模式下使用 AMOLED 纯黑配色（与移动端 blackDarkTheme 同语义）
+    val blackDarkTheme = boolPref("black_dark_theme", false)
+
     // HTTP 代理，格式 host:port，空 = 直连（无系统代理自动探测）
     val proxy = stringOrNullPref("proxy")
 

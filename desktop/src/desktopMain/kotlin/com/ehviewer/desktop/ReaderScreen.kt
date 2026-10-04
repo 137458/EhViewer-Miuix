@@ -15,9 +15,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
+import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
@@ -67,6 +67,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import top.yukonga.miuix.kmp.basic.HorizontalDivider
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 // 阅读窗口：详情页链接提取 → 图片页解析 → 图片显示。
@@ -88,7 +91,8 @@ fun ReaderScreen(
     var imageState by remember { mutableStateOf<String?>(null) }
     var reloadKey by remember { mutableIntStateOf(0) }
     var showJumpInput by remember { mutableStateOf(false) }
-    var jumpInput by remember { mutableStateOf("") }
+    val jumpFieldState = rememberTextFieldState()
+    val jumpInput = jumpFieldState.text.toString()
     // 轻量通知（保存图片等操作反馈），2.5s 自动过期
     var notifications by remember { mutableStateOf<List<DesktopNotification>>(emptyList()) }
     val nextNotificationId = remember { AtomicLong(1L) }
@@ -274,15 +278,14 @@ fun ReaderScreen(
                     modifier = Modifier
                         .pointerHoverIcon(PointerIcon.Hand)
                         .clickable(enabled = pageLinks.isNotEmpty()) {
-                            jumpInput = page.toString()
+                            jumpFieldState.setTextAndPlaceCursorAtEnd(page.toString())
                             showJumpInput = !showJumpInput
                         },
                 )
                 if (showJumpInput && pageLinks.isNotEmpty()) {
-                    OutlinedTextField(
-                        value = jumpInput,
-                        onValueChange = { jumpInput = it.filter(Char::isDigit).take(6) },
-                        singleLine = true,
+                    TextField(
+                        state = jumpFieldState,
+                        lineLimits = TextFieldLineLimits.SingleLine,
                         modifier = Modifier
                             .width(72.dp)
                             .onPreviewKeyEvent { event ->

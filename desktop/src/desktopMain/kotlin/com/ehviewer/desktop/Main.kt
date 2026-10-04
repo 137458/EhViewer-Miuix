@@ -11,8 +11,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -53,6 +51,7 @@ import com.ehviewer.core.database.model.HistoryInfo
 import com.ehviewer.core.database.model.LocalFavoriteInfo
 import com.ehviewer.core.i18n.MR
 import com.ehviewer.core.model.BaseGalleryInfo
+import com.ehviewer.core.ui.theme.rememberMiuixThemeController
 import com.ehviewer.core.util.DesktopFileLog
 import com.ehviewer.core.util.LogPriority
 import com.ehviewer.core.util.logcat
@@ -65,9 +64,9 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import top.yukonga.miuix.kmp.basic.HorizontalDivider
+import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.theme.darkColorScheme as miuixDarkColorScheme
-import top.yukonga.miuix.kmp.theme.lightColorScheme as miuixLightColorScheme
 
 // 桌面壳骨架：单窗口页面栈（库 → 详情 → 阅读；设置）+ Miuix 主题三态 + 菜单栏 + 托盘驻留 + 尺寸记忆 + 会话恢复
 
@@ -281,7 +280,10 @@ fun main() {
                     2 -> true
                     else -> isSystemInDarkTheme()
                 }
-                MiuixTheme(colors = if (darkTheme) miuixDarkColorScheme() else miuixLightColorScheme()) {
+                val amoled by DesktopSettings.blackDarkTheme.valueFlow().collectAsState(DesktopSettings.blackDarkTheme.value)
+                // 与移动端同源的 Miuix 主题控制器（浅色 HyperOS 基底 / 深色支持 AMOLED 纯黑）
+                val themeController = rememberMiuixThemeController(useDarkTheme = darkTheme, isAmoled = amoled)
+                MiuixTheme(controller = themeController) {
                     Box(modifier = Modifier.fillMaxSize()) {
                         when (val page = pages.last()) {
                             DesktopPage.Library -> LibraryScreen(

@@ -26,12 +26,12 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.scrollbar.rememberScrollbarAdapter
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.clearText
+import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -86,6 +86,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import top.yukonga.miuix.kmp.basic.HorizontalDivider
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 fun galleryWebUrl(gid: Long, token: String): String = "https://e-hentai.org/g/$gid/$token/"
@@ -160,7 +163,8 @@ fun LibraryScreen(
     var selected by remember { mutableStateOf<BaseGalleryInfo?>(null) }
     var connectionStatus by remember { mutableStateOf<DesktopConnectionStatus>(DesktopConnectionStatus.Checking) }
     var updateInfo by remember { mutableStateOf<UpdateInfo?>(null) }
-    var searchQuery by remember { mutableStateOf("") }
+    val searchFieldState = rememberTextFieldState()
+    val searchQuery = searchFieldState.text.toString()
     var sortConfig by remember {
         mutableStateOf(DesktopSortConfig.decode(DesktopSettings.sortConfig.value))
     }
@@ -314,7 +318,7 @@ fun LibraryScreen(
     // 跨窗口搜索总线：详情窗口标签点击等场景发起的搜索在此消费（一次性，消费即清空）
     LaunchedEffect(DesktopSearchBus.pendingQuery) {
         val requested = DesktopSearchBus.pendingQuery ?: return@LaunchedEffect
-        searchQuery = requested
+        searchFieldState.setTextAndPlaceCursorAtEnd(requested)
         submitSearch(requested)
         DesktopSearchBus.consume()
     }
@@ -410,7 +414,7 @@ fun LibraryScreen(
                                 if (previewCoverUrl != null) {
                                     previewCoverUrl = null
                                 } else if (searchQuery.isNotEmpty()) {
-                                    searchQuery = ""
+                                    searchFieldState.clearText()
                                 } else {
                                     selected = null
                                 }
@@ -609,24 +613,16 @@ fun LibraryScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        OutlinedTextField(
-                            value = searchQuery,
-                            onValueChange = { searchQuery = it },
-                            placeholder = { Text(stringResource(MR.strings.search_hint)) },
-                            singleLine = true,
+                        TextField(
+                            state = searchFieldState,
+                            label = stringResource(MR.strings.search_hint),
+                            lineLimits = TextFieldLineLimits.SingleLine,
                             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                            keyboardActions = KeyboardActions(
-                                onSearch = {
-                                    if (searchQuery.isNotBlank()) {
-                                        submitSearch(searchQuery)
-                                    }
-                                },
-                                onDone = {
-                                    if (searchQuery.isNotBlank()) {
-                                        submitSearch(searchQuery)
-                                    }
-                                },
-                            ),
+                            onKeyboardAction = {
+                                if (searchQuery.isNotBlank()) {
+                                    submitSearch(searchQuery)
+                                }
+                            },
                             modifier = Modifier
                                 .weight(1f)
                                 .onPreviewKeyEvent { event ->
@@ -710,7 +706,7 @@ fun LibraryScreen(
                                                 .background(MiuixTheme.colorScheme.surfaceVariant)
                                                 .pointerHoverIcon(PointerIcon.Hand)
                                                 .clickable {
-                                                    searchQuery = suggestion
+                                                    searchFieldState.setTextAndPlaceCursorAtEnd(suggestion)
                                                     submitSearch(suggestion)
                                                 }
                                                 .padding(horizontal = 6.dp, vertical = 2.dp),
@@ -1199,7 +1195,7 @@ fun LibraryScreen(
                             }
                         },
                         onSearchTag = { tag ->
-                            searchQuery = tag
+                            searchFieldState.setTextAndPlaceCursorAtEnd(tag)
                             recordSearch(tag)
                             showNotification("$filterText: $tag")
                         },
@@ -1374,8 +1370,10 @@ private fun OpenGalleryDialog(
     onDismiss: () -> Unit,
     onOpen: (GalleryParsedTarget) -> Unit,
 ) {
-    var input by remember { mutableStateOf("") }
-    var attempted by remember { mutableStateOf(false) }
+    val inputState = rememberTextFieldState()
+    val input = inputState.text.toString()
+    // 输入变化即重置提交错误态（remember(input) 重新初始化）
+    var attempted by remember(input) { mutableStateOf(false) }
     val target = remember(input) { DesktopOpenGalleryState.parseInput(input) }
     val errorText = if (attempted) {
         when (DesktopOpenGalleryState.validate(input)) {
@@ -1396,21 +1394,14 @@ private fun OpenGalleryDialog(
         onDismiss = onDismiss,
         cardWidth = 440.dp,
     ) {
-        OutlinedTextField(
-            value = input,
-            onValueChange = {
-                input = it
-                attempted = false
-            },
-            placeholder = { Text(hint) },
-            singleLine = true,
-            isError = errorText != null,
+        TextField(
+            state = inputState,
+            label = hint,
+            lineLimits = TextFieldLineLimits.SingleLine,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-            keyboardActions = KeyboardActions(
-                onDone = {
-                    if (target != null) onOpen(target) else attempted = true
-                },
-            ),
+            onKeyboardAction = {
+                if (target != null) onOpen(target) else attempted = true
+            },
             modifier = Modifier.fillMaxWidth(),
         )
         if (errorText != null) {

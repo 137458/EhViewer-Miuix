@@ -14,8 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -31,6 +29,8 @@ import com.ehviewer.core.model.GalleryPreview
 import com.ehviewer.core.model.V1GalleryPreview
 import com.ehviewer.core.model.V2GalleryPreview
 import dev.icerock.moko.resources.compose.stringResource
+import top.yukonga.miuix.kmp.basic.HorizontalDivider
+import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 // 预览条：详情页预览横向滚动展示。

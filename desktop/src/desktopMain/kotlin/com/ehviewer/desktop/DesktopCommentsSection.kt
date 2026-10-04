@@ -10,8 +10,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -37,6 +35,8 @@ import com.hippo.ehviewer.client.parser.GalleryDetailParser
 import dev.icerock.moko.resources.compose.stringResource
 import java.nio.ByteBuffer
 import kotlinx.coroutines.launch
+import top.yukonga.miuix.kmp.basic.HorizontalDivider
+import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 // 评论显示模型：上传者评论置顶（组内保持原相对顺序）；折叠态最多展示 3 条
