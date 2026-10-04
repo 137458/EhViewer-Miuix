@@ -1258,7 +1258,7 @@ fun LibraryScreen(
                                                         .combinedClickable(
                                                             interactionSource = rowInteraction,
                                                             onClick = {
-                                                                // Ctrl+点击进入/退出批量多选；普通点击收敛多选并单选（组合期捕获 WindowInfo，点击时读实时修饰键）
+                                                                // Ctrl+点击进入/退出批量多选；普通点击收敛多选并单选（Ctrl 按住状态由根 onPreviewKeyEvent 双沿跟踪）
                                                                 if (ctrlDown) {
                                                                     multiSelection.toggle(gallery.gid)
                                                                 } else {
@@ -1365,7 +1365,7 @@ fun LibraryScreen(
                                                         .combinedClickable(
                                                             interactionSource = cardInteraction,
                                                             onClick = {
-                                                                // Ctrl+点击进入/退出批量多选；普通点击收敛多选并单选（组合期捕获 WindowInfo，点击时读实时修饰键）
+                                                                // Ctrl+点击进入/退出批量多选；普通点击收敛多选并单选（Ctrl 按住状态由根 onPreviewKeyEvent 双沿跟踪）
                                                                 if (ctrlDown) {
                                                                     multiSelection.toggle(gallery.gid)
                                                                 } else {
@@ -2364,22 +2364,18 @@ internal fun CoverPreviewDialog(
             .focusable()
             .onPreviewKeyEvent { event ->
                 if (event.type == KeyEventType.KeyDown) {
+                    val zoomAction = resolveReaderZoom(
+                        isKeyDown = true,
+                        isCtrlPressed = event.isCtrlPressed,
+                        key = event.key,
+                    )
                     when {
                         event.key == Key.Escape -> {
                             onDismiss()
                             true
                         }
-                        resolveReaderZoom(
-                            isKeyDown = true,
-                            isCtrlPressed = event.isCtrlPressed,
-                            key = event.key,
-                        ) != null -> {
-                            val action = resolveReaderZoom(
-                                isKeyDown = true,
-                                isCtrlPressed = event.isCtrlPressed,
-                                key = event.key,
-                            )!!
-                            zoomState = zoomState.keyboardZoom(action, viewportSize)
+                        zoomAction != null -> {
+                            zoomState = zoomState.keyboardZoom(zoomAction, viewportSize)
                             true
                         }
                         zoomState.scale > READER_MIN_SCALE -> {

@@ -507,7 +507,7 @@ fun ReaderScreen(
                     .pointerInput(Unit) {
                         detectTapGestures(
                             onTap = { tap ->
-                                // 未缩放时点击左右 1/3 区域翻页（方向随阅读方向设置）
+                                // 未缩放时点击左/右半区翻页（方向随阅读方向设置）
                                 if (zoomState.scale <= READER_MIN_SCALE && size.width > 0) {
                                     val rightZone = tap.x > size.width / 2f
                                     val delta = readingDirection.pageDeltaForZone(rightZone = rightZone)
