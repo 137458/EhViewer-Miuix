@@ -382,4 +382,12 @@ class DesktopKeyActionTest {
             resolveKeyAction(isKeyDown = true, isCtrlPressed = false, key = Key.F),
         )
     }
+
+    @Test
+    fun defaultEntriesContainFocusSearchEntry() {
+        // Ctrl+F 条目进入主库快捷键指南，描述与其他条目两两不同
+        val entry = DesktopShortcuts.defaultEntries().firstOrNull { it.keyCombination == "Ctrl + F" }
+        assertTrue(entry != null)
+        assertSame(MR.strings.shortcut_focus_search, entry.descriptionRes)
+    }
 }

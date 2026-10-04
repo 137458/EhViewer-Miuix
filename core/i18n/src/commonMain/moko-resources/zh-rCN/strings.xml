@@ -709,6 +709,7 @@
     <string name="shortcut_show_help">显示键盘快捷键</string>
     <string name="shortcut_toggle_fullscreen">切换全屏</string>
     <string name="shortcut_multi_select">切换批量多选</string>
+    <string name="shortcut_focus_search">聚焦画廊搜索框</string>
     <string name="shortcut_reader_paging">翻页（随阅读方向反转）</string>
     <string name="shortcut_reader_jump_first_last">跳转第一页 / 最后一页</string>
     <string name="desktop_shortcuts_reader_section">阅读窗口</string>

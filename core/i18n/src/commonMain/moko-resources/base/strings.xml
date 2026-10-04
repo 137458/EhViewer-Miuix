@@ -635,6 +635,7 @@
     <string name="shortcut_show_help">Show keyboard shortcuts</string>
     <string name="shortcut_toggle_fullscreen">Toggle fullscreen</string>
     <string name="shortcut_multi_select">Toggle multi-select</string>
+    <string name="shortcut_focus_search">Focus gallery search</string>
     <string name="shortcut_reader_paging">Turn pages (reversed in RTL reading direction)</string>
     <string name="shortcut_reader_jump_first_last">Jump to first / last page</string>
     <string name="desktop_shortcuts_reader_section">Reader Window</string>
