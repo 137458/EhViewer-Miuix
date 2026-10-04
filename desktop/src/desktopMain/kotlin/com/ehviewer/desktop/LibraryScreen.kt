@@ -6,6 +6,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -45,6 +46,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.key.Key
@@ -1708,30 +1711,51 @@ private fun DetailRow(
             extraContent()
         }
         if (actionText != null && onAction != null) {
-            Text(
-                text = actionText,
-                color = MiuixTheme.colorScheme.primary,
+            Box(
                 modifier = Modifier
+                    .clip(SquircleShape(6.dp))
+                    .background(MiuixTheme.colorScheme.surfaceContainerHighest)
                     .pointerHoverIcon(PointerIcon.Hand)
-                    .clickable { onAction() },
-            )
+                    .clickable { onAction() }
+                    .padding(horizontal = 8.dp, vertical = 3.dp),
+            ) {
+                Text(
+                    text = actionText,
+                    color = MiuixTheme.colorScheme.primary,
+                    fontSize = 12.sp,
+                )
+            }
         }
         if (onOpen != null) {
-            Text(
-                text = stringResource(MR.strings.open_in_browser),
-                color = MiuixTheme.colorScheme.primary,
+            Box(
                 modifier = Modifier
+                    .clip(SquircleShape(6.dp))
+                    .background(MiuixTheme.colorScheme.surfaceContainerHighest)
                     .pointerHoverIcon(PointerIcon.Hand)
-                    .clickable { onOpen() },
+                    .clickable { onOpen() }
+                    .padding(horizontal = 8.dp, vertical = 3.dp),
+            ) {
+                Text(
+                    text = stringResource(MR.strings.open_in_browser),
+                    color = MiuixTheme.colorScheme.primary,
+                    fontSize = 12.sp,
+                )
+            }
+        }
+        Box(
+            modifier = Modifier
+                .clip(SquircleShape(6.dp))
+                .background(MiuixTheme.colorScheme.surfaceContainerHighest)
+                .pointerHoverIcon(PointerIcon.Hand)
+                .clickable { onCopy(value, label) }
+                .padding(horizontal = 8.dp, vertical = 3.dp),
+        ) {
+            Text(
+                text = stringResource(MR.strings.action_copy),
+                color = MiuixTheme.colorScheme.primary,
+                fontSize = 12.sp,
             )
         }
-        Text(
-            text = stringResource(MR.strings.action_copy),
-            color = MiuixTheme.colorScheme.primary,
-            modifier = Modifier
-                .pointerHoverIcon(PointerIcon.Hand)
-                .clickable { onCopy(value, label) },
-        )
     }
 }
 
@@ -1749,10 +1773,25 @@ internal fun CoverPreviewDialog(
     onDismiss: () -> Unit,
 ) {
     var scale by remember { mutableStateOf(1.0f) }
+    val focusRequester = remember { FocusRequester() }
+
+    LaunchedEffect(Unit) {
+        focusRequester.requestFocus()
+    }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .focusRequester(focusRequester)
+            .focusable()
+            .onPreviewKeyEvent { event ->
+                if (event.type == KeyEventType.KeyDown && event.key == Key.Escape) {
+                    onDismiss()
+                    true
+                } else {
+                    false
+                }
+            }
             .background(Color.Black.copy(alpha = 0.85f))
             .clickable(onClick = onDismiss),
         contentAlignment = Alignment.Center,
@@ -1791,14 +1830,19 @@ internal fun CoverPreviewDialog(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text(
-                text = "−",
-                color = MiuixTheme.colorScheme.onSurface,
+            Box(
                 modifier = Modifier
+                    .clip(SquircleShape(6.dp))
                     .pointerHoverIcon(PointerIcon.Hand)
                     .clickable { scale = DesktopZoomController.zoomOut(scale) }
-                    .padding(horizontal = 8.dp),
-            )
+                    .padding(horizontal = 8.dp, vertical = 2.dp),
+            ) {
+                Text(
+                    text = "−",
+                    color = MiuixTheme.colorScheme.onSurface,
+                    fontSize = 14.sp,
+                )
+            }
             Text(
                 text = DesktopZoomController.formatZoomPercentage(scale),
                 color = MiuixTheme.colorScheme.primary,
@@ -1807,23 +1851,33 @@ internal fun CoverPreviewDialog(
                     .pointerHoverIcon(PointerIcon.Hand)
                     .clickable { scale = DesktopZoomController.resetZoom() },
             )
-            Text(
-                text = "+",
-                color = MiuixTheme.colorScheme.onSurface,
+            Box(
                 modifier = Modifier
+                    .clip(SquircleShape(6.dp))
                     .pointerHoverIcon(PointerIcon.Hand)
                     .clickable { scale = DesktopZoomController.zoomIn(scale) }
-                    .padding(horizontal = 8.dp),
-            )
+                    .padding(horizontal = 8.dp, vertical = 2.dp),
+            ) {
+                Text(
+                    text = "+",
+                    color = MiuixTheme.colorScheme.onSurface,
+                    fontSize = 14.sp,
+                )
+            }
             VerticalDivider()
-            Text(
-                text = "✕",
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+            Box(
                 modifier = Modifier
+                    .clip(SquircleShape(6.dp))
                     .pointerHoverIcon(PointerIcon.Hand)
                     .clickable(onClick = onDismiss)
-                    .padding(horizontal = 4.dp),
-            )
+                    .padding(horizontal = 6.dp, vertical = 2.dp),
+            ) {
+                Text(
+                    text = "✕",
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    fontSize = 12.sp,
+                )
+            }
         }
     }
 }

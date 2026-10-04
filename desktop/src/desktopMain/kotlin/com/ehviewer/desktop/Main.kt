@@ -186,11 +186,13 @@ fun main() {
                         hasSelection = false,
                         canCloseOnEscape = showShortcutsHelp ||
                             showOpenGalleryDialog ||
+                            showAbout ||
                             windowState.placement == WindowPlacement.Fullscreen,
                     )
                     when (action) {
                         DesktopKeyAction.ClosePage -> {
                             when {
+                                showAbout -> showAbout = false
                                 showShortcutsHelp || showOpenGalleryDialog -> {
                                     showShortcutsHelp = false
                                     showOpenGalleryDialog = false
