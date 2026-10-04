@@ -81,12 +81,12 @@ fun DesktopModalCard(
                 .width(cardWidth)
                 .clip(SquircleShape(16.dp))
                 .background(MiuixTheme.colorScheme.surface)
-                .clickable(enabled = false) {}
-                .padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+                .clickable(enabled = false) {},
         ) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 16.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -109,9 +109,12 @@ fun DesktopModalCard(
                     )
                 }
             }
-            HorizontalDivider()
+            HorizontalDivider(color = MiuixTheme.colorScheme.outline.copy(alpha = 0.15f))
             Column(
-                modifier = Modifier.verticalScroll(rememberScrollState()),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .padding(20.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 content = content,
             )
