@@ -749,6 +749,7 @@
     <string name="desktop_status_checking">检查连接中…</string>
     <string name="desktop_status_offline">离线</string>
     <string name="desktop_online_connecting">正在连接 E-Hentai…</string>
+    <string name="desktop_online_parse_failed">在线画廊解析失败，已保留原有列表</string>
     <string name="desktop_online_empty">未找到在线画廊</string>
     <string name="desktop_empty_no_match">没有匹配的画廊</string>
     <string name="desktop_empty_no_history">暂无历史记录</string>

@@ -204,6 +204,7 @@ fun LibraryScreen(
     val checkingConnectionText = stringResource(MR.strings.desktop_status_checking)
     val connectingServerText = stringResource(MR.strings.desktop_online_connecting)
     val onlineEmptyText = stringResource(MR.strings.desktop_online_empty)
+    val onlineParseFailedText = stringResource(MR.strings.desktop_online_parse_failed)
     val openingGalleryText = stringResource(MR.strings.desktop_notification_opening_gallery)
     val addedToFavoritesText = stringResource(MR.strings.add_to_favorite_success)
     val removedFromFavoritesText = stringResource(MR.strings.remove_from_favorite_success)
@@ -308,6 +309,8 @@ fun LibraryScreen(
                         "ONLINE_LIST parse failed: $e | loadErr=${GalleryListParserKtProbe.loadError} | " +
                             "res=${GalleryListParserKtProbe.resAvailable} | cwd=${java.io.File(".").absolutePath}"
                     }
+                    // 解析失败静默会让徽章显示在线但列表不更新，补可见反馈（保留旧列表）
+                    showNotification(onlineParseFailedText)
                 }
             }
         }.onFailure { e ->

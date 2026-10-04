@@ -627,6 +627,7 @@
     <string name="desktop_notification_opening_gallery">正在開啟畫廊</string>
     <string name="desktop_notification_undo">復原</string>
     <string name="desktop_online_connecting">正在連線 E-Hentai…</string>
+    <string name="desktop_online_parse_failed">線上畫廊解析失敗，已保留原有列表</string>
     <string name="desktop_online_empty">找不到線上畫廊</string>
     <string name="desktop_online_next">下一頁 ▶</string>
     <string name="desktop_online_page_n">第 %1$d 頁</string>

@@ -675,6 +675,7 @@
     <string name="desktop_status_checking">Checking connection…</string>
     <string name="desktop_status_offline">Offline</string>
     <string name="desktop_online_connecting">Connecting to E-Hentai…</string>
+    <string name="desktop_online_parse_failed">Failed to parse online galleries, keeping previous list</string>
     <string name="desktop_online_empty">No online galleries found</string>
     <string name="desktop_empty_no_match">No matching galleries</string>
     <string name="desktop_empty_no_history">No history recorded</string>
