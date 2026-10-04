@@ -1,6 +1,8 @@
 package com.ehviewer.desktop
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -12,6 +14,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -20,6 +23,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.text.font.FontWeight
@@ -27,6 +31,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ehviewer.core.i18n.MR
+import com.ehviewer.core.ui.component.SquircleShape
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.FlowPreview
 import top.yukonga.miuix.kmp.basic.BasicComponent
@@ -139,19 +144,21 @@ fun SettingsScreen(onBack: (() -> Unit)? = null) {
                             onCheckedChange = { DesktopSettings.restoreSession.value = it },
                             modifier = Modifier.pointerHoverIcon(PointerIcon.Hand),
                         )
-                        BasicComponent(
-                            title = stringResource(MR.strings.settings_restore_session),
-                            summary = "${DesktopPageStack.sanitizeRestoreLimit(restoreLimit)}",
-                            onClick = {
-                                val current = DesktopPageStack.sanitizeRestoreLimit(restoreLimit)
-                                DesktopSettings.restoreLimit.value = when (current) {
-                                    5 -> 10
-                                    10 -> 20
-                                    else -> 5
-                                }
-                            },
-                            modifier = Modifier.pointerHoverIcon(PointerIcon.Hand),
-                        )
+                        if (restoreSession) {
+                            BasicComponent(
+                                title = stringResource(MR.strings.settings_restore_session),
+                                summary = "${DesktopPageStack.sanitizeRestoreLimit(restoreLimit)} (5 / 10 / 20)",
+                                onClick = {
+                                    val current = DesktopPageStack.sanitizeRestoreLimit(restoreLimit)
+                                    DesktopSettings.restoreLimit.value = when (current) {
+                                        5 -> 10
+                                        10 -> 20
+                                        else -> 5
+                                    }
+                                },
+                                modifier = Modifier.pointerHoverIcon(PointerIcon.Hand),
+                            )
+                        }
                     }
                 }
 
@@ -219,20 +226,47 @@ private fun ProxySettingField() {
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        TextField(
-            state = proxyState,
-            label = stringResource(MR.strings.settings_proxy),
-            lineLimits = TextFieldLineLimits.SingleLine,
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+        Row(
             modifier = Modifier.fillMaxWidth(),
-        )
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            TextField(
+                state = proxyState,
+                label = stringResource(MR.strings.settings_proxy),
+                lineLimits = TextFieldLineLimits.SingleLine,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                modifier = Modifier.weight(1f),
+            )
+            if (proxyState.text.isNotBlank()) {
+                Box(
+                    modifier = Modifier
+                        .clip(SquircleShape(6.dp))
+                        .background(MiuixTheme.colorScheme.surfaceContainerHighest)
+                        .pointerHoverIcon(PointerIcon.Hand)
+                        .clickable {
+                            proxyState.setTextAndPlaceCursorAtEnd("")
+                            DesktopSettings.proxy.value = null
+                        }
+                        .padding(horizontal = 10.dp, vertical = 8.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = "✕",
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        fontSize = 11.sp,
+                    )
+                }
+            }
+        }
         if (proxyInvalid) {
             Text(
                 text = stringResource(MR.strings.settings_proxy_invalid),
                 color = MiuixTheme.colorScheme.error,
                 fontSize = 12.sp,
-                modifier = Modifier.padding(top = 4.dp),
+                modifier = Modifier.padding(top = 2.dp),
             )
         }
     }
@@ -249,17 +283,63 @@ private fun ImageSaveDirField() {
                 DesktopSettings.imageSaveDir.value = text.toString().trim().takeIf { v -> v.isNotEmpty() }
             }
     }
+    val defaultDir = remember { DesktopImageSaver.resolveSaveDir(null, System.getProperty("user.home")).toString() }
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        TextField(
-            state = saveDirState,
-            label = stringResource(MR.strings.settings_download_download_location),
-            lineLimits = TextFieldLineLimits.SingleLine,
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+        Row(
             modifier = Modifier.fillMaxWidth(),
-        )
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            TextField(
+                state = saveDirState,
+                label = stringResource(MR.strings.settings_download_download_location),
+                lineLimits = TextFieldLineLimits.SingleLine,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                modifier = Modifier.weight(1f),
+            )
+            Box(
+                modifier = Modifier
+                    .clip(SquircleShape(6.dp))
+                    .background(MiuixTheme.colorScheme.surfaceContainerHighest)
+                    .pointerHoverIcon(PointerIcon.Hand)
+                    .clickable {
+                        val chooser = javax.swing.JFileChooser().apply {
+                            fileSelectionMode = javax.swing.JFileChooser.DIRECTORIES_ONLY
+                            dialogTitle = "Select Download Directory"
+                            val current = DesktopSettings.imageSaveDir.value
+                            if (!current.isNullOrBlank()) {
+                                currentDirectory = java.io.File(current)
+                            }
+                        }
+                        if (chooser.showOpenDialog(null) == javax.swing.JFileChooser.APPROVE_OPTION) {
+                            val selected = chooser.selectedFile.absolutePath
+                            saveDirState.setTextAndPlaceCursorAtEnd(selected)
+                            DesktopSettings.imageSaveDir.value = selected
+                        }
+                    }
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = "…",
+                    color = MiuixTheme.colorScheme.primary,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
+        }
+        if (DesktopSettings.imageSaveDir.value.isNullOrBlank()) {
+            Text(
+                text = "默认: $defaultDir",
+                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                fontSize = 11.sp,
+                modifier = Modifier.padding(top = 2.dp),
+            )
+        }
     }
 }
