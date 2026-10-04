@@ -50,7 +50,11 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 // 桌面设置页：Miuix 卡片化层级结构，写入共享偏好层后即时生效
 @OptIn(FlowPreview::class)
 @Composable
-fun SettingsScreen(onBack: (() -> Unit)? = null) {
+fun SettingsScreen(
+    onBack: (() -> Unit)? = null,
+    onShowShortcuts: (() -> Unit)? = null,
+    onShowAbout: (() -> Unit)? = null,
+) {
     val themeMode by DesktopSettings.themeMode.valueFlow().collectAsState(DesktopSettings.themeMode.value)
     val themeLabel = when (themeMode) {
         1 -> stringResource(MR.strings.theme_light)
@@ -201,6 +205,38 @@ fun SettingsScreen(onBack: (() -> Unit)? = null) {
                     ) {
                         ProxySettingField()
                         ImageSaveDirField()
+                    }
+                }
+
+                // 帮助与关于
+                if (onShowShortcuts != null || onShowAbout != null) {
+                    item {
+                        SmallTitle(
+                            text = stringResource(MR.strings.settings_about),
+                            modifier = Modifier.padding(start = 24.dp, top = 16.dp, bottom = 4.dp),
+                        )
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 4.dp),
+                        ) {
+                            if (onShowShortcuts != null) {
+                                ArrowPreference(
+                                    title = stringResource(MR.strings.menu_keyboard_shortcuts),
+                                    summary = "F1",
+                                    onClick = onShowShortcuts,
+                                    modifier = Modifier.pointerHoverIcon(PointerIcon.Hand),
+                                )
+                            }
+                            if (onShowAbout != null) {
+                                ArrowPreference(
+                                    title = stringResource(MR.strings.settings_about),
+                                    summary = stringResource(MR.strings.desktop_about_version, DESKTOP_VERSION),
+                                    onClick = onShowAbout,
+                                    modifier = Modifier.pointerHoverIcon(PointerIcon.Hand),
+                                )
+                            }
+                        }
                     }
                 }
             }

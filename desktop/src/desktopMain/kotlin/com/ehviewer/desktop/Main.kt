@@ -300,7 +300,11 @@ fun main() {
                                 onOpenGallery = openGallery,
                                 onOpenReader = openReader,
                             )
-                            DesktopPage.Settings -> SettingsScreen(onBack = popPage)
+                            DesktopPage.Settings -> SettingsScreen(
+                                onBack = popPage,
+                                onShowShortcuts = { showShortcutsHelp = true },
+                                onShowAbout = { showAbout = true },
+                            )
                             is DesktopPage.GalleryDetail -> GalleryDetailPageContent(
                                 gallery = page.gallery,
                                 onBack = popPage,
