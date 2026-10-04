@@ -706,8 +706,18 @@ private fun GalleryDetailPageContent(
     val noBrowserText = stringResource(MR.strings.no_browser_installed)
     val tagLabel = stringResource(MR.strings.search_sft)
     val metadataLoadingText = stringResource(MR.strings.desktop_gallery_metadata_loading)
+    val metadataFailedText = stringResource(MR.strings.desktop_gallery_metadata_failed)
     val undoText = stringResource(MR.strings.desktop_notification_undo)
 
+    fun showNotification(message: String) {
+        val now = System.currentTimeMillis()
+        notifications = DesktopNotificationManager.post(
+            current = notifications,
+            message = message,
+            timestamp = now,
+            idProvider = { nextNotificationId.getAndIncrement() },
+        )
+    }
     LaunchedEffect(gallery.gid) {
         isFavorite = withContext(Dispatchers.IO) {
             DesktopDatabase.eh.localFavoritesDao().contains(gallery.gid)
@@ -728,6 +738,8 @@ private fun GalleryDetailPageContent(
                 logcat("DetailPage", LogPriority.WARN) {
                     "Hydration unavailable ${currentGallery.gid} (offline / network error / parse failure)"
                 }
+                // 水合失败静默会让占位卡永久显示「加载中」，补可见反馈
+                showNotification(metadataFailedText)
             }
         }
         // 记录阅读历史：HISTORY 表经 GID 与 GALLERIES 联表，须先确保画廊行存在（HISTORY JOIN GALLERIES 语义）。
@@ -742,16 +754,6 @@ private fun GalleryDetailPageContent(
                 }
             }
         }
-    }
-
-    fun showNotification(message: String) {
-        val now = System.currentTimeMillis()
-        notifications = DesktopNotificationManager.post(
-            current = notifications,
-            message = message,
-            timestamp = now,
-            idProvider = { nextNotificationId.getAndIncrement() },
-        )
     }
 
     AutoExpireNotifications(notifications) { notifications = it }

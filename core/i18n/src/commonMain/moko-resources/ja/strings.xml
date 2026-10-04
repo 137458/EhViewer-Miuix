@@ -625,6 +625,7 @@
     <string name="desktop_error_ssl_handshake_failed">SSL ハンドシェイクに失敗しました</string>
     <string name="desktop_filter">フィルター</string>
     <string name="desktop_gallery_metadata_loading">画廊のメタデータを読み込み中です。後ほどもう一度お試しください</string>
+    <string name="desktop_gallery_metadata_failed">画廊のメタデータの読み込みに失敗しました</string>
     <string name="desktop_gallery_numbered">画廊 %1$d</string>
     <string name="desktop_library_status_bar">|  ログイン：%1$s  |  ダウンロードグループ：%2$d  |  お気に入り：%3$d  |  バージョン：%4$s</string>
     <string name="desktop_link_copied">リンクをコピーしました</string>

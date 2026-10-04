@@ -780,6 +780,7 @@
     <string name="desktop_online_next">下一页 ▶</string>
     <string name="desktop_notification_opening_gallery">正在打开画廊</string>
     <string name="desktop_gallery_metadata_loading">画廊元数据加载中，请稍后重试</string>
+    <string name="desktop_gallery_metadata_failed">画廊元数据加载失败</string>
     <string name="desktop_error_network_unavailable">网络不可用</string>
     <string name="desktop_error_dns_unresolved">DNS / 主机解析失败</string>
     <string name="desktop_error_connection_refused">连接被拒绝</string>

@@ -706,6 +706,7 @@
     <string name="desktop_online_next">Next ▶</string>
     <string name="desktop_notification_opening_gallery">Opening gallery</string>
     <string name="desktop_gallery_metadata_loading">Gallery metadata is loading, please retry later</string>
+    <string name="desktop_gallery_metadata_failed">Gallery metadata failed to load</string>
     <string name="desktop_error_network_unavailable">Network unavailable</string>
     <string name="desktop_error_dns_unresolved">DNS / Host unresolved</string>
     <string name="desktop_error_connection_refused">Connection refused</string>

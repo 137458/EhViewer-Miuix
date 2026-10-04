@@ -508,6 +508,7 @@
     <string name="desktop_error_ssl_handshake_failed">SSL 握手失敗</string>
     <string name="desktop_filter">篩選</string>
     <string name="desktop_gallery_metadata_loading">畫廊中繼資料載入中，請稍後再試</string>
+    <string name="desktop_gallery_metadata_failed">畫廊中繼資料載入失敗</string>
     <string name="desktop_gallery_numbered">畫廊 %1$d</string>
     <string name="desktop_library_status_bar">|  已登入：%1$s  |  下載群組：%2$d  |  收藏：%3$d  |  版本：%4$s</string>
     <string name="desktop_link_copied">連結已複製</string>
