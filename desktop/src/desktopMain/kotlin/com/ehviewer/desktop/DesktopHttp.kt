@@ -6,7 +6,7 @@ import java.net.HttpURLConnection
 import java.net.InetSocketAddress
 import java.net.Proxy
 import java.net.ProxySelector
-import java.net.URL
+import java.net.URI
 import java.nio.ByteBuffer
 
 class DesktopResponse(val status: Int, val body: String)
@@ -44,7 +44,7 @@ internal fun parseHostPort(value: String): InetSocketAddress? {
 // okhttp 与部分代理隧道存在同步挂死（探针实测，连超时都不触发），桌面外部请求走 JDK
 // HttpURLConnection（实测 576ms 可达）+ EhCookieStore Cookie 头注入。
 private fun openDesktopConnection(url: String, method: String, body: String?): HttpURLConnection {
-    val target = URL(url)
+    val target = URI.create(url).toURL()
     val proxy = resolveProxy()
     val conn = (if (proxy != null) target.openConnection(proxy) else target.openConnection(Proxy.NO_PROXY))
         as HttpURLConnection
