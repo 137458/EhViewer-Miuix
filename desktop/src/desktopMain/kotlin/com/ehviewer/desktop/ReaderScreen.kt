@@ -110,6 +110,8 @@ fun ReaderScreen(
         runCatching {
             withContext(Dispatchers.IO) {
                 val detail = desktopGet(galleryWebUrl(gallery.gid, gallery.token))
+                // 错误页 HTML 不进解析器：非 2xx 直接走本地化失败通道（与主库列表链路同约定）
+                if (detail.status !in 200..299) error("HTTP ${detail.status}")
                 GalleryDetailPageLinksParser.parse(detail.body)
             }
         }.onSuccess { links ->
@@ -141,6 +143,7 @@ fun ReaderScreen(
         val outcome = withContext(Dispatchers.IO) {
             runCatching {
                 val pageResponse = desktopGet(link.pageUrl)
+                if (pageResponse.status !in 200..299) error("HTTP ${pageResponse.status}")
                 GalleryPageParser.parse(pageResponse.body)?.imageUrl
             }
         }
@@ -165,6 +168,7 @@ fun ReaderScreen(
         withContext(Dispatchers.IO) {
             runCatching {
                 val pageResponse = desktopGet(link.pageUrl)
+                if (pageResponse.status !in 200..299) error("HTTP ${pageResponse.status}")
                 GalleryPageParser.parse(pageResponse.body)?.imageUrl
             }.getOrNull()?.let { url ->
                 val request = coil3.request.ImageRequest.Builder(context).data(url).build()

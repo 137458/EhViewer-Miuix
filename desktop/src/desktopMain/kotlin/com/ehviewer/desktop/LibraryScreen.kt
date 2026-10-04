@@ -232,6 +232,8 @@ fun LibraryScreen(
             runCatching {
                 withContext(Dispatchers.IO) { desktopGet(url) }
             }.onSuccess { response ->
+                // 与 refreshGalleries 同约定：拿到响应即定状态，避免非 2xx/解析失败时卡在 Checking 且无重试入口
+                connectionStatus = DesktopConnectionStatus.Online(response.status)
                 if (response.status in 200..299) {
                     runCatching {
                         parseGalleryList(response.toByteBuffer() ?: error("HTTP ${response.status}")).galleryInfoList.toList()

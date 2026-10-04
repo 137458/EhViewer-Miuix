@@ -79,15 +79,23 @@ fun desktopGetBytes(url: String): DesktopBytesResponse = readDesktopBytesRespons
 fun desktopPost(url: String, body: String): DesktopResponse = readDesktopResponse(openDesktopConnection(url, "POST", body))
 
 private fun readDesktopResponse(conn: HttpURLConnection): DesktopResponse {
-    val status = conn.responseCode
-    val stream = if (status in 200..299) conn.inputStream else conn.errorStream
-    val body = stream?.bufferedReader()?.use { it.readText() }.orEmpty()
-    return DesktopResponse(status, body)
+    try {
+        val status = conn.responseCode
+        val stream = if (status in 200..299) conn.inputStream else conn.errorStream
+        val body = stream?.bufferedReader()?.use { it.readText() }.orEmpty()
+        return DesktopResponse(status, body)
+    } finally {
+        conn.disconnect()
+    }
 }
 
 private fun readDesktopBytesResponse(conn: HttpURLConnection): DesktopBytesResponse {
-    val status = conn.responseCode
-    val stream = if (status in 200..299) conn.inputStream else conn.errorStream
-    val bytes = stream?.use { it.readBytes() } ?: ByteArray(0)
-    return DesktopBytesResponse(status, bytes)
+    try {
+        val status = conn.responseCode
+        val stream = if (status in 200..299) conn.inputStream else conn.errorStream
+        val bytes = stream?.use { it.readBytes() } ?: ByteArray(0)
+        return DesktopBytesResponse(status, bytes)
+    } finally {
+        conn.disconnect()
+    }
 }

@@ -8,7 +8,6 @@ import coil3.network.ktor3.KtorNetworkFetcherFactory
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
 import java.io.File
-import java.net.InetSocketAddress
 import java.net.Proxy
 import okio.Path.Companion.toPath
 
@@ -57,16 +56,9 @@ object DesktopImageLoader {
                         httpClient = {
                             HttpClient(OkHttp) {
                                 engine {
-                                    val proxyConfig = DesktopSettings.proxy.value
-                                    if (!proxyConfig.isNullOrBlank()) {
-                                        val parts = proxyConfig.split(":")
-                                        if (parts.size == 2) {
-                                            val host = parts[0]
-                                            val port = parts[1].toIntOrNull()
-                                            if (port != null) {
-                                                proxy = Proxy(Proxy.Type.HTTP, InetSocketAddress(host, port))
-                                            }
-                                        }
+                                    // 与 DesktopHttp 共享代理解析（设置项 > 环境变量 > 直连），两栈行为一致
+                                    resolveDesktopProxyAddress()?.let { address ->
+                                        proxy = Proxy(Proxy.Type.HTTP, address)
                                     }
                                 }
                             }
