@@ -2,12 +2,16 @@ package com.ehviewer.desktop
 
 import androidx.compose.foundation.ContextMenuArea
 import androidx.compose.foundation.ContextMenuItem
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
@@ -15,8 +19,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.layout.ContentScale
@@ -104,15 +111,17 @@ private fun PreviewCell(
             )
         },
     ) {
+        val hoverInteraction = remember { MutableInteractionSource() }
+        val hovered by hoverInteraction.collectIsHoveredAsState()
         when (preview) {
-            is V1GalleryPreview -> AsyncImage(
-                model = preview.url,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
+            is V1GalleryPreview -> Box(
                 modifier = Modifier
                     .clip(SquircleShape(8.dp))
                     .pointerHoverIcon(PointerIcon.Hand)
-                    .clickable {
+                    .clickable(
+                        interactionSource = hoverInteraction,
+                        indication = null,
+                    ) {
                         if (onPreviewImage != null) {
                             onPreviewImage(preview.url)
                         } else {
@@ -121,7 +130,15 @@ private fun PreviewCell(
                     }
                     .width(100.dp)
                     .height(PREVIEW_DISPLAY_HEIGHT.dp),
-            )
+            ) {
+                AsyncImage(
+                    model = preview.url,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize(),
+                )
+                PreviewHoverOverlay(hovered)
+            }
             is V2GalleryPreview -> {
                 // 雪碧图单格：按显示高推算缩放，整图按位移裁出当前格（点击全屏预览或浏览器打开）
                 val cell = DesktopPreviewSprite.cellLayout(
@@ -134,7 +151,10 @@ private fun PreviewCell(
                     modifier = Modifier
                         .clip(SquircleShape(8.dp))
                         .pointerHoverIcon(PointerIcon.Hand)
-                        .clickable {
+                        .clickable(
+                            interactionSource = hoverInteraction,
+                            indication = null,
+                        ) {
                             if (onPreviewImage != null) {
                                 onPreviewImage(preview.url)
                             } else {
@@ -152,8 +172,21 @@ private fun PreviewCell(
                             .height(PREVIEW_DISPLAY_HEIGHT.dp)
                             .offset(x = cell.offsetX.dp),
                     )
+                    PreviewHoverOverlay(hovered)
                 }
             }
         }
+    }
+}
+
+// 预览缩略格悬停高亮：primary 半透明叠层，提示可点击全屏预览或浏览器打开
+@Composable
+private fun PreviewHoverOverlay(hovered: Boolean) {
+    if (hovered) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MiuixTheme.colorScheme.primary.copy(alpha = 0.18f)),
+        )
     }
 }
