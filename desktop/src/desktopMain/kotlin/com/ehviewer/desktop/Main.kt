@@ -662,7 +662,7 @@ private fun GalleryDetailPageContent(
                 notifications.forEach { notice ->
                     Box(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
+                            .clip(SquircleShape(8.dp))
                             .background(MiuixTheme.colorScheme.surfaceContainerHighest)
                             .pointerHoverIcon(PointerIcon.Hand)
                             .clickable {

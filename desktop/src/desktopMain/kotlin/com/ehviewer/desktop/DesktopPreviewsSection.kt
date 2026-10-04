@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -28,6 +27,7 @@ import com.ehviewer.core.i18n.MR
 import com.ehviewer.core.model.GalleryPreview
 import com.ehviewer.core.model.V1GalleryPreview
 import com.ehviewer.core.model.V2GalleryPreview
+import com.ehviewer.core.ui.component.SquircleShape
 import dev.icerock.moko.resources.compose.stringResource
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Text
@@ -83,7 +83,7 @@ private fun PreviewCell(preview: GalleryPreview) {
             contentDescription = null,
             contentScale = ContentScale.Crop,
             modifier = Modifier
-                .clip(RoundedCornerShape(6.dp))
+                .clip(SquircleShape(8.dp))
                 .pointerHoverIcon(PointerIcon.Hand)
                 .clickable { DesktopBrowser.openUrl(preview.url) }
                 .width(100.dp)
@@ -99,7 +99,7 @@ private fun PreviewCell(preview: GalleryPreview) {
             ) ?: return
             Box(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(6.dp))
+                    .clip(SquircleShape(8.dp))
                     .pointerHoverIcon(PointerIcon.Hand)
                     .clickable { DesktopBrowser.openUrl(preview.url) }
                     .width(cell.width.dp)

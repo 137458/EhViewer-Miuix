@@ -5,11 +5,11 @@ import androidx.compose.foundation.ContextMenuItem
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -20,6 +20,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.platform.LocalClipboardManager
@@ -31,6 +32,7 @@ import androidx.compose.ui.unit.sp
 import com.ehviewer.core.i18n.MR
 import com.ehviewer.core.model.BaseGalleryInfo
 import com.ehviewer.core.model.GalleryComment
+import com.ehviewer.core.ui.component.SquircleShape
 import com.hippo.ehviewer.client.parser.GalleryDetailParser
 import dev.icerock.moko.resources.compose.stringResource
 import java.nio.ByteBuffer
@@ -227,13 +229,13 @@ private fun CommentItem(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
-            .background(MiuixTheme.colorScheme.surfaceVariant)
-            .padding(8.dp),
-        verticalArrangement = Arrangement.spacedBy(2.dp),
+            .clip(SquircleShape(8.dp))
+            .background(MiuixTheme.colorScheme.surfaceContainerHighest)
+            .padding(10.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         val anonymousText = stringResource(MR.strings.desktop_anonymous)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
             Text(
                 text = comment.user.orEmpty().ifEmpty { anonymousText },
                 color = MiuixTheme.colorScheme.onSurface,
@@ -243,37 +245,61 @@ private fun CommentItem(
                 modifier = Modifier.weight(1f),
             )
             if (comment.uploader) {
-                Text(
-                    text = stringResource(MR.strings.key_uploader),
-                    color = MiuixTheme.colorScheme.primary,
-                    fontSize = 12.sp,
-                )
+                Box(
+                    modifier = Modifier
+                        .clip(SquircleShape(4.dp))
+                        .background(MiuixTheme.colorScheme.primary.copy(alpha = 0.12f))
+                        .padding(horizontal = 6.dp, vertical = 2.dp),
+                ) {
+                    Text(
+                        text = stringResource(MR.strings.key_uploader),
+                        color = MiuixTheme.colorScheme.primary,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium,
+                    )
+                }
             }
             Text(
                 text = DesktopCommentsModel.formatCommentTime(comment.time),
                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                fontSize = 12.sp,
+                fontSize = 11.sp,
             )
         }
         if (canVote) {
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 listOf(1 to "▲", -1 to "▼").forEach { (value, arrow) ->
                     // 已投状态取模型布尔（voteState 是投票人名单字符串，子串匹配会误报）
                     val active = if (value == 1) comment.voteUpEd else comment.voteDownEd
-                    Text(
-                        text = if (isVoting) "…" else arrow,
-                        color = if (active) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        fontSize = 12.sp,
+                    Box(
                         modifier = Modifier
+                            .clip(SquircleShape(4.dp))
+                            .background(
+                                if (active) {
+                                    MiuixTheme.colorScheme.primary.copy(alpha = 0.15f)
+                                } else {
+                                    Color.Transparent
+                                },
+                            )
                             .pointerHoverIcon(PointerIcon.Hand)
-                            .clickable(enabled = !isVoting) { onVote(value) },
-                    )
+                            .clickable(enabled = !isVoting) { onVote(value) }
+                            .padding(horizontal = 6.dp, vertical = 2.dp),
+                    ) {
+                        Text(
+                            text = if (isVoting) "…" else arrow,
+                            color = if (active) {
+                                MiuixTheme.colorScheme.primary
+                            } else {
+                                MiuixTheme.colorScheme.onSurfaceVariantSummary
+                            },
+                            fontSize = 12.sp,
+                        )
+                    }
                 }
             }
         }
         Text(
             text = comment.comment,
-            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+            color = MiuixTheme.colorScheme.onSurface,
             fontSize = 12.sp,
         )
         // 评论内链接点击即经系统浏览器打开（链接本体仍随右键菜单可复制）

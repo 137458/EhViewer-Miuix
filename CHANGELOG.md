@@ -4,6 +4,7 @@
 
 ### 新增
 
+- 桌面端评论与预览条 Miuix 规范化及悬停交互增强：评论卡片统一使用 Squircle 超椭圆圆角与 surfaceContainerHighest 配色，上传者徽章采用微高亮胶囊，点赞投票按钮增加手势悬停与背景药丸反馈，详情页预览条单元格与操作通知浮层对齐 Squircle 形状。
 - 桌面端全局模态对话框统一接入 Miuix 超椭圆 Squircle 卡片：升级 DesktopModalCard 容器为 SquircleShape(16.dp)，关闭按钮规范为 Miuix 标准关闭图标与 Hand 悬停态，关于弹窗与快捷键指南卡片化升级（快捷键增加按键胶囊徽章样式）。
 - 桌面端设置页重构为 Miuix 卡片分组架构：对齐移动端 Miuix Card、SmallTitle、SwitchPreference 偏好设计体系，输入框接入卡片容器与错误状态色彩规范，增加 Hand 悬停光标与顶部返回导航栏。
 
