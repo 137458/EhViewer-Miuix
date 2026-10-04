@@ -1007,10 +1007,14 @@ fun LibraryScreen(
                                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                         fontSize = 13.sp,
                                     )
+                                    val emptyResetHover = remember { MutableInteractionSource() }
+                                    val emptyResetHovered by emptyResetHover.collectIsHoveredAsState()
                                     Box(
                                         modifier = Modifier
                                             .clip(SquircleShape(8.dp))
                                             .background(MiuixTheme.colorScheme.surfaceContainerHighest)
+                                            .background(if (emptyResetHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
+                                            .hoverable(emptyResetHover)
                                             .pointerHoverIcon(PointerIcon.Hand)
                                             .clickable { searchFieldState.clearText() }
                                             .padding(horizontal = 14.dp, vertical = 6.dp),
