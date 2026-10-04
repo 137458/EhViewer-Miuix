@@ -345,38 +345,22 @@ private fun CommentActionButton(
     enabled: Boolean = true,
     onClick: () -> Unit,
 ) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val isHovered by interactionSource.collectIsHoveredAsState()
-    val bgColor = when {
-        active -> MiuixTheme.colorScheme.primary.copy(alpha = 0.18f)
-        isHovered && enabled -> MiuixTheme.colorScheme.primary.copy(alpha = 0.08f)
-        else -> Color.Transparent
-    }
-    val textColor = when {
-        active -> MiuixTheme.colorScheme.primary
-        !enabled -> MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.4f)
-        isHovered -> MiuixTheme.colorScheme.primary
-        else -> MiuixTheme.colorScheme.onSurfaceVariantSummary
-    }
-    Box(
-        modifier = Modifier
-            .clip(SquircleShape(6.dp))
-            .background(bgColor)
-            .pointerHoverIcon(if (enabled) PointerIcon.Hand else PointerIcon.Default)
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null,
-                enabled = enabled,
-                onClick = onClick,
-            )
-            .padding(horizontal = 8.dp, vertical = 3.dp),
-        contentAlignment = Alignment.Center,
-    ) {
+    DesktopHoverPill(
+        onClick = onClick,
+        enabled = enabled,
+        containerColor = if (active) MiuixTheme.colorScheme.primary.copy(alpha = 0.18f) else Color.Transparent,
+        hoverOverlayColor = if (active) Color.Transparent else MiuixTheme.colorScheme.primary.copy(alpha = 0.08f),
+    ) { hovered ->
         Text(
             text = text,
-            color = textColor,
+            color = when {
+                active -> MiuixTheme.colorScheme.primary
+                !enabled -> MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.4f)
+                hovered -> MiuixTheme.colorScheme.primary
+                else -> MiuixTheme.colorScheme.onSurfaceVariantSummary
+            },
             fontSize = 11.sp,
-            fontWeight = if (active || isHovered) FontWeight.Medium else FontWeight.Normal,
+            fontWeight = if (active || hovered) FontWeight.Medium else FontWeight.Normal,
         )
     }
 }
