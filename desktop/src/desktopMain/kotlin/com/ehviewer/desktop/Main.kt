@@ -66,6 +66,8 @@ import com.ehviewer.core.util.DesktopFileLog
 import com.ehviewer.core.util.LogPriority
 import com.ehviewer.core.util.logcat
 import dev.icerock.moko.resources.compose.stringResource
+import dev.icerock.moko.resources.desc.ResourceFormatted
+import dev.icerock.moko.resources.desc.StringDesc
 import java.awt.Window as AwtWindow
 import java.util.concurrent.atomic.AtomicLong
 import kotlinx.coroutines.Dispatchers
@@ -514,14 +516,13 @@ private fun AboutDialog(onDismiss: () -> Unit) {
                 color = MiuixTheme.colorScheme.onSurface,
                 fontSize = 13.sp,
             )
-            // 手动检查更新：行内状态反馈（检查中/已是最新/新版本 tag 可点击直达 releases）
+            // 手动检查更新：行内三态反馈（检查中/已是最新/可更新直达 releases），失败明确提示不误报已最新
             val coroutineScope = rememberCoroutineScope()
             val checkLabel = stringResource(MR.strings.desktop_check_update)
             val checkingText = stringResource(MR.strings.desktop_update_checking)
             val upToDateText = stringResource(MR.strings.desktop_update_up_to_date)
-            val availableTemplate = stringResource(MR.strings.desktop_update_available, "")
-            var updateCheckState by remember { mutableStateOf<String?>(null) }
-            var updateAvailableTag by remember { mutableStateOf<String?>(null) }
+            val unavailableText = stringResource(MR.strings.desktop_update_check_failed)
+            var updateCheckState by remember { mutableStateOf<AboutUpdateCheckState?>(null) }
             val updateCheckHover = remember { MutableInteractionSource() }
             val updateCheckHovered by updateCheckHover.collectIsHoveredAsState()
             Row(
@@ -540,16 +541,16 @@ private fun AboutDialog(onDismiss: () -> Unit) {
                             interactionSource = updateCheckHover,
                             indication = null,
                         ) {
-                            if (updateCheckState != checkingText) {
+                            if (updateCheckState != AboutUpdateCheckState.Checking) {
                                 coroutineScope.launch {
-                                    updateCheckState = checkingText
-                                    updateAvailableTag = null
-                                    val info = checkLatestRelease()
-                                    updateCheckState = if (info != null && isNewer(info.tag, DESKTOP_VERSION)) {
-                                        updateAvailableTag = info.tag
-                                        availableTemplate.substringBefore("%1\$s").trim() + " " + info.tag
-                                    } else {
-                                        upToDateText
+                                    updateCheckState = AboutUpdateCheckState.Checking
+                                    updateCheckState = when (val result = checkLatestReleaseStatus(DESKTOP_VERSION)) {
+                                        is UpdateCheckResult.Available -> AboutUpdateCheckState.Available(
+                                            label = StringDesc.ResourceFormatted(MR.strings.desktop_update_available, result.info.tag).localized(),
+                                            tag = result.info.tag,
+                                        )
+                                        UpdateCheckResult.UpToDate -> AboutUpdateCheckState.UpToDate(upToDateText)
+                                        UpdateCheckResult.Unavailable -> AboutUpdateCheckState.Unavailable(unavailableText)
                                     }
                                 }
                             }
@@ -564,24 +565,32 @@ private fun AboutDialog(onDismiss: () -> Unit) {
                         fontWeight = FontWeight.Medium,
                     )
                 }
-                updateCheckState?.let { stateText ->
-                    Text(
-                        text = stateText,
-                        color = if (updateAvailableTag != null) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                when (val state = updateCheckState) {
+                    is AboutUpdateCheckState.Available -> Text(
+                        text = state.label,
+                        color = MiuixTheme.colorScheme.primary,
                         fontSize = 12.sp,
-                        textDecoration = if (updateAvailableTag != null) TextDecoration.Underline else null,
+                        textDecoration = TextDecoration.Underline,
                         modifier = Modifier
-                            .then(
-                                if (updateAvailableTag != null) {
-                                    Modifier.pointerHoverIcon(PointerIcon.Hand)
-                                } else {
-                                    Modifier
-                                },
-                            )
-                            .clickable(enabled = updateAvailableTag != null) {
-                                DesktopBrowser.openUrl(RELEASES_PAGE_URL)
-                            },
+                            .pointerHoverIcon(PointerIcon.Hand)
+                            .clickable { DesktopBrowser.openUrl(RELEASES_PAGE_URL) },
                     )
+                    is AboutUpdateCheckState.UpToDate -> Text(
+                        text = state.label,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        fontSize = 12.sp,
+                    )
+                    is AboutUpdateCheckState.Unavailable -> Text(
+                        text = state.label,
+                        color = MiuixTheme.colorScheme.error,
+                        fontSize = 12.sp,
+                    )
+                    AboutUpdateCheckState.Checking -> Text(
+                        text = checkingText,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        fontSize = 12.sp,
+                    )
+                    null -> {}
                 }
             }
             val releasesUrl = RELEASES_PAGE_URL
@@ -1001,4 +1010,12 @@ private fun GalleryDetailPageContent(
             }
         }
     }
+}
+
+// 关于弹窗手动检查更新的行内状态机：文案在协程回调（非组合语境）生成，经 StringDesc 本地化后携带
+private sealed interface AboutUpdateCheckState {
+    data object Checking : AboutUpdateCheckState
+    data class UpToDate(val label: String) : AboutUpdateCheckState
+    data class Available(val label: String, val tag: String) : AboutUpdateCheckState
+    data class Unavailable(val label: String) : AboutUpdateCheckState
 }

@@ -685,6 +685,7 @@
     <string name="desktop_update_available">update available: %1$s</string>
     <string name="desktop_check_update">Check for updates</string>
     <string name="desktop_update_up_to_date">Already up to date</string>
+    <string name="desktop_update_check_failed">Update check failed</string>
     <string name="desktop_update_checking">Checking…</string>
     <string name="desktop_reader_loading_links">Loading page links…</string>
     <string name="desktop_reader_no_links">No page links found (login required or parse failure)</string>

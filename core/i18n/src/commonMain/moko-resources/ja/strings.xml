@@ -672,6 +672,7 @@
     <string name="desktop_update_available">更新があります：%1$s</string>
     <string name="desktop_check_update">更新を確認</string>
     <string name="desktop_update_up_to_date">最新です</string>
+    <string name="desktop_update_check_failed">更新の確認に失敗しました</string>
     <string name="desktop_update_checking">確認中…</string>
     <string name="desktop_view_grid">グリッド</string>
     <string name="desktop_view_list">リスト</string>

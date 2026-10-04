@@ -26,6 +26,22 @@ internal fun isNewer(remote: String, current: String): Boolean {
     return false
 }
 
+// 手动检查更新的三态结论：可更新（携带信息）/ 已是最新 / 不可判定（网络或解析失败，不得误报为已最新）
+sealed interface UpdateCheckResult {
+    data class Available(val info: UpdateInfo) : UpdateCheckResult
+    data object UpToDate : UpdateCheckResult
+    data object Unavailable : UpdateCheckResult
+}
+
+// 以注入的 fetch（默认真实网络查询）将原始结果映射为三态结论
+suspend fun checkLatestReleaseStatus(
+    currentVersion: String,
+    fetch: suspend () -> UpdateInfo? = ::checkLatestRelease,
+): UpdateCheckResult {
+    val info = fetch() ?: return UpdateCheckResult.Unavailable
+    return if (isNewer(info.tag, currentVersion)) UpdateCheckResult.Available(info) else UpdateCheckResult.UpToDate
+}
+
 // 查询最新 Release；网络不可达或响应异常返回 null（调用方按无更新处理）
 suspend fun checkLatestRelease(): UpdateInfo? = withContext(Dispatchers.IO) {
     runCatching {
