@@ -82,4 +82,22 @@ class DesktopCommentsModelTest {
         assertEquals(' ', rendered[10])
         assertEquals(':', rendered[13])
     }
+
+    @Test
+    fun formatScoreFormatsPositiveZeroAndNegative() {
+        assertEquals("+5", DesktopCommentsModel.formatScore(5))
+        assertEquals("+1", DesktopCommentsModel.formatScore(1))
+        assertEquals("0", DesktopCommentsModel.formatScore(0))
+        assertEquals("-3", DesktopCommentsModel.formatScore(-3))
+        assertEquals("-10", DesktopCommentsModel.formatScore(-10))
+    }
+
+    @Test
+    fun shouldDisplayScoreWhenVotingOrNonZero() {
+        assertTrue(DesktopCommentsModel.shouldDisplayScore(score = 5, canVote = false))
+        assertTrue(DesktopCommentsModel.shouldDisplayScore(score = -1, canVote = false))
+        assertTrue(DesktopCommentsModel.shouldDisplayScore(score = 0, canVote = true))
+        assertTrue(DesktopCommentsModel.shouldDisplayScore(score = 3, canVote = true))
+        kotlin.test.assertFalse(DesktopCommentsModel.shouldDisplayScore(score = 0, canVote = false))
+    }
 }

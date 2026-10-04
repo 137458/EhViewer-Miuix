@@ -4,6 +4,8 @@ import androidx.compose.foundation.ContextMenuArea
 import androidx.compose.foundation.ContextMenuItem
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -63,6 +65,13 @@ object DesktopCommentsModel {
         .map { it.value.trimEnd('.', ',', ';', '!', '?') }
         .distinct()
         .toList()
+
+    fun formatScore(score: Int): String = when {
+        score > 0 -> "+$score"
+        else -> score.toString()
+    }
+
+    fun shouldDisplayScore(score: Int, canVote: Boolean): Boolean = canVote || score != 0
 }
 
 // 详情面板评论区：拉取画廊详情页经 Rust 解析（与 Android 侧同链路），折叠展示、右键复制评论文本。
@@ -302,22 +311,72 @@ fun DesktopCommentsSection(
 }
 
 @Composable
+private fun CommentActionButton(
+    text: String,
+    active: Boolean = false,
+    enabled: Boolean = true,
+    onClick: () -> Unit,
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isHovered by interactionSource.collectIsHoveredAsState()
+    val bgColor = when {
+        active -> MiuixTheme.colorScheme.primary.copy(alpha = 0.18f)
+        isHovered && enabled -> MiuixTheme.colorScheme.primary.copy(alpha = 0.08f)
+        else -> Color.Transparent
+    }
+    val textColor = when {
+        active -> MiuixTheme.colorScheme.primary
+        !enabled -> MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.4f)
+        isHovered -> MiuixTheme.colorScheme.primary
+        else -> MiuixTheme.colorScheme.onSurfaceVariantSummary
+    }
+    Box(
+        modifier = Modifier
+            .clip(SquircleShape(6.dp))
+            .background(bgColor)
+            .pointerHoverIcon(if (enabled) PointerIcon.Hand else PointerIcon.Default)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                enabled = enabled,
+                onClick = onClick,
+            )
+            .padding(horizontal = 8.dp, vertical = 3.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = text,
+            color = textColor,
+            fontSize = 11.sp,
+            fontWeight = if (active || isHovered) FontWeight.Medium else FontWeight.Normal,
+        )
+    }
+}
+
+@Composable
 private fun CommentItem(
     comment: GalleryComment,
     canVote: Boolean = false,
     isVoting: Boolean = false,
     onVote: (Int) -> Unit = {},
 ) {
+    val clipboard = LocalClipboardManager.current
+    val copyText = stringResource(MR.strings.action_copy)
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .clip(SquircleShape(8.dp))
             .background(MiuixTheme.colorScheme.surfaceContainerHighest)
             .padding(10.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         val anonymousText = stringResource(MR.strings.desktop_anonymous)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             Text(
                 text = comment.user.orEmpty().ifEmpty { anonymousText },
                 color = MiuixTheme.colorScheme.onSurface,
@@ -347,43 +406,13 @@ private fun CommentItem(
                 fontSize = 11.sp,
             )
         }
-        if (canVote) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                listOf(1 to "▲", -1 to "▼").forEach { (value, arrow) ->
-                    // 已投状态取模型布尔（voteState 是投票人名单字符串，子串匹配会误报）
-                    val active = if (value == 1) comment.voteUpEd else comment.voteDownEd
-                    Box(
-                        modifier = Modifier
-                            .clip(SquircleShape(4.dp))
-                            .background(
-                                if (active) {
-                                    MiuixTheme.colorScheme.primary.copy(alpha = 0.15f)
-                                } else {
-                                    Color.Transparent
-                                },
-                            )
-                            .pointerHoverIcon(PointerIcon.Hand)
-                            .clickable(enabled = !isVoting) { onVote(value) }
-                            .padding(horizontal = 6.dp, vertical = 2.dp),
-                    ) {
-                        Text(
-                            text = if (isVoting) "…" else arrow,
-                            color = if (active) {
-                                MiuixTheme.colorScheme.primary
-                            } else {
-                                MiuixTheme.colorScheme.onSurfaceVariantSummary
-                            },
-                            fontSize = 12.sp,
-                        )
-                    }
-                }
-            }
-        }
+
         Text(
             text = comment.comment,
             color = MiuixTheme.colorScheme.onSurface,
             fontSize = 12.sp,
         )
+
         // 评论内链接点击即经系统浏览器打开（链接本体仍随右键菜单可复制）
         remember(comment.comment) { DesktopCommentsModel.extractUrls(comment.comment) }.forEach { url ->
             Text(
@@ -395,6 +424,68 @@ private fun CommentItem(
                 modifier = Modifier
                     .pointerHoverIcon(PointerIcon.Hand)
                     .clickable { DesktopBrowser.openUrl(url) },
+            )
+        }
+
+        // 单条评论底部操作栏：投票组（▲ / 得分徽章 / ▼）与快速复制按钮
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 2.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                if (canVote) {
+                    CommentActionButton(
+                        text = if (isVoting) "…" else "▲",
+                        active = comment.voteUpEd,
+                        enabled = !isVoting,
+                        onClick = { onVote(1) },
+                    )
+                }
+                if (DesktopCommentsModel.shouldDisplayScore(comment.score, canVote)) {
+                    Box(
+                        modifier = Modifier
+                            .clip(SquircleShape(4.dp))
+                            .background(
+                                if (comment.score > 0) {
+                                    MiuixTheme.colorScheme.primary.copy(alpha = 0.12f)
+                                } else {
+                                    MiuixTheme.colorScheme.surfaceContainer
+                                },
+                            )
+                            .padding(horizontal = 6.dp, vertical = 2.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = DesktopCommentsModel.formatScore(comment.score),
+                            color = if (comment.score > 0) {
+                                MiuixTheme.colorScheme.primary
+                            } else {
+                                MiuixTheme.colorScheme.onSurfaceVariantSummary
+                            },
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium,
+                        )
+                    }
+                }
+                if (canVote) {
+                    CommentActionButton(
+                        text = if (isVoting) "…" else "▼",
+                        active = comment.voteDownEd,
+                        enabled = !isVoting,
+                        onClick = { onVote(-1) },
+                    )
+                }
+            }
+
+            CommentActionButton(
+                text = copyText,
+                onClick = { clipboard.setText(AnnotatedString(comment.comment)) },
             )
         }
     }
