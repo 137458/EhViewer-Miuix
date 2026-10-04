@@ -64,14 +64,15 @@ fun VerticalScrollbar(
     )
 }
 
-fun scrollbarStyle(color: Color) = ScrollbarStyle(
+// 滚动条样式：静息/悬停双色分离（悬停加深为桌面惯例），由桌面根节点以 Miuix 配色注入 LocalScrollbarStyle
+fun scrollbarStyle(thumbColor: Color, hoverThumbColor: Color) = ScrollbarStyle(
     minimalHeight = ThumbLength,
     thickness = ThumbThickness,
     padding = ThumbPadding,
     shape = ThumbShape,
     hoverDurationMillis = 300,
-    unhoverColor = color,
-    hoverColor = color,
+    unhoverColor = thumbColor,
+    hoverColor = hoverThumbColor,
 )
 
 private val ThumbPadding = 8.dp
