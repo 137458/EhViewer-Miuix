@@ -20,17 +20,19 @@ fun DesktopResponse.toByteBuffer(): ByteBuffer? {
     return ByteBuffer.allocateDirect(bytes.size).put(bytes).apply { flip() }
 }
 
-// 代理解析：设置项 > HTTPS_PROXY/HTTP_PROXY 环境变量 > 直连（与 NetworkModule 同源规则）
-private fun resolveProxy(): Proxy? {
+// 代理解析：设置项 > HTTPS_PROXY/HTTP_PROXY 环境变量 > 直连（供 HttpURLConnection 与 NetworkModule 共享）
+internal fun resolveDesktopProxyAddress(): InetSocketAddress? {
     DesktopSettings.proxy.value?.trim()?.takeIf { it.isNotEmpty() }?.let { configured ->
-        parseHostPort(configured)?.let { return Proxy(Proxy.Type.HTTP, it) }
+        parseHostPort(configured)?.let { return it }
     }
     val fromEnv = System.getenv("HTTPS_PROXY") ?: System.getenv("HTTP_PROXY")
     if (!fromEnv.isNullOrBlank()) {
-        parseHostPort(fromEnv.trim())?.let { return Proxy(Proxy.Type.HTTP, it) }
+        parseHostPort(fromEnv.trim())?.let { return it }
     }
     return null
 }
+
+private fun resolveProxy(): Proxy? = resolveDesktopProxyAddress()?.let { Proxy(Proxy.Type.HTTP, it) }
 
 internal fun parseHostPort(value: String): InetSocketAddress? {
     val match = Regex("^(https?://)?([^:/]+):(\\d+)$").matchEntire(value) ?: return null
@@ -89,6 +91,3 @@ private fun readDesktopBytesResponse(conn: HttpURLConnection): DesktopBytesRespo
     val bytes = stream?.use { it.readBytes() } ?: ByteArray(0)
     return DesktopBytesResponse(status, bytes)
 }
-
-// 诊断辅助：桌面数据目录（与 DesktopDirs 约定一致的只读入口）
-internal fun desktopDataFileMarker(): File? = null

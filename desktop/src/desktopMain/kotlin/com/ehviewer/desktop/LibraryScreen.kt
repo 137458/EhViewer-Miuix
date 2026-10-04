@@ -257,16 +257,7 @@ fun LibraryScreen(
         showNotification(historyClearedMessage)
     }
 
-    LaunchedEffect(notifications) {
-        if (notifications.isNotEmpty()) {
-            delay(2500L)
-            notifications = DesktopNotificationManager.expire(
-                current = notifications,
-                currentTime = System.currentTimeMillis(),
-                ttlMs = 2500L,
-            )
-        }
-    }
+    AutoExpireNotifications(notifications) { notifications = it }
 
     suspend fun refreshGalleries() {
         connectionStatus = DesktopConnectionStatus.Checking
@@ -562,7 +553,7 @@ fun LibraryScreen(
                         color = MiuixTheme.colorScheme.primary,
                         modifier = Modifier
                             .pointerHoverIcon(PointerIcon.Hand)
-                            .clickable { openBrowser(info.pageUrl) },
+                            .clickable { DesktopBrowser.openUrl(info.pageUrl) },
                     )
                 }
             }
@@ -914,7 +905,7 @@ fun LibraryScreen(
                                     showNotification(linkCopiedText)
                                 },
                                 ContextMenuItem(openBrowserLabel) {
-                                    openBrowser(link)
+                                    DesktopBrowser.openUrl(link)
                                 },
                                 ContextMenuItem(
                                     if (DesktopFavoritesState.isFavorite(favoriteGids, gallery.gid)) {
@@ -927,8 +918,9 @@ fun LibraryScreen(
                                 },
                             )
                             // 批量多选激活时置顶批量删除（按当前 Tab 作用于历史或收藏）；毁灭性操作先确认
-                            if (multiSelection.isActive) {
+                            if (multiSelection.isActive && (currentTab == LibraryTab.History || currentTab == LibraryTab.Favorites)) {
                                 menuItems.add(
+                                    0,
                                     ContextMenuItem(batchDeleteLabel) {
                                         showBatchDeleteConfirm = true
                                     },
@@ -1749,10 +1741,6 @@ private fun VerticalDivider() = HorizontalDivider(
     color = MiuixTheme.colorScheme.outline,
     thickness = 1.dp,
 )
-
-private fun openBrowser(url: String) {
-    DesktopBrowser.openUrl(url)
-}
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable

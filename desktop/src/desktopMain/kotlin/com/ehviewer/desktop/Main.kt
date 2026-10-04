@@ -561,6 +561,7 @@ private fun GalleryDetailWindowContent(
     val noBrowserText = stringResource(MR.strings.no_browser_installed)
     val tagLabel = stringResource(MR.strings.search_sft)
     val metadataLoadingText = stringResource(MR.strings.desktop_gallery_metadata_loading)
+    val undoText = stringResource(MR.strings.desktop_notification_undo)
 
     LaunchedEffect(gallery.gid) {
         isFavorite = withContext(Dispatchers.IO) {
@@ -608,16 +609,7 @@ private fun GalleryDetailWindowContent(
         )
     }
 
-    LaunchedEffect(notifications) {
-        if (notifications.isNotEmpty()) {
-            delay(2500L)
-            notifications = DesktopNotificationManager.expire(
-                current = notifications,
-                currentTime = System.currentTimeMillis(),
-                ttlMs = 2500L,
-            )
-        }
-    }
+    AutoExpireNotifications(notifications) { notifications = it }
 
     fun toggleFavorite() {
         coroutineScope.launch {
@@ -637,7 +629,25 @@ private fun GalleryDetailWindowContent(
                 }
             }
             isFavorite = nextState
-            showNotification(if (nextState) addedToFavoriteText else removedFromFavoriteText)
+            if (nextState) {
+                showNotification(addedToFavoriteText)
+            } else {
+                notifications = DesktopNotificationManager.post(
+                    current = notifications,
+                    message = removedFromFavoriteText,
+                    timestamp = System.currentTimeMillis(),
+                    idProvider = { nextNotificationId.getAndIncrement() },
+                    actionLabel = undoText,
+                    onAction = {
+                        coroutineScope.launch {
+                            withContext(Dispatchers.IO) {
+                                DesktopDatabase.eh.localFavoritesDao().upsert(LocalFavoriteInfo(currentGallery.gid))
+                            }
+                            isFavorite = true
+                        }
+                    },
+                )
+            }
         }
     }
 

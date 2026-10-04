@@ -14,11 +14,9 @@ object DesktopRating {
     }
 
     // 类目显示名由调用方经 DesktopCategories 注入
-    fun formatCardMeta(pages: Int, categoryName: String): String {
-        return if (pages > 0) {
-            "${pages}P · $categoryName"
-        } else {
-            categoryName
-        }
+    fun formatCardMeta(pages: Int, categoryName: String): String = if (pages > 0) {
+        "${pages}P · $categoryName"
+    } else {
+        categoryName
     }
 }

@@ -132,16 +132,7 @@ fun ReaderScreen(
     LaunchedEffect(page) {
         zoomState = DesktopReaderZoomState()
     }
-    LaunchedEffect(notifications) {
-        if (notifications.isNotEmpty()) {
-            delay(2500L)
-            notifications = DesktopNotificationManager.expire(
-                current = notifications,
-                currentTime = System.currentTimeMillis(),
-                ttlMs = 2500L,
-            )
-        }
-    }
+    AutoExpireNotifications(notifications) { notifications = it }
     val currentLink = pageLinks.getOrNull(page - 1)
     LaunchedEffect(currentLink, reloadKey) {
         val link = currentLink ?: return@LaunchedEffect

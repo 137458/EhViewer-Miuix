@@ -105,4 +105,43 @@ class DesktopGalleryHydratorTest {
             },
         )
     }
+
+    @Test
+    fun voteComment_success_returnsParsedScore() = kotlinx.coroutines.runBlocking {
+        var postedUrl: String? = null
+        var postedBody: String? = null
+        val result = DesktopGalleryHydrator.voteComment(
+            apiUid = 12345L,
+            apiKey = "secretkey",
+            gid = 778899L,
+            token = "abcdef",
+            commentId = 999L,
+            vote = 1,
+            post = { url, body ->
+                postedUrl = url
+                postedBody = body
+                DesktopResponse(200, """{"comment_id":999,"comment_score":15,"comment_vote":1}""")
+            },
+        )
+        assertTrue(result.isSuccess)
+        assertEquals(15, result.getOrNull()?.score)
+        assertEquals(DesktopGalleryHydrator.GDATA_URL, postedUrl)
+        assertTrue(postedBody!!.contains(""""method":"votecomment""""))
+    }
+
+    @Test
+    fun voteComment_httpError_returnsFailure() = kotlinx.coroutines.runBlocking {
+        val result = DesktopGalleryHydrator.voteComment(
+            apiUid = 12345L,
+            apiKey = "secretkey",
+            gid = 778899L,
+            token = "abcdef",
+            commentId = 999L,
+            vote = 1,
+            post = { _, _ ->
+                DesktopResponse(500, "Internal Server Error")
+            },
+        )
+        assertTrue(result.isFailure)
+    }
 }

@@ -25,4 +25,20 @@ object DesktopGalleryHydrator {
         // gmetadata 未命中（如无效 token）时占位字段不会被回填，视为拉取失败
         return if (needsHydration(info)) null else info
     }
+
+    suspend fun voteComment(
+        apiUid: Long,
+        apiKey: String,
+        gid: Long,
+        token: String,
+        commentId: Long,
+        vote: Int,
+        post: (String, String) -> DesktopResponse = ::desktopPost,
+    ): Result<com.ehviewer.core.database.client.VoteCommentRequest.Result> = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        runCatching {
+            val response = post(GDATA_URL, com.ehviewer.core.database.client.VoteCommentRequest.json(apiUid, apiKey, gid, token, commentId, vote))
+            com.ehviewer.core.database.client.VoteCommentRequest.parseResult(response.body)
+                ?: error("HTTP ${response.status}")
+        }
+    }
 }

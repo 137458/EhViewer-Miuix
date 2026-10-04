@@ -47,3 +47,23 @@ object DesktopNotificationManager {
         return current.filter { it.timestamp >= threshold }
     }
 }
+
+@androidx.compose.runtime.Composable
+fun AutoExpireNotifications(
+    notifications: List<DesktopNotification>,
+    ttlMs: Long = 2500L,
+    onExpire: (List<DesktopNotification>) -> Unit,
+) {
+    androidx.compose.runtime.LaunchedEffect(notifications) {
+        if (notifications.isNotEmpty()) {
+            kotlinx.coroutines.delay(ttlMs)
+            onExpire(
+                DesktopNotificationManager.expire(
+                    current = notifications,
+                    currentTime = System.currentTimeMillis(),
+                    ttlMs = ttlMs,
+                ),
+            )
+        }
+    }
+}

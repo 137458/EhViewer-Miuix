@@ -117,8 +117,11 @@ class DesktopScrollPager(private val threshold: Float = 1f) {
 
     fun onDelta(deltaY: Float): Int? {
         accumulated += deltaY
-        // floor 向负无穷取整（累积负向滚动的语义），单次至多翻一页
-        val step = kotlin.math.floor(accumulated / threshold).toInt().coerceIn(-1, 1)
+        val step = when {
+            accumulated >= threshold -> 1
+            accumulated <= -threshold -> -1
+            else -> 0
+        }
         return if (step != 0) {
             accumulated = 0f
             step

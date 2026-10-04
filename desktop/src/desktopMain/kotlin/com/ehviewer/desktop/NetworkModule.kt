@@ -11,7 +11,6 @@ import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.request.header
 import io.ktor.http.HttpHeaders
 import io.ktor.http.userAgent
-import java.net.InetSocketAddress
 import java.net.ProxySelector
 
 // 桌面网络栈统一 UA（HttpURLConnection 与 ktor okhttp 共用）；版本随 Chrome 主版本季更
@@ -20,17 +19,8 @@ internal const val DESKTOP_USER_AGENT =
 private const val CHROME_ACCEPT =
     "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8"
 
-// 代理解析：设置项 > HTTPS_PROXY/HTTP_PROXY 环境变量 > 直连
-private fun resolveProxySelector(): ProxySelector? {
-    DesktopSettings.proxy.value?.trim()?.takeIf { it.isNotEmpty() }?.let { configured ->
-        return parseHostPort(configured)?.let { ProxySelector.of(it) }
-    }
-    val fromEnv = System.getenv("HTTPS_PROXY") ?: System.getenv("HTTP_PROXY")
-    if (!fromEnv.isNullOrBlank()) {
-        parseHostPort(fromEnv.trim())?.let { return ProxySelector.of(it) }
-    }
-    return null
-}
+// 代理解析：复用 DesktopHttp.resolveDesktopProxyAddress 统一解析规则
+private fun resolveProxySelector(): ProxySelector? = resolveDesktopProxyAddress()?.let { ProxySelector.of(it) }
 
 // 桌面网络栈：与 Android 侧共享 EhCookieStore(ktor CookiesStorage)，
 // 引擎用 okhttp（Cronet 仅 Android 可用），UA 固定桌面 Chrome。

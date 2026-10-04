@@ -30,16 +30,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.ehviewer.core.database.client.VoteCommentRequest
 import com.ehviewer.core.i18n.MR
 import com.ehviewer.core.model.BaseGalleryInfo
 import com.ehviewer.core.model.GalleryComment
 import com.hippo.ehviewer.client.parser.GalleryDetailParser
 import dev.icerock.moko.resources.compose.stringResource
 import java.nio.ByteBuffer
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 // 评论显示模型：上传者评论置顶（组内保持原相对顺序）；折叠态最多展示 3 条
@@ -99,14 +96,14 @@ fun DesktopCommentsSection(
         votedScore = null
         voteError = null
         coroutineScope.launch {
-            val outcome = withContext(Dispatchers.IO) {
-                runCatching {
-                    val response = desktopPost(DesktopGalleryHydrator.GDATA_URL, VoteCommentRequest.json(apiUid, key, gallery.gid, gallery.token, comment.id, vote))
-                    val parsed = VoteCommentRequest.parseResult(response.body)
-                        ?: error("HTTP ${response.status}")
-                    parsed
-                }
-            }
+            val outcome = DesktopGalleryHydrator.voteComment(
+                apiUid = apiUid,
+                apiKey = key,
+                gid = gallery.gid,
+                token = gallery.token,
+                commentId = comment.id,
+                vote = vote,
+            )
             votingCommentId = null
             outcome.fold(
                 onSuccess = { r -> votedScore = r.score },

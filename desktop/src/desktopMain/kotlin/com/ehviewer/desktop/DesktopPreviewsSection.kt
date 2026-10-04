@@ -23,7 +23,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
@@ -112,7 +111,7 @@ private fun PreviewCell(preview: GalleryPreview) {
                     contentScale = ContentScale.FillHeight,
                     modifier = Modifier
                         .height(PREVIEW_DISPLAY_HEIGHT.dp)
-                        .offset { IntOffset(cell.offsetX.toInt(), 0) },
+                        .offset(x = cell.offsetX.dp),
                 )
             }
         }

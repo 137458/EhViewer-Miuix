@@ -186,8 +186,8 @@ class DesktopReaderKeysTest {
         // 累计越阈：向下滚 = 下一页
         assertEquals(1, pager.onDelta(20f))
         // 触发后清零重新累计
-        assertNull(pager.onDelta(63f))
-        assertEquals(-1, pager.onDelta(-64f))
+        assertNull(pager.onDelta(-63f))
+        assertEquals(-1, pager.onDelta(-1f))
     }
 
     @Test
@@ -203,6 +203,15 @@ class DesktopReaderKeysTest {
         // Compose Desktop 鼠标滚轮每格 scrollDelta = ±1.0：默认阈值下一格即翻一页（无需 64 格）
         val pager = DesktopScrollPager()
         assertEquals(1, pager.onDelta(1f))
+        assertEquals(-1, pager.onDelta(-1f))
+    }
+
+    @Test
+    fun scrollPagerNegativeSmallStepsDoNotTriggerPrematurely() {
+        val pager = DesktopScrollPager(threshold = 64f)
+        assertNull(pager.onDelta(-10f))
+        assertNull(pager.onDelta(-20f))
+        assertNull(pager.onDelta(-33f))
         assertEquals(-1, pager.onDelta(-1f))
     }
 }
