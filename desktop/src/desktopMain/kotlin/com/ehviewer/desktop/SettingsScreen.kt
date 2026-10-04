@@ -60,11 +60,6 @@ fun SettingsScreen(
     onShowAbout: (() -> Unit)? = null,
 ) {
     val themeMode by DesktopSettings.themeMode.valueFlow().collectAsState(DesktopSettings.themeMode.value)
-    val themeLabel = when (themeMode) {
-        1 -> stringResource(MR.strings.theme_light)
-        2 -> stringResource(MR.strings.theme_dark)
-        else -> stringResource(MR.strings.theme_follow_system)
-    }
     val closeToTray by DesktopSettings.closeToTray.valueFlow().collectAsState(DesktopSettings.closeToTray.value)
     val blackDarkTheme by DesktopSettings.blackDarkTheme.valueFlow().collectAsState(DesktopSettings.blackDarkTheme.value)
     val restoreSession by DesktopSettings.restoreSession.valueFlow().collectAsState(DesktopSettings.restoreSession.value)
@@ -124,11 +119,21 @@ fun SettingsScreen(
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp, vertical = 4.dp),
                     ) {
-                        BasicComponent(
-                            title = stringResource(MR.strings.settings_theme),
-                            summary = themeLabel,
-                            onClick = { DesktopSettings.themeMode.value = (themeMode + 1) % 3 },
-                            modifier = Modifier.pointerHoverIcon(PointerIcon.Hand),
+                        // 三态显式选择替代循环点击：目标状态可见可直达，选中行以 ✓ 标识
+                        ThemeModeRow(
+                            title = stringResource(MR.strings.theme_follow_system),
+                            selected = themeMode == 0,
+                            onClick = { DesktopSettings.themeMode.value = 0 },
+                        )
+                        ThemeModeRow(
+                            title = stringResource(MR.strings.theme_light),
+                            selected = themeMode == 1,
+                            onClick = { DesktopSettings.themeMode.value = 1 },
+                        )
+                        ThemeModeRow(
+                            title = stringResource(MR.strings.theme_dark),
+                            selected = themeMode == 2,
+                            onClick = { DesktopSettings.themeMode.value = 2 },
                         )
                         SwitchPreference(
                             title = stringResource(MR.strings.black_dark_theme),
@@ -394,4 +399,27 @@ private fun SettingsFieldActionButton(
             fontWeight = fontWeight,
         )
     }
+}
+
+// 主题三态选择行：选中行尾部 ✓ 标识（BasicComponent endActions 插槽），点击直达目标主题
+@Composable
+private fun ThemeModeRow(
+    title: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    BasicComponent(
+        title = title,
+        onClick = onClick,
+        endActions = {
+            if (selected) {
+                Text(
+                    text = "✓",
+                    color = MiuixTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
+        },
+        modifier = Modifier.pointerHoverIcon(PointerIcon.Hand),
+    )
 }
