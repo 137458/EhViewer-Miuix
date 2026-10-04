@@ -1384,12 +1384,16 @@ fun LibraryScreen(
                                 }
                             }
                             if (canScrollToTop && !multiSelection.isActive) {
+                                val topHover = remember { MutableInteractionSource() }
+                                val topHovered by topHover.collectIsHoveredAsState()
                                 Box(
                                     modifier = Modifier
                                         .align(Alignment.BottomEnd)
                                         .padding(end = 16.dp, bottom = 16.dp)
                                         .clip(SquircleShape(8.dp))
                                         .background(MiuixTheme.colorScheme.surfaceContainerHighest)
+                                        .background(if (topHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
+                                        .hoverable(topHover)
                                         .pointerHoverIcon(PointerIcon.Hand)
                                         .clickable {
                                             coroutineScope.launch {
@@ -2279,12 +2283,16 @@ internal fun CoverPreviewDialog(
 
         // 浮动前后翻页胶囊（在提供了上一张/下一张回调时呈现）
         if (onPrevious != null) {
+            val prevHover = remember { MutableInteractionSource() }
+            val prevHovered by prevHover.collectIsHoveredAsState()
             Box(
                 modifier = Modifier
                     .align(Alignment.CenterStart)
                     .padding(start = 24.dp)
                     .clip(SquircleShape(12.dp))
                     .background(MiuixTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.9f))
+                    .background(if (prevHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.12f) else Color.Transparent)
+                    .hoverable(prevHover)
                     .pointerHoverIcon(PointerIcon.Hand)
                     .clickable {
                         zoomState = DesktopReaderZoomState()
@@ -2303,12 +2311,16 @@ internal fun CoverPreviewDialog(
         }
 
         if (onNext != null) {
+            val nextHover = remember { MutableInteractionSource() }
+            val nextHovered by nextHover.collectIsHoveredAsState()
             Box(
                 modifier = Modifier
                     .align(Alignment.CenterEnd)
                     .padding(end = 24.dp)
                     .clip(SquircleShape(12.dp))
                     .background(MiuixTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.9f))
+                    .background(if (nextHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.12f) else Color.Transparent)
+                    .hoverable(nextHover)
                     .pointerHoverIcon(PointerIcon.Hand)
                     .clickable {
                         zoomState = DesktopReaderZoomState()
