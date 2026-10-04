@@ -1912,6 +1912,15 @@ internal fun GalleryDetailPane(
                 text = displayTitle,
                 color = MiuixTheme.colorScheme.primary,
             )
+            // Ctrl+O 打开的占位信息在水合完成前给出可见提示，避免用户误以为标题/封面缺失即最终状态
+            if (DesktopGalleryHydrator.needsHydration(gallery)) {
+                val hydratingText = stringResource(MR.strings.desktop_gallery_metadata_loading)
+                Text(
+                    text = hydratingText,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    fontSize = 12.sp,
+                )
+            }
             gallery.titleJpn?.takeIf { it.isNotEmpty() }?.let {
                 Text(text = it, color = MiuixTheme.colorScheme.onBackground)
             }
