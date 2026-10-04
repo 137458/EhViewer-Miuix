@@ -12,6 +12,7 @@ import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -859,28 +860,17 @@ private fun ReaderNavPill(
     enabled: Boolean,
     onClick: () -> Unit,
 ) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val isHovered by interactionSource.collectIsHoveredAsState()
-    Box(
-        modifier = Modifier
-            .clip(SquircleShape(8.dp))
-            .background(
-                if (enabled) {
-                    MiuixTheme.colorScheme.surfaceContainerHighest
-                } else {
-                    MiuixTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.35f)
-                },
-            )
-            .background(if (isHovered && enabled) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
-            .pointerHoverIcon(if (enabled) PointerIcon.Hand else PointerIcon.Default)
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null,
-                enabled = enabled,
-                onClick = onClick,
-            )
-            .padding(horizontal = 12.dp, vertical = 6.dp),
-    ) {
+    DesktopHoverPill(
+        onClick = onClick,
+        enabled = enabled,
+        shape = SquircleShape(8.dp),
+        containerColor = if (enabled) {
+            MiuixTheme.colorScheme.surfaceContainerHighest
+        } else {
+            MiuixTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.35f)
+        },
+        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+    ) { _ ->
         Text(
             text = text,
             color = if (enabled) {
