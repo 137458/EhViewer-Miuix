@@ -18,6 +18,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -119,20 +120,57 @@ fun DesktopCommentsSection(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .pointerHoverIcon(PointerIcon.Hand)
-                .clickable(enabled = !comments.isNullOrEmpty()) { expanded = !expanded },
+                .padding(vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            Text(
-                text = if (comments.isNullOrEmpty()) headerText else "$headerText (${comments!!.size})",
-                color = MiuixTheme.colorScheme.primary,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier.weight(1f),
-            )
-            if (!comments.isNullOrEmpty() && comments!!.size > 3) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                modifier = Modifier
+                    .clip(SquircleShape(4.dp))
+                    .clickable(enabled = !comments.isNullOrEmpty()) { expanded = !expanded }
+                    .padding(vertical = 2.dp),
+            ) {
                 Text(
-                    text = if (expanded) "-" else "+",
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    text = headerText,
+                    color = MiuixTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Medium,
                 )
+                if (!comments.isNullOrEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .clip(SquircleShape(4.dp))
+                            .background(MiuixTheme.colorScheme.primary.copy(alpha = 0.12f))
+                            .padding(horizontal = 6.dp, vertical = 2.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = "${comments.size}",
+                            color = MiuixTheme.colorScheme.primary,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium,
+                        )
+                    }
+                }
+            }
+            if (!comments.isNullOrEmpty() && comments.size > 3) {
+                Box(
+                    modifier = Modifier
+                        .clip(SquircleShape(6.dp))
+                        .background(MiuixTheme.colorScheme.surfaceContainerHighest)
+                        .pointerHoverIcon(PointerIcon.Hand)
+                        .clickable { expanded = !expanded }
+                        .padding(horizontal = 8.dp, vertical = 3.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = if (expanded) "▲" else "▼",
+                        color = MiuixTheme.colorScheme.primary,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium,
+                    )
+                }
             }
         }
         if (votingCommentId != null) {
@@ -221,15 +259,41 @@ fun DesktopCommentsSection(
                         }
                     }
                     if (loaded.size > display.size) {
-                        Text(
-                            text = moreText,
-                            color = MiuixTheme.colorScheme.primary,
-                            fontSize = 12.sp,
+                        Box(
                             modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(SquircleShape(8.dp))
+                                .background(MiuixTheme.colorScheme.surfaceContainerHighest)
                                 .pointerHoverIcon(PointerIcon.Hand)
                                 .clickable { expanded = true }
-                                .padding(top = 2.dp),
-                        )
+                                .padding(vertical = 8.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(
+                                text = "$moreText (${loaded.size})",
+                                color = MiuixTheme.colorScheme.primary,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium,
+                            )
+                        }
+                    } else if (expanded && loaded.size > 3) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(SquircleShape(8.dp))
+                                .background(MiuixTheme.colorScheme.surfaceContainerHighest)
+                                .pointerHoverIcon(PointerIcon.Hand)
+                                .clickable { expanded = false }
+                                .padding(vertical = 8.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(
+                                text = "▲",
+                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium,
+                            )
+                        }
                     }
                 }
             }
