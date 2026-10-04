@@ -1331,21 +1331,26 @@ fun LibraryScreen(
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text(
-                        text = cancelLabel,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    Box(
                         modifier = Modifier
+                            .clip(SquircleShape(8.dp))
                             .pointerHoverIcon(PointerIcon.Hand)
                             .clickable { showBatchDeleteConfirm = false }
-                            .padding(horizontal = 8.dp, vertical = 4.dp),
-                    )
-                    Text(
-                        text = deleteLabel,
-                        color = MiuixTheme.colorScheme.error,
-                        fontWeight = androidx.compose.ui.text.font.FontWeight.Medium,
+                            .padding(horizontal = 14.dp, vertical = 7.dp),
+                    ) {
+                        Text(
+                            text = cancelLabel,
+                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                            fontSize = 13.sp,
+                        )
+                    }
+                    Box(
                         modifier = Modifier
+                            .clip(SquircleShape(8.dp))
+                            .background(MiuixTheme.colorScheme.error.copy(alpha = 0.12f))
                             .pointerHoverIcon(PointerIcon.Hand)
                             .clickable {
                                 showBatchDeleteConfirm = false
@@ -1367,8 +1372,15 @@ fun LibraryScreen(
                                     showNotification(confirmTitle)
                                 }
                             }
-                            .padding(horizontal = 8.dp, vertical = 4.dp),
-                    )
+                            .padding(horizontal = 16.dp, vertical = 7.dp),
+                    ) {
+                        Text(
+                            text = deleteLabel,
+                            color = MiuixTheme.colorScheme.error,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium,
+                        )
+                    }
                 }
             }
         }
@@ -1423,27 +1435,41 @@ private fun OpenGalleryDialog(
         }
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.End,
+            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(
-                text = cancelLabel,
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+            Box(
                 modifier = Modifier
+                    .clip(SquircleShape(8.dp))
                     .pointerHoverIcon(PointerIcon.Hand)
                     .clickable(onClick = onDismiss)
-                    .padding(horizontal = 12.dp, vertical = 6.dp),
-            )
-            Text(
-                text = openLabel,
-                color = if (target != null) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    .padding(horizontal = 14.dp, vertical = 7.dp),
+            ) {
+                Text(
+                    text = cancelLabel,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    fontSize = 13.sp,
+                )
+            }
+            Box(
                 modifier = Modifier
-                    .pointerHoverIcon(PointerIcon.Hand)
-                    .clickable {
+                    .clip(SquircleShape(8.dp))
+                    .background(
+                        if (target != null) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.surfaceContainerHighest,
+                    )
+                    .then(if (target != null) Modifier.pointerHoverIcon(PointerIcon.Hand) else Modifier)
+                    .clickable(enabled = target != null) {
                         if (target != null) onOpen(target) else attempted = true
                     }
-                    .padding(horizontal = 12.dp, vertical = 6.dp),
-            )
+                    .padding(horizontal = 16.dp, vertical = 7.dp),
+            ) {
+                Text(
+                    text = openLabel,
+                    color = if (target != null) MiuixTheme.colorScheme.onPrimary else MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium,
+                )
+            }
         }
     }
 }
