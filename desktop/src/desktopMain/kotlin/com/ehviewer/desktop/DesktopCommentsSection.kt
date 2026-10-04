@@ -4,6 +4,7 @@ import androidx.compose.foundation.ContextMenuArea
 import androidx.compose.foundation.ContextMenuItem
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -173,10 +174,14 @@ fun DesktopCommentsSection(
                 }
             }
             if (!comments.isNullOrEmpty() && comments.size > 3) {
+                val arrowHover = remember { MutableInteractionSource() }
+                val arrowHovered by arrowHover.collectIsHoveredAsState()
                 Box(
                     modifier = Modifier
                         .clip(SquircleShape(6.dp))
                         .background(MiuixTheme.colorScheme.surfaceContainerHighest)
+                        .background(if (arrowHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
+                        .hoverable(arrowHover)
                         .pointerHoverIcon(PointerIcon.Hand)
                         .clickable { expanded = !expanded }
                         .padding(horizontal = 8.dp, vertical = 3.dp),
@@ -224,10 +229,14 @@ fun DesktopCommentsSection(
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     fontSize = 12.sp,
                 )
+                val retryHover = remember { MutableInteractionSource() }
+                val retryHovered by retryHover.collectIsHoveredAsState()
                 Box(
                     modifier = Modifier
                         .clip(SquircleShape(6.dp))
                         .background(MiuixTheme.colorScheme.surfaceContainerHighest)
+                        .background(if (retryHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
+                        .hoverable(retryHover)
                         .pointerHoverIcon(PointerIcon.Hand)
                         .clickable(onClick = onRetry)
                         .padding(horizontal = 10.dp, vertical = 4.dp),
@@ -277,11 +286,15 @@ fun DesktopCommentsSection(
                         }
                     }
                     if (loaded.size > display.size) {
+                        val moreHover = remember { MutableInteractionSource() }
+                        val moreHovered by moreHover.collectIsHoveredAsState()
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(SquircleShape(8.dp))
                                 .background(MiuixTheme.colorScheme.surfaceContainerHighest)
+                                .background(if (moreHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
+                                .hoverable(moreHover)
                                 .pointerHoverIcon(PointerIcon.Hand)
                                 .clickable { expanded = true }
                                 .padding(vertical = 8.dp),
@@ -295,11 +308,15 @@ fun DesktopCommentsSection(
                             )
                         }
                     } else if (expanded && loaded.size > 3) {
+                        val lessHover = remember { MutableInteractionSource() }
+                        val lessHovered by lessHover.collectIsHoveredAsState()
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(SquircleShape(8.dp))
                                 .background(MiuixTheme.colorScheme.surfaceContainerHighest)
+                                .background(if (lessHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
+                                .hoverable(lessHover)
                                 .pointerHoverIcon(PointerIcon.Hand)
                                 .clickable { expanded = false }
                                 .padding(vertical = 8.dp),
