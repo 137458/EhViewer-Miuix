@@ -650,7 +650,6 @@
     <string name="desktop_reader_prev_rtl">上一頁 ▶</string>
     <string name="desktop_reader_zoom">放大 / 縮小 / 重設縮放</string>
     <string name="desktop_removed_from_history">已從歷史紀錄移除</string>
-    <string name="desktop_restore_limit">會話恢復數量上限</string>
     <string name="desktop_save_dir_missing">儲存目錄不存在：%1$s</string>
     <string name="desktop_save_failed_reason">儲存失敗：%1$s</string>
     <string name="desktop_search_no_results">沒有搜尋結果</string>
