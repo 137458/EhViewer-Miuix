@@ -641,8 +641,9 @@ private fun GalleryDetailPageContent(
     var previewUrls by remember { mutableStateOf<List<String>>(emptyList()) }
     var isFavorite by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
-    // Ctrl+O 打开时是仅有 gid/token 的占位信息，hydrate 成功后整体替换触发重组
-    var currentGallery by remember { mutableStateOf(gallery) }
+    // Ctrl+O 打开时是仅有 gid/token 的占位信息，hydrate 成功后整体替换触发重组。
+    // 以 gallery 为 key：同分支复用（会话恢复返回上一层详情、详情页上拖拽打开新画廊）时不得沿用上一画廊的元数据
+    var currentGallery by remember(gallery) { mutableStateOf(gallery) }
     val addedToFavoriteText = stringResource(MR.strings.add_to_favorite_success)
     val removedFromFavoriteText = stringResource(MR.strings.remove_from_favorite_success)
     val noBrowserText = stringResource(MR.strings.no_browser_installed)
