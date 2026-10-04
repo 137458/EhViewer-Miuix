@@ -552,28 +552,42 @@ fun LibraryScreen(
                         }
                     }
 
-                    Text(
-                        text = stringResource(
-                            MR.strings.desktop_library_status_bar,
-                            EhCookieStore.hasSignedIn().toString(),
-                            downloadLabels.size,
-                            favoriteCount,
-                            DESKTOP_VERSION,
-                        ),
-                        fontSize = 12.sp,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    )
+                    Box(
+                        modifier = Modifier
+                            .clip(SquircleShape(4.dp))
+                            .background(MiuixTheme.colorScheme.surfaceContainerHighest)
+                            .padding(horizontal = 6.dp, vertical = 2.dp),
+                    ) {
+                        Text(
+                            text = stringResource(
+                                MR.strings.desktop_library_status_bar,
+                                EhCookieStore.hasSignedIn().toString(),
+                                downloadLabels.size,
+                                favoriteCount,
+                                DESKTOP_VERSION,
+                            ),
+                            fontSize = 12.sp,
+                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        )
+                    }
                 }
 
                 if (info != null) {
-                    Text(
-                        text = stringResource(MR.strings.desktop_update_available, info.tag),
-                        fontSize = 12.sp,
-                        color = MiuixTheme.colorScheme.primary,
+                    Box(
                         modifier = Modifier
+                            .clip(SquircleShape(4.dp))
+                            .background(MiuixTheme.colorScheme.primary.copy(alpha = 0.12f))
                             .pointerHoverIcon(PointerIcon.Hand)
-                            .clickable { DesktopBrowser.openUrl(info.pageUrl) },
-                    )
+                            .clickable { DesktopBrowser.openUrl(info.pageUrl) }
+                            .padding(horizontal = 6.dp, vertical = 2.dp),
+                    ) {
+                        Text(
+                            text = stringResource(MR.strings.desktop_update_available, info.tag),
+                            fontSize = 12.sp,
+                            color = MiuixTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Medium,
+                        )
+                    }
                 }
             }
             HorizontalDivider()
