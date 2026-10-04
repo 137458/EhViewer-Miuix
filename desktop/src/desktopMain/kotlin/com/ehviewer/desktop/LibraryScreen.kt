@@ -285,39 +285,47 @@ fun LibraryScreen(
 
     AutoExpireNotifications(notifications) { notifications = it }
 
+    // 刷新防重入：连按 F5/重试时忽略后续触发，避免并发 EH_HOME 请求交错污染连接状态
+    var refreshing by remember { mutableStateOf(false) }
     suspend fun refreshGalleries() {
-        connectionStatus = DesktopConnectionStatus.Checking
-        runCatching {
-            withContext(Dispatchers.IO) {
-                // 首页即画廊列表（未登录可用）；home.php 需登录，未登录会被弹到 bounce_login 导致解析失败
-                desktopGet("https://e-hentai.org/")
-            }
-        }.onSuccess { response ->
-            val status = response.status
-            connectionStatus = DesktopConnectionStatus.Online(status)
-            logcat("Connection", LogPriority.INFO) { "EH_HOME status=$status" }
-            if (response.status in 200..299) {
-                runCatching {
-                    // Rust 原生 HTML 解析移出主线程，避免大页面解析期间冻结 UI
-                    withContext(Dispatchers.IO) {
-                        parseGalleryList(response.toByteBuffer() ?: error("HTTP ${response.status}")).galleryInfoList.toList()
-                    }
-                }.onSuccess { list ->
-                    online = list
-                    logcat("Library", LogPriority.INFO) { "ONLINE_LIST parsed=${list.size}" }
-                }.onFailure { e ->
-                    logcat("Library", LogPriority.WARN) {
-                        "ONLINE_LIST parse failed: $e | loadErr=${GalleryListParserKtProbe.loadError} | " +
-                            "res=${GalleryListParserKtProbe.resAvailable} | cwd=${java.io.File(".").absolutePath}"
-                    }
-                    // 解析失败静默会让徽章显示在线但列表不更新，补可见反馈（保留旧列表）
-                    showNotification(onlineParseFailedText)
+        if (refreshing) return
+        refreshing = true
+        try {
+            connectionStatus = DesktopConnectionStatus.Checking
+            runCatching {
+                withContext(Dispatchers.IO) {
+                    // 首页即画廊列表（未登录可用）；home.php 需登录，未登录会被弹到 bounce_login 导致解析失败
+                    desktopGet("https://e-hentai.org/")
                 }
+            }.onSuccess { response ->
+                val status = response.status
+                connectionStatus = DesktopConnectionStatus.Online(status)
+                logcat("Connection", LogPriority.INFO) { "EH_HOME status=$status" }
+                if (response.status in 200..299) {
+                    runCatching {
+                        // Rust 原生 HTML 解析移出主线程，避免大页面解析期间冻结 UI
+                        withContext(Dispatchers.IO) {
+                            parseGalleryList(response.toByteBuffer() ?: error("HTTP ${response.status}")).galleryInfoList.toList()
+                        }
+                    }.onSuccess { list ->
+                        online = list
+                        logcat("Library", LogPriority.INFO) { "ONLINE_LIST parsed=${list.size}" }
+                    }.onFailure { e ->
+                        logcat("Library", LogPriority.WARN) {
+                            "ONLINE_LIST parse failed: $e | loadErr=${GalleryListParserKtProbe.loadError} | " +
+                                "res=${GalleryListParserKtProbe.resAvailable} | cwd=${java.io.File(".").absolutePath}"
+                        }
+                        // 解析失败静默会让徽章显示在线但列表不更新，补可见反馈（保留旧列表）
+                        showNotification(onlineParseFailedText)
+                    }
+                }
+            }.onFailure { e ->
+                val cleaned = DesktopConnectionState.cleanErrorMessage(e.message ?: e::class.simpleName, connectionErrorLabels)
+                connectionStatus = DesktopConnectionStatus.Offline(cleaned)
+                logcat("Connection", LogPriority.WARN) { "EH_HOME failed: $cleaned (raw: ${e.message})" }
             }
-        }.onFailure { e ->
-            val cleaned = DesktopConnectionState.cleanErrorMessage(e.message ?: e::class.simpleName, connectionErrorLabels)
-            connectionStatus = DesktopConnectionStatus.Offline(cleaned)
-            logcat("Connection", LogPriority.WARN) { "EH_HOME failed: $cleaned (raw: ${e.message})" }
+        } finally {
+            refreshing = false
         }
     }
 
