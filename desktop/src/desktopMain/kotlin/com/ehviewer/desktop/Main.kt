@@ -912,21 +912,13 @@ private fun GalleryDetailPageContent(
                     horizontalAlignment = Alignment.End,
                 ) {
                     notifications.forEach { notice ->
-                        val noticeInteraction = remember { MutableInteractionSource() }
-                        val noticeHovered by noticeInteraction.collectIsHoveredAsState()
-                        Box(
-                            modifier = Modifier
-                                .clip(SquircleShape(8.dp))
-                                .background(MiuixTheme.colorScheme.surfaceContainerHighest)
-                                .background(if (noticeHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
-                                .pointerHoverIcon(PointerIcon.Hand)
-                                .clickable(
-                                    interactionSource = noticeInteraction,
-                                    indication = null,
-                                ) {
-                                    notifications = DesktopNotificationManager.dismiss(notifications, notice.id)
-                                }
-                                .padding(horizontal = 12.dp, vertical = 8.dp),
+                        DesktopHoverPill(
+                            onClick = {
+                                notifications = DesktopNotificationManager.dismiss(notifications, notice.id)
+                            },
+                            shape = SquircleShape(8.dp),
+                            containerColor = MiuixTheme.colorScheme.surfaceContainerHighest,
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
                         ) {
                             Row(
                                 horizontalArrangement = Arrangement.spacedBy(10.dp),
