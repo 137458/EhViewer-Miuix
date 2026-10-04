@@ -104,6 +104,8 @@ fun ReaderScreen(
     var linksState by remember { mutableStateOf<String?>(null) }
     var imageUrl by remember { mutableStateOf<String?>(null) }
     var imageState by remember { mutableStateOf<String?>(null) }
+    // imageState 同时承载加载中与失败文案，error 标记区分二者以应用语义色
+    var imageStateIsError by remember { mutableStateOf(false) }
     var reloadKey by remember { mutableIntStateOf(0) }
     var showJumpInput by remember { mutableStateOf(false) }
     val jumpFieldState = rememberTextFieldState()
@@ -135,6 +137,7 @@ fun ReaderScreen(
 
     LaunchedEffect(gallery.gid) {
         imageState = loadingLinksText
+        imageStateIsError = false
         runCatching {
             withContext(Dispatchers.IO) {
                 val detail = desktopGet(galleryWebUrl(gallery.gid, gallery.token))
@@ -167,6 +170,7 @@ fun ReaderScreen(
     LaunchedEffect(currentLink, reloadKey) {
         val link = currentLink ?: return@LaunchedEffect
         imageState = loadingImageText
+        imageStateIsError = false
         imageUrl = null
         val outcome = withContext(Dispatchers.IO) {
             runCatching {
@@ -185,6 +189,7 @@ fun ReaderScreen(
                 imageState = cause.message
                     ?.let { message -> StringDesc.ResourceFormatted(MR.strings.desktop_reader_load_failed_reason, message).localized() }
                     ?: loadFailedText
+                imageStateIsError = true
             },
         )
     }
@@ -605,7 +610,11 @@ fun ReaderScreen(
                         ) {
                             Text(
                                 text = imageState!!,
-                                color = MiuixTheme.colorScheme.onSurface,
+                                color = if (imageStateIsError) {
+                                    MiuixTheme.colorScheme.error
+                                } else {
+                                    MiuixTheme.colorScheme.onSurface
+                                },
                                 fontSize = 13.sp,
                             )
                             val retryHover = remember { MutableInteractionSource() }
