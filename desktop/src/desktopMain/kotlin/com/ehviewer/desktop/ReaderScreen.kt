@@ -6,6 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -362,10 +363,14 @@ fun ReaderScreen(
                                     }
                                 },
                         )
+                        val jumpGoHover = remember { MutableInteractionSource() }
+                        val jumpGoHovered by jumpGoHover.collectIsHoveredAsState()
                         Box(
                             modifier = Modifier
                                 .clip(SquircleShape(6.dp))
                                 .background(MiuixTheme.colorScheme.primary)
+                                .background(if (jumpGoHovered) Color.White.copy(alpha = 0.12f) else Color.Transparent)
+                                .hoverable(jumpGoHover)
                                 .pointerHoverIcon(PointerIcon.Hand)
                                 .clickable { executeJump() }
                                 .padding(horizontal = 8.dp, vertical = 4.dp),
@@ -377,10 +382,14 @@ fun ReaderScreen(
                                 fontWeight = FontWeight.Medium,
                             )
                         }
+                        val jumpCancelHover = remember { MutableInteractionSource() }
+                        val jumpCancelHovered by jumpCancelHover.collectIsHoveredAsState()
                         Box(
                             modifier = Modifier
                                 .clip(SquircleShape(6.dp))
                                 .background(MiuixTheme.colorScheme.surfaceContainer)
+                                .background(if (jumpCancelHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
+                                .hoverable(jumpCancelHover)
                                 .pointerHoverIcon(PointerIcon.Hand)
                                 .clickable { showJumpInput = false }
                                 .padding(horizontal = 6.dp, vertical = 4.dp),
@@ -393,10 +402,14 @@ fun ReaderScreen(
                         }
                     }
                 }
+                val directionHover = remember { MutableInteractionSource() }
+                val directionHovered by directionHover.collectIsHoveredAsState()
                 Box(
                     modifier = Modifier
                         .clip(SquircleShape(6.dp))
                         .background(MiuixTheme.colorScheme.surfaceContainerHighest)
+                        .background(if (directionHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
+                        .hoverable(directionHover)
                         .pointerHoverIcon(PointerIcon.Hand)
                         .clickable {
                             DesktopSettings.readingDirection.value = readingDirection.toggle().name
@@ -584,10 +597,14 @@ fun ReaderScreen(
                                 color = MiuixTheme.colorScheme.onSurface,
                                 fontSize = 13.sp,
                             )
+                            val retryHover = remember { MutableInteractionSource() }
+                            val retryHovered by retryHover.collectIsHoveredAsState()
                             Box(
                                 modifier = Modifier
                                     .clip(SquircleShape(8.dp))
                                     .background(MiuixTheme.colorScheme.surfaceContainerHighest)
+                                    .background(if (retryHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
+                                    .hoverable(retryHover)
                                     .pointerHoverIcon(PointerIcon.Hand)
                                     .clickable { reloadKey += 1 }
                                     .padding(horizontal = 16.dp, vertical = 6.dp),
@@ -734,6 +751,8 @@ private fun ZoomBadge(
     val visible by remember { derivedStateOf { zoomStateState.value.scale != READER_MIN_SCALE } }
     if (!visible) return
     val text by remember { derivedStateOf { DesktopZoomController.formatZoomPercentage(zoomStateState.value.scale) } }
+    val badgeHover = remember { MutableInteractionSource() }
+    val badgeHovered by badgeHover.collectIsHoveredAsState()
     Text(
         text = text,
         color = Color.White.copy(alpha = 0.85f),
@@ -741,6 +760,8 @@ private fun ZoomBadge(
         fontWeight = FontWeight.Medium,
         modifier = modifier
             .background(Color.Black.copy(alpha = 0.55f), SquircleShape(6.dp))
+            .background(Color.White.copy(alpha = if (badgeHovered) 0.12f else 0f), SquircleShape(6.dp))
+            .hoverable(badgeHover)
             .pointerHoverIcon(PointerIcon.Hand)
             .clickable { onReset() }
             .padding(horizontal = 8.dp, vertical = 4.dp),
