@@ -7,6 +7,7 @@ import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -380,18 +381,11 @@ private fun SettingsFieldActionButton(
     fontWeight: FontWeight? = null,
     onClick: () -> Unit,
 ) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val isHovered by interactionSource.collectIsHoveredAsState()
-    Box(
-        modifier = Modifier
-            .clip(SquircleShape(6.dp))
-            .background(MiuixTheme.colorScheme.surfaceContainerHighest)
-            .background(if (isHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
-            .pointerHoverIcon(PointerIcon.Hand)
-            .clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
-            .padding(horizontal = 10.dp, vertical = 8.dp),
-        contentAlignment = Alignment.Center,
-    ) {
+    DesktopHoverPill(
+        onClick = onClick,
+        containerColor = MiuixTheme.colorScheme.surfaceContainerHighest,
+        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp),
+    ) { _ ->
         Text(
             text = text,
             color = textColor,
