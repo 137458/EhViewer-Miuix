@@ -40,4 +40,24 @@ class DesktopReadingProgressTest {
         val decoded = DesktopReadingProgress.decode(DesktopReadingProgress.encode(many))
         assertEquals(DesktopReadingProgress.MAX_ENTRIES, decoded.size)
     }
+
+    @Test
+    fun updateMovesEntryToFrontForLruEviction() {
+        // LRU 语义：最近阅读的条目（哪怕原在中部）移到最前，decode 截断时淘汰的是最旧条目而非最新写入
+        val progress = linkedMapOf(1L to 1, 2L to 2, 3L to 3)
+        val updated = DesktopReadingProgress.update(progress, 2L, 5)
+        assertEquals(2L, updated.keys.first())
+        assertEquals(5, updated[2L])
+    }
+
+    @Test
+    fun decodeKeepsNewestAndDropsOldest() {
+        // 51 条且最新(1L)在最前、最旧(51L)在末尾：截断后应保留 1L、淘汰 51L
+        val newestFirst = linkedMapOf(1L to 1)
+        for (gid in 2L..51L) newestFirst[gid] = gid.toInt()
+        val decoded = DesktopReadingProgress.decode(DesktopReadingProgress.encode(newestFirst))
+        assertEquals(DesktopReadingProgress.MAX_ENTRIES, decoded.size)
+        assertTrue(decoded.containsKey(1L))
+        assertTrue(!decoded.containsKey(51L))
+    }
 }

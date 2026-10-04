@@ -24,5 +24,6 @@ object DesktopReadingProgress {
             .toMap()
     }
 
-    fun update(progress: Map<Long, Int>, gid: Long, page: Int): Map<Long, Int> = progress + (gid to page.coerceAtLeast(1))
+    // LRU 语义：更新/新增的条目移到最前，配合 decode 的 take(MAX_ENTRIES) 淘汰最旧——否则写满后新画廊进度会被截断丢弃
+    fun update(progress: Map<Long, Int>, gid: Long, page: Int): Map<Long, Int> = mapOf(gid to page.coerceAtLeast(1)) + (progress - gid)
 }
