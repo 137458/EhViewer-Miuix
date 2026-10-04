@@ -320,13 +320,21 @@ fun LibraryScreen(
         }
     }
 
+    // 退出远程搜索态：清查询词与游标栈后恢复默认列表（✕ 按钮与空查询提交共用；游标残留会污染下一次搜索的回翻）
+    fun clearRemoteSearch() {
+        remoteSearchQuery = ""
+        cursorStack.clear()
+        cursorStack.add(null)
+        cursorIndex = 0
+        coroutineScope.launch { refreshGalleries() }
+    }
+
     // 搜索提交：Online Tab 走远程搜索（结果替换在线列表），空查询且处于远程搜索态则恢复默认列表，其余 Tab 维持本地过滤
     fun submitSearch(query: String) {
         val q = query.trim()
         if (q.isEmpty()) {
             if (currentTab == LibraryTab.Online && remoteSearchQuery.isNotBlank()) {
-                remoteSearchQuery = ""
-                coroutineScope.launch { refreshGalleries() }
+                clearRemoteSearch()
             }
             return
         }
@@ -903,13 +911,7 @@ fun LibraryScreen(
                                     .background(if (remoteResetHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
                                     .hoverable(remoteResetHover)
                                     .pointerHoverIcon(PointerIcon.Hand)
-                                    .clickable {
-                                        remoteSearchQuery = ""
-                                        cursorStack.clear()
-                                        cursorStack.add(null)
-                                        cursorIndex = 0
-                                        coroutineScope.launch { refreshGalleries() }
-                                    }
+                                    .clickable { clearRemoteSearch() }
                                     .padding(horizontal = 6.dp, vertical = 2.dp),
                                 contentAlignment = Alignment.Center,
                             ) {
