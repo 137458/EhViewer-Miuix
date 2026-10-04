@@ -1457,8 +1457,9 @@ fun LibraryScreen(
                         }
                     }
                 }
-                VerticalDivider()
+                // Master-Detail 惯例：分隔线与详情栏仅在选中条目时呈现，未选中不悬挂空栏
                 selected?.let { gallery ->
+                    VerticalDivider()
                     GalleryDetailPane(
                         gallery = gallery,
                         isFavorite = DesktopFavoritesState.isFavorite(favoriteGids, gallery.gid),
