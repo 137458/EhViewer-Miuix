@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -109,7 +110,8 @@ fun ReaderScreen(
         ?: gallery.gid.toString()
     val context = LocalPlatformContext.current
     // 阅读方向（RTL 日漫：右区上一页、← 为下一页）
-    val readingDirection = DesktopReadingDirection.fromPersisted(DesktopSettings.readingDirection.value)
+    val readingDirectionRaw by DesktopSettings.readingDirection.valueFlow().collectAsState(DesktopSettings.readingDirection.value)
+    val readingDirection = DesktopReadingDirection.fromPersisted(readingDirectionRaw)
     val clipboard = LocalClipboardManager.current
     val loadingLinksText = stringResource(MR.strings.desktop_reader_loading_links)
     val noLinksText = stringResource(MR.strings.desktop_reader_no_links)
@@ -375,6 +377,27 @@ fun ReaderScreen(
                         }
                     }
                 }
+                Box(
+                    modifier = Modifier
+                        .clip(SquircleShape(6.dp))
+                        .background(MiuixTheme.colorScheme.surfaceContainerHighest)
+                        .pointerHoverIcon(PointerIcon.Hand)
+                        .clickable {
+                            DesktopSettings.readingDirection.value = readingDirection.toggle().name
+                        }
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                ) {
+                    Text(
+                        text = if (readingDirection == DesktopReadingDirection.RTL) {
+                            stringResource(MR.strings.settings_reading_direction_rtl)
+                        } else {
+                            stringResource(MR.strings.settings_reading_direction_ltr)
+                        },
+                        color = MiuixTheme.colorScheme.primary,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                    )
+                }
                 IconButton(
                     onClick = onClose,
                     modifier = Modifier
@@ -451,6 +474,11 @@ fun ReaderScreen(
                 val prevPageLabel = stringResource(MR.strings.desktop_reader_prev)
                 val nextPageLabel = stringResource(MR.strings.desktop_reader_next)
                 val retryLabel = stringResource(MR.strings.action_retry)
+                val toggleReadingDirLabel = if (readingDirection == DesktopReadingDirection.RTL) {
+                    stringResource(MR.strings.settings_reading_direction_ltr)
+                } else {
+                    stringResource(MR.strings.settings_reading_direction_rtl)
+                }
                 val coroutineScope = rememberCoroutineScope()
                 when {
                     url != null -> ContextMenuArea(
@@ -463,6 +491,11 @@ fun ReaderScreen(
                                     add(ContextMenuItem(nextPageLabel) { page += 1 })
                                 }
                                 add(ContextMenuItem(retryLabel) { reloadKey += 1 })
+                                add(
+                                    ContextMenuItem(toggleReadingDirLabel) {
+                                        DesktopSettings.readingDirection.value = readingDirection.toggle().name
+                                    },
+                                )
                                 add(
                                     ContextMenuItem(copyLinkLabel) {
                                         clipboard.setText(AnnotatedString(url))

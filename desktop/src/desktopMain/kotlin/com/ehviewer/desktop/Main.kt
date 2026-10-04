@@ -482,14 +482,23 @@ private fun ShortcutsHelpDialog(onDismiss: () -> Unit) {
         onDismiss = onDismiss,
         cardWidth = 480.dp,
     ) {
+        Text(
+            text = stringResource(MR.strings.pref_category_general),
+            color = MiuixTheme.colorScheme.primary,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Medium,
+            modifier = Modifier.padding(bottom = 6.dp),
+        )
         DesktopShortcuts.defaultEntries().forEach { entry ->
             ShortcutEntryRow(entry)
         }
-        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+        HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp))
         Text(
             text = stringResource(MR.strings.desktop_shortcuts_reader_section),
-            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-            modifier = Modifier.padding(bottom = 4.dp),
+            color = MiuixTheme.colorScheme.primary,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Medium,
+            modifier = Modifier.padding(bottom = 6.dp),
         )
         DesktopShortcuts.readerEntries().forEach { entry ->
             ShortcutEntryRow(entry)
@@ -500,7 +509,10 @@ private fun ShortcutsHelpDialog(onDismiss: () -> Unit) {
 @Composable
 private fun ShortcutEntryRow(entry: DesktopShortcutEntry) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(SquircleShape(6.dp))
+            .padding(horizontal = 4.dp, vertical = 3.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -514,7 +526,7 @@ private fun ShortcutEntryRow(entry: DesktopShortcutEntry) {
                 text = entry.keyCombination,
                 color = MiuixTheme.colorScheme.primary,
                 fontSize = 12.sp,
-                fontWeight = FontWeight.Medium,
+                fontWeight = FontWeight.SemiBold,
             )
         }
         Text(
