@@ -2,6 +2,8 @@ package com.ehviewer.desktop
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,10 +26,12 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ehviewer.core.i18n.MR
@@ -277,24 +281,15 @@ private fun ProxySettingField() {
                 modifier = Modifier.weight(1f),
             )
             if (proxyState.text.isNotBlank()) {
-                Box(
-                    modifier = Modifier
-                        .clip(SquircleShape(6.dp))
-                        .background(MiuixTheme.colorScheme.surfaceContainerHighest)
-                        .pointerHoverIcon(PointerIcon.Hand)
-                        .clickable {
-                            proxyState.setTextAndPlaceCursorAtEnd("")
-                            DesktopSettings.proxy.value = null
-                        }
-                        .padding(horizontal = 10.dp, vertical = 8.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = "✕",
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        fontSize = 11.sp,
-                    )
-                }
+                SettingsFieldActionButton(
+                    text = "✕",
+                    fontSize = 11.sp,
+                    textColor = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    onClick = {
+                        proxyState.setTextAndPlaceCursorAtEnd("")
+                        DesktopSettings.proxy.value = null
+                    },
+                )
             }
         }
         if (proxyInvalid) {
@@ -338,36 +333,27 @@ private fun ImageSaveDirField() {
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 modifier = Modifier.weight(1f),
             )
-            Box(
-                modifier = Modifier
-                    .clip(SquircleShape(6.dp))
-                    .background(MiuixTheme.colorScheme.surfaceContainerHighest)
-                    .pointerHoverIcon(PointerIcon.Hand)
-                    .clickable {
-                        val chooser = javax.swing.JFileChooser().apply {
-                            fileSelectionMode = javax.swing.JFileChooser.DIRECTORIES_ONLY
-                            dialogTitle = "Select Download Directory"
-                            val current = DesktopSettings.imageSaveDir.value
-                            if (!current.isNullOrBlank()) {
-                                currentDirectory = java.io.File(current)
-                            }
-                        }
-                        if (chooser.showOpenDialog(null) == javax.swing.JFileChooser.APPROVE_OPTION) {
-                            val selected = chooser.selectedFile.absolutePath
-                            saveDirState.setTextAndPlaceCursorAtEnd(selected)
-                            DesktopSettings.imageSaveDir.value = selected
+            SettingsFieldActionButton(
+                text = "…",
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+                textColor = MiuixTheme.colorScheme.primary,
+                onClick = {
+                    val chooser = javax.swing.JFileChooser().apply {
+                        fileSelectionMode = javax.swing.JFileChooser.DIRECTORIES_ONLY
+                        dialogTitle = "Select Download Directory"
+                        val current = DesktopSettings.imageSaveDir.value
+                        if (!current.isNullOrBlank()) {
+                            currentDirectory = java.io.File(current)
                         }
                     }
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = "…",
-                    color = MiuixTheme.colorScheme.primary,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                )
-            }
+                    if (chooser.showOpenDialog(null) == javax.swing.JFileChooser.APPROVE_OPTION) {
+                        val selected = chooser.selectedFile.absolutePath
+                        saveDirState.setTextAndPlaceCursorAtEnd(selected)
+                        DesktopSettings.imageSaveDir.value = selected
+                    }
+                },
+            )
         }
         if (DesktopSettings.imageSaveDir.value.isNullOrBlank()) {
             Text(
@@ -377,5 +363,35 @@ private fun ImageSaveDirField() {
                 modifier = Modifier.padding(top = 2.dp),
             )
         }
+    }
+}
+
+// 设置字段行内操作胶囊（代理清空 / 目录选择）：悬停 primary 半透明衬底，与全局操作按钮 token 一致
+@Composable
+private fun SettingsFieldActionButton(
+    text: String,
+    fontSize: TextUnit,
+    textColor: Color,
+    fontWeight: FontWeight? = null,
+    onClick: () -> Unit,
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isHovered by interactionSource.collectIsHoveredAsState()
+    Box(
+        modifier = Modifier
+            .clip(SquircleShape(6.dp))
+            .background(MiuixTheme.colorScheme.surfaceContainerHighest)
+            .background(if (isHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
+            .pointerHoverIcon(PointerIcon.Hand)
+            .clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
+            .padding(horizontal = 10.dp, vertical = 8.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = text,
+            color = textColor,
+            fontSize = fontSize,
+            fontWeight = fontWeight,
+        )
     }
 }
