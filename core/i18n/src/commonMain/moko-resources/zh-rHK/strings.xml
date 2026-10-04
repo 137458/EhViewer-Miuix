@@ -524,6 +524,8 @@
     <string name="desktop_open_gallery_hint">畫廊連結或 GID/Token（Ctrl+V 貼上）</string>
     <string name="desktop_open_gallery_invalid_input">無效的畫廊連結或 GID/Token</string>
     <string name="desktop_open_gallery_title">開啟畫廊</string>
+    <string name="desktop_select_download_directory">選擇下載目錄</string>
+    <string name="desktop_download_dir_default">預設: %s</string>
     <string name="desktop_open_gallery_paste">貼上</string>
     <string name="desktop_drop_to_open">放開以開啟畫廊</string>
     <string name="desktop_reader_load_failed">畫廊載入失敗</string>

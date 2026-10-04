@@ -319,6 +319,7 @@ private fun ImageSaveDirField() {
             }
     }
     val defaultDir = remember { DesktopImageSaver.resolveSaveDir(null, System.getProperty("user.home")).toString() }
+    val chooserTitle = stringResource(MR.strings.desktop_select_download_directory)
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -345,7 +346,7 @@ private fun ImageSaveDirField() {
                 onClick = {
                     val chooser = javax.swing.JFileChooser().apply {
                         fileSelectionMode = javax.swing.JFileChooser.DIRECTORIES_ONLY
-                        dialogTitle = "Select Download Directory"
+                        dialogTitle = chooserTitle
                         val current = DesktopSettings.imageSaveDir.value
                         if (!current.isNullOrBlank()) {
                             currentDirectory = java.io.File(current)
@@ -361,7 +362,7 @@ private fun ImageSaveDirField() {
         }
         if (DesktopSettings.imageSaveDir.value.isNullOrBlank()) {
             Text(
-                text = "默认: $defaultDir",
+                text = stringResource(MR.strings.desktop_download_dir_default, defaultDir),
                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 fontSize = 11.sp,
                 modifier = Modifier.padding(top = 2.dp),

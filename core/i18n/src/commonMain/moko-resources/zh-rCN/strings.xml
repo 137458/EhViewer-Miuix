@@ -737,6 +737,8 @@
     <string name="settings_close_minimize_to_tray">最小化到系统托盘</string>
     <string name="tray_open_app">打开 EhViewer</string>
     <string name="desktop_open_gallery_title">打开画廊</string>
+    <string name="desktop_select_download_directory">选择下载目录</string>
+    <string name="desktop_download_dir_default">默认: %s</string>
     <string name="desktop_open_gallery_paste">粘贴</string>
     <string name="desktop_drop_to_open">松开以打开画廊</string>
     <string name="desktop_open_gallery_hint">画廊链接或 GID/Token（Ctrl+V 粘贴）</string>

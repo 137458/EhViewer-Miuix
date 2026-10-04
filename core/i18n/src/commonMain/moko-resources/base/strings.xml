@@ -663,6 +663,8 @@
     <string name="settings_close_minimize_to_tray">Minimize to system tray</string>
     <string name="tray_open_app">Open EhViewer</string>
     <string name="desktop_open_gallery_title">Open Gallery</string>
+    <string name="desktop_select_download_directory">Select Download Directory</string>
+    <string name="desktop_download_dir_default">Default: %s</string>
     <string name="desktop_open_gallery_paste">Paste</string>
     <string name="desktop_drop_to_open">Drop to open gallery</string>
     <string name="desktop_open_gallery_hint">Gallery URL or GID/Token (Ctrl+V to paste)</string>

@@ -639,6 +639,8 @@
     <string name="desktop_open_gallery_hint">画廊の URL または GID/Token（Ctrl+V で貼り付け）</string>
     <string name="desktop_open_gallery_invalid_input">無効な画廊の URL または GID/Token です</string>
     <string name="desktop_open_gallery_title">画廊を開く</string>
+    <string name="desktop_select_download_directory">ダウンロードディレクトリを選択</string>
+    <string name="desktop_download_dir_default">デフォルト: %s</string>
     <string name="desktop_open_gallery_paste">ペースト</string>
     <string name="desktop_drop_to_open">ドロップで画廊を開く</string>
     <string name="desktop_reader_load_failed">画廊の読み込みに失敗しました</string>
