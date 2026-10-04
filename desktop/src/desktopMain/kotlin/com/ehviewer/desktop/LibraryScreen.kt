@@ -1919,47 +1919,62 @@ internal fun GalleryDetailPane(
                 val imageState = remember(thumb) { DesktopImageStateController() }
                 val decodeErrorText = stringResource(MR.strings.decode_image_error)
                 val retryActionText = stringResource(MR.strings.action_retry)
+                val coverCopyLinkText = stringResource(MR.strings.copy_link)
+                val coverOpenBrowserText = stringResource(MR.strings.open_in_browser)
                 val coverHover = remember { MutableInteractionSource() }
                 val coverHovered by coverHover.collectIsHoveredAsState()
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp)
-                        .clip(SquircleShape(8.dp))
-                        .background(if (coverHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
-                        .hoverable(coverHover)
-                        .pointerHoverIcon(PointerIcon.Hand)
-                        .clickable {
-                            val allUrls = listOfNotNull(thumb) + (detailExtras?.detail?.previewList?.map { it.url } ?: emptyList())
-                            onPreviewCover?.invoke(thumb, allUrls)
-                        },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    key(thumb, imageState.retryCount) {
-                        AsyncImage(
-                            model = thumb,
-                            contentDescription = displayTitle,
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Fit,
-                            onLoading = { imageState.onLoading() },
-                            onSuccess = { imageState.onSuccess() },
-                            onError = { err -> imageState.onError(err.result.throwable.message) },
+                ContextMenuArea(
+                    items = {
+                        listOf(
+                            ContextMenuItem("$coverCopyLinkText: $thumb") {
+                                onCopy(thumb, coverCopyLinkText)
+                            },
+                            ContextMenuItem(coverOpenBrowserText) {
+                                DesktopBrowser.openUrl(thumb)
+                            },
                         )
-                    }
-                    if (imageState.canRetry) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(MiuixTheme.colorScheme.surfaceContainerHighest)
-                                .pointerHoverIcon(PointerIcon.Hand)
-                                .clickable { imageState.retry() },
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Text(
-                                text = "$decodeErrorText ($retryActionText)",
-                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                fontSize = 12.sp,
+                    },
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp)
+                            .clip(SquircleShape(8.dp))
+                            .background(if (coverHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
+                            .hoverable(coverHover)
+                            .pointerHoverIcon(PointerIcon.Hand)
+                            .clickable {
+                                val allUrls = listOfNotNull(thumb) + (detailExtras?.detail?.previewList?.map { it.url } ?: emptyList())
+                                onPreviewCover?.invoke(thumb, allUrls)
+                            },
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        key(thumb, imageState.retryCount) {
+                            AsyncImage(
+                                model = thumb,
+                                contentDescription = displayTitle,
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Fit,
+                                onLoading = { imageState.onLoading() },
+                                onSuccess = { imageState.onSuccess() },
+                                onError = { err -> imageState.onError(err.result.throwable.message) },
                             )
+                        }
+                        if (imageState.canRetry) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(MiuixTheme.colorScheme.surfaceContainerHighest)
+                                    .pointerHoverIcon(PointerIcon.Hand)
+                                    .clickable { imageState.retry() },
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    text = "$decodeErrorText ($retryActionText)",
+                                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                    fontSize = 12.sp,
+                                )
+                            }
                         }
                     }
                 }

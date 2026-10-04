@@ -441,21 +441,36 @@ private fun CommentItem(
         )
 
         // 评论内链接点击即经系统浏览器打开（链接本体仍随右键菜单可复制），悬停下划线提示可点击
+        val copyLinkText = stringResource(MR.strings.copy_link)
+        val openInBrowserText = stringResource(MR.strings.open_in_browser)
         remember(comment.comment) { DesktopCommentsModel.extractUrls(comment.comment) }.forEach { url ->
-            val urlHover = remember { MutableInteractionSource() }
-            val urlHovered by urlHover.collectIsHoveredAsState()
-            Text(
-                text = url,
-                color = MiuixTheme.colorScheme.primary,
-                fontSize = 12.sp,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                textDecoration = if (urlHovered) TextDecoration.Underline else null,
-                modifier = Modifier
-                    .hoverable(urlHover)
-                    .pointerHoverIcon(PointerIcon.Hand)
-                    .clickable { DesktopBrowser.openUrl(url) },
-            )
+            ContextMenuArea(
+                items = {
+                    listOf(
+                        ContextMenuItem("$copyLinkText: $url") {
+                            clipboard.setText(AnnotatedString(url))
+                        },
+                        ContextMenuItem(openInBrowserText) {
+                            DesktopBrowser.openUrl(url)
+                        },
+                    )
+                },
+            ) {
+                val urlHover = remember { MutableInteractionSource() }
+                val urlHovered by urlHover.collectIsHoveredAsState()
+                Text(
+                    text = url,
+                    color = MiuixTheme.colorScheme.primary,
+                    fontSize = 12.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    textDecoration = if (urlHovered) TextDecoration.Underline else null,
+                    modifier = Modifier
+                        .hoverable(urlHover)
+                        .pointerHoverIcon(PointerIcon.Hand)
+                        .clickable { DesktopBrowser.openUrl(url) },
+                )
+            }
         }
 
         // 单条评论底部操作栏：投票组（▲ / 得分徽章 / ▼）与快速复制按钮
