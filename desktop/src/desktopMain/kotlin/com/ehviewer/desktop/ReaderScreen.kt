@@ -566,37 +566,53 @@ fun ReaderScreen(
                             contentScale = ContentScale.Fit,
                         )
                     }
-                    imageState != null -> Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(10.dp),
-                        modifier = Modifier.padding(16.dp),
+                    imageState != null -> Box(
+                        modifier = Modifier
+                            .clip(SquircleShape(12.dp))
+                            .background(MiuixTheme.colorScheme.surface.copy(alpha = 0.85f))
+                            .padding(horizontal = 24.dp, vertical = 20.dp),
+                        contentAlignment = Alignment.Center,
                     ) {
-                        Text(
-                            text = imageState!!,
-                            color = Color.White.copy(alpha = 0.7f),
-                            fontSize = 13.sp,
-                        )
-                        Box(
-                            modifier = Modifier
-                                .clip(SquircleShape(8.dp))
-                                .background(MiuixTheme.colorScheme.surfaceContainerHighest)
-                                .pointerHoverIcon(PointerIcon.Hand)
-                                .clickable { reloadKey += 1 }
-                                .padding(horizontal = 16.dp, vertical = 6.dp),
-                            contentAlignment = Alignment.Center,
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
                             Text(
-                                text = stringResource(MR.strings.action_retry),
-                                color = MiuixTheme.colorScheme.primary,
+                                text = imageState!!,
+                                color = MiuixTheme.colorScheme.onSurface,
                                 fontSize = 13.sp,
-                                fontWeight = FontWeight.Medium,
                             )
+                            Box(
+                                modifier = Modifier
+                                    .clip(SquircleShape(8.dp))
+                                    .background(MiuixTheme.colorScheme.surfaceContainerHighest)
+                                    .pointerHoverIcon(PointerIcon.Hand)
+                                    .clickable { reloadKey += 1 }
+                                    .padding(horizontal = 16.dp, vertical = 6.dp),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    text = stringResource(MR.strings.action_retry),
+                                    color = MiuixTheme.colorScheme.primary,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Medium,
+                                )
+                            }
                         }
                     }
-                    else -> Text(
-                        text = loadingText,
-                        color = Color.White.copy(alpha = 0.5f),
-                    )
+                    else -> Box(
+                        modifier = Modifier
+                            .clip(SquircleShape(8.dp))
+                            .background(MiuixTheme.colorScheme.surface.copy(alpha = 0.75f))
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = loadingText,
+                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                            fontSize = 13.sp,
+                        )
+                    }
                 }
             }
 

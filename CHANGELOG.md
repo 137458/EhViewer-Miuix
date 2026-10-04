@@ -2,6 +2,8 @@
 
 ### 新增
 
+- 支持了桌面端阅读器图片加载等待与加载失败占位微交互 Miuix 规范化：错误提示与重试按钮接入 SquircleShape(12.dp) 超椭圆半透明表面卡片（Miuix surface + onSurface 配色），加载中文本升级为 SquircleShape(8.dp) 悬浮徽章，强化暗色/多画廊背景下的视觉辨识度与层级规范。
+
 - 支持了桌面端模态弹窗（DesktopModalCard）顶栏通栏分割与视觉边界对齐：标题行与内容区解耦独立内边距，HorizontalDivider 贯通全宽卡片轮廓并采用 outline.copy(alpha = 0.15f) 动态柔和分割线，优化明暗主题下的视觉沉浸度。
 
 - 支持了桌面端在线浏览搜索结果顶栏分页控制与列表快速返回顶部悬浮微交互胶囊：在线列表上一页与下一页按钮统一 Miuix Squircle 超椭圆禁用规范（半透明 surfaceContainerHighest 衬底 + Default 默认光标），页码指示器升级为微圆角药丸徽章，长列表滚动后在右下角悬浮显示一键平滑返回顶部胶囊按钮（↑）。
