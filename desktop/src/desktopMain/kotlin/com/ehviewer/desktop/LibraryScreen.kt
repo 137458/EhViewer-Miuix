@@ -198,6 +198,7 @@ fun LibraryScreen(
     var showBatchDeleteConfirm by remember { mutableStateOf(false) }
     val clipboard = LocalClipboardManager.current
     val coroutineScope = rememberCoroutineScope()
+    val searchFocusRequester = remember { FocusRequester() }
     val historyClearedMessage = stringResource(MR.strings.search_history_cleared)
     val checkingConnectionText = stringResource(MR.strings.desktop_status_checking)
     val connectingServerText = stringResource(MR.strings.desktop_online_connecting)
@@ -443,6 +444,10 @@ fun LibraryScreen(
                                 coroutineScope.launch { refreshGalleries() }
                                 true
                             }
+                            DesktopKeyAction.FocusSearch -> {
+                                searchFocusRequester.requestFocus()
+                                true
+                            }
                             DesktopKeyAction.SelectNext -> {
                                 val next = DesktopNavigation.nextSelection(filteredItems, selected)
                                 if (next != null) {
@@ -685,6 +690,7 @@ fun LibraryScreen(
                             },
                             modifier = Modifier
                                 .weight(1f)
+                                .focusRequester(searchFocusRequester)
                                 .onPreviewKeyEvent { event ->
                                     if (event.type == KeyEventType.KeyDown && (event.key == Key.Enter || event.key == Key.NumPadEnter)) {
                                         if (searchQuery.isNotBlank()) {

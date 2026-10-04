@@ -365,4 +365,21 @@ class DesktopKeyActionTest {
         assertTrue(entry != null)
         assertEquals(MR.strings.shortcut_multi_select, entry.descriptionRes)
     }
+
+    @Test
+    fun ctrlFResolvesToFocusSearch() {
+        // Ctrl+F 聚焦库搜索框：KeyDown 消费，KeyUp 与无 Ctrl 的 F（输入字符场景）不消费
+        assertEquals(
+            DesktopKeyAction.FocusSearch,
+            resolveKeyAction(isKeyDown = true, isCtrlPressed = true, key = Key.F),
+        )
+        assertEquals(
+            DesktopKeyAction.None,
+            resolveKeyAction(isKeyDown = false, isCtrlPressed = true, key = Key.F),
+        )
+        assertEquals(
+            DesktopKeyAction.None,
+            resolveKeyAction(isKeyDown = true, isCtrlPressed = false, key = Key.F),
+        )
+    }
 }
