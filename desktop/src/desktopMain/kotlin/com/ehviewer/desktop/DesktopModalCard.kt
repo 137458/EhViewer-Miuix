@@ -10,10 +10,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -21,21 +23,25 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.ehviewer.core.ui.component.SquircleShape
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-// 桌面模态对话框统一骨架：半透明遮罩点击关闭 + Miuix surface 圆角卡片 + 标题行与关闭钮。
+// 桌面模态对话框统一骨架：半透明遮罩点击关闭 + Miuix surface 超椭圆 Squircle 卡片 + 标题行与关闭钮。
 // 内容区限高滚动：卡片整体不超过窗口，标题与关闭钮恒可见，调用方内容再多也无需自处理溢出。
-// 全屏型预览（CoverPreviewDialog 的 0.85 黑底看图场景）不套用本骨架。
 @Composable
 fun DesktopModalCard(
     title: String,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
-    cardWidth: Dp = 420.dp,
+    cardWidth: Dp = 440.dp,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Box(
@@ -48,7 +54,7 @@ fun DesktopModalCard(
         Column(
             modifier = modifier
                 .width(cardWidth)
-                .clip(RoundedCornerShape(12.dp))
+                .clip(SquircleShape(16.dp))
                 .background(MiuixTheme.colorScheme.surface)
                 .clickable(enabled = false) {}
                 .padding(20.dp),
@@ -61,15 +67,22 @@ fun DesktopModalCard(
             ) {
                 Text(
                     text = title,
-                    color = MiuixTheme.colorScheme.primary,
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MiuixTheme.colorScheme.onSurface,
                 )
-                Text(
-                    text = "✕",
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                IconButton(
+                    onClick = onDismiss,
                     modifier = Modifier
-                        .pointerHoverIcon(PointerIcon.Hand)
-                        .clickable(onClick = onDismiss),
-                )
+                        .size(32.dp)
+                        .pointerHoverIcon(PointerIcon.Hand),
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = null,
+                        tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    )
+                }
             }
             HorizontalDivider()
             Column(

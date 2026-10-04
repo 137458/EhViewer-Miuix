@@ -37,6 +37,7 @@ import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -51,6 +52,7 @@ import com.ehviewer.core.database.model.HistoryInfo
 import com.ehviewer.core.database.model.LocalFavoriteInfo
 import com.ehviewer.core.i18n.MR
 import com.ehviewer.core.model.BaseGalleryInfo
+import com.ehviewer.core.ui.component.SquircleShape
 import com.ehviewer.core.ui.theme.rememberMiuixThemeController
 import com.ehviewer.core.util.DesktopFileLog
 import com.ehviewer.core.util.LogPriority
@@ -412,39 +414,52 @@ private fun AboutDialog(onDismiss: () -> Unit) {
     DesktopModalCard(
         title = stringResource(MR.strings.menu_about),
         onDismiss = onDismiss,
+        cardWidth = 460.dp,
     ) {
-        Text(
-            text = "EhViewer-Miuix",
-            color = MiuixTheme.colorScheme.primary,
-            fontWeight = androidx.compose.ui.text.font.FontWeight.Medium,
-        )
-        Text(
-            text = versionText,
-            color = MiuixTheme.colorScheme.onSurface,
-        )
-        val releasesUrl = RELEASES_PAGE_URL
-        Text(
-            text = releasesUrl,
-            color = MiuixTheme.colorScheme.primary,
-            fontSize = 12.sp,
-            modifier = Modifier
-                .pointerHoverIcon(PointerIcon.Hand)
-                .clickable { DesktopBrowser.openUrl(releasesUrl) },
-        )
-        // 诊断入口：日志文件路径展示（点击复制路径），与桌面日志落盘配套
-        val clipboard = LocalClipboardManager.current
-        val logLabel = stringResource(MR.strings.desktop_about_log)
-        DesktopFileLog.defaultFile()?.let { logPath ->
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
             Text(
-                text = "$logLabel: $logPath",
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                fontSize = 12.sp,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier
-                    .pointerHoverIcon(PointerIcon.Hand)
-                    .clickable { clipboard.setText(AnnotatedString(logPath.toString())) },
+                text = "EhViewer-Miuix",
+                color = MiuixTheme.colorScheme.primary,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.SemiBold,
             )
+            Text(
+                text = versionText,
+                color = MiuixTheme.colorScheme.onSurface,
+                fontSize = 13.sp,
+            )
+            val releasesUrl = RELEASES_PAGE_URL
+            Text(
+                text = releasesUrl,
+                color = MiuixTheme.colorScheme.primary,
+                fontSize = 12.sp,
+                modifier = Modifier
+                    .clip(SquircleShape(6.dp))
+                    .background(MiuixTheme.colorScheme.surfaceContainerHighest)
+                    .pointerHoverIcon(PointerIcon.Hand)
+                    .clickable { DesktopBrowser.openUrl(releasesUrl) }
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
+            )
+            val clipboard = LocalClipboardManager.current
+            val logLabel = stringResource(MR.strings.desktop_about_log)
+            DesktopFileLog.defaultFile()?.let { logPath ->
+                Text(
+                    text = "$logLabel: $logPath",
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    fontSize = 12.sp,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier
+                        .clip(SquircleShape(6.dp))
+                        .background(MiuixTheme.colorScheme.surfaceContainerHighest)
+                        .pointerHoverIcon(PointerIcon.Hand)
+                        .clickable { clipboard.setText(AnnotatedString(logPath.toString())) }
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                )
+            }
         }
     }
 }
@@ -454,6 +469,7 @@ private fun ShortcutsHelpDialog(onDismiss: () -> Unit) {
     DesktopModalCard(
         title = stringResource(MR.strings.menu_keyboard_shortcuts),
         onDismiss = onDismiss,
+        cardWidth = 480.dp,
     ) {
         DesktopShortcuts.defaultEntries().forEach { entry ->
             ShortcutEntryRow(entry)
@@ -473,17 +489,27 @@ private fun ShortcutsHelpDialog(onDismiss: () -> Unit) {
 @Composable
 private fun ShortcutEntryRow(entry: DesktopShortcutEntry) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            text = entry.keyCombination,
-            color = MiuixTheme.colorScheme.primary,
-        )
+        Box(
+            modifier = Modifier
+                .clip(SquircleShape(6.dp))
+                .background(MiuixTheme.colorScheme.surfaceContainerHighest)
+                .padding(horizontal = 8.dp, vertical = 3.dp),
+        ) {
+            Text(
+                text = entry.keyCombination,
+                color = MiuixTheme.colorScheme.primary,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium,
+            )
+        }
         Text(
             text = stringResource(entry.descriptionRes),
             color = MiuixTheme.colorScheme.onSurface,
+            fontSize = 13.sp,
         )
     }
 }
