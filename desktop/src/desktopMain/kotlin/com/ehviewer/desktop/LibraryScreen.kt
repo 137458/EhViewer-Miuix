@@ -1681,8 +1681,30 @@ internal fun GalleryDetailPane(
             HorizontalDivider()
             DetailRow(label = stringResource(MR.strings.key_gid), value = gallery.gid.toString(), onCopy = onCopy)
             DetailRow(label = stringResource(MR.strings.key_token), value = gallery.token, onCopy = onCopy)
-            DetailRow(label = stringResource(MR.strings.key_uploader), value = gallery.uploader.orEmpty().ifEmpty { "-" }, onCopy = onCopy)
-            DetailRow(label = stringResource(MR.strings.key_category), value = DesktopCategories.displayName(gallery.category), onCopy = onCopy)
+            val uploaderName = gallery.uploader.orEmpty().ifEmpty { "-" }
+            DetailRow(
+                label = stringResource(MR.strings.key_uploader),
+                value = uploaderName,
+                onCopy = onCopy,
+                actionText = if (onSearchTag != null && uploaderName != "-") stringResource(MR.strings.keyword_search) else null,
+                onAction = if (onSearchTag != null && uploaderName != "-") {
+                    { onSearchTag("uploader:\"$uploaderName\"") }
+                } else {
+                    null
+                },
+            )
+            val categoryName = DesktopCategories.displayName(gallery.category)
+            DetailRow(
+                label = stringResource(MR.strings.key_category),
+                value = categoryName,
+                onCopy = onCopy,
+                actionText = if (onSearchTag != null && gallery.category != 0) stringResource(MR.strings.keyword_search) else null,
+                onAction = if (onSearchTag != null && gallery.category != 0) {
+                    { onSearchTag("category:\"$categoryName\"") }
+                } else {
+                    null
+                },
+            )
             DetailRow(label = stringResource(MR.strings.key_pages), value = gallery.pages.toString(), onCopy = onCopy)
             DetailRow(
                 label = stringResource(MR.strings.key_rating),
@@ -1739,14 +1761,17 @@ internal fun GalleryDetailPane(
                 val grouped = remember(tags) { DesktopTagFormatter.groupTags(tags.toList()) }
                 if (grouped.isNotEmpty()) {
                     val tagLabel = stringResource(MR.strings.search_sft)
+                    val copyTagText = stringResource(MR.strings.action_copy)
+                    val searchTagText = stringResource(MR.strings.keyword_search)
                     Column(
                         modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
-                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         Text(
                             text = "$tagLabel (${DesktopTagFormatter.splitTags(tags.toList()).size})",
-                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                            fontSize = 12.sp,
+                            color = MiuixTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Medium,
+                            fontSize = 13.sp,
                         )
                         grouped.forEach { (namespace, tagList) ->
                             Row(
@@ -1754,39 +1779,63 @@ internal fun GalleryDetailPane(
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                                 verticalAlignment = Alignment.Top,
                             ) {
-                                Text(
-                                    text = "$namespace:",
-                                    color = MiuixTheme.colorScheme.primary,
-                                    fontSize = 12.sp,
-                                    modifier = Modifier.width(60.dp).padding(top = 2.dp),
-                                )
+                                Box(
+                                    modifier = Modifier
+                                        .clip(SquircleShape(6.dp))
+                                        .background(MiuixTheme.colorScheme.primary.copy(alpha = 0.12f))
+                                        .padding(horizontal = 8.dp, vertical = 3.dp),
+                                ) {
+                                    Text(
+                                        text = namespace,
+                                        color = MiuixTheme.colorScheme.primary,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                    )
+                                }
                                 FlowRow(
                                     modifier = Modifier.weight(1f),
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                    verticalArrangement = Arrangement.spacedBy(6.dp),
                                 ) {
                                     tagList.forEach { tagName ->
                                         val fullTag = DesktopTagFormatter.formatTagQuery(namespace, tagName)
-                                        Box(
-                                            modifier = Modifier
-                                                .clip(SquircleShape(4.dp))
-                                                .background(MiuixTheme.colorScheme.surfaceContainerHighest)
-                                                .pointerHoverIcon(PointerIcon.Hand)
-                                                .clickable {
-                                                    if (onSearchTag != null) {
-                                                        onSearchTag(fullTag)
-                                                    } else {
+                                        ContextMenuArea(
+                                            items = {
+                                                listOf(
+                                                    ContextMenuItem("$searchTagText: $fullTag") {
+                                                        if (onSearchTag != null) {
+                                                            onSearchTag(fullTag)
+                                                        } else {
+                                                            onCopy(fullTag, tagLabel)
+                                                        }
+                                                    },
+                                                    ContextMenuItem("$copyTagText: $fullTag") {
                                                         onCopy(fullTag, tagLabel)
-                                                    }
-                                                }
-                                                .padding(horizontal = 6.dp, vertical = 2.dp),
+                                                    },
+                                                )
+                                            },
                                         ) {
-                                            Text(
-                                                text = tagName,
-                                                fontSize = 11.sp,
-                                                color = MiuixTheme.colorScheme.onBackground,
-                                                maxLines = 1,
-                                            )
+                                            Box(
+                                                modifier = Modifier
+                                                    .clip(SquircleShape(6.dp))
+                                                    .background(MiuixTheme.colorScheme.surfaceContainerHighest)
+                                                    .pointerHoverIcon(PointerIcon.Hand)
+                                                    .clickable {
+                                                        if (onSearchTag != null) {
+                                                            onSearchTag(fullTag)
+                                                        } else {
+                                                            onCopy(fullTag, tagLabel)
+                                                        }
+                                                    }
+                                                    .padding(horizontal = 8.dp, vertical = 3.dp),
+                                            ) {
+                                                Text(
+                                                    text = tagName,
+                                                    fontSize = 11.sp,
+                                                    color = MiuixTheme.colorScheme.onSurface,
+                                                    maxLines = 1,
+                                                )
+                                            }
                                         }
                                     }
                                 }
