@@ -2114,51 +2114,48 @@ private fun DetailRow(
             extraContent()
         }
         if (actionText != null && onAction != null) {
-            Box(
-                modifier = Modifier
-                    .clip(SquircleShape(6.dp))
-                    .background(MiuixTheme.colorScheme.surfaceContainerHighest)
-                    .pointerHoverIcon(PointerIcon.Hand)
-                    .clickable { onAction() }
-                    .padding(horizontal = 8.dp, vertical = 3.dp),
-            ) {
-                Text(
-                    text = actionText,
-                    color = MiuixTheme.colorScheme.primary,
-                    fontSize = 12.sp,
-                )
-            }
-        }
-        if (onOpen != null) {
-            Box(
-                modifier = Modifier
-                    .clip(SquircleShape(6.dp))
-                    .background(MiuixTheme.colorScheme.surfaceContainerHighest)
-                    .pointerHoverIcon(PointerIcon.Hand)
-                    .clickable { onOpen() }
-                    .padding(horizontal = 8.dp, vertical = 3.dp),
-            ) {
-                Text(
-                    text = stringResource(MR.strings.open_in_browser),
-                    color = MiuixTheme.colorScheme.primary,
-                    fontSize = 12.sp,
-                )
-            }
-        }
-        Box(
-            modifier = Modifier
-                .clip(SquircleShape(6.dp))
-                .background(MiuixTheme.colorScheme.surfaceContainerHighest)
-                .pointerHoverIcon(PointerIcon.Hand)
-                .clickable { onCopy(value, label) }
-                .padding(horizontal = 8.dp, vertical = 3.dp),
-        ) {
-            Text(
-                text = stringResource(MR.strings.action_copy),
-                color = MiuixTheme.colorScheme.primary,
-                fontSize = 12.sp,
+            DetailRowActionPill(
+                text = actionText,
+                onClick = { onAction() },
             )
         }
+        if (onOpen != null) {
+            DetailRowActionPill(
+                text = stringResource(MR.strings.open_in_browser),
+                onClick = { onOpen() },
+            )
+        }
+        DetailRowActionPill(
+            text = stringResource(MR.strings.action_copy),
+            onClick = { onCopy(value, label) },
+        )
+    }
+}
+
+// 详情面板信息行内联操作胶囊：悬停 primary 半透明叠加，与全局操作按钮 token 一致
+@Composable
+private fun DetailRowActionPill(
+    text: String,
+    onClick: () -> Unit,
+) {
+    val pillHover = remember { MutableInteractionSource() }
+    val pillHovered by pillHover.collectIsHoveredAsState()
+    Box(
+        modifier = Modifier
+            .clip(SquircleShape(6.dp))
+            .background(MiuixTheme.colorScheme.surfaceContainerHighest)
+            .background(if (pillHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
+            .hoverable(pillHover)
+            .pointerHoverIcon(PointerIcon.Hand)
+            .clickable { onClick() }
+            .padding(horizontal = 8.dp, vertical = 3.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = text,
+            color = MiuixTheme.colorScheme.primary,
+            fontSize = 12.sp,
+        )
     }
 }
 
