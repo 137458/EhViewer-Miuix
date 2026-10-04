@@ -646,9 +646,11 @@
     <string name="desktop_reader_loading_image">画像を読み込み中…</string>
     <string name="desktop_reader_loading_links">ページリンクを取得中…</string>
     <string name="desktop_reader_next">次のページ ▶</string>
+    <string name="desktop_reader_next_rtl">◀ 次のページ</string>
     <string name="desktop_reader_no_links">ページリンクが見つかりません（ログインが必要、または解析に失敗）</string>
     <string name="desktop_reader_page_progress">%1$d / %2$d ページ</string>
     <string name="desktop_reader_prev">◀ 前のページ</string>
+    <string name="desktop_reader_prev_rtl">前のページ ▶</string>
     <string name="desktop_reader_zoom">拡大 / 縮小 / リセット</string>
     <string name="desktop_removed_from_history">履歴から削除しました</string>
     <string name="desktop_restore_limit">セッション復元数の上限</string>

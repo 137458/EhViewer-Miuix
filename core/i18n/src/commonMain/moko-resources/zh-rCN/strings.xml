@@ -764,7 +764,9 @@
     <string name="settings_reading_direction_ltr">从左到右</string>
     <string name="settings_reading_direction_rtl">从右到左（日漫）</string>
     <string name="desktop_reader_prev">◀ 上一页</string>
+    <string name="desktop_reader_prev_rtl">上一页 ▶</string>
     <string name="desktop_reader_next">下一页 ▶</string>
+    <string name="desktop_reader_next_rtl">◀ 下一页</string>
     <string name="desktop_online_page_n">第 %1$d 页</string>
     <string name="desktop_online_next">下一页 ▶</string>
     <string name="desktop_notification_opening_gallery">正在打开画廊</string>

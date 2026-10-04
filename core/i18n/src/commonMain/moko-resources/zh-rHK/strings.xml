@@ -529,9 +529,11 @@
     <string name="desktop_reader_loading_image">正在載入圖片…</string>
     <string name="desktop_reader_loading_links">正在取得頁面連結…</string>
     <string name="desktop_reader_next">下一頁 ▶</string>
+    <string name="desktop_reader_next_rtl">◀ 下一頁</string>
     <string name="desktop_reader_no_links">找不到頁面連結（需要登入或解析失敗）</string>
     <string name="desktop_reader_page_progress">第 %1$d / %2$d 頁</string>
     <string name="desktop_reader_prev">◀ 上一頁</string>
+    <string name="desktop_reader_prev_rtl">上一頁 ▶</string>
     <string name="desktop_reader_zoom">放大 / 縮小 / 重設縮放</string>
     <string name="desktop_removed_from_history">已從歷史紀錄移除</string>
     <string name="desktop_restore_limit">會話恢復數量上限</string>

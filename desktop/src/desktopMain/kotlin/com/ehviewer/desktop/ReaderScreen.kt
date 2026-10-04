@@ -118,6 +118,14 @@ fun ReaderScreen(
     // 阅读方向（RTL 日漫：右区上一页、← 为下一页）
     val readingDirectionRaw by DesktopSettings.readingDirection.valueFlow().collectAsState(DesktopSettings.readingDirection.value)
     val readingDirection = DesktopReadingDirection.fromPersisted(readingDirectionRaw)
+    // RTL 阅读推进向左：上一页为 page+1、下一页为 page-1，边界与箭头随方向镜像（增量复用已测 pageDeltaForNav）
+    val isRtl = readingDirection == DesktopReadingDirection.RTL
+    val prevDelta = readingDirection.pageDeltaForNav(DesktopReaderNav.RelativeBackward)
+    val nextDelta = readingDirection.pageDeltaForNav(DesktopReaderNav.RelativeForward)
+    val canPrev = if (isRtl) page < pageLinks.size else page > 1
+    val canNext = if (isRtl) page > 1 else page < pageLinks.size
+    val prevPageLabel = stringResource(if (isRtl) MR.strings.desktop_reader_prev_rtl else MR.strings.desktop_reader_prev)
+    val nextPageLabel = stringResource(if (isRtl) MR.strings.desktop_reader_next_rtl else MR.strings.desktop_reader_next)
     val clipboard = LocalClipboardManager.current
     val loadingLinksText = stringResource(MR.strings.desktop_reader_loading_links)
     val noLinksText = stringResource(MR.strings.desktop_reader_no_links)
@@ -505,8 +513,6 @@ fun ReaderScreen(
                 val openInBrowserLabel = stringResource(MR.strings.open_in_browser)
                 val saveLabel = stringResource(MR.strings.action_save)
                 val saveFailedText = stringResource(MR.strings.error_cant_save_image)
-                val prevPageLabel = stringResource(MR.strings.desktop_reader_prev)
-                val nextPageLabel = stringResource(MR.strings.desktop_reader_next)
                 val retryLabel = stringResource(MR.strings.action_retry)
                 val toggleReadingDirLabel = if (readingDirection == DesktopReadingDirection.RTL) {
                     stringResource(MR.strings.settings_reading_direction_ltr)
@@ -518,11 +524,11 @@ fun ReaderScreen(
                     url != null -> ContextMenuArea(
                         items = {
                             buildList {
-                                if (page > 1) {
-                                    add(ContextMenuItem(prevPageLabel) { page -= 1 })
+                                if (canPrev) {
+                                    add(ContextMenuItem(prevPageLabel) { page += prevDelta })
                                 }
-                                if (page < pageLinks.size) {
-                                    add(ContextMenuItem(nextPageLabel) { page += 1 })
+                                if (canNext) {
+                                    add(ContextMenuItem(nextPageLabel) { page += nextDelta })
                                 }
                                 add(ContextMenuItem(retryLabel) { reloadKey += 1 })
                                 add(
@@ -649,11 +655,10 @@ fun ReaderScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                val canGoPrev = canNavigatePrev(page)
                 ReaderNavPill(
-                    text = stringResource(MR.strings.desktop_reader_prev),
-                    enabled = canGoPrev,
-                    onClick = { page -= 1 },
+                    text = prevPageLabel,
+                    enabled = canPrev,
+                    onClick = { page += prevDelta },
                 )
                 if (pageLinks.isNotEmpty()) {
                     val jumpInteraction = remember { MutableInteractionSource() }
@@ -681,11 +686,10 @@ fun ReaderScreen(
                         )
                     }
                 }
-                val canGoNext = canNavigateNext(page, pageLinks.size)
                 ReaderNavPill(
-                    text = stringResource(MR.strings.desktop_reader_next),
-                    enabled = canGoNext,
-                    onClick = { page += 1 },
+                    text = nextPageLabel,
+                    enabled = canNext,
+                    onClick = { page += nextDelta },
                 )
             }
         }

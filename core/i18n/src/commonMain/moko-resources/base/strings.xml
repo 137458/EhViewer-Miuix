@@ -690,7 +690,9 @@
     <string name="settings_reading_direction_ltr">Left to right</string>
     <string name="settings_reading_direction_rtl">Right to left (manga)</string>
     <string name="desktop_reader_prev">◀ Prev</string>
+    <string name="desktop_reader_prev_rtl">Previous ▶</string>
     <string name="desktop_reader_next">Next ▶</string>
+    <string name="desktop_reader_next_rtl">◀ Next</string>
     <string name="desktop_online_page_n">Page %1$d</string>
     <string name="desktop_online_next">Next ▶</string>
     <string name="desktop_notification_opening_gallery">Opening gallery</string>
