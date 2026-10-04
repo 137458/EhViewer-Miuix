@@ -547,6 +547,8 @@
     <string name="desktop_share_none">無</string>
     <string name="desktop_share_tags">標籤</string>
     <string name="desktop_shortcuts_reader_section">閱讀視窗</string>
+    <string name="desktop_site">桌面版網站</string>
+    <string name="desktop_site_summary">更高的預設圖片解像度\n如未能繞過 Cloudflare 驗證請嘗試停用此項</string>
     <string name="desktop_sort">排序</string>
     <string name="desktop_status_checking">檢查連接中…</string>
     <string name="desktop_status_ehentai">e-hentai：%1$s</string>
