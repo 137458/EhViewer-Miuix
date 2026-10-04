@@ -2160,6 +2160,8 @@ internal fun GalleryDetailPane(
             }
             DesktopPreviewsSection(
                 previewList = detailExtras?.detail?.previewList,
+                loadFailed = extrasLoadFailed,
+                onRetry = { extrasReloadKey += 1 },
                 onPreviewImage = { url ->
                     val allUrls = listOfNotNull(gallery.thumbUrl) + (detailExtras?.detail?.previewList?.map { it.url } ?: emptyList())
                     onPreviewCover?.invoke(url, allUrls)

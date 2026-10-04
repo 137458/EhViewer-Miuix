@@ -5,6 +5,7 @@ import androidx.compose.foundation.ContextMenuItem
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -50,10 +51,14 @@ private const val PREVIEW_DISPLAY_HEIGHT = 140
 @Composable
 fun DesktopPreviewsSection(
     previewList: List<GalleryPreview>?,
+    loadFailed: Boolean = false,
+    onRetry: (() -> Unit)? = null,
     onPreviewImage: ((url: String) -> Unit)? = null,
 ) {
     val headerText = stringResource(MR.strings.gallery_previews)
     val loadingText = stringResource(MR.strings.desktop_reader_loading)
+    val loadFailedText = stringResource(MR.strings.desktop_reader_load_failed)
+    val retryText = stringResource(MR.strings.action_retry)
 
     Column(modifier = Modifier.fillMaxWidth()) {
         HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
@@ -64,6 +69,39 @@ fun DesktopPreviewsSection(
         )
         val previews = previewList
         when {
+            // 与评论区共享同一次详情抓取：失败时以失败文案+重试替代永久「加载中」，避免误导等待
+            previews == null && loadFailed -> Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = loadFailedText,
+                    color = MiuixTheme.colorScheme.error,
+                    fontSize = 12.sp,
+                )
+                if (onRetry != null) {
+                    val retryHover = remember { MutableInteractionSource() }
+                    val retryHovered by retryHover.collectIsHoveredAsState()
+                    Box(
+                        modifier = Modifier
+                            .clip(SquircleShape(6.dp))
+                            .background(MiuixTheme.colorScheme.surfaceContainerHighest)
+                            .background(if (retryHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
+                            .hoverable(retryHover)
+                            .pointerHoverIcon(PointerIcon.Hand)
+                            .clickable(onClick = onRetry)
+                            .padding(horizontal = 10.dp, vertical = 4.dp),
+                    ) {
+                        Text(
+                            text = retryText,
+                            color = MiuixTheme.colorScheme.primary,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium,
+                        )
+                    }
+                }
+            }
             previews == null -> Text(
                 text = loadingText,
                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
