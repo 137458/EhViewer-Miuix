@@ -15,6 +15,7 @@ object DesktopShortcuts {
         DesktopShortcutEntry("Ctrl + R / F5", MR.strings.shortcut_refresh_galleries),
         DesktopShortcutEntry("Ctrl + O", MR.strings.shortcut_open_gallery_by_link),
         DesktopShortcutEntry("Ctrl + F", MR.strings.shortcut_focus_search),
+        DesktopShortcutEntry("Ctrl + 1 / 2 / 3", MR.strings.shortcut_switch_tabs),
         DesktopShortcutEntry("Escape", MR.strings.shortcut_escape),
         DesktopShortcutEntry("↑ / ↓", MR.strings.shortcut_navigate_list),
         DesktopShortcutEntry("Home / End", MR.strings.shortcut_jump_first_last),

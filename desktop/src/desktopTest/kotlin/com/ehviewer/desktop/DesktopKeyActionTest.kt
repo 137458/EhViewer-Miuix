@@ -400,4 +400,12 @@ class DesktopKeyActionTest {
         assertEquals(DesktopKeyAction.None, resolveKeyAction(isKeyDown = false, isCtrlPressed = true, key = Key.One))
         assertEquals(DesktopKeyAction.None, resolveKeyAction(isKeyDown = true, isCtrlPressed = false, key = Key.One))
     }
+
+    @Test
+    fun defaultEntriesContainSwitchTabsEntry() {
+        // Ctrl+1/2/3 条目进入主库快捷键指南
+        val entry = DesktopShortcuts.defaultEntries().firstOrNull { it.keyCombination == "Ctrl + 1 / 2 / 3" }
+        assertTrue(entry != null)
+        assertSame(MR.strings.shortcut_switch_tabs, entry.descriptionRes)
+    }
 }
