@@ -29,6 +29,7 @@ import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
@@ -59,7 +60,7 @@ fun DesktopPreviewsSection(
         Text(
             text = headerText,
             color = MiuixTheme.colorScheme.primary,
-            fontWeight = androidx.compose.ui.text.font.FontWeight.Medium,
+            fontWeight = FontWeight.Medium,
         )
         val previews = previewList
         when {

@@ -222,7 +222,7 @@ fun DesktopCommentsSection(
         when {
             loaded == null && loadFailed -> Row(
                 modifier = Modifier.padding(top = 6.dp),
-                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Text(
@@ -241,7 +241,7 @@ fun DesktopCommentsSection(
                         .pointerHoverIcon(PointerIcon.Hand)
                         .clickable(onClick = onRetry)
                         .padding(horizontal = 10.dp, vertical = 4.dp),
-                    contentAlignment = androidx.compose.ui.Alignment.Center,
+                    contentAlignment = Alignment.Center,
                 ) {
                     Text(
                         text = retryText,

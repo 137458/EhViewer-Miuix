@@ -1674,7 +1674,7 @@ fun LibraryScreen(
                     Text(
                         text = clearLabel,
                         color = MiuixTheme.colorScheme.error,
-                        fontWeight = androidx.compose.ui.text.font.FontWeight.Medium,
+                        fontWeight = FontWeight.Medium,
                         modifier = Modifier
                             .clip(SquircleShape(8.dp))
                             .background(if (clearConfirmHovered) MiuixTheme.colorScheme.error.copy(alpha = 0.12f) else Color.Transparent)
