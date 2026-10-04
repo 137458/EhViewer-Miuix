@@ -158,15 +158,33 @@ fun DesktopCommentsSection(
         }
         val loaded = comments
         when {
-            loaded == null && loadFailed -> Text(
-                text = "$loadFailedText ($retryText)",
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                fontSize = 12.sp,
-                modifier = Modifier
-                    .pointerHoverIcon(PointerIcon.Hand)
-                    .clickable(onClick = onRetry)
-                    .padding(top = 4.dp),
-            )
+            loaded == null && loadFailed -> Row(
+                modifier = Modifier.padding(top = 6.dp),
+                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Text(
+                    text = loadFailedText,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    fontSize = 12.sp,
+                )
+                Box(
+                    modifier = Modifier
+                        .clip(SquircleShape(6.dp))
+                        .background(MiuixTheme.colorScheme.surfaceContainerHighest)
+                        .pointerHoverIcon(PointerIcon.Hand)
+                        .clickable(onClick = onRetry)
+                        .padding(horizontal = 10.dp, vertical = 4.dp),
+                    contentAlignment = androidx.compose.ui.Alignment.Center,
+                ) {
+                    Text(
+                        text = retryText,
+                        color = MiuixTheme.colorScheme.primary,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                    )
+                }
+            }
             loaded == null -> Text(
                 text = loadingText,
                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,

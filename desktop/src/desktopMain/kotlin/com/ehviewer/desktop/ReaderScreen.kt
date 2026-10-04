@@ -461,20 +461,30 @@ fun ReaderScreen(
                     }
                     imageState != null -> Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier
-                            .pointerHoverIcon(PointerIcon.Hand)
-                            .clickable { reloadKey += 1 }
-                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                        modifier = Modifier.padding(16.dp),
                     ) {
                         Text(
                             text = imageState!!,
                             color = Color.White.copy(alpha = 0.7f),
+                            fontSize = 13.sp,
                         )
-                        Text(
-                            text = stringResource(MR.strings.action_retry),
-                            color = MiuixTheme.colorScheme.primary,
-                        )
+                        Box(
+                            modifier = Modifier
+                                .clip(SquircleShape(8.dp))
+                                .background(MiuixTheme.colorScheme.surfaceContainerHighest)
+                                .pointerHoverIcon(PointerIcon.Hand)
+                                .clickable { reloadKey += 1 }
+                                .padding(horizontal = 16.dp, vertical = 6.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(
+                                text = stringResource(MR.strings.action_retry),
+                                color = MiuixTheme.colorScheme.primary,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Medium,
+                            )
+                        }
                     }
                     else -> Text(
                         text = loadingText,
