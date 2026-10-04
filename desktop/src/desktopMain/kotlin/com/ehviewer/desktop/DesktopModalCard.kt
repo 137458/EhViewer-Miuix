@@ -39,8 +39,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ehviewer.core.i18n.MR
 import com.ehviewer.core.ui.component.SquircleShape
 import com.ehviewer.core.ui.component.VerticalScrollbar
+import dev.icerock.moko.resources.compose.stringResource
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -107,7 +109,7 @@ fun DesktopModalCard(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Close,
-                        contentDescription = null,
+                        contentDescription = stringResource(MR.strings.desktop_a11y_close),
                         tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     )
                 }

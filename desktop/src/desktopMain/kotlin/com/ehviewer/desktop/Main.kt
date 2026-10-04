@@ -742,7 +742,7 @@ private fun GalleryDetailPageContent(
                 ) {
                     Icon(
                         imageVector = MiuixIcons.Back,
-                        contentDescription = null,
+                        contentDescription = stringResource(MR.strings.desktop_a11y_back),
                         tint = MiuixTheme.colorScheme.onSurface,
                     )
                 }
