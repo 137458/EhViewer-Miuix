@@ -141,14 +141,11 @@ fun SettingsScreen(
                             onCheckedChange = { DesktopSettings.blackDarkTheme.value = it },
                             modifier = Modifier.pointerHoverIcon(PointerIcon.Hand),
                         )
-                        BasicComponent(
-                            title = stringResource(MR.strings.settings_close_behavior),
-                            summary = if (closeToTray) {
-                                stringResource(MR.strings.settings_close_minimize_to_tray)
-                            } else {
-                                stringResource(MR.strings.settings_close_exit)
-                            },
-                            onClick = { DesktopSettings.closeToTray.value = !closeToTray },
+                        // 关闭行为显式开关：开 = 最小化到系统托盘，关 = 直接退出（替代点击循环切换）
+                        SwitchPreference(
+                            title = stringResource(MR.strings.settings_close_minimize_to_tray),
+                            checked = closeToTray,
+                            onCheckedChange = { DesktopSettings.closeToTray.value = it },
                             modifier = Modifier.pointerHoverIcon(PointerIcon.Hand),
                         )
                         SwitchPreference(
