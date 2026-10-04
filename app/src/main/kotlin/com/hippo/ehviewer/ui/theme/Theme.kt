@@ -75,7 +75,11 @@ fun EhTheme(useDarkTheme: Boolean, content: @Composable () -> Unit) {
 
     MiuixTheme(controller = miuixController) {
         MaterialTheme(colorScheme = colors, motionScheme = CustomMotionScheme) {
-            val scrollbarStyle = scrollbarStyle(color = MaterialTheme.colorScheme.primary)
+            // 移动端滚动条沿用单一主色（静息与悬停同色，保持既有行为）
+            val scrollbarStyle = scrollbarStyle(
+                thumbColor = MaterialTheme.colorScheme.primary,
+                hoverThumbColor = MaterialTheme.colorScheme.primary,
+            )
             CompositionLocalProvider(
                 LocalContentColor provides MaterialTheme.colorScheme.onBackground,
                 LocalScrollbarStyle provides scrollbarStyle,
