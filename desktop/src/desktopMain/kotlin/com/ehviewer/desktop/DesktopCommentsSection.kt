@@ -282,6 +282,7 @@ fun DesktopCommentsSection(
                                 comment = item,
                                 canVote = canVote,
                                 isVoting = votingCommentId == item.id,
+                                voteBusy = votingCommentId != null,
                                 onVote = { vote(item, it) },
                             )
                         }
@@ -385,6 +386,7 @@ private fun CommentItem(
     comment: GalleryComment,
     canVote: Boolean = false,
     isVoting: Boolean = false,
+    voteBusy: Boolean = false,
     onVote: (Int) -> Unit = {},
 ) {
     val clipboard = LocalClipboardManager.current
@@ -489,7 +491,7 @@ private fun CommentItem(
                     CommentActionButton(
                         text = if (isVoting) "…" else "▲",
                         active = comment.voteUpEd,
-                        enabled = !isVoting,
+                        enabled = !voteBusy,
                         onClick = { onVote(1) },
                     )
                 }
@@ -523,7 +525,7 @@ private fun CommentItem(
                     CommentActionButton(
                         text = if (isVoting) "…" else "▼",
                         active = comment.voteDownEd,
-                        enabled = !isVoting,
+                        enabled = !voteBusy,
                         onClick = { onVote(-1) },
                     )
                 }
