@@ -514,6 +514,76 @@ private fun AboutDialog(onDismiss: () -> Unit) {
                 color = MiuixTheme.colorScheme.onSurface,
                 fontSize = 13.sp,
             )
+            // 手动检查更新：行内状态反馈（检查中/已是最新/新版本 tag 可点击直达 releases）
+            val coroutineScope = rememberCoroutineScope()
+            val checkLabel = stringResource(MR.strings.desktop_check_update)
+            val checkingText = stringResource(MR.strings.desktop_update_checking)
+            val upToDateText = stringResource(MR.strings.desktop_update_up_to_date)
+            val availableTemplate = stringResource(MR.strings.desktop_update_available, "")
+            var updateCheckState by remember { mutableStateOf<String?>(null) }
+            var updateAvailableTag by remember { mutableStateOf<String?>(null) }
+            val updateCheckHover = remember { MutableInteractionSource() }
+            val updateCheckHovered by updateCheckHover.collectIsHoveredAsState()
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(
+                    modifier = Modifier
+                        .clip(SquircleShape(6.dp))
+                        .background(MiuixTheme.colorScheme.surfaceContainerHighest)
+                        .background(if (updateCheckHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
+                        .hoverable(updateCheckHover)
+                        .pointerHoverIcon(PointerIcon.Hand)
+                        .clickable(
+                            interactionSource = updateCheckHover,
+                            indication = null,
+                        ) {
+                            if (updateCheckState != checkingText) {
+                                coroutineScope.launch {
+                                    updateCheckState = checkingText
+                                    updateAvailableTag = null
+                                    val info = checkLatestRelease()
+                                    updateCheckState = if (info != null && isNewer(info.tag, DESKTOP_VERSION)) {
+                                        updateAvailableTag = info.tag
+                                        availableTemplate.substringBefore("%1\$s").trim() + " " + info.tag
+                                    } else {
+                                        upToDateText
+                                    }
+                                }
+                            }
+                        }
+                        .padding(horizontal = 10.dp, vertical = 5.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = checkLabel,
+                        color = MiuixTheme.colorScheme.primary,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                    )
+                }
+                updateCheckState?.let { stateText ->
+                    Text(
+                        text = stateText,
+                        color = if (updateAvailableTag != null) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        fontSize = 12.sp,
+                        textDecoration = if (updateAvailableTag != null) TextDecoration.Underline else null,
+                        modifier = Modifier
+                            .then(
+                                if (updateAvailableTag != null) {
+                                    Modifier.pointerHoverIcon(PointerIcon.Hand)
+                                } else {
+                                    Modifier
+                                },
+                            )
+                            .clickable(enabled = updateAvailableTag != null) {
+                                DesktopBrowser.openUrl(RELEASES_PAGE_URL)
+                            },
+                    )
+                }
+            }
             val releasesUrl = RELEASES_PAGE_URL
             val releasesInteraction = remember { MutableInteractionSource() }
             val releasesHovered by releasesInteraction.collectIsHoveredAsState()

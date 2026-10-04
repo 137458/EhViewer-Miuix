@@ -757,6 +757,9 @@
     <string name="desktop_empty_browse_online">去浏览在线画廊</string>
     <string name="desktop_library_status_bar">|  已登录：%1$s  |  下载分组：%2$d  |  收藏：%3$d  |  版本：%4$s</string>
     <string name="desktop_update_available">有可用更新：%1$s</string>
+    <string name="desktop_check_update">检查更新</string>
+    <string name="desktop_update_up_to_date">已是最新版本</string>
+    <string name="desktop_update_checking">检查中…</string>
     <string name="desktop_reader_loading_links">正在获取页面链接…</string>
     <string name="desktop_reader_no_links">未找到页面链接（需要登录或解析失败）</string>
     <string name="desktop_reader_load_failed">画廊加载失败</string>

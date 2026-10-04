@@ -667,6 +667,9 @@
     <string name="desktop_a11y_back">返回</string>
     <string name="desktop_a11y_close">關閉</string>
     <string name="desktop_update_available">有可用更新：%1$s</string>
+    <string name="desktop_check_update">檢查更新</string>
+    <string name="desktop_update_up_to_date">已是最新版本</string>
+    <string name="desktop_update_checking">檢查中…</string>
     <string name="desktop_view_grid">格狀</string>
     <string name="desktop_view_list">清單</string>
     <string name="desktop_window_reading">閱讀中</string>

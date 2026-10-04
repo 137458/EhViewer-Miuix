@@ -683,6 +683,9 @@
     <string name="desktop_empty_browse_online">Browse online galleries</string>
     <string name="desktop_library_status_bar">|  signed-in: %1$s  |  download groups: %2$d  |  favorites: %3$d  |  version: %4$s</string>
     <string name="desktop_update_available">update available: %1$s</string>
+    <string name="desktop_check_update">Check for updates</string>
+    <string name="desktop_update_up_to_date">Already up to date</string>
+    <string name="desktop_update_checking">Checking…</string>
     <string name="desktop_reader_loading_links">Loading page links…</string>
     <string name="desktop_reader_no_links">No page links found (login required or parse failure)</string>
     <string name="desktop_reader_load_failed">Failed to load gallery</string>
