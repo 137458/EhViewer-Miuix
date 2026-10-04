@@ -214,7 +214,7 @@ fun DesktopCommentsSection(
         voteError?.let { message ->
             Text(
                 text = stringResource(MR.strings.desktop_comment_vote_error, message),
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                color = MiuixTheme.colorScheme.error,
                 fontSize = 12.sp,
             )
         }
@@ -227,7 +227,7 @@ fun DesktopCommentsSection(
             ) {
                 Text(
                     text = loadFailedText,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    color = MiuixTheme.colorScheme.error,
                     fontSize = 12.sp,
                 )
                 val retryHover = remember { MutableInteractionSource() }
