@@ -752,6 +752,7 @@
     <string name="desktop_empty_no_match">没有匹配的画廊</string>
     <string name="desktop_empty_no_history">暂无历史记录</string>
     <string name="desktop_empty_no_favorites">暂无收藏</string>
+    <string name="desktop_empty_browse_online">去浏览在线画廊</string>
     <string name="desktop_library_status_bar">|  已登录：%1$s  |  下载分组：%2$d  |  收藏：%3$d  |  版本：%4$s</string>
     <string name="desktop_update_available">有可用更新：%1$s</string>
     <string name="desktop_reader_loading_links">正在获取页面链接…</string>

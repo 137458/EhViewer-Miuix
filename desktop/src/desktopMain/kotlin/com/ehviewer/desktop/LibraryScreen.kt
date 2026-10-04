@@ -1029,15 +1029,28 @@ fun LibraryScreen(
                                     }
                                 }
                             } else {
+                                val browseOnlineText = stringResource(MR.strings.desktop_empty_browse_online)
                                 when (currentTab) {
-                                    LibraryTab.History -> Text(
-                                        text = stringResource(MR.strings.desktop_empty_no_history),
-                                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                    )
-                                    LibraryTab.Favorites -> Text(
-                                        text = stringResource(MR.strings.desktop_empty_no_favorites),
-                                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                    )
+                                    LibraryTab.History -> Column(
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                                    ) {
+                                        Text(
+                                            text = stringResource(MR.strings.desktop_empty_no_history),
+                                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                        )
+                                        EmptyTabBrowseOnlineButton(text = browseOnlineText) { switchTab(LibraryTab.Online) }
+                                    }
+                                    LibraryTab.Favorites -> Column(
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                                    ) {
+                                        Text(
+                                            text = stringResource(MR.strings.desktop_empty_no_favorites),
+                                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                        )
+                                        EmptyTabBrowseOnlineButton(text = browseOnlineText) { switchTab(LibraryTab.Online) }
+                                    }
                                     LibraryTab.Online -> {
                                         Column(
                                             horizontalAlignment = Alignment.CenterHorizontally,
@@ -2518,6 +2531,34 @@ private fun PreviewBarAction(
             color = if (isHovered) MiuixTheme.colorScheme.primary else color,
             fontSize = fontSize,
             fontWeight = fontWeight,
+        )
+    }
+}
+
+// 本地库空 Tab 引导胶囊：一键切换到在线 Tab 浏览画廊（悬停 primary 半透明叠加，与全局操作按钮 token 一致）
+@Composable
+private fun EmptyTabBrowseOnlineButton(
+    text: String,
+    onClick: () -> Unit,
+) {
+    val hoverInteraction = remember { MutableInteractionSource() }
+    val hovered by hoverInteraction.collectIsHoveredAsState()
+    Box(
+        modifier = Modifier
+            .clip(SquircleShape(8.dp))
+            .background(MiuixTheme.colorScheme.surfaceContainerHighest)
+            .background(if (hovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
+            .hoverable(hoverInteraction)
+            .pointerHoverIcon(PointerIcon.Hand)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 6.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = text,
+            color = MiuixTheme.colorScheme.primary,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Medium,
         )
     }
 }

@@ -616,6 +616,7 @@
     <string name="desktop_delete_selected">選択項目を削除（%d）</string>
     <string name="desktop_empty_no_favorites">お気に入りはまだありません</string>
     <string name="desktop_empty_no_history">履歴はまだありません</string>
+    <string name="desktop_empty_browse_online">オンライン画廊を見る</string>
     <string name="desktop_empty_no_match">一致する画廊がありません</string>
     <string name="desktop_error_connection_refused">接続が拒否されました</string>
     <string name="desktop_error_connection_timed_out">接続がタイムアウトしました</string>

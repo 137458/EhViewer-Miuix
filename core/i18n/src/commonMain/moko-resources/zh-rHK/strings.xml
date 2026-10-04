@@ -499,6 +499,7 @@
     <string name="desktop_delete_selected">刪除所選（%d）</string>
     <string name="desktop_empty_no_favorites">尚無收藏</string>
     <string name="desktop_empty_no_history">尚無歷史紀錄</string>
+    <string name="desktop_empty_browse_online">前往瀏覽線上畫廊</string>
     <string name="desktop_empty_no_match">沒有符合的畫廊</string>
     <string name="desktop_error_connection_refused">連接被拒絕</string>
     <string name="desktop_error_connection_timed_out">連接超時</string>
