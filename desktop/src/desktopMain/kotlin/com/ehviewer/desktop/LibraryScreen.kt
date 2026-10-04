@@ -4,12 +4,15 @@ import androidx.compose.foundation.ContextMenuArea
 import androidx.compose.foundation.ContextMenuItem
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -49,6 +52,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
@@ -70,6 +74,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
@@ -2290,90 +2295,85 @@ internal fun CoverPreviewDialog(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .padding(bottom = 24.dp)
+                .shadow(8.dp, SquircleShape(24.dp))
                 .clip(SquircleShape(24.dp))
                 .background(MiuixTheme.colorScheme.surfaceContainerHighest)
+                .border(1.dp, MiuixTheme.colorScheme.outline.copy(alpha = 0.15f), SquircleShape(24.dp))
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Box(
-                modifier = Modifier
-                    .clip(SquircleShape(6.dp))
-                    .pointerHoverIcon(PointerIcon.Hand)
-                    .clickable { zoomState = zoomState.keyboardZoom(DesktopReaderZoom.Out, viewportSize) }
-                    .padding(horizontal = 8.dp, vertical = 2.dp),
-            ) {
-                Text(
-                    text = "−",
-                    color = MiuixTheme.colorScheme.onSurface,
-                    fontSize = 14.sp,
-                )
-            }
-            Text(
-                text = DesktopZoomController.formatZoomPercentage(zoomState.scale),
-                color = MiuixTheme.colorScheme.primary,
-                style = MiuixTheme.textStyles.body2,
-                modifier = Modifier
-                    .pointerHoverIcon(PointerIcon.Hand)
-                    .clickable { zoomState = zoomState.keyboardZoom(DesktopReaderZoom.Reset, viewportSize) },
+            PreviewBarAction(
+                text = "−",
+                fontSize = 14.sp,
+                color = MiuixTheme.colorScheme.onSurface,
+                onClick = { zoomState = zoomState.keyboardZoom(DesktopReaderZoom.Out, viewportSize) },
             )
-            Box(
-                modifier = Modifier
-                    .clip(SquircleShape(6.dp))
-                    .pointerHoverIcon(PointerIcon.Hand)
-                    .clickable { zoomState = zoomState.keyboardZoom(DesktopReaderZoom.In, viewportSize) }
-                    .padding(horizontal = 8.dp, vertical = 2.dp),
-            ) {
-                Text(
-                    text = "+",
-                    color = MiuixTheme.colorScheme.onSurface,
-                    fontSize = 14.sp,
-                )
-            }
+            PreviewBarAction(
+                text = DesktopZoomController.formatZoomPercentage(zoomState.scale),
+                fontSize = 12.sp,
+                color = MiuixTheme.colorScheme.primary,
+                fontWeight = FontWeight.Medium,
+                onClick = { zoomState = zoomState.keyboardZoom(DesktopReaderZoom.Reset, viewportSize) },
+            )
+            PreviewBarAction(
+                text = "+",
+                fontSize = 14.sp,
+                color = MiuixTheme.colorScheme.onSurface,
+                onClick = { zoomState = zoomState.keyboardZoom(DesktopReaderZoom.In, viewportSize) },
+            )
             VerticalDivider()
-            Box(
-                modifier = Modifier
-                    .clip(SquircleShape(6.dp))
-                    .pointerHoverIcon(PointerIcon.Hand)
-                    .clickable {
-                        clipboard.setText(AnnotatedString(imageUrl))
-                        copiedNotice = true
-                    }
-                    .padding(horizontal = 8.dp, vertical = 2.dp),
-            ) {
-                Text(
-                    text = if (copiedNotice) stringResource(MR.strings.copied_to_clipboard) else stringResource(MR.strings.copy_link),
-                    color = if (copiedNotice) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurface,
-                    fontSize = 12.sp,
-                )
-            }
-            Box(
-                modifier = Modifier
-                    .clip(SquircleShape(6.dp))
-                    .pointerHoverIcon(PointerIcon.Hand)
-                    .clickable { DesktopBrowser.openUrl(imageUrl) }
-                    .padding(horizontal = 8.dp, vertical = 2.dp),
-            ) {
-                Text(
-                    text = stringResource(MR.strings.open_in_browser),
-                    color = MiuixTheme.colorScheme.onSurface,
-                    fontSize = 12.sp,
-                )
-            }
+            PreviewBarAction(
+                text = if (copiedNotice) stringResource(MR.strings.copied_to_clipboard) else stringResource(MR.strings.copy_link),
+                fontSize = 12.sp,
+                color = if (copiedNotice) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurface,
+                onClick = {
+                    clipboard.setText(AnnotatedString(imageUrl))
+                    copiedNotice = true
+                },
+            )
+            PreviewBarAction(
+                text = stringResource(MR.strings.open_in_browser),
+                fontSize = 12.sp,
+                color = MiuixTheme.colorScheme.onSurface,
+                onClick = { DesktopBrowser.openUrl(imageUrl) },
+            )
             VerticalDivider()
-            Box(
-                modifier = Modifier
-                    .clip(SquircleShape(6.dp))
-                    .pointerHoverIcon(PointerIcon.Hand)
-                    .clickable(onClick = onDismiss)
-                    .padding(horizontal = 6.dp, vertical = 2.dp),
-            ) {
-                Text(
-                    text = "✕",
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    fontSize = 12.sp,
-                )
-            }
+            PreviewBarAction(
+                text = "✕",
+                fontSize = 12.sp,
+                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                onClick = onDismiss,
+            )
         }
+    }
+}
+
+// 封面预览控制栏操作项：悬停 primary 半透明胶囊衬底 + 文字转 primary，与评论区操作栏同一 token 体系
+@Composable
+private fun PreviewBarAction(
+    text: String,
+    fontSize: TextUnit,
+    color: Color,
+    fontWeight: FontWeight? = null,
+    onClick: () -> Unit,
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isHovered by interactionSource.collectIsHoveredAsState()
+    Box(
+        modifier = Modifier
+            .clip(SquircleShape(6.dp))
+            .background(if (isHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
+            .pointerHoverIcon(PointerIcon.Hand)
+            .clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = text,
+            color = if (isHovered) MiuixTheme.colorScheme.primary else color,
+            fontSize = fontSize,
+            fontWeight = fontWeight,
+        )
     }
 }
