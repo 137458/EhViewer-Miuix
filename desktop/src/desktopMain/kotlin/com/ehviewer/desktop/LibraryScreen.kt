@@ -11,6 +11,7 @@ import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -618,11 +619,18 @@ fun LibraryScreen(
                             )
                             tabs.forEach { (tab, label, count) ->
                                 val selected = currentTab == tab
+                                val tabHover = remember { MutableInteractionSource() }
+                                val tabHovered by tabHover.collectIsHoveredAsState()
                                 Box(
                                     modifier = Modifier
                                         .clip(SquircleShape(6.dp))
+                                        .hoverable(tabHover)
                                         .background(
-                                            if (selected) MiuixTheme.colorScheme.surface else Color.Transparent,
+                                            when {
+                                                selected -> MiuixTheme.colorScheme.surface
+                                                tabHovered -> MiuixTheme.colorScheme.primary.copy(alpha = 0.06f)
+                                                else -> Color.Transparent
+                                            },
                                         )
                                         .pointerHoverIcon(PointerIcon.Hand)
                                         .clickable { switchTab(tab) }
@@ -638,10 +646,14 @@ fun LibraryScreen(
                             }
                         }
                         if (currentTab == LibraryTab.History && history.isNotEmpty()) {
+                            val clearHover = remember { MutableInteractionSource() }
+                            val clearHovered by clearHover.collectIsHoveredAsState()
                             Box(
                                 modifier = Modifier
                                     .clip(SquircleShape(6.dp))
                                     .background(MiuixTheme.colorScheme.surfaceContainerHighest)
+                                    .background(if (clearHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
+                                    .hoverable(clearHover)
                                     .pointerHoverIcon(PointerIcon.Hand)
                                     .clickable { showClearHistoryConfirm = true }
                                     .padding(horizontal = 8.dp, vertical = 4.dp),
@@ -684,10 +696,14 @@ fun LibraryScreen(
                                     }
                                 },
                         )
+                        val sortHover = remember { MutableInteractionSource() }
+                        val sortHovered by sortHover.collectIsHoveredAsState()
                         Box(
                             modifier = Modifier
                                 .clip(SquircleShape(6.dp))
                                 .background(MiuixTheme.colorScheme.surfaceContainerHighest)
+                                .background(if (sortHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
+                                .hoverable(sortHover)
                                 .pointerHoverIcon(PointerIcon.Hand)
                                 .clickable {
                                     sortConfig = sortConfig.cycle().also {
@@ -710,10 +726,14 @@ fun LibraryScreen(
                                 fontSize = 12.sp,
                             )
                         }
+                        val viewHover = remember { MutableInteractionSource() }
+                        val viewHovered by viewHover.collectIsHoveredAsState()
                         Box(
                             modifier = Modifier
                                 .clip(SquircleShape(6.dp))
                                 .background(MiuixTheme.colorScheme.surfaceContainerHighest)
+                                .background(if (viewHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
+                                .hoverable(viewHover)
                                 .pointerHoverIcon(PointerIcon.Hand)
                                 .clickable {
                                     DesktopSettings.viewMode.value = viewMode.toggle().ordinal
