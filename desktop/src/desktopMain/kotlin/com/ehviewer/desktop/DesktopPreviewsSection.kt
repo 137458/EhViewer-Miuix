@@ -1,6 +1,7 @@
 package com.ehviewer.desktop
 
-import androidx.compose.foundation.background
+import androidx.compose.foundation.ContextMenuArea
+import androidx.compose.foundation.ContextMenuItem
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -14,12 +15,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
@@ -38,7 +40,10 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 private const val PREVIEW_DISPLAY_HEIGHT = 140
 
 @Composable
-fun DesktopPreviewsSection(previewList: List<GalleryPreview>?) {
+fun DesktopPreviewsSection(
+    previewList: List<GalleryPreview>?,
+    onPreviewImage: ((url: String) -> Unit)? = null,
+) {
     val headerText = stringResource(MR.strings.gallery_previews)
     val loadingText = stringResource(MR.strings.desktop_reader_loading)
 
@@ -68,7 +73,10 @@ fun DesktopPreviewsSection(previewList: List<GalleryPreview>?) {
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 previews.take(20).forEach { preview ->
-                    PreviewCell(preview)
+                    PreviewCell(
+                        preview = preview,
+                        onPreviewImage = onPreviewImage,
+                    )
                 }
             }
         }
@@ -76,43 +84,75 @@ fun DesktopPreviewsSection(previewList: List<GalleryPreview>?) {
 }
 
 @Composable
-private fun PreviewCell(preview: GalleryPreview) {
-    when (preview) {
-        is V1GalleryPreview -> AsyncImage(
-            model = preview.url,
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .clip(SquircleShape(8.dp))
-                .pointerHoverIcon(PointerIcon.Hand)
-                .clickable { DesktopBrowser.openUrl(preview.url) }
-                .width(100.dp)
-                .height(PREVIEW_DISPLAY_HEIGHT.dp),
-        )
-        is V2GalleryPreview -> {
-            // 雪碧图单格：按显示高推算缩放，整图按位移裁出当前格（点击打开雪碧图原图）
-            val cell = DesktopPreviewSprite.cellLayout(
-                offsetX = preview.offsetX,
-                clipWidth = preview.clipWidth,
-                clipHeight = preview.clipHeight,
-                displayHeight = PREVIEW_DISPLAY_HEIGHT.toFloat(),
-            ) ?: return
-            Box(
+private fun PreviewCell(
+    preview: GalleryPreview,
+    onPreviewImage: ((url: String) -> Unit)? = null,
+) {
+    val clipboard = LocalClipboardManager.current
+    val copyLinkText = stringResource(MR.strings.copy_link)
+    val openInBrowserText = stringResource(MR.strings.open_in_browser)
+
+    ContextMenuArea(
+        items = {
+            listOf(
+                ContextMenuItem(copyLinkText) {
+                    clipboard.setText(AnnotatedString(preview.url))
+                },
+                ContextMenuItem(openInBrowserText) {
+                    DesktopBrowser.openUrl(preview.url)
+                },
+            )
+        },
+    ) {
+        when (preview) {
+            is V1GalleryPreview -> AsyncImage(
+                model = preview.url,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .clip(SquircleShape(8.dp))
                     .pointerHoverIcon(PointerIcon.Hand)
-                    .clickable { DesktopBrowser.openUrl(preview.url) }
-                    .width(cell.width.dp)
-                    .height(cell.height.dp),
-            ) {
-                AsyncImage(
-                    model = preview.url,
-                    contentDescription = null,
-                    contentScale = ContentScale.FillHeight,
+                    .clickable {
+                        if (onPreviewImage != null) {
+                            onPreviewImage(preview.url)
+                        } else {
+                            DesktopBrowser.openUrl(preview.url)
+                        }
+                    }
+                    .width(100.dp)
+                    .height(PREVIEW_DISPLAY_HEIGHT.dp),
+            )
+            is V2GalleryPreview -> {
+                // 雪碧图单格：按显示高推算缩放，整图按位移裁出当前格（点击全屏预览或浏览器打开）
+                val cell = DesktopPreviewSprite.cellLayout(
+                    offsetX = preview.offsetX,
+                    clipWidth = preview.clipWidth,
+                    clipHeight = preview.clipHeight,
+                    displayHeight = PREVIEW_DISPLAY_HEIGHT.toFloat(),
+                ) ?: return@ContextMenuArea
+                Box(
                     modifier = Modifier
-                        .height(PREVIEW_DISPLAY_HEIGHT.dp)
-                        .offset(x = cell.offsetX.dp),
-                )
+                        .clip(SquircleShape(8.dp))
+                        .pointerHoverIcon(PointerIcon.Hand)
+                        .clickable {
+                            if (onPreviewImage != null) {
+                                onPreviewImage(preview.url)
+                            } else {
+                                DesktopBrowser.openUrl(preview.url)
+                            }
+                        }
+                        .width(cell.width.dp)
+                        .height(cell.height.dp),
+                ) {
+                    AsyncImage(
+                        model = preview.url,
+                        contentDescription = null,
+                        contentScale = ContentScale.FillHeight,
+                        modifier = Modifier
+                            .height(PREVIEW_DISPLAY_HEIGHT.dp)
+                            .offset(x = cell.offsetX.dp),
+                    )
+                }
             }
         }
     }

@@ -549,6 +549,7 @@ private fun GalleryDetailPageContent(
     val nextNotificationId = remember { AtomicLong(1L) }
     val clipboard = LocalClipboardManager.current
     var previewCoverUrl by remember { mutableStateOf<String?>(null) }
+    var previewUrls by remember { mutableStateOf<List<String>>(emptyList()) }
     var isFavorite by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
     // Ctrl+O 打开时是仅有 gid/token 的占位信息，hydrate 成功后整体替换触发重组
@@ -727,7 +728,10 @@ private fun GalleryDetailPageContent(
                     showNotification("$tagLabel: $tag")
                     onSearchTag?.invoke(tag)
                 },
-                onPreviewCover = { url -> previewCoverUrl = url },
+                onPreviewCover = { url, list ->
+                    previewCoverUrl = url
+                    previewUrls = list
+                },
                 onOpenReader = onOpenReader?.let { opener -> { opener(currentGallery) } },
             )
             if (notifications.isNotEmpty()) {
@@ -777,9 +781,25 @@ private fun GalleryDetailPageContent(
             }
 
             previewCoverUrl?.let { coverUrl ->
+                val currentIndex = previewUrls.indexOf(coverUrl)
+                val hasPrev = currentIndex > 0
+                val hasNext = currentIndex in 0 until (previewUrls.size - 1)
                 CoverPreviewDialog(
                     imageUrl = coverUrl,
-                    onDismiss = { previewCoverUrl = null },
+                    onDismiss = {
+                        previewCoverUrl = null
+                        previewUrls = emptyList()
+                    },
+                    onPrevious = if (hasPrev) {
+                        { previewCoverUrl = previewUrls[currentIndex - 1] }
+                    } else {
+                        null
+                    },
+                    onNext = if (hasNext) {
+                        { previewCoverUrl = previewUrls[currentIndex + 1] }
+                    } else {
+                        null
+                    },
                 )
             }
         }

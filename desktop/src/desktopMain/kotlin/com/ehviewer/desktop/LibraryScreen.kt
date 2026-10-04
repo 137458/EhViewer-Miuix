@@ -7,6 +7,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.focusable
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -58,12 +60,15 @@ import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
@@ -177,6 +182,7 @@ fun LibraryScreen(
         DesktopSearchHistory.decode(searchHistoryRaw)
     }
     var previewCoverUrl by remember { mutableStateOf<String?>(null) }
+    var previewUrls by remember { mutableStateOf<List<String>>(emptyList()) }
     var notifications by remember { mutableStateOf<List<DesktopNotification>>(emptyList()) }
     val nextNotificationId = remember { AtomicLong(1L) }
     // 一键清空历史前的确认对话框（毁灭性操作防误触）
@@ -416,6 +422,7 @@ fun LibraryScreen(
                             DesktopKeyAction.ClearSelection -> {
                                 if (previewCoverUrl != null) {
                                     previewCoverUrl = null
+                                    previewUrls = emptyList()
                                 } else if (searchQuery.isNotEmpty()) {
                                     searchFieldState.clearText()
                                 } else {
@@ -1286,7 +1293,10 @@ fun LibraryScreen(
                             recordSearch(tag)
                             showNotification("$filterText: $tag")
                         },
-                        onPreviewCover = { url -> previewCoverUrl = url },
+                        onPreviewCover = { url, list ->
+                            previewCoverUrl = url
+                            previewUrls = list
+                        },
                         onOpenReader = onOpenReader?.let { opener -> { opener(gallery) } },
                     )
                 }
@@ -1336,9 +1346,25 @@ fun LibraryScreen(
         }
 
         previewCoverUrl?.let { coverUrl ->
+            val currentIndex = previewUrls.indexOf(coverUrl)
+            val hasPrev = currentIndex > 0
+            val hasNext = currentIndex in 0 until (previewUrls.size - 1)
             CoverPreviewDialog(
                 imageUrl = coverUrl,
-                onDismiss = { previewCoverUrl = null },
+                onDismiss = {
+                    previewCoverUrl = null
+                    previewUrls = emptyList()
+                },
+                onPrevious = if (hasPrev) {
+                    { previewCoverUrl = previewUrls[currentIndex - 1] }
+                } else {
+                    null
+                },
+                onNext = if (hasNext) {
+                    { previewCoverUrl = previewUrls[currentIndex + 1] }
+                } else {
+                    null
+                },
             )
         }
 
@@ -1559,7 +1585,7 @@ internal fun GalleryDetailPane(
     isFavorite: Boolean = false,
     onToggleFavorite: (() -> Unit)? = null,
     onSearchTag: ((tag: String) -> Unit)? = null,
-    onPreviewCover: ((url: String) -> Unit)? = null,
+    onPreviewCover: ((url: String, allUrls: List<String>) -> Unit)? = null,
     onOpenReader: (() -> Unit)? = null,
 ) {
     val detailScrollState = rememberScrollState()
@@ -1617,7 +1643,10 @@ internal fun GalleryDetailPane(
                         .height(200.dp)
                         .clip(SquircleShape(8.dp))
                         .pointerHoverIcon(PointerIcon.Hand)
-                        .clickable { onPreviewCover?.invoke(thumb) },
+                        .clickable {
+                            val allUrls = listOfNotNull(thumb) + (detailExtras?.detail?.previewList?.map { it.url } ?: emptyList())
+                            onPreviewCover?.invoke(thumb, allUrls)
+                        },
                     contentAlignment = Alignment.Center,
                 ) {
                     key(thumb, imageState.retryCount) {
@@ -1766,7 +1795,13 @@ internal fun GalleryDetailPane(
                     }
                 }
             }
-            DesktopPreviewsSection(previewList = detailExtras?.detail?.previewList)
+            DesktopPreviewsSection(
+                previewList = detailExtras?.detail?.previewList,
+                onPreviewImage = { url ->
+                    val allUrls = listOfNotNull(gallery.thumbUrl) + (detailExtras?.detail?.previewList?.map { it.url } ?: emptyList())
+                    onPreviewCover?.invoke(url, allUrls)
+                },
+            )
             DesktopCommentsSection(
                 gallery = gallery,
                 comments = detailExtras?.detail?.comments?.comments,
@@ -1874,12 +1909,24 @@ private fun VerticalDivider() = HorizontalDivider(
 internal fun CoverPreviewDialog(
     imageUrl: String,
     onDismiss: () -> Unit,
+    onPrevious: (() -> Unit)? = null,
+    onNext: (() -> Unit)? = null,
 ) {
-    var scale by remember { mutableStateOf(1.0f) }
+    var zoomState by remember(imageUrl) { mutableStateOf(DesktopReaderZoomState()) }
+    var viewportSize by remember { mutableStateOf(IntSize.Zero) }
     val focusRequester = remember { FocusRequester() }
+    val clipboard = LocalClipboardManager.current
+    var copiedNotice by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         focusRequester.requestFocus()
+    }
+
+    LaunchedEffect(copiedNotice) {
+        if (copiedNotice) {
+            delay(1500)
+            copiedNotice = false
+        }
     }
 
     Box(
@@ -1888,9 +1935,44 @@ internal fun CoverPreviewDialog(
             .focusRequester(focusRequester)
             .focusable()
             .onPreviewKeyEvent { event ->
-                if (event.type == KeyEventType.KeyDown && event.key == Key.Escape) {
-                    onDismiss()
-                    true
+                if (event.type == KeyEventType.KeyDown) {
+                    when {
+                        event.key == Key.Escape -> {
+                            onDismiss()
+                            true
+                        }
+                        resolveReaderZoom(
+                            isKeyDown = true,
+                            isCtrlPressed = event.isCtrlPressed,
+                            key = event.key,
+                        ) != null -> {
+                            val action = resolveReaderZoom(
+                                isKeyDown = true,
+                                isCtrlPressed = event.isCtrlPressed,
+                                key = event.key,
+                            )!!
+                            zoomState = zoomState.keyboardZoom(action, viewportSize)
+                            true
+                        }
+                        zoomState.scale > READER_MIN_SCALE -> {
+                            val panned = zoomState.panned(event.key, viewportSize)
+                            if (panned != null) {
+                                zoomState = panned
+                                true
+                            } else {
+                                false
+                            }
+                        }
+                        event.key == Key.DirectionLeft && onPrevious != null -> {
+                            onPrevious()
+                            true
+                        }
+                        event.key == Key.DirectionRight && onNext != null -> {
+                            onNext()
+                            true
+                        }
+                        else -> false
+                    }
                 } else {
                     false
                 }
@@ -1902,7 +1984,19 @@ internal fun CoverPreviewDialog(
         Box(
             modifier = Modifier
                 .fillMaxSize(0.85f)
-                .clickable(enabled = false) {},
+                .onSizeChanged { viewportSize = it }
+                .pointerInput(imageUrl) {
+                    detectTransformGestures { _, pan, zoom, _ ->
+                        zoomState = zoomState.gestureZoom(zoomFactor = zoom, pan = pan, viewport = size)
+                    }
+                }
+                .pointerInput(imageUrl) {
+                    detectTapGestures(
+                        onDoubleTap = {
+                            zoomState = zoomState.doubleTapToggled()
+                        },
+                    )
+                },
             contentAlignment = Alignment.Center,
         ) {
             AsyncImage(
@@ -1911,18 +2005,66 @@ internal fun CoverPreviewDialog(
                 modifier = Modifier
                     .fillMaxSize()
                     .graphicsLayer {
-                        scaleX = scale
-                        scaleY = scale
+                        scaleX = zoomState.scale
+                        scaleY = zoomState.scale
+                        translationX = zoomState.offset.x
+                        translationY = zoomState.offset.y
                     }
-                    .pointerHoverIcon(PointerIcon.Hand)
-                    .combinedClickable(
-                        onClick = {},
-                        onDoubleClick = { scale = DesktopZoomController.toggleFitZoom(scale) },
-                    ),
+                    .pointerHoverIcon(if (zoomState.scale > READER_MIN_SCALE) PointerIcon.Hand else PointerIcon.Default),
                 contentScale = ContentScale.Fit,
             )
         }
 
+        // 浮动前后翻页胶囊（在提供了上一张/下一张回调时呈现）
+        if (onPrevious != null) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .padding(start = 24.dp)
+                    .clip(SquircleShape(12.dp))
+                    .background(MiuixTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.9f))
+                    .pointerHoverIcon(PointerIcon.Hand)
+                    .clickable {
+                        zoomState = DesktopReaderZoomState()
+                        onPrevious()
+                    }
+                    .padding(horizontal = 14.dp, vertical = 18.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = "‹",
+                    color = MiuixTheme.colorScheme.onSurface,
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
+        }
+
+        if (onNext != null) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .padding(end = 24.dp)
+                    .clip(SquircleShape(12.dp))
+                    .background(MiuixTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.9f))
+                    .pointerHoverIcon(PointerIcon.Hand)
+                    .clickable {
+                        zoomState = DesktopReaderZoomState()
+                        onNext()
+                    }
+                    .padding(horizontal = 14.dp, vertical = 18.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = "›",
+                    color = MiuixTheme.colorScheme.onSurface,
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
+        }
+
+        // 底部悬浮控制栏
         Row(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -1931,13 +2073,13 @@ internal fun CoverPreviewDialog(
                 .background(MiuixTheme.colorScheme.surfaceContainerHighest)
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Box(
                 modifier = Modifier
                     .clip(SquircleShape(6.dp))
                     .pointerHoverIcon(PointerIcon.Hand)
-                    .clickable { scale = DesktopZoomController.zoomOut(scale) }
+                    .clickable { zoomState = zoomState.keyboardZoom(DesktopReaderZoom.Out, viewportSize) }
                     .padding(horizontal = 8.dp, vertical = 2.dp),
             ) {
                 Text(
@@ -1947,24 +2089,54 @@ internal fun CoverPreviewDialog(
                 )
             }
             Text(
-                text = DesktopZoomController.formatZoomPercentage(scale),
+                text = DesktopZoomController.formatZoomPercentage(zoomState.scale),
                 color = MiuixTheme.colorScheme.primary,
                 style = MiuixTheme.textStyles.body2,
                 modifier = Modifier
                     .pointerHoverIcon(PointerIcon.Hand)
-                    .clickable { scale = DesktopZoomController.resetZoom() },
+                    .clickable { zoomState = zoomState.keyboardZoom(DesktopReaderZoom.Reset, viewportSize) },
             )
             Box(
                 modifier = Modifier
                     .clip(SquircleShape(6.dp))
                     .pointerHoverIcon(PointerIcon.Hand)
-                    .clickable { scale = DesktopZoomController.zoomIn(scale) }
+                    .clickable { zoomState = zoomState.keyboardZoom(DesktopReaderZoom.In, viewportSize) }
                     .padding(horizontal = 8.dp, vertical = 2.dp),
             ) {
                 Text(
                     text = "+",
                     color = MiuixTheme.colorScheme.onSurface,
                     fontSize = 14.sp,
+                )
+            }
+            VerticalDivider()
+            Box(
+                modifier = Modifier
+                    .clip(SquircleShape(6.dp))
+                    .pointerHoverIcon(PointerIcon.Hand)
+                    .clickable {
+                        clipboard.setText(AnnotatedString(imageUrl))
+                        copiedNotice = true
+                    }
+                    .padding(horizontal = 8.dp, vertical = 2.dp),
+            ) {
+                Text(
+                    text = if (copiedNotice) stringResource(MR.strings.copied_to_clipboard) else stringResource(MR.strings.copy_link),
+                    color = if (copiedNotice) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurface,
+                    fontSize = 12.sp,
+                )
+            }
+            Box(
+                modifier = Modifier
+                    .clip(SquircleShape(6.dp))
+                    .pointerHoverIcon(PointerIcon.Hand)
+                    .clickable { DesktopBrowser.openUrl(imageUrl) }
+                    .padding(horizontal = 8.dp, vertical = 2.dp),
+            ) {
+                Text(
+                    text = stringResource(MR.strings.open_in_browser),
+                    color = MiuixTheme.colorScheme.onSurface,
+                    fontSize = 12.sp,
                 )
             }
             VerticalDivider()
