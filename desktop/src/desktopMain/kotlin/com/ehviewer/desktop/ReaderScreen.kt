@@ -155,6 +155,8 @@ fun ReaderScreen(
             } else {
                 pageLinks = links
                 linksState = null
+                // 会话内页码记忆：重进同一画廊恢复上次读到的一页（越界钳制）
+                page = DesktopReaderProgress.restore(gallery.gid, links.size)
             }
         }.onFailure {
             linksState = it.message
@@ -165,9 +167,10 @@ fun ReaderScreen(
         }
     }
 
-    // 翻页自动重置缩放与平移
+    // 翻页自动重置缩放与平移，并记录会话内页码（库往返恢复）
     LaunchedEffect(page) {
         zoomState = DesktopReaderZoomState()
+        DesktopReaderProgress.save(gallery.gid, page)
     }
     AutoExpireNotifications(notifications) { notifications = it }
     val currentLink = pageLinks.getOrNull(page - 1)
