@@ -416,13 +416,15 @@ fun LibraryScreen(
                             isKeyDown = event.type == KeyEventType.KeyDown,
                             isCtrlPressed = event.isCtrlPressed,
                             key = event.key,
-                            hasSelection = selected != null,
+                            hasSelection = selected != null || multiSelection.isActive || searchQuery.isNotEmpty() || previewCoverUrl != null,
                         )
                         when (action) {
                             DesktopKeyAction.ClearSelection -> {
                                 if (previewCoverUrl != null) {
                                     previewCoverUrl = null
                                     previewUrls = emptyList()
+                                } else if (multiSelection.isActive) {
+                                    multiSelection.clear()
                                 } else if (searchQuery.isNotEmpty()) {
                                     searchFieldState.clearText()
                                 } else {
@@ -1299,6 +1301,69 @@ fun LibraryScreen(
                         },
                         onOpenReader = onOpenReader?.let { opener -> { opener(gallery) } },
                     )
+                }
+            }
+        }
+
+        if (multiSelection.isActive && (currentTab == LibraryTab.History || currentTab == LibraryTab.Favorites)) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 24.dp)
+                    .clip(SquircleShape(12.dp))
+                    .background(MiuixTheme.colorScheme.surfaceContainerHighest)
+                    .padding(horizontal = 10.dp, vertical = 6.dp),
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .clip(SquircleShape(6.dp))
+                            .background(MiuixTheme.colorScheme.primary.copy(alpha = 0.15f))
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = "${multiSelection.gids.size}",
+                            color = MiuixTheme.colorScheme.primary,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
+                    Box(
+                        modifier = Modifier
+                            .clip(SquircleShape(8.dp))
+                            .background(MiuixTheme.colorScheme.surface)
+                            .pointerHoverIcon(PointerIcon.Hand)
+                            .clickable { multiSelection.clear() }
+                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = stringResource(MR.strings.desktop_action_cancel),
+                            color = MiuixTheme.colorScheme.onSurface,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium,
+                        )
+                    }
+                    Box(
+                        modifier = Modifier
+                            .clip(SquircleShape(8.dp))
+                            .background(MiuixTheme.colorScheme.error.copy(alpha = 0.15f))
+                            .pointerHoverIcon(PointerIcon.Hand)
+                            .clickable { showBatchDeleteConfirm = true }
+                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = stringResource(MR.strings.desktop_delete_selected, multiSelection.gids.size),
+                            color = MiuixTheme.colorScheme.error,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium,
+                        )
+                    }
                 }
             }
         }
