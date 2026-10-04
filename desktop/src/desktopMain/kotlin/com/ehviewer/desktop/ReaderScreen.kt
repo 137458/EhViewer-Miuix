@@ -302,10 +302,14 @@ fun ReaderScreen(
                     modifier = Modifier.weight(1f),
                 )
                 if (pageLinks.isNotEmpty()) {
+                    val topPageHover = remember { MutableInteractionSource() }
+                    val topPageHovered by topPageHover.collectIsHoveredAsState()
                     Box(
                         modifier = Modifier
                             .clip(SquircleShape(6.dp))
                             .background(MiuixTheme.colorScheme.surfaceContainerHighest)
+                            .background(if (topPageHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
+                            .hoverable(topPageHover)
                             .pointerHoverIcon(PointerIcon.Hand)
                             .clickable {
                                 jumpFieldState.setTextAndPlaceCursorAtEnd(page.toString())

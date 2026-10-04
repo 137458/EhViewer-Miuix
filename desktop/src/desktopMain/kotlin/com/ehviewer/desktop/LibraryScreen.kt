@@ -1051,10 +1051,14 @@ fun LibraryScreen(
                                                         text = stringResource(MR.strings.desktop_status_offline) + ": ${status.reason}",
                                                         color = MiuixTheme.colorScheme.error,
                                                     )
+                                                    val emptyRetryHover = remember { MutableInteractionSource() }
+                                                    val emptyRetryHovered by emptyRetryHover.collectIsHoveredAsState()
                                                     Box(
                                                         modifier = Modifier
                                                             .clip(SquircleShape(6.dp))
                                                             .background(MiuixTheme.colorScheme.surfaceContainerHighest)
+                                                            .background(if (emptyRetryHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
+                                                            .hoverable(emptyRetryHover)
                                                             .pointerHoverIcon(PointerIcon.Hand)
                                                             .clickable {
                                                                 coroutineScope.launch {
