@@ -133,13 +133,22 @@ fun DesktopCommentsSection(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
+            val headerInteraction = remember { MutableInteractionSource() }
+            val headerHovered by headerInteraction.collectIsHoveredAsState()
+            val hasComments = !comments.isNullOrEmpty()
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 modifier = Modifier
                     .clip(SquircleShape(4.dp))
-                    .clickable(enabled = !comments.isNullOrEmpty()) { expanded = !expanded }
-                    .padding(vertical = 2.dp),
+                    .background(if (headerHovered && hasComments) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
+                    .pointerHoverIcon(if (hasComments) PointerIcon.Hand else PointerIcon.Default)
+                    .clickable(
+                        interactionSource = headerInteraction,
+                        indication = null,
+                        enabled = hasComments,
+                    ) { expanded = !expanded }
+                    .padding(horizontal = 4.dp, vertical = 2.dp),
             ) {
                 Text(
                     text = headerText,
