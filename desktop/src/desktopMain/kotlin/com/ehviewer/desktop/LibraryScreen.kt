@@ -1162,11 +1162,14 @@ fun LibraryScreen(
                                             ContextMenuArea(
                                                 items = { buildGalleryContextMenu(gallery, title, link) },
                                             ) {
+                                                val rowInteraction = remember { MutableInteractionSource() }
+                                                val rowHovered by rowInteraction.collectIsHoveredAsState()
                                                 Row(
                                                     modifier = Modifier.fillMaxWidth()
                                                         .clip(SquircleShape(8.dp))
                                                         .pointerHoverIcon(PointerIcon.Hand)
                                                         .combinedClickable(
+                                                            interactionSource = rowInteraction,
                                                             onClick = {
                                                                 // Ctrl+点击进入/退出批量多选；普通点击收敛多选并单选（组合期捕获 WindowInfo，点击时读实时修饰键）
                                                                 if (ctrlDown) {
@@ -1186,6 +1189,7 @@ fun LibraryScreen(
                                                             when {
                                                                 gallery.gid in multiSelection.gids -> MiuixTheme.colorScheme.primary.copy(alpha = 0.20f)
                                                                 selected?.gid == gallery.gid -> MiuixTheme.colorScheme.primary.copy(alpha = 0.12f)
+                                                                rowHovered -> MiuixTheme.colorScheme.primary.copy(alpha = 0.06f)
                                                                 else -> Color.Transparent
                                                             },
                                                         )
@@ -1264,12 +1268,15 @@ fun LibraryScreen(
                                             ContextMenuArea(
                                                 items = { buildGalleryContextMenu(gallery, title, link) },
                                             ) {
+                                                val cardInteraction = remember { MutableInteractionSource() }
+                                                val cardHovered by cardInteraction.collectIsHoveredAsState()
                                                 Box(
                                                     modifier = Modifier
                                                         .fillMaxWidth()
                                                         .clip(SquircleShape(8.dp))
                                                         .pointerHoverIcon(PointerIcon.Hand)
                                                         .combinedClickable(
+                                                            interactionSource = cardInteraction,
                                                             onClick = {
                                                                 // Ctrl+点击进入/退出批量多选；普通点击收敛多选并单选（组合期捕获 WindowInfo，点击时读实时修饰键）
                                                                 if (ctrlDown) {
@@ -1289,6 +1296,7 @@ fun LibraryScreen(
                                                             when {
                                                                 gallery.gid in multiSelection.gids -> MiuixTheme.colorScheme.primary.copy(alpha = 0.20f)
                                                                 selected?.gid == gallery.gid -> MiuixTheme.colorScheme.primary.copy(alpha = 0.12f)
+                                                                cardHovered -> MiuixTheme.colorScheme.primary.copy(alpha = 0.06f)
                                                                 else -> MiuixTheme.colorScheme.surfaceContainerHighest
                                                             },
                                                         )
