@@ -10,6 +10,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -594,50 +595,38 @@ private fun AboutDialog(onDismiss: () -> Unit) {
                 }
             }
             val releasesUrl = RELEASES_PAGE_URL
-            val releasesInteraction = remember { MutableInteractionSource() }
-            val releasesHovered by releasesInteraction.collectIsHoveredAsState()
-            Text(
-                text = releasesUrl,
-                color = MiuixTheme.colorScheme.primary,
-                fontSize = 12.sp,
-                modifier = Modifier
-                    .clip(SquircleShape(6.dp))
-                    .background(MiuixTheme.colorScheme.surfaceContainerHighest)
-                    .background(if (releasesHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
-                    .pointerHoverIcon(PointerIcon.Hand)
-                    .clickable(
-                        interactionSource = releasesInteraction,
-                        indication = null,
-                    ) { DesktopBrowser.openUrl(releasesUrl) }
-                    .padding(horizontal = 8.dp, vertical = 4.dp),
-            )
+            DesktopHoverPill(
+                onClick = { DesktopBrowser.openUrl(releasesUrl) },
+                containerColor = MiuixTheme.colorScheme.surfaceContainerHighest,
+                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+            ) {
+                Text(
+                    text = releasesUrl,
+                    color = MiuixTheme.colorScheme.primary,
+                    fontSize = 12.sp,
+                )
+            }
             val clipboard = LocalClipboardManager.current
             val logLabel = stringResource(MR.strings.desktop_about_log)
             val copiedText = stringResource(MR.strings.copied_to_clipboard)
             var copiedLog by remember { mutableStateOf(false) }
             DesktopFileLog.defaultFile()?.let { logPath ->
-                val logInteraction = remember { MutableInteractionSource() }
-                val logHovered by logInteraction.collectIsHoveredAsState()
-                Text(
-                    text = if (copiedLog) copiedText else "$logLabel: $logPath",
-                    color = if (copiedLog || logHovered) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    fontSize = 12.sp,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier
-                        .clip(SquircleShape(6.dp))
-                        .background(MiuixTheme.colorScheme.surfaceContainerHighest)
-                        .background(if (logHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
-                        .pointerHoverIcon(PointerIcon.Hand)
-                        .clickable(
-                            interactionSource = logInteraction,
-                            indication = null,
-                        ) {
-                            clipboard.setText(AnnotatedString(logPath.toString()))
-                            copiedLog = true
-                        }
-                        .padding(horizontal = 8.dp, vertical = 4.dp),
-                )
+                DesktopHoverPill(
+                    onClick = {
+                        clipboard.setText(AnnotatedString(logPath.toString()))
+                        copiedLog = true
+                    },
+                    containerColor = MiuixTheme.colorScheme.surfaceContainerHighest,
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                ) { hovered ->
+                    Text(
+                        text = if (copiedLog) copiedText else "$logLabel: $logPath",
+                        color = if (copiedLog || hovered) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        fontSize = 12.sp,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
         }
     }
@@ -853,20 +842,13 @@ private fun GalleryDetailPageContent(
                     .weight(1f)
                     .padding(start = if (onBack != null) 4.dp else 0.dp, end = 8.dp),
             )
-            val browserHover = remember { MutableInteractionSource() }
-            val browserHovered by browserHover.collectIsHoveredAsState()
-            Box(
-                modifier = Modifier
-                    .clip(SquircleShape(8.dp))
-                    .background(MiuixTheme.colorScheme.surfaceContainerHighest)
-                    .background(if (browserHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
-                    .hoverable(browserHover)
-                    .clickable {
-                        DesktopBrowser.openUrl(galleryWebUrl(currentGallery.gid, currentGallery.token))
-                    }
-                    .pointerHoverIcon(PointerIcon.Hand)
-                    .padding(horizontal = 12.dp, vertical = 6.dp),
-                contentAlignment = Alignment.Center,
+            DesktopHoverPill(
+                onClick = {
+                    DesktopBrowser.openUrl(galleryWebUrl(currentGallery.gid, currentGallery.token))
+                },
+                shape = SquircleShape(8.dp),
+                containerColor = MiuixTheme.colorScheme.surfaceContainerHighest,
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
             ) {
                 Text(
                     text = stringResource(MR.strings.open_in_browser),
@@ -876,18 +858,12 @@ private fun GalleryDetailPageContent(
                 )
             }
             if (onOpenReader != null) {
-                val readHover = remember { MutableInteractionSource() }
-                val readHovered by readHover.collectIsHoveredAsState()
-                Box(
-                    modifier = Modifier
-                        .clip(SquircleShape(8.dp))
-                        .background(MiuixTheme.colorScheme.primary)
-                        .background(if (readHovered) Color.White.copy(alpha = 0.12f) else Color.Transparent)
-                        .hoverable(readHover)
-                        .clickable { onOpenReader(currentGallery) }
-                        .pointerHoverIcon(PointerIcon.Hand)
-                        .padding(horizontal = 14.dp, vertical = 6.dp),
-                    contentAlignment = Alignment.Center,
+                DesktopHoverPill(
+                    onClick = { onOpenReader(currentGallery) },
+                    shape = SquircleShape(8.dp),
+                    containerColor = MiuixTheme.colorScheme.primary,
+                    hoverOverlayColor = Color.White.copy(alpha = 0.12f),
+                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
                 ) {
                     Text(
                         text = stringResource(MR.strings.menu_read),
