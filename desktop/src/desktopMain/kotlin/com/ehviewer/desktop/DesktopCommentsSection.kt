@@ -97,10 +97,10 @@ fun DesktopCommentsSection(
     val copyCommentText = stringResource(MR.strings.copy_comment_text)
     val clipboard = LocalClipboardManager.current
     val coroutineScope = rememberCoroutineScope()
-    // 投票：apiuid/apikey 就绪时可用；结果以状态行反馈（成功显分数，失败显原因）
-    var votingCommentId by remember { mutableStateOf<Long?>(null) }
-    var votedScore by remember { mutableStateOf<Int?>(null) }
-    var voteError by remember { mutableStateOf<String?>(null) }
+    // 投票：apiuid/apikey 就绪时可用；结果以状态行反馈（成功显分数，失败显原因）。按画廊 key 重置，避免切换画廊后残留上一画廊的投票结果
+    var votingCommentId by remember(gallery.gid) { mutableStateOf<Long?>(null) }
+    var votedScore by remember(gallery.gid) { mutableStateOf<Int?>(null) }
+    var voteError by remember(gallery.gid) { mutableStateOf<String?>(null) }
     val canVote = apiUid >= 0 && !apiKey.isNullOrEmpty()
 
     fun vote(comment: GalleryComment, vote: Int) {
