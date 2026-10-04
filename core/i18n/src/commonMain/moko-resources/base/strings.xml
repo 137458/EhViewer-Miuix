@@ -643,6 +643,8 @@
     <string name="desktop_reader_zoom">Zoom in / out / reset</string>
     <string name="settings_restore_session">Restore last session windows</string>
     <string name="desktop_untitled">(Untitled)</string>
+    <string name="desktop_a11y_back">Back</string>
+    <string name="desktop_a11y_close">Close</string>
     <string name="desktop_copied">Copied</string>
     <string name="desktop_link_copied">Link copied</string>
     <string name="desktop_removed_from_history">Removed from history</string>

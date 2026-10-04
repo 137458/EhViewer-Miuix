@@ -666,6 +666,8 @@
     <string name="desktop_status_ehentai">e-hentai：%1$s</string>
     <string name="desktop_status_offline">オフライン</string>
     <string name="desktop_untitled">（無題）</string>
+    <string name="desktop_a11y_back">戻る</string>
+    <string name="desktop_a11y_close">閉じる</string>
     <string name="desktop_update_available">更新があります：%1$s</string>
     <string name="desktop_view_grid">グリッド</string>
     <string name="desktop_view_list">リスト</string>
