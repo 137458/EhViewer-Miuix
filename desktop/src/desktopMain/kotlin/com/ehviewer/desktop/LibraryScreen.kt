@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -2306,19 +2307,10 @@ private fun DetailRowActionPill(
     text: String,
     onClick: () -> Unit,
 ) {
-    val pillHover = remember { MutableInteractionSource() }
-    val pillHovered by pillHover.collectIsHoveredAsState()
-    Box(
-        modifier = Modifier
-            .clip(SquircleShape(6.dp))
-            .background(MiuixTheme.colorScheme.surfaceContainerHighest)
-            .background(if (pillHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
-            .hoverable(pillHover)
-            .pointerHoverIcon(PointerIcon.Hand)
-            .clickable { onClick() }
-            .padding(horizontal = 8.dp, vertical = 3.dp),
-        contentAlignment = Alignment.Center,
-    ) {
+    DesktopHoverPill(
+        onClick = onClick,
+        containerColor = MiuixTheme.colorScheme.surfaceContainerHighest,
+    ) { _ ->
         Text(
             text = text,
             color = MiuixTheme.colorScheme.primary,
@@ -2566,20 +2558,13 @@ private fun PreviewBarAction(
     fontWeight: FontWeight? = null,
     onClick: () -> Unit,
 ) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val isHovered by interactionSource.collectIsHoveredAsState()
-    Box(
-        modifier = Modifier
-            .clip(SquircleShape(6.dp))
-            .background(if (isHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
-            .pointerHoverIcon(PointerIcon.Hand)
-            .clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
-            .padding(horizontal = 8.dp, vertical = 4.dp),
-        contentAlignment = Alignment.Center,
-    ) {
+    DesktopHoverPill(
+        onClick = onClick,
+        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+    ) { hovered ->
         Text(
             text = text,
-            color = if (isHovered) MiuixTheme.colorScheme.primary else color,
+            color = if (hovered) MiuixTheme.colorScheme.primary else color,
             fontSize = fontSize,
             fontWeight = fontWeight,
         )
