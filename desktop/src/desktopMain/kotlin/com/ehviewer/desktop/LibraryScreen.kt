@@ -570,45 +570,58 @@ fun LibraryScreen(
             Row(modifier = Modifier.fillMaxSize()) {
                 Column(modifier = Modifier.width(320.dp).fillMaxHeight()) {
                     Row(
-                        modifier = Modifier.fillMaxWidth().padding(8.dp),
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text(
-                                text = "${stringResource(MR.strings.history)} (${history.size})",
-                                color = if (currentTab == LibraryTab.History) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                modifier = Modifier
-                                    .pointerHoverIcon(PointerIcon.Hand)
-                                    .clickable { switchTab(LibraryTab.History) }
-                                    .padding(vertical = 4.dp, horizontal = 4.dp),
+                        Row(
+                            modifier = Modifier
+                                .clip(SquircleShape(8.dp))
+                                .background(MiuixTheme.colorScheme.surfaceContainerHighest)
+                                .padding(2.dp),
+                            horizontalArrangement = Arrangement.spacedBy(2.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            val tabs = listOf(
+                                Triple(LibraryTab.History, stringResource(MR.strings.history), history.size),
+                                Triple(LibraryTab.Favorites, stringResource(MR.strings.local_favorites), favorites.size),
+                                Triple(LibraryTab.Online, stringResource(MR.strings.online), online.size),
                             )
-                            Text(
-                                text = "${stringResource(MR.strings.local_favorites)} (${favorites.size})",
-                                color = if (currentTab == LibraryTab.Favorites) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                modifier = Modifier
-                                    .pointerHoverIcon(PointerIcon.Hand)
-                                    .clickable { switchTab(LibraryTab.Favorites) }
-                                    .padding(vertical = 4.dp, horizontal = 4.dp),
-                            )
-                            Text(
-                                text = "${stringResource(MR.strings.online)} (${online.size})",
-                                color = if (currentTab == LibraryTab.Online) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                modifier = Modifier
-                                    .pointerHoverIcon(PointerIcon.Hand)
-                                    .clickable { switchTab(LibraryTab.Online) }
-                                    .padding(vertical = 4.dp, horizontal = 4.dp),
-                            )
+                            tabs.forEach { (tab, label, count) ->
+                                val selected = currentTab == tab
+                                Box(
+                                    modifier = Modifier
+                                        .clip(SquircleShape(6.dp))
+                                        .background(
+                                            if (selected) MiuixTheme.colorScheme.surface else Color.Transparent,
+                                        )
+                                        .pointerHoverIcon(PointerIcon.Hand)
+                                        .clickable { switchTab(tab) }
+                                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                                ) {
+                                    Text(
+                                        text = "$label ($count)",
+                                        color = if (selected) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                        fontSize = 12.sp,
+                                        fontWeight = if (selected) FontWeight.Medium else FontWeight.Normal,
+                                    )
+                                }
+                            }
                         }
                         if (currentTab == LibraryTab.History && history.isNotEmpty()) {
-                            Text(
-                                text = stringResource(MR.strings.clear_all),
-                                color = MiuixTheme.colorScheme.primary,
+                            Box(
                                 modifier = Modifier
+                                    .clip(SquircleShape(6.dp))
                                     .pointerHoverIcon(PointerIcon.Hand)
                                     .clickable { showClearHistoryConfirm = true }
-                                    .padding(vertical = 4.dp, horizontal = 4.dp),
-                            )
+                                    .padding(horizontal = 6.dp, vertical = 4.dp),
+                            ) {
+                                Text(
+                                    text = stringResource(MR.strings.clear_all),
+                                    color = MiuixTheme.colorScheme.primary,
+                                    fontSize = 12.sp,
+                                )
+                            }
                         }
                     }
                     Row(
@@ -639,36 +652,52 @@ fun LibraryScreen(
                                     }
                                 },
                         )
-                        Text(
-                            text = if (sortConfig.field == DesktopSortField.Default) {
-                                stringResource(MR.strings.desktop_sort)
-                            } else {
-                                sortConfig.label
-                            },
-                            color = if (sortConfig.field == DesktopSortField.Default) MiuixTheme.colorScheme.onSurfaceVariantSummary else MiuixTheme.colorScheme.primary,
+                        Box(
                             modifier = Modifier
+                                .clip(SquircleShape(6.dp))
+                                .background(MiuixTheme.colorScheme.surfaceContainerHighest)
                                 .pointerHoverIcon(PointerIcon.Hand)
                                 .clickable {
                                     sortConfig = sortConfig.cycle().also {
                                         DesktopSettings.sortConfig.value = it.encode()
                                     }
                                 }
-                                .padding(horizontal = 4.dp, vertical = 4.dp),
-                        )
-                        Text(
-                            text = if (viewMode == DesktopViewMode.List) {
-                                stringResource(MR.strings.desktop_view_list)
-                            } else {
-                                stringResource(MR.strings.desktop_view_grid)
-                            },
-                            color = MiuixTheme.colorScheme.primary,
+                                .padding(horizontal = 8.dp, vertical = 6.dp),
+                        ) {
+                            Text(
+                                text = if (sortConfig.field == DesktopSortField.Default) {
+                                    stringResource(MR.strings.desktop_sort)
+                                } else {
+                                    sortConfig.label
+                                },
+                                color = if (sortConfig.field == DesktopSortField.Default) {
+                                    MiuixTheme.colorScheme.onSurfaceVariantSummary
+                                } else {
+                                    MiuixTheme.colorScheme.primary
+                                },
+                                fontSize = 12.sp,
+                            )
+                        }
+                        Box(
                             modifier = Modifier
+                                .clip(SquircleShape(6.dp))
+                                .background(MiuixTheme.colorScheme.surfaceContainerHighest)
                                 .pointerHoverIcon(PointerIcon.Hand)
                                 .clickable {
                                     DesktopSettings.viewMode.value = viewMode.toggle().ordinal
                                 }
-                                .padding(horizontal = 6.dp, vertical = 4.dp),
-                        )
+                                .padding(horizontal = 8.dp, vertical = 6.dp),
+                        ) {
+                            Text(
+                                text = if (viewMode == DesktopViewMode.List) {
+                                    stringResource(MR.strings.desktop_view_list)
+                                } else {
+                                    stringResource(MR.strings.desktop_view_grid)
+                                },
+                                color = MiuixTheme.colorScheme.primary,
+                                fontSize = 12.sp,
+                            )
+                        }
                     }
                     val suggestions = remember(searchHistoryList, searchQuery) {
                         DesktopSearchHistory.filterSuggestions(searchHistoryList, searchQuery, maxSuggestions = 5)
