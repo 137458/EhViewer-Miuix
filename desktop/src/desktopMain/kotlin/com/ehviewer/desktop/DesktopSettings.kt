@@ -47,6 +47,9 @@ object DesktopSettings : DataStorePreferences("desktop") {
     // 阅读方向（LTR 西式 / RTL 日漫），影响阅读器点击区域与方向键语义
     val readingDirection = stringPref("reading_direction", "LTR")
 
+    // 阅读进度（"gid:page,..." 编解码经 DesktopReadingProgress，跨会话续读）
+    val readingProgress = stringPref("reader_progress", "")
+
     // false = 启动不恢复上次会话窗口，true = 恢复
     val restoreSession = boolPref("restore_session", true)
 }

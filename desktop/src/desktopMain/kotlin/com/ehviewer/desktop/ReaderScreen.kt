@@ -155,8 +155,9 @@ fun ReaderScreen(
             } else {
                 pageLinks = links
                 linksState = null
-                // 会话内页码记忆：重进同一画廊恢复上次读到的一页（越界钳制）
-                page = DesktopReaderProgress.restore(gallery.gid, links.size)
+                // 跨会话阅读进度：从持久化 "gid:page" 记录恢复上次读到的一页（越界钳制）
+                val savedPage = DesktopReadingProgress.decode(DesktopSettings.readingProgress.value)[gallery.gid] ?: 1
+                page = savedPage.coerceIn(1, links.size)
             }
         }.onFailure {
             linksState = it.message
@@ -167,10 +168,16 @@ fun ReaderScreen(
         }
     }
 
-    // 翻页自动重置缩放与平移，并记录会话内页码（库往返恢复）
+    // 翻页自动重置缩放与平移，并写入跨会话阅读进度（"gid:page" 编解码经 DesktopReadingProgress）
     LaunchedEffect(page) {
         zoomState = DesktopReaderZoomState()
-        DesktopReaderProgress.save(gallery.gid, page)
+        DesktopSettings.readingProgress.value = DesktopReadingProgress.encode(
+            DesktopReadingProgress.update(
+                progress = DesktopReadingProgress.decode(DesktopSettings.readingProgress.value),
+                gid = gallery.gid,
+                page = page,
+            ),
+        )
     }
     AutoExpireNotifications(notifications) { notifications = it }
     val currentLink = pageLinks.getOrNull(page - 1)
