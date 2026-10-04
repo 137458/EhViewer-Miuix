@@ -37,6 +37,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
@@ -841,12 +842,19 @@ fun LibraryScreen(
                                     fontSize = 11.sp,
                                 )
                             }
+                            val canGoPrev = DesktopOnlinePagination.canNavigatePrev(cursorIndex)
                             Box(
                                 modifier = Modifier
                                     .clip(SquircleShape(6.dp))
-                                    .background(MiuixTheme.colorScheme.surfaceContainerHighest)
-                                    .pointerHoverIcon(PointerIcon.Hand)
-                                    .clickable(enabled = cursorIndex > 0) {
+                                    .background(
+                                        if (canGoPrev) {
+                                            MiuixTheme.colorScheme.surfaceContainerHighest
+                                        } else {
+                                            MiuixTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.35f)
+                                        },
+                                    )
+                                    .pointerHoverIcon(if (canGoPrev) PointerIcon.Hand else PointerIcon.Default)
+                                    .clickable(enabled = canGoPrev) {
                                         cursorIndex -= 1
                                         remoteSearch(remoteSearchQuery, nextGid = cursorStack[cursorIndex], pushCursor = false)
                                     }
@@ -855,23 +863,43 @@ fun LibraryScreen(
                             ) {
                                 Text(
                                     text = stringResource(MR.strings.desktop_reader_prev),
-                                    color = if (cursorIndex > 0) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.5f),
+                                    color = if (canGoPrev) {
+                                        MiuixTheme.colorScheme.primary
+                                    } else {
+                                        MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.4f)
+                                    },
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Medium,
                                 )
                             }
-                            Text(
-                                text = stringResource(MR.strings.desktop_online_page_n, cursorIndex + 1),
-                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                fontSize = 11.sp,
-                            )
-                            Box(modifier = Modifier.weight(1f))
                             Box(
                                 modifier = Modifier
                                     .clip(SquircleShape(6.dp))
-                                    .background(MiuixTheme.colorScheme.surfaceContainerHighest)
-                                    .pointerHoverIcon(PointerIcon.Hand)
-                                    .clickable(enabled = online.isNotEmpty()) {
+                                    .background(MiuixTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.5f))
+                                    .padding(horizontal = 6.dp, vertical = 2.dp),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    text = stringResource(MR.strings.desktop_online_page_n, DesktopOnlinePagination.pageDisplayNumber(cursorIndex)),
+                                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Medium,
+                                )
+                            }
+                            Box(modifier = Modifier.weight(1f))
+                            val canGoNext = DesktopOnlinePagination.canNavigateNext(online.isNotEmpty())
+                            Box(
+                                modifier = Modifier
+                                    .clip(SquircleShape(6.dp))
+                                    .background(
+                                        if (canGoNext) {
+                                            MiuixTheme.colorScheme.surfaceContainerHighest
+                                        } else {
+                                            MiuixTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.35f)
+                                        },
+                                    )
+                                    .pointerHoverIcon(if (canGoNext) PointerIcon.Hand else PointerIcon.Default)
+                                    .clickable(enabled = canGoNext) {
                                         val lastGid = online.lastOrNull()?.gid
                                         if (lastGid != null) {
                                             while (cursorStack.size > cursorIndex + 1) cursorStack.removeAt(cursorStack.size - 1)
@@ -885,7 +913,11 @@ fun LibraryScreen(
                             ) {
                                 Text(
                                     text = stringResource(MR.strings.desktop_online_next),
-                                    color = if (online.isNotEmpty()) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.5f),
+                                    color = if (canGoNext) {
+                                        MiuixTheme.colorScheme.primary
+                                    } else {
+                                        MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.4f)
+                                    },
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Medium,
                                 )
@@ -1064,212 +1096,251 @@ fun LibraryScreen(
                             return menuItems
                         }
 
-                        if (viewMode == DesktopViewMode.List) {
-                            val listState = rememberLazyListState()
-                            Row(modifier = Modifier.fillMaxSize()) {
-                                LazyColumn(state = listState, modifier = Modifier.weight(1f)) {
-                                    items(
-                                        filteredItems.size,
-                                        key = { index -> filteredItems[index].gid },
-                                    ) { index ->
-                                        val gallery = filteredItems[index]
-                                        val title = galleryDisplayTitle(gallery.title, gallery.gid)
-                                        val link = galleryWebUrl(gallery.gid, gallery.token)
-                                        ContextMenuArea(
-                                            items = { buildGalleryContextMenu(gallery, title, link) },
-                                        ) {
-                                            Row(
-                                                modifier = Modifier.fillMaxWidth()
-                                                    .clip(SquircleShape(8.dp))
-                                                    .pointerHoverIcon(PointerIcon.Hand)
-                                                    .combinedClickable(
-                                                        onClick = {
-                                                            // Ctrl+点击进入/退出批量多选；普通点击收敛多选并单选（组合期捕获 WindowInfo，点击时读实时修饰键）
-                                                            if (ctrlDown) {
-                                                                multiSelection.toggle(gallery.gid)
-                                                            } else {
-                                                                multiSelection.clear()
-                                                                selected = gallery
-                                                            }
-                                                        },
-                                                        onDoubleClick = {
-                                                            multiSelection.clear()
-                                                            selected = gallery
-                                                            onOpenGallery?.invoke(gallery)
-                                                        },
-                                                    )
-                                                    .background(
-                                                        when {
-                                                            gallery.gid in multiSelection.gids -> MiuixTheme.colorScheme.primary.copy(alpha = 0.20f)
-                                                            selected?.gid == gallery.gid -> MiuixTheme.colorScheme.primary.copy(alpha = 0.12f)
-                                                            else -> Color.Transparent
-                                                        },
-                                                    )
-                                                    .padding(horizontal = 8.dp, vertical = 6.dp),
-                                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                                verticalAlignment = Alignment.CenterVertically,
-                                            ) {
-                                                gallery.thumbUrl?.let { thumb ->
-                                                    AsyncImage(
-                                                        model = thumb,
-                                                        contentDescription = null,
-                                                        modifier = Modifier
-                                                            .width(42.dp)
-                                                            .height(56.dp)
-                                                            .clip(SquircleShape(4.dp)),
-                                                        contentScale = ContentScale.Crop,
-                                                    )
-                                                }
-                                                Text(
-                                                    text = title,
-                                                    maxLines = 1,
-                                                    overflow = TextOverflow.Ellipsis,
-                                                    modifier = Modifier.weight(1f),
-                                                    color = MiuixTheme.colorScheme.onBackground,
-                                                )
-                                                val browseTime = when (currentTab) {
-                                                    LibraryTab.History -> historyTimeByGid[gallery.gid]?.let { time ->
-                                                        java.time.Instant.ofEpochMilli(time)
-                                                            .atZone(java.time.ZoneId.systemDefault())
-                                                            .format(java.time.format.DateTimeFormatter.ofPattern("MM-dd HH:mm"))
-                                                    }
-                                                    LibraryTab.Favorites -> favoriteTimeByGid[gallery.gid]?.let { time ->
-                                                        java.time.Instant.ofEpochMilli(time)
-                                                            .atZone(java.time.ZoneId.systemDefault())
-                                                            .format(java.time.format.DateTimeFormatter.ofPattern("MM-dd HH:mm"))
-                                                    }
-                                                    // 在线列表：解析器已给出发布时间字符串（yyyy-MM-dd HH:mm）
-                                                    LibraryTab.Online -> gallery.posted?.take(10)
-                                                }
-                                                browseTime?.let { time ->
-                                                    Text(
-                                                        text = time,
-                                                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                                        fontSize = 11.sp,
-                                                    )
-                                                }
-                                                Text(
-                                                    text = DesktopCategories.displayName(gallery.category),
-                                                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                                )
-                                            }
-                                        }
-                                    }
+                        val listState = rememberLazyListState()
+                        val gridState = rememberLazyGridState()
+                        val canScrollToTop by remember {
+                            derivedStateOf {
+                                if (viewMode == DesktopViewMode.List) {
+                                    listState.firstVisibleItemIndex > 3
+                                } else {
+                                    gridState.firstVisibleItemIndex > 3
                                 }
-                                VerticalScrollbar(
-                                    adapter = rememberScrollbarAdapter(listState),
-                                    isScrollInProgress = listState.isScrollInProgress,
-                                )
                             }
-                        } else {
-                            val gridState = rememberLazyGridState()
-                            Row(modifier = Modifier.fillMaxSize()) {
-                                LazyVerticalGrid(
-                                    state = gridState,
-                                    columns = GridCells.Fixed(2),
-                                    modifier = Modifier.weight(1f).padding(horizontal = 8.dp, vertical = 4.dp),
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                                ) {
-                                    items(
-                                        filteredItems.size,
-                                        key = { index -> filteredItems[index].gid },
-                                    ) { index ->
-                                        val gallery = filteredItems[index]
-                                        val title = galleryDisplayTitle(gallery.title, gallery.gid)
-                                        val link = galleryWebUrl(gallery.gid, gallery.token)
-                                        ContextMenuArea(
-                                            items = { buildGalleryContextMenu(gallery, title, link) },
-                                        ) {
-                                            Box(
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .clip(SquircleShape(8.dp))
-                                                    .pointerHoverIcon(PointerIcon.Hand)
-                                                    .combinedClickable(
-                                                        onClick = {
-                                                            // Ctrl+点击进入/退出批量多选；普通点击收敛多选并单选（组合期捕获 WindowInfo，点击时读实时修饰键）
-                                                            if (ctrlDown) {
-                                                                multiSelection.toggle(gallery.gid)
-                                                            } else {
+                        }
+                        Box(modifier = Modifier.fillMaxSize()) {
+                            if (viewMode == DesktopViewMode.List) {
+                                Row(modifier = Modifier.fillMaxSize()) {
+                                    LazyColumn(state = listState, modifier = Modifier.weight(1f)) {
+                                        items(
+                                            filteredItems.size,
+                                            key = { index -> filteredItems[index].gid },
+                                        ) { index ->
+                                            val gallery = filteredItems[index]
+                                            val title = galleryDisplayTitle(gallery.title, gallery.gid)
+                                            val link = galleryWebUrl(gallery.gid, gallery.token)
+                                            ContextMenuArea(
+                                                items = { buildGalleryContextMenu(gallery, title, link) },
+                                            ) {
+                                                Row(
+                                                    modifier = Modifier.fillMaxWidth()
+                                                        .clip(SquircleShape(8.dp))
+                                                        .pointerHoverIcon(PointerIcon.Hand)
+                                                        .combinedClickable(
+                                                            onClick = {
+                                                                // Ctrl+点击进入/退出批量多选；普通点击收敛多选并单选（组合期捕获 WindowInfo，点击时读实时修饰键）
+                                                                if (ctrlDown) {
+                                                                    multiSelection.toggle(gallery.gid)
+                                                                } else {
+                                                                    multiSelection.clear()
+                                                                    selected = gallery
+                                                                }
+                                                            },
+                                                            onDoubleClick = {
                                                                 multiSelection.clear()
                                                                 selected = gallery
-                                                            }
-                                                        },
-                                                        onDoubleClick = {
-                                                            multiSelection.clear()
-                                                            selected = gallery
-                                                            onOpenGallery?.invoke(gallery)
-                                                        },
-                                                    )
-                                                    .background(
-                                                        when {
-                                                            gallery.gid in multiSelection.gids -> MiuixTheme.colorScheme.primary.copy(alpha = 0.20f)
-                                                            selected?.gid == gallery.gid -> MiuixTheme.colorScheme.primary.copy(alpha = 0.12f)
-                                                            else -> MiuixTheme.colorScheme.surfaceContainerHighest
-                                                        },
-                                                    )
-                                                    .padding(8.dp),
-                                            ) {
-                                                Column(
-                                                    modifier = Modifier.fillMaxWidth(),
-                                                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                                                                onOpenGallery?.invoke(gallery)
+                                                            },
+                                                        )
+                                                        .background(
+                                                            when {
+                                                                gallery.gid in multiSelection.gids -> MiuixTheme.colorScheme.primary.copy(alpha = 0.20f)
+                                                                selected?.gid == gallery.gid -> MiuixTheme.colorScheme.primary.copy(alpha = 0.12f)
+                                                                else -> Color.Transparent
+                                                            },
+                                                        )
+                                                        .padding(horizontal = 8.dp, vertical = 6.dp),
+                                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                                    verticalAlignment = Alignment.CenterVertically,
                                                 ) {
                                                     gallery.thumbUrl?.let { thumb ->
-                                                        Box(
+                                                        AsyncImage(
+                                                            model = thumb,
+                                                            contentDescription = null,
                                                             modifier = Modifier
-                                                                .fillMaxWidth()
-                                                                .height(110.dp)
-                                                                .clip(SquircleShape(6.dp)),
-                                                            contentAlignment = Alignment.Center,
-                                                        ) {
-                                                            AsyncImage(
-                                                                model = thumb,
-                                                                contentDescription = title,
-                                                                modifier = Modifier.fillMaxSize(),
-                                                                contentScale = ContentScale.Crop,
-                                                            )
-                                                        }
+                                                                .width(42.dp)
+                                                                .height(56.dp)
+                                                                .clip(SquircleShape(4.dp)),
+                                                            contentScale = ContentScale.Crop,
+                                                        )
                                                     }
                                                     Text(
                                                         text = title,
-                                                        maxLines = 2,
+                                                        maxLines = 1,
                                                         overflow = TextOverflow.Ellipsis,
+                                                        modifier = Modifier.weight(1f),
                                                         color = MiuixTheme.colorScheme.onBackground,
                                                     )
-                                                    Row(
-                                                        modifier = Modifier.fillMaxWidth(),
-                                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                                        verticalAlignment = Alignment.CenterVertically,
-                                                    ) {
-                                                        GalleryListCardRating(rating = gallery.rating)
+                                                    val browseTime = when (currentTab) {
+                                                        LibraryTab.History -> historyTimeByGid[gallery.gid]?.let { time ->
+                                                            java.time.Instant.ofEpochMilli(time)
+                                                                .atZone(java.time.ZoneId.systemDefault())
+                                                                .format(java.time.format.DateTimeFormatter.ofPattern("MM-dd HH:mm"))
+                                                        }
+                                                        LibraryTab.Favorites -> favoriteTimeByGid[gallery.gid]?.let { time ->
+                                                            java.time.Instant.ofEpochMilli(time)
+                                                                .atZone(java.time.ZoneId.systemDefault())
+                                                                .format(java.time.format.DateTimeFormatter.ofPattern("MM-dd HH:mm"))
+                                                        }
+                                                        // 在线列表：解析器已给出发布时间字符串（yyyy-MM-dd HH:mm）
+                                                        LibraryTab.Online -> gallery.posted?.take(10)
+                                                    }
+                                                    browseTime?.let { time ->
                                                         Text(
-                                                            text = DesktopRating.formatCardMeta(gallery.pages, DesktopCategories.displayName(gallery.category)),
+                                                            text = time,
                                                             color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                                            maxLines = 1,
-                                                            overflow = TextOverflow.Ellipsis,
+                                                            fontSize = 11.sp,
                                                         )
                                                     }
-                                                    if (currentTab == LibraryTab.Online) {
-                                                        gallery.posted?.take(10)?.let { postedDate ->
+                                                    Text(
+                                                        text = DesktopCategories.displayName(gallery.category),
+                                                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                    VerticalScrollbar(
+                                        adapter = rememberScrollbarAdapter(listState),
+                                        isScrollInProgress = listState.isScrollInProgress,
+                                    )
+                                }
+                            } else {
+                                Row(modifier = Modifier.fillMaxSize()) {
+                                    LazyVerticalGrid(
+                                        state = gridState,
+                                        columns = GridCells.Fixed(2),
+                                        modifier = Modifier.weight(1f).padding(horizontal = 8.dp, vertical = 4.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                                    ) {
+                                        items(
+                                            filteredItems.size,
+                                            key = { index -> filteredItems[index].gid },
+                                        ) { index ->
+                                            val gallery = filteredItems[index]
+                                            val title = galleryDisplayTitle(gallery.title, gallery.gid)
+                                            val link = galleryWebUrl(gallery.gid, gallery.token)
+                                            ContextMenuArea(
+                                                items = { buildGalleryContextMenu(gallery, title, link) },
+                                            ) {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .clip(SquircleShape(8.dp))
+                                                        .pointerHoverIcon(PointerIcon.Hand)
+                                                        .combinedClickable(
+                                                            onClick = {
+                                                                // Ctrl+点击进入/退出批量多选；普通点击收敛多选并单选（组合期捕获 WindowInfo，点击时读实时修饰键）
+                                                                if (ctrlDown) {
+                                                                    multiSelection.toggle(gallery.gid)
+                                                                } else {
+                                                                    multiSelection.clear()
+                                                                    selected = gallery
+                                                                }
+                                                            },
+                                                            onDoubleClick = {
+                                                                multiSelection.clear()
+                                                                selected = gallery
+                                                                onOpenGallery?.invoke(gallery)
+                                                            },
+                                                        )
+                                                        .background(
+                                                            when {
+                                                                gallery.gid in multiSelection.gids -> MiuixTheme.colorScheme.primary.copy(alpha = 0.20f)
+                                                                selected?.gid == gallery.gid -> MiuixTheme.colorScheme.primary.copy(alpha = 0.12f)
+                                                                else -> MiuixTheme.colorScheme.surfaceContainerHighest
+                                                            },
+                                                        )
+                                                        .padding(8.dp),
+                                                ) {
+                                                    Column(
+                                                        modifier = Modifier.fillMaxWidth(),
+                                                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                                                    ) {
+                                                        gallery.thumbUrl?.let { thumb ->
+                                                            Box(
+                                                                modifier = Modifier
+                                                                    .fillMaxWidth()
+                                                                    .height(110.dp)
+                                                                    .clip(SquircleShape(6.dp)),
+                                                                contentAlignment = Alignment.Center,
+                                                            ) {
+                                                                AsyncImage(
+                                                                    model = thumb,
+                                                                    contentDescription = title,
+                                                                    modifier = Modifier.fillMaxSize(),
+                                                                    contentScale = ContentScale.Crop,
+                                                                )
+                                                            }
+                                                        }
+                                                        Text(
+                                                            text = title,
+                                                            maxLines = 2,
+                                                            overflow = TextOverflow.Ellipsis,
+                                                            color = MiuixTheme.colorScheme.onBackground,
+                                                        )
+                                                        Row(
+                                                            modifier = Modifier.fillMaxWidth(),
+                                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                                            verticalAlignment = Alignment.CenterVertically,
+                                                        ) {
+                                                            GalleryListCardRating(rating = gallery.rating)
                                                             Text(
-                                                                text = postedDate,
+                                                                text = DesktopRating.formatCardMeta(gallery.pages, DesktopCategories.displayName(gallery.category)),
                                                                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                                                fontSize = 11.sp,
                                                                 maxLines = 1,
                                                                 overflow = TextOverflow.Ellipsis,
                                                             )
                                                         }
+                                                        if (currentTab == LibraryTab.Online) {
+                                                            gallery.posted?.take(10)?.let { postedDate ->
+                                                                Text(
+                                                                    text = postedDate,
+                                                                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                                                    fontSize = 11.sp,
+                                                                    maxLines = 1,
+                                                                    overflow = TextOverflow.Ellipsis,
+                                                                )
+                                                            }
+                                                        }
                                                     }
                                                 }
                                             }
                                         }
                                     }
+                                    VerticalScrollbar(
+                                        adapter = rememberScrollbarAdapter(gridState),
+                                        isScrollInProgress = gridState.isScrollInProgress,
+                                    )
                                 }
-                                VerticalScrollbar(
-                                    adapter = rememberScrollbarAdapter(gridState),
-                                    isScrollInProgress = gridState.isScrollInProgress,
-                                )
+                            }
+                            if (canScrollToTop && !multiSelection.isActive) {
+                                Box(
+                                    modifier = Modifier
+                                        .align(Alignment.BottomEnd)
+                                        .padding(end = 16.dp, bottom = 16.dp)
+                                        .clip(SquircleShape(8.dp))
+                                        .background(MiuixTheme.colorScheme.surfaceContainerHighest)
+                                        .pointerHoverIcon(PointerIcon.Hand)
+                                        .clickable {
+                                            coroutineScope.launch {
+                                                if (viewMode == DesktopViewMode.List) {
+                                                    listState.animateScrollToItem(0)
+                                                } else {
+                                                    gridState.animateScrollToItem(0)
+                                                }
+                                            }
+                                        }
+                                        .padding(horizontal = 8.dp, vertical = 6.dp),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Text(
+                                        text = "↑",
+                                        color = MiuixTheme.colorScheme.primary,
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Bold,
+                                    )
+                                }
                             }
                         }
                     }

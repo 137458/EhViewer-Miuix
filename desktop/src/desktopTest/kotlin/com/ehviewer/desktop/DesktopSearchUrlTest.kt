@@ -2,6 +2,8 @@ package com.ehviewer.desktop
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class DesktopSearchUrlTest {
 
@@ -76,5 +78,25 @@ class DesktopSearchUrlTest {
             "https://e-hentai.org/?f_search=touhou",
             DesktopSearchUrl.build("touhou", nextGid = -1L, backward = true),
         )
+    }
+
+    @Test
+    fun onlinePaginationBoundaryAndPageNumber() {
+        // 第一页（cursorIndex = 0）无上一页
+        assertFalse(DesktopOnlinePagination.canNavigatePrev(0))
+        assertFalse(DesktopOnlinePagination.canNavigatePrev(-1))
+        // 后续页有上一页
+        assertTrue(DesktopOnlinePagination.canNavigatePrev(1))
+        assertTrue(DesktopOnlinePagination.canNavigatePrev(5))
+
+        // 结果为空时无下一页
+        assertFalse(DesktopOnlinePagination.canNavigateNext(hasItems = false))
+        // 有结果时有下一页
+        assertTrue(DesktopOnlinePagination.canNavigateNext(hasItems = true))
+
+        // 页码展示计算
+        assertEquals(1, DesktopOnlinePagination.pageDisplayNumber(0))
+        assertEquals(2, DesktopOnlinePagination.pageDisplayNumber(1))
+        assertEquals(1, DesktopOnlinePagination.pageDisplayNumber(-3))
     }
 }
