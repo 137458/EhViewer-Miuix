@@ -483,12 +483,16 @@ fun main() {
                                                 primarySpecs.getOrNull(index)?.key?.let { key -> selectNavItem(DesktopNavItem.valueOf(key)) }
                                             },
                                         ) {
-                                            // 悬浮底栏可见时页面内容整体避让，列表末行不被遮挡（对齐移动端 bottomBarPadding 语义）
+                                            // 悬浮底栏可见时页面内容整体避让（对齐移动端 bottomBarPadding 语义）；
+                                            // 库页经共享搜索顶栏自行消费 LocalBottomBarContentPadding，不再整体垫高
                                             Box(
                                                 modifier = Modifier
                                                     .fillMaxSize()
                                                     .padding(
-                                                        bottom = if (bottomBarVisible && chrome == NavigationChrome.BottomBar) {
+                                                        bottom = if (bottomBarVisible &&
+                                                            chrome == NavigationChrome.BottomBar &&
+                                                            pages.last() !is DesktopPage.Library
+                                                        ) {
                                                             FLOATING_BAR_CONTENT_PADDING
                                                         } else {
                                                             0.dp
