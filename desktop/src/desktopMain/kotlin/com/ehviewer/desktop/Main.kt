@@ -6,12 +6,15 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.scrollbar.LocalScrollbarStyle
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -78,9 +81,27 @@ import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.NavigationRail
+import top.yukonga.miuix.kmp.basic.NavigationRailItem
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
+import top.yukonga.miuix.kmp.icon.extended.Download
+import top.yukonga.miuix.kmp.icon.extended.Recent
+import top.yukonga.miuix.kmp.icon.extended.Settings
+import com.ehviewer.core.ui.component.BlurredBar
+import com.ehviewer.core.ui.component.IosLiquidGlassNavigationBar
+import com.ehviewer.core.ui.component.LocalBackdrop
+import com.ehviewer.core.ui.component.blurBackdropSource
+import com.ehviewer.core.ui.icons.EhIcons
+import com.ehviewer.core.ui.icons.filled.Bookmarks
+import com.ehviewer.core.ui.icons.filled.FormatListNumbered
+import com.ehviewer.core.ui.icons.filled.Home
+import com.ehviewer.core.ui.icons.filled.Subscriptions
+import com.ehviewer.core.ui.icons.filled.Whatshot
+import top.yukonga.miuix.kmp.basic.NavigationItem
+import top.yukonga.miuix.kmp.blur.Backdrop
+import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 // 桌面壳骨架：单窗口页面栈（库 → 详情 → 阅读；设置）+ Miuix 主题三态 + 菜单栏 + 托盘驻留 + 尺寸记忆 + 会话恢复
@@ -154,6 +175,12 @@ fun main() {
             pages = DesktopPageStack.push(pages, DesktopPage.Reader(gallery))
         }
         val popPage: () -> Unit = { pages = DesktopPageStack.pop(pages) }
+        // 主库 Tab 状态上提：左侧导航栏与库页共用同一选中态（大屏导航外壳）
+        var libraryTab by remember { mutableStateOf(LibraryTab.fromName(DesktopSettings.lastTab.value)) }
+        val selectTab: (LibraryTab) -> Unit = { tab ->
+            libraryTab = tab
+            DesktopSettings.lastTab.value = tab.name
+        }
 
         fun hideOrExit() {
             val behavior = if (closeToTray) CloseBehavior.MINIMIZE_TO_TRAY else CloseBehavior.EXIT
@@ -238,8 +265,11 @@ fun main() {
                 },
             ) {
                 val awtWindow: AwtWindow = this@Window.window
-                // 最小可用尺寸：主库布局在过小窗口下不可用
-                awtWindow.minimumSize = java.awt.Dimension(560, 400)
+                // 最小可用尺寸：与宽屏断点对齐（MIUIX 规范 4.1），保证桌面恒为大屏形态
+                awtWindow.minimumSize = java.awt.Dimension(
+                    DesktopLayoutPolicy.WINDOW_MIN_WIDTH_DP,
+                    DesktopLayoutPolicy.WINDOW_MIN_HEIGHT_DP,
+                )
                 SaveWindowSize(windowState)
                 DisposableEffect(Unit) {
                     onDispose {
@@ -324,72 +354,124 @@ fun main() {
                             thumbColor = MiuixTheme.colorScheme.outline.copy(alpha = 0.45f),
                             hoverThumbColor = MiuixTheme.colorScheme.outline.copy(alpha = 0.9f),
                         )
-                        CompositionLocalProvider(LocalScrollbarStyle provides scrollbarStyle) {
-                            Box(modifier = Modifier.fillMaxSize()) {
-                                when (val page = pages.last()) {
-                                    DesktopPage.Library -> LibraryScreen(
-                                        openGalleryDialogVisible = showOpenGalleryDialog,
-                                        onOpenGalleryDialogOpen = { showOpenGalleryDialog = true },
-                                        onOpenGalleryDialogClose = { showOpenGalleryDialog = false },
-                                        onOpenGallery = openGallery,
-                                        onOpenReader = openReader,
-                                    )
-                                    DesktopPage.Settings -> SettingsScreen(
-                                        onBack = popPage,
-                                        onShowShortcuts = { showShortcutsHelp = true },
-                                        onShowAbout = { showAbout = true },
-                                    )
-                                    is DesktopPage.GalleryDetail -> GalleryDetailPageContent(
-                                        gallery = page.gallery,
-                                        onBack = popPage,
-                                        onGalleryUpdated = { updated ->
-                                            // hydrate 回写：栈顶详情页替换为真实元数据，窗口标题随之更新
-                                            pages = DesktopPageStack.updateTopGallery(pages, updated)
-                                        },
-                                        onOpenReader = openReader,
-                                        onSearchTag = { tag ->
-                                            // 标签搜索：回到库页后驱动主库即时搜索（页面栈语义下的窗口内联动）
-                                            pages = DesktopPageStack.popToRoot(pages)
-                                            DesktopSearchBus.request(tag)
-                                            logcat("DetailPage", LogPriority.INFO) { "Tag search dispatched: $tag" }
-                                        },
-                                    )
-                                    is DesktopPage.Reader -> ReaderScreen(
-                                        gallery = page.gallery,
-                                        onClose = popPage,
-                                    )
+                        val backdrop = rememberLayerBackdrop()
+                        val navBarStyleValue by DesktopSettings.navBarStyle.valueFlow().collectAsState(DesktopSettings.navBarStyle.value)
+                        val navBarStyle = DesktopNavBarStyle.fromValue(navBarStyleValue)
+                        CompositionLocalProvider(
+                            LocalScrollbarStyle provides scrollbarStyle,
+                            LocalBackdrop provides backdrop,
+                        ) {
+                            BoxWithConstraints(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .blurBackdropSource(backdrop),
+                            ) {
+                                val isReader = pages.last() is DesktopPage.Reader
+                                val isWideScreen = DesktopLayoutPolicy.isWideScreen(maxWidth.value)
+                                val showRail = !isReader && when (navBarStyle) {
+                                    DesktopNavBarStyle.Rail -> true
+                                    DesktopNavBarStyle.FloatingBottomBar -> false
+                                    DesktopNavBarStyle.Auto -> isWideScreen
                                 }
-                                if (dragHovering) {
-                                    // 拖拽放置高亮：全窗口主色描边 + 半透明衬底与居中提示胶囊（穿透点击，不拦截落点）
-                                    val dropHintText = stringResource(MR.strings.desktop_drop_to_open)
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxSize()
-                                            .background(MiuixTheme.colorScheme.primary.copy(alpha = 0.08f))
-                                            .border(2.dp, MiuixTheme.colorScheme.primary.copy(alpha = 0.6f)),
-                                    )
-                                    Box(
-                                        modifier = Modifier.align(Alignment.Center),
-                                    ) {
-                                        Text(
-                                            text = dropHintText,
-                                            color = MiuixTheme.colorScheme.primary,
-                                            fontSize = 14.sp,
-                                            fontWeight = FontWeight.Medium,
-                                            modifier = Modifier
-                                                .shadow(8.dp, SquircleShape(12.dp))
-                                                .clip(SquircleShape(12.dp))
-                                                .background(MiuixTheme.colorScheme.surface)
-                                                .border(1.dp, MiuixTheme.colorScheme.outline.copy(alpha = 0.15f), SquircleShape(12.dp))
-                                                .padding(horizontal = 20.dp, vertical = 12.dp),
+                                val showBottomBar = !isReader && !showRail
+                                Row(modifier = Modifier.fillMaxSize()) {
+                                    if (showRail) {
+                                        DesktopNavRail(
+                                            currentPage = pages.last(),
+                                            activeTab = libraryTab,
+                                            onSelectTab = { tab ->
+                                                pages = DesktopPageStack.popToRoot(pages)
+                                                selectTab(tab)
+                                            },
+                                            onSelectSettings = {
+                                                if (pages.last() is DesktopPage.Settings) popPage() else pages = DesktopPageStack.push(pages, DesktopPage.Settings)
+                                            },
                                         )
                                     }
-                                }
-                                if (showShortcutsHelp) {
-                                    ShortcutsHelpDialog(onDismiss = { showShortcutsHelp = false })
-                                }
-                                if (showAbout) {
-                                    AboutDialog(onDismiss = { showAbout = false })
+                                    Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                                        when (val page = pages.last()) {
+                                            DesktopPage.Library -> LibraryScreen(
+                                                activeTab = libraryTab,
+                                                onTabSelect = selectTab,
+                                                openGalleryDialogVisible = showOpenGalleryDialog,
+                                                onOpenGalleryDialogOpen = { showOpenGalleryDialog = true },
+                                                onOpenGalleryDialogClose = { showOpenGalleryDialog = false },
+                                                onOpenGallery = openGallery,
+                                                onOpenReader = openReader,
+                                            )
+                                            DesktopPage.Settings -> SettingsScreen(
+                                                onBack = popPage,
+                                                onShowShortcuts = { showShortcutsHelp = true },
+                                                onShowAbout = { showAbout = true },
+                                            )
+                                            is DesktopPage.GalleryDetail -> GalleryDetailPageContent(
+                                                gallery = page.gallery,
+                                                onBack = popPage,
+                                                onGalleryUpdated = { updated ->
+                                                    // hydrate 回写：栈顶详情页替换为真实元数据，窗口标题随之更新
+                                                    pages = DesktopPageStack.updateTopGallery(pages, updated)
+                                                },
+                                                onOpenReader = openReader,
+                                                onSearchTag = { tag ->
+                                                    // 标签搜索：回到库页后驱动主库即时搜索（页面栈语义下的窗口内联动）
+                                                    pages = DesktopPageStack.popToRoot(pages)
+                                                    DesktopSearchBus.request(tag)
+                                                    logcat("DetailPage", LogPriority.INFO) { "Tag search dispatched: $tag" }
+                                                },
+                                            )
+                                            is DesktopPage.Reader -> ReaderScreen(
+                                                gallery = page.gallery,
+                                                onClose = popPage,
+                                            )
+                                        }
+                                        if (showBottomBar) {
+                                            DesktopFloatingNavBar(
+                                                currentPage = pages.last(),
+                                                activeTab = libraryTab,
+                                                onSelectTab = { tab ->
+                                                    pages = DesktopPageStack.popToRoot(pages)
+                                                    selectTab(tab)
+                                                },
+                                                onSelectSettings = {
+                                                    if (pages.last() is DesktopPage.Settings) popPage() else pages = DesktopPageStack.push(pages, DesktopPage.Settings)
+                                                },
+                                                backdrop = backdrop,
+                                                modifier = Modifier.align(Alignment.BottomCenter),
+                                            )
+                                        }
+                                        if (dragHovering) {
+                                            // 拖拽放置高亮：全窗口主色描边 + 半透明衬底与居中提示胶囊（穿透点击，不拦截落点）
+                                            val dropHintText = stringResource(MR.strings.desktop_drop_to_open)
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxSize()
+                                                    .background(MiuixTheme.colorScheme.primary.copy(alpha = 0.08f))
+                                                    .border(2.dp, MiuixTheme.colorScheme.primary.copy(alpha = 0.6f)),
+                                            )
+                                            Box(
+                                                modifier = Modifier.align(Alignment.Center),
+                                            ) {
+                                                Text(
+                                                    text = dropHintText,
+                                                    color = MiuixTheme.colorScheme.primary,
+                                                    fontSize = 14.sp,
+                                                    fontWeight = FontWeight.Medium,
+                                                    modifier = Modifier
+                                                        .shadow(8.dp, SquircleShape(12.dp))
+                                                        .clip(SquircleShape(12.dp))
+                                                        .background(MiuixTheme.colorScheme.surface)
+                                                        .border(1.dp, MiuixTheme.colorScheme.outline.copy(alpha = 0.15f), SquircleShape(12.dp))
+                                                        .padding(horizontal = 20.dp, vertical = 12.dp),
+                                                )
+                                            }
+                                        }
+                                        if (showShortcutsHelp) {
+                                            ShortcutsHelpDialog(onDismiss = { showShortcutsHelp = false })
+                                        }
+                                        if (showAbout) {
+                                            AboutDialog(onDismiss = { showAbout = false })
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -808,69 +890,77 @@ private fun GalleryDetailPageContent(
             .fillMaxSize()
             .background(MiuixTheme.colorScheme.background),
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            if (onBack != null) {
-                IconButton(
-                    onClick = onBack,
-                    modifier = Modifier.pointerHoverIcon(PointerIcon.Hand),
-                ) {
-                    Icon(
-                        imageVector = MiuixIcons.Back,
-                        contentDescription = stringResource(MR.strings.desktop_a11y_back),
-                        tint = MiuixTheme.colorScheme.onSurface,
-                    )
-                }
-            }
-            Text(
-                text = galleryDisplayTitle(currentGallery.title, currentGallery.gid),
-                fontSize = 18.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = MiuixTheme.colorScheme.onSurface,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
+        BlurredBar(backdrop = LocalBackdrop.current) {
+            Column(
                 modifier = Modifier
-                    .weight(1f)
-                    .padding(start = if (onBack != null) 4.dp else 0.dp, end = 8.dp),
-            )
-            DesktopHoverPill(
-                onClick = {
-                    DesktopBrowser.openUrl(galleryWebUrl(currentGallery.gid, currentGallery.token))
-                },
-                shape = SquircleShape(8.dp),
-                containerColor = MiuixTheme.colorScheme.surfaceContainerHighest,
-                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                    .fillMaxWidth()
+                    .background(MiuixTheme.colorScheme.surface.copy(alpha = 0.85f)),
             ) {
-                Text(
-                    text = stringResource(MR.strings.open_in_browser),
-                    color = MiuixTheme.colorScheme.onSurface,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Medium,
-                )
-            }
-            if (onOpenReader != null) {
-                DesktopHoverPill(
-                    onClick = { onOpenReader(currentGallery) },
-                    shape = SquircleShape(8.dp),
-                    containerColor = MiuixTheme.colorScheme.primary,
-                    hoverOverlayColor = Color.White.copy(alpha = 0.12f),
-                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
+                    if (onBack != null) {
+                        IconButton(
+                            onClick = onBack,
+                            modifier = Modifier.pointerHoverIcon(PointerIcon.Hand),
+                        ) {
+                            Icon(
+                                imageVector = MiuixIcons.Back,
+                                contentDescription = stringResource(MR.strings.desktop_a11y_back),
+                                tint = MiuixTheme.colorScheme.onSurface,
+                            )
+                        }
+                    }
                     Text(
-                        text = stringResource(MR.strings.menu_read),
-                        color = MiuixTheme.colorScheme.onPrimary,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Medium,
+                        text = galleryDisplayTitle(currentGallery.title, currentGallery.gid),
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MiuixTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(start = if (onBack != null) 4.dp else 0.dp, end = 8.dp),
                     )
+                    DesktopHoverPill(
+                        onClick = {
+                            DesktopBrowser.openUrl(galleryWebUrl(currentGallery.gid, currentGallery.token))
+                        },
+                        shape = SquircleShape(8.dp),
+                        containerColor = MiuixTheme.colorScheme.surfaceContainerHighest,
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                    ) {
+                        Text(
+                            text = stringResource(MR.strings.open_in_browser),
+                            color = MiuixTheme.colorScheme.onSurface,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium,
+                        )
+                    }
+                    if (onOpenReader != null) {
+                        DesktopHoverPill(
+                            onClick = { onOpenReader(currentGallery) },
+                            shape = SquircleShape(8.dp),
+                            containerColor = MiuixTheme.colorScheme.primary,
+                            hoverOverlayColor = Color.White.copy(alpha = 0.12f),
+                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
+                        ) {
+                            Text(
+                                text = stringResource(MR.strings.menu_read),
+                                color = MiuixTheme.colorScheme.onPrimary,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Medium,
+                            )
+                        }
+                    }
                 }
+                HorizontalDivider(color = MiuixTheme.colorScheme.outline.copy(alpha = 0.2f))
             }
         }
-        HorizontalDivider(color = MiuixTheme.colorScheme.outline.copy(alpha = 0.2f))
 
         Box(
             modifier = Modifier
@@ -953,4 +1043,117 @@ private sealed interface AboutUpdateCheckState {
     data class UpToDate(val label: String) : AboutUpdateCheckState
     data class Available(val label: String, val tag: String) : AboutUpdateCheckState
     data class Unavailable(val label: String) : AboutUpdateCheckState
+}
+
+// 宽屏左侧导航外壳（MIUIX NavigationRail）：对齐移动端 8 项导航
+@Composable
+private fun DesktopNavRail(
+    currentPage: DesktopPage,
+    activeTab: LibraryTab,
+    onSelectTab: (LibraryTab) -> Unit,
+    onSelectSettings: () -> Unit,
+) {
+    NavigationRail(expanded = false, scrollState = rememberScrollState()) {
+        NavigationRailItem(
+            selected = currentPage !is DesktopPage.Settings && activeTab == LibraryTab.Home,
+            onClick = { onSelectTab(LibraryTab.Home) },
+            icon = EhIcons.Filled.Home,
+            label = stringResource(MR.strings.homepage),
+        )
+        NavigationRailItem(
+            selected = currentPage !is DesktopPage.Settings && activeTab == LibraryTab.Subscription,
+            onClick = { onSelectTab(LibraryTab.Subscription) },
+            icon = EhIcons.Filled.Subscriptions,
+            label = stringResource(MR.strings.subscription),
+        )
+        NavigationRailItem(
+            selected = currentPage !is DesktopPage.Settings && activeTab == LibraryTab.Whatshot,
+            onClick = { onSelectTab(LibraryTab.Whatshot) },
+            icon = EhIcons.Filled.Whatshot,
+            label = stringResource(MR.strings.whats_hot),
+        )
+        NavigationRailItem(
+            selected = currentPage !is DesktopPage.Settings && activeTab == LibraryTab.Toplist,
+            onClick = { onSelectTab(LibraryTab.Toplist) },
+            icon = EhIcons.Filled.FormatListNumbered,
+            label = stringResource(MR.strings.toplist),
+        )
+        NavigationRailItem(
+            selected = currentPage !is DesktopPage.Settings && activeTab == LibraryTab.Favorites,
+            onClick = { onSelectTab(LibraryTab.Favorites) },
+            icon = EhIcons.Filled.Bookmarks,
+            label = stringResource(MR.strings.local_favorites),
+        )
+        NavigationRailItem(
+            selected = currentPage !is DesktopPage.Settings && activeTab == LibraryTab.History,
+            onClick = { onSelectTab(LibraryTab.History) },
+            icon = MiuixIcons.Recent,
+            label = stringResource(MR.strings.history),
+        )
+        NavigationRailItem(
+            selected = currentPage !is DesktopPage.Settings && activeTab == LibraryTab.Downloads,
+            onClick = { onSelectTab(LibraryTab.Downloads) },
+            icon = MiuixIcons.Download,
+            label = stringResource(MR.strings.download),
+        )
+        NavigationRailItem(
+            selected = currentPage is DesktopPage.Settings,
+            onClick = onSelectSettings,
+            icon = MiuixIcons.Settings,
+            label = stringResource(MR.strings.menu_settings),
+        )
+    }
+}
+
+// 底部液态玻璃悬浮导航栏（MIUIX / Liquid Glass）：全量 8 项导航，实时折射底层
+@Composable
+private fun DesktopFloatingNavBar(
+    currentPage: DesktopPage,
+    activeTab: LibraryTab,
+    onSelectTab: (LibraryTab) -> Unit,
+    onSelectSettings: () -> Unit,
+    backdrop: Backdrop?,
+    modifier: Modifier = Modifier,
+) {
+    val items = listOf(
+        NavigationItem(stringResource(MR.strings.homepage), EhIcons.Filled.Home),
+        NavigationItem(stringResource(MR.strings.subscription), EhIcons.Filled.Subscriptions),
+        NavigationItem(stringResource(MR.strings.whats_hot), EhIcons.Filled.Whatshot),
+        NavigationItem(stringResource(MR.strings.toplist), EhIcons.Filled.FormatListNumbered),
+        NavigationItem(stringResource(MR.strings.local_favorites), EhIcons.Filled.Bookmarks),
+        NavigationItem(stringResource(MR.strings.history), MiuixIcons.Recent),
+        NavigationItem(stringResource(MR.strings.download), MiuixIcons.Download),
+        NavigationItem(stringResource(MR.strings.menu_settings), MiuixIcons.Settings),
+    )
+    val selectedIndex = if (currentPage is DesktopPage.Settings) {
+        7
+    } else {
+        when (activeTab) {
+            LibraryTab.Home -> 0
+            LibraryTab.Subscription -> 1
+            LibraryTab.Whatshot -> 2
+            LibraryTab.Toplist -> 3
+            LibraryTab.Favorites -> 4
+            LibraryTab.History -> 5
+            LibraryTab.Downloads -> 6
+        }
+    }
+    IosLiquidGlassNavigationBar(
+        items = items,
+        selectedIndex = selectedIndex,
+        onItemClick = { index ->
+            when (index) {
+                0 -> onSelectTab(LibraryTab.Home)
+                1 -> onSelectTab(LibraryTab.Subscription)
+                2 -> onSelectTab(LibraryTab.Whatshot)
+                3 -> onSelectTab(LibraryTab.Toplist)
+                4 -> onSelectTab(LibraryTab.Favorites)
+                5 -> onSelectTab(LibraryTab.History)
+                6 -> onSelectTab(LibraryTab.Downloads)
+                7 -> onSelectSettings()
+            }
+        },
+        backdrop = backdrop,
+        modifier = modifier,
+    )
 }

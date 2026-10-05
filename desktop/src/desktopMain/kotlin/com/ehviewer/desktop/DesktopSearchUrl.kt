@@ -17,6 +17,23 @@ object DesktopSearchUrl {
         }
         return "$base&$cursor"
     }
+
+    fun buildForTab(tab: LibraryTab, query: String = "", nextGid: Long? = null, backward: Boolean = false): String {
+        val trimmed = query.trim()
+        val base = when (tab) {
+            LibraryTab.Subscription -> if (trimmed.isNotEmpty()) "https://e-hentai.org/watched?f_search=" + URLEncoder.encode(trimmed, "UTF-8") else "https://e-hentai.org/watched"
+            LibraryTab.Whatshot -> "https://e-hentai.org/popular"
+            LibraryTab.Toplist -> "https://e-hentai.org/toplist.php?tl=11"
+            else -> if (trimmed.isNotEmpty()) "https://e-hentai.org/?f_search=" + URLEncoder.encode(trimmed, "UTF-8") else "https://e-hentai.org/"
+        }
+        val cursor = when {
+            nextGid == null || nextGid < 0 -> return base
+            backward -> "prev=$nextGid"
+            else -> "next=$nextGid"
+        }
+        val separator = if (base.contains("?")) "&" else "?"
+        return "$base$separator$cursor"
+    }
 }
 
 object DesktopOnlinePagination {

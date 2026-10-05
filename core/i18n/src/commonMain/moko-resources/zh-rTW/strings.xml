@@ -722,4 +722,9 @@
     <string name="shortcut_switch_tabs">切換歷史 / 收藏 / 線上分頁</string>
     <string name="shortcut_reader_paging">翻頁（隨閱讀方向反轉）</string>
     <string name="shortcut_reader_jump_first_last">跳至第一頁 / 最後一頁</string>
+    <string name="desktop_nav_bar_style">大螢幕導覽列樣式</string>
+    <string name="desktop_nav_bar_style_summary">自訂導覽列顯示位置與互動風格</string>
+    <string name="desktop_nav_bar_style_auto">自動回應式</string>
+    <string name="desktop_nav_bar_style_rail">左側側欄 (Rail)</string>
+    <string name="desktop_nav_bar_style_floating">底部液態玻璃懸浮列</string>
 </resources>

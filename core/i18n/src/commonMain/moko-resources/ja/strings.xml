@@ -726,4 +726,9 @@
     <string name="shortcut_switch_tabs">履歴 / お気に入り / オンラインタブを切替</string>
     <string name="shortcut_reader_paging">ページ送り（RTL 読書方向では反転）</string>
     <string name="shortcut_reader_jump_first_last">最初 / 最後のページへジャンプ</string>
+    <string name="desktop_nav_bar_style">大画面ナビゲーションバーのスタイル</string>
+    <string name="desktop_nav_bar_style_summary">ナビゲーションバーの表示位置とスタイルをカスタマイズ</string>
+    <string name="desktop_nav_bar_style_auto">自動（レスポンシブ）</string>
+    <string name="desktop_nav_bar_style_rail">左側レール (Rail)</string>
+    <string name="desktop_nav_bar_style_floating">下部リキッドグラスフローティングバー</string>
 </resources>

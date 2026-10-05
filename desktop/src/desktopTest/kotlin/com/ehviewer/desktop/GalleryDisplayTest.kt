@@ -23,9 +23,14 @@ class GalleryDisplayTest {
 
     @Test
     fun libraryTabFromNameParsesAndFallsBackToHistory() {
-        assertEquals(LibraryTab.History, LibraryTab.fromName("History"))
+        assertEquals(LibraryTab.Home, LibraryTab.fromName("Home"))
+        assertEquals(LibraryTab.Subscription, LibraryTab.fromName("Subscription"))
+        assertEquals(LibraryTab.Whatshot, LibraryTab.fromName("Whatshot"))
+        assertEquals(LibraryTab.Toplist, LibraryTab.fromName("Toplist"))
         assertEquals(LibraryTab.Favorites, LibraryTab.fromName("Favorites"))
-        assertEquals(LibraryTab.Online, LibraryTab.fromName("Online"))
+        assertEquals(LibraryTab.History, LibraryTab.fromName("History"))
+        assertEquals(LibraryTab.Downloads, LibraryTab.fromName("Downloads"))
+        assertEquals(LibraryTab.Home, LibraryTab.fromName("Online"))
         // 非法/空值安全回退（存储损坏或历史版本键）
         assertEquals(LibraryTab.History, LibraryTab.fromName(null))
         assertEquals(LibraryTab.History, LibraryTab.fromName(""))

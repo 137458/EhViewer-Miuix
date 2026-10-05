@@ -2,6 +2,10 @@
 
 ### 新增
 
+- 支持了大屏导航栏样式自定义与液态玻璃交互：设置页新增「大屏导航栏样式」配置卡片，支持自动响应式（Auto）、左侧侧栏（Rail）以及底部液态玻璃悬浮导航栏（FloatingBottomBar）三态切换；底部悬浮导航栏采用 Liquid Glass 磨砂折射底栏；对齐移动端 8 项导航（首页、订阅、热门、排行榜、收藏、历史、下载、设置）。
+
+- 重构了桌面端大屏布局与画廊详情交互：参考大屏规范移除画廊列表中挤占空间的 Master-Detail 右侧分栏，画廊列表与网格单双击均直接推入沉浸式全宽独立详情页；详情页顶部操作栏接入毛玻璃 BlurredBar 与液态玻璃悬浮胶囊；支持 Esc 键与返回按钮快速回退。
+
 - 修复了桌面端选中画廊必崩的问题：桌面根组件此前未提供 ProvideVectorPainterCache 局部量，共享评分星组件（GalleryListCardRating→IconCached）消费缺失的 LocalVectorPainterCache 时抛 IllegalStateException 击穿重组器；现与移动端 Theme 同源在根节点提供，并同步修正该局部量误指向 LocalSideSheetState 的报错文案。
 
 - 修复了桌面端阅读器图片加载触发「Module with the Main dispatcher is missing」错误弹窗：桌面运行时缺少 Dispatchers.Main 提供者，而共享层 launchUI/withUIContext 与 coil3 均依赖之；新增 kotlinx-coroutines-swing（1.11.0，与 core 同版本）经 ServiceLoader 注册 Swing EDT 调度器。

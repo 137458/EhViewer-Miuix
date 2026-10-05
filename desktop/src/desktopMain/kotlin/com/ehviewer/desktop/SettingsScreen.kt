@@ -65,6 +65,7 @@ fun SettingsScreen(
     val blackDarkTheme by DesktopSettings.blackDarkTheme.valueFlow().collectAsState(DesktopSettings.blackDarkTheme.value)
     val restoreSession by DesktopSettings.restoreSession.valueFlow().collectAsState(DesktopSettings.restoreSession.value)
     val restoreLimit by DesktopSettings.restoreLimit.valueFlow().collectAsState(DesktopSettings.restoreLimit.value)
+    val navBarStyle by DesktopSettings.navBarStyle.valueFlow().collectAsState(DesktopSettings.navBarStyle.value)
     val directionRaw by DesktopSettings.readingDirection.valueFlow().collectAsState(DesktopSettings.readingDirection.value)
     val direction = DesktopReadingDirection.fromPersisted(directionRaw)
 
@@ -166,6 +167,35 @@ fun SettingsScreen(
                                 )
                             }
                         }
+                    }
+                }
+
+                // 大屏导航栏样式
+                item {
+                    SmallTitle(
+                        text = stringResource(MR.strings.desktop_nav_bar_style),
+                        modifier = Modifier.padding(start = 24.dp, top = 16.dp, bottom = 4.dp),
+                    )
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 4.dp),
+                    ) {
+                        SelectionRow(
+                            title = stringResource(MR.strings.desktop_nav_bar_style_auto),
+                            selected = navBarStyle == 0,
+                            onClick = { DesktopSettings.navBarStyle.value = 0 },
+                        )
+                        SelectionRow(
+                            title = stringResource(MR.strings.desktop_nav_bar_style_rail),
+                            selected = navBarStyle == 1,
+                            onClick = { DesktopSettings.navBarStyle.value = 1 },
+                        )
+                        SelectionRow(
+                            title = stringResource(MR.strings.desktop_nav_bar_style_floating),
+                            selected = navBarStyle == 2,
+                            onClick = { DesktopSettings.navBarStyle.value = 2 },
+                        )
                     }
                 }
 

@@ -50,6 +50,20 @@ object DesktopSettings : DataStorePreferences("desktop") {
     // 阅读进度（"gid:page,..." 编解码经 DesktopReadingProgress，跨会话续读）
     val readingProgress = stringPref("reader_progress", "")
 
+    // 导航栏样式：0 = 自动（宽屏侧栏/窄屏底栏），1 = 侧边导航栏 (Rail)，2 = 底部液态玻璃悬浮栏 (FloatingBottomBar)
+    val navBarStyle = intPref("nav_bar_style", 0)
+
     // false = 启动不恢复上次会话窗口，true = 恢复
     val restoreSession = boolPref("restore_session", true)
+}
+
+enum class DesktopNavBarStyle(val value: Int) {
+    Auto(0),
+    Rail(1),
+    FloatingBottomBar(2),
+    ;
+
+    companion object {
+        fun fromValue(value: Int): DesktopNavBarStyle = entries.firstOrNull { it.value == value } ?: Auto
+    }
 }

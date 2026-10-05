@@ -803,5 +803,10 @@
     <string name="copy_link">复制链接</string>
     <string name="copy_title">复制标题</string>
     <string name="online">在线</string>
+    <string name="desktop_nav_bar_style">大屏导航栏样式</string>
+    <string name="desktop_nav_bar_style_summary">自定义导航栏显示位置与交互风格</string>
+    <string name="desktop_nav_bar_style_auto">自动响应式</string>
+    <string name="desktop_nav_bar_style_rail">左侧侧栏 (Rail)</string>
+    <string name="desktop_nav_bar_style_floating">底部液态玻璃悬浮栏</string>
     <!-- Tachiyomi Reader End-->
 </resources>

@@ -1,6 +1,7 @@
 package com.ehviewer.desktop
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -17,6 +18,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.input.pointer.PointerIcon
@@ -65,20 +67,57 @@ internal fun DesktopHoverPill(
     }
 }
 
-// 桌面端通知气泡：深底胶囊，点击任意处消失；可选动作标签悬停下划线，点击执行动作并随通知一并消失。
-// Main 与 LibraryScreen 两处通知栈共用同一渲染，避免逻辑分叉。
+// 桌面端液态玻璃悬浮胶囊：半透明底座 + 细致高光描边 + Squircle 32dp 胶囊轮廓 + 悬停加深
+@Composable
+internal fun DesktopLiquidGlassPill(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    shape: Shape = SquircleShape(32.dp),
+    containerColor: Color = MiuixTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.85f),
+    borderColor: Color = MiuixTheme.colorScheme.outline.copy(alpha = 0.25f),
+    contentPadding: PaddingValues = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
+    content: @Composable BoxScope.(hovered: Boolean) -> Unit,
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val hovered by interactionSource.collectIsHoveredAsState()
+    Box(
+        modifier = modifier
+            .shadow(8.dp, shape)
+            .clip(shape)
+            .background(if (hovered && enabled) containerColor.copy(alpha = 0.95f) else containerColor)
+            .border(
+                1.dp,
+                if (hovered && enabled) MiuixTheme.colorScheme.primary.copy(alpha = 0.6f) else borderColor,
+                shape,
+            )
+            .pointerHoverIcon(if (enabled) PointerIcon.Hand else PointerIcon.Default)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                enabled = enabled,
+                onClick = onClick,
+            )
+            .padding(contentPadding),
+        contentAlignment = Alignment.Center,
+    ) {
+        content(hovered)
+    }
+}
+
+// 桌面端液态玻璃通知气泡：半透明毛玻璃胶囊卡片，点击任意处消失；带动作标签与高光描边
 @Composable
 internal fun DesktopNotificationBubble(
     notice: DesktopNotification,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    DesktopHoverPill(
+    DesktopLiquidGlassPill(
         onClick = onDismiss,
         modifier = modifier,
-        shape = SquircleShape(8.dp),
-        containerColor = MiuixTheme.colorScheme.surfaceContainerHighest,
-        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+        shape = SquircleShape(12.dp),
+        containerColor = MiuixTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.9f),
+        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp),
     ) {
         Row(
             horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -98,7 +137,7 @@ internal fun DesktopNotificationBubble(
                     text = notice.actionLabel,
                     color = MiuixTheme.colorScheme.primary,
                     fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium,
+                    fontWeight = FontWeight.SemiBold,
                     textDecoration = if (actionHovered) TextDecoration.Underline else null,
                     modifier = Modifier
                         .hoverable(actionHover)
