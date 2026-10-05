@@ -2,6 +2,10 @@
 
 ### 新增
 
+- 修复了桌面端选中画廊必崩的问题：桌面根组件此前未提供 ProvideVectorPainterCache 局部量，共享评分星组件（GalleryListCardRating→IconCached）消费缺失的 LocalVectorPainterCache 时抛 IllegalStateException 击穿重组器；现与移动端 Theme 同源在根节点提供，并同步修正该局部量误指向 LocalSideSheetState 的报错文案。
+
+- 修复了桌面端阅读器图片加载触发「Module with the Main dispatcher is missing」错误弹窗：桌面运行时缺少 Dispatchers.Main 提供者，而共享层 launchUI/withUIContext 与 coil3 均依赖之；新增 kotlinx-coroutines-swing（1.11.0，与 core 同版本）经 ServiceLoader 注册 Swing EDT 调度器。
+
 - 支持了桌面端 ja/zh-rHK/zh-rTW 翻译补齐：桌面端实际消费的 44/48/43 个词条（快捷键指南、主题与阅读方向设置、托盘菜单、搜索提示等）此前缺失回退英文，现三语言补齐以对齐五语言守卫约定；分类名（Manga/Doujinshi 等）沿用上游惯例保持英文回退。
 
 - 修复了桌面端远程搜索解析失败静默的问题：在线搜索列表解析失败时（原仅记日志，徽章已显示在线而列表被清空且不更新）弹出「在线画廊解析失败」通知，与首页刷新路径的反馈约定对齐。

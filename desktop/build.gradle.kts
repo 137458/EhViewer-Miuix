@@ -38,6 +38,8 @@ kotlin {
         getByName("desktopMain") {
             dependencies {
                 implementation(compose.desktop.currentOs)
+                // 共享层 launchUI/withUIContext 与 coil3 依赖 Dispatchers.Main；JVM 侧由 swing 模块经 ServiceLoader 提供
+                implementation(libs.kotlinx.coroutines.swing)
                 implementation(libs.ktor.client.core)
                 implementation(libs.ktor.client.cio)
                 implementation(libs.ktor.client.okhttp)

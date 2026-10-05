@@ -60,6 +60,7 @@ import com.ehviewer.core.model.BaseGalleryInfo
 import com.ehviewer.core.ui.component.SquircleShape
 import com.ehviewer.core.ui.component.scrollbarStyle
 import com.ehviewer.core.ui.theme.rememberMiuixThemeController
+import com.ehviewer.core.ui.util.ProvideVectorPainterCache
 import com.ehviewer.core.util.DesktopFileLog
 import com.ehviewer.core.util.LogPriority
 import com.ehviewer.core.util.logcat
@@ -315,78 +316,81 @@ fun main() {
                 val amoled by DesktopSettings.blackDarkTheme.valueFlow().collectAsState(DesktopSettings.blackDarkTheme.value)
                 // 与移动端同源的 Miuix 主题控制器（浅色 HyperOS 基底 / 深色支持 AMOLED 纯黑）
                 val themeController = rememberMiuixThemeController(useDarkTheme = darkTheme, isAmoled = amoled)
-                MiuixTheme(controller = themeController) {
-                    // 滚动条接入 Miuix 配色：静息半透明轮廓色，悬停加深（桌面惯例）
-                    val scrollbarStyle = scrollbarStyle(
-                        thumbColor = MiuixTheme.colorScheme.outline.copy(alpha = 0.45f),
-                        hoverThumbColor = MiuixTheme.colorScheme.outline.copy(alpha = 0.9f),
-                    )
-                    CompositionLocalProvider(LocalScrollbarStyle provides scrollbarStyle) {
-                        Box(modifier = Modifier.fillMaxSize()) {
-                            when (val page = pages.last()) {
-                                DesktopPage.Library -> LibraryScreen(
-                                    openGalleryDialogVisible = showOpenGalleryDialog,
-                                    onOpenGalleryDialogOpen = { showOpenGalleryDialog = true },
-                                    onOpenGalleryDialogClose = { showOpenGalleryDialog = false },
-                                    onOpenGallery = openGallery,
-                                    onOpenReader = openReader,
-                                )
-                                DesktopPage.Settings -> SettingsScreen(
-                                    onBack = popPage,
-                                    onShowShortcuts = { showShortcutsHelp = true },
-                                    onShowAbout = { showAbout = true },
-                                )
-                                is DesktopPage.GalleryDetail -> GalleryDetailPageContent(
-                                    gallery = page.gallery,
-                                    onBack = popPage,
-                                    onGalleryUpdated = { updated ->
-                                        // hydrate 回写：栈顶详情页替换为真实元数据，窗口标题随之更新
-                                        pages = DesktopPageStack.updateTopGallery(pages, updated)
-                                    },
-                                    onOpenReader = openReader,
-                                    onSearchTag = { tag ->
-                                        // 标签搜索：回到库页后驱动主库即时搜索（页面栈语义下的窗口内联动）
-                                        pages = DesktopPageStack.popToRoot(pages)
-                                        DesktopSearchBus.request(tag)
-                                        logcat("DetailPage", LogPriority.INFO) { "Tag search dispatched: $tag" }
-                                    },
-                                )
-                                is DesktopPage.Reader -> ReaderScreen(
-                                    gallery = page.gallery,
-                                    onClose = popPage,
-                                )
-                            }
-                            if (dragHovering) {
-                                // 拖拽放置高亮：全窗口主色描边 + 半透明衬底与居中提示胶囊（穿透点击，不拦截落点）
-                                val dropHintText = stringResource(MR.strings.desktop_drop_to_open)
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .background(MiuixTheme.colorScheme.primary.copy(alpha = 0.08f))
-                                        .border(2.dp, MiuixTheme.colorScheme.primary.copy(alpha = 0.6f)),
-                                )
-                                Box(
-                                    modifier = Modifier.align(Alignment.Center),
-                                ) {
-                                    Text(
-                                        text = dropHintText,
-                                        color = MiuixTheme.colorScheme.primary,
-                                        fontSize = 14.sp,
-                                        fontWeight = FontWeight.Medium,
-                                        modifier = Modifier
-                                            .shadow(8.dp, SquircleShape(12.dp))
-                                            .clip(SquircleShape(12.dp))
-                                            .background(MiuixTheme.colorScheme.surface)
-                                            .border(1.dp, MiuixTheme.colorScheme.outline.copy(alpha = 0.15f), SquircleShape(12.dp))
-                                            .padding(horizontal = 20.dp, vertical = 12.dp),
+                // 与移动端 Theme.setMiuixContent 同源：IconCached 消费点（RatingWidget 等）在缓存局部量缺失时直接崩溃
+                ProvideVectorPainterCache {
+                    MiuixTheme(controller = themeController) {
+                        // 滚动条接入 Miuix 配色：静息半透明轮廓色，悬停加深（桌面惯例）
+                        val scrollbarStyle = scrollbarStyle(
+                            thumbColor = MiuixTheme.colorScheme.outline.copy(alpha = 0.45f),
+                            hoverThumbColor = MiuixTheme.colorScheme.outline.copy(alpha = 0.9f),
+                        )
+                        CompositionLocalProvider(LocalScrollbarStyle provides scrollbarStyle) {
+                            Box(modifier = Modifier.fillMaxSize()) {
+                                when (val page = pages.last()) {
+                                    DesktopPage.Library -> LibraryScreen(
+                                        openGalleryDialogVisible = showOpenGalleryDialog,
+                                        onOpenGalleryDialogOpen = { showOpenGalleryDialog = true },
+                                        onOpenGalleryDialogClose = { showOpenGalleryDialog = false },
+                                        onOpenGallery = openGallery,
+                                        onOpenReader = openReader,
+                                    )
+                                    DesktopPage.Settings -> SettingsScreen(
+                                        onBack = popPage,
+                                        onShowShortcuts = { showShortcutsHelp = true },
+                                        onShowAbout = { showAbout = true },
+                                    )
+                                    is DesktopPage.GalleryDetail -> GalleryDetailPageContent(
+                                        gallery = page.gallery,
+                                        onBack = popPage,
+                                        onGalleryUpdated = { updated ->
+                                            // hydrate 回写：栈顶详情页替换为真实元数据，窗口标题随之更新
+                                            pages = DesktopPageStack.updateTopGallery(pages, updated)
+                                        },
+                                        onOpenReader = openReader,
+                                        onSearchTag = { tag ->
+                                            // 标签搜索：回到库页后驱动主库即时搜索（页面栈语义下的窗口内联动）
+                                            pages = DesktopPageStack.popToRoot(pages)
+                                            DesktopSearchBus.request(tag)
+                                            logcat("DetailPage", LogPriority.INFO) { "Tag search dispatched: $tag" }
+                                        },
+                                    )
+                                    is DesktopPage.Reader -> ReaderScreen(
+                                        gallery = page.gallery,
+                                        onClose = popPage,
                                     )
                                 }
-                            }
-                            if (showShortcutsHelp) {
-                                ShortcutsHelpDialog(onDismiss = { showShortcutsHelp = false })
-                            }
-                            if (showAbout) {
-                                AboutDialog(onDismiss = { showAbout = false })
+                                if (dragHovering) {
+                                    // 拖拽放置高亮：全窗口主色描边 + 半透明衬底与居中提示胶囊（穿透点击，不拦截落点）
+                                    val dropHintText = stringResource(MR.strings.desktop_drop_to_open)
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .background(MiuixTheme.colorScheme.primary.copy(alpha = 0.08f))
+                                            .border(2.dp, MiuixTheme.colorScheme.primary.copy(alpha = 0.6f)),
+                                    )
+                                    Box(
+                                        modifier = Modifier.align(Alignment.Center),
+                                    ) {
+                                        Text(
+                                            text = dropHintText,
+                                            color = MiuixTheme.colorScheme.primary,
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.Medium,
+                                            modifier = Modifier
+                                                .shadow(8.dp, SquircleShape(12.dp))
+                                                .clip(SquircleShape(12.dp))
+                                                .background(MiuixTheme.colorScheme.surface)
+                                                .border(1.dp, MiuixTheme.colorScheme.outline.copy(alpha = 0.15f), SquircleShape(12.dp))
+                                                .padding(horizontal = 20.dp, vertical = 12.dp),
+                                        )
+                                    }
+                                }
+                                if (showShortcutsHelp) {
+                                    ShortcutsHelpDialog(onDismiss = { showShortcutsHelp = false })
+                                }
+                                if (showAbout) {
+                                    AboutDialog(onDismiss = { showAbout = false })
+                                }
                             }
                         }
                     }

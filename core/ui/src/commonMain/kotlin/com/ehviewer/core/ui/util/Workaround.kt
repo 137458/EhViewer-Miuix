@@ -48,4 +48,4 @@ fun ProvideVectorPainterCache(content: @Composable () -> Unit) {
 
 typealias VectorPainterCache = MutableScatterMap<ImageVector, VectorPainter>
 
-val LocalVectorPainterCache = compositionLocalOf<VectorPainterCache> { error("CompositionLocal LocalSideSheetState not present!") }
+val LocalVectorPainterCache = compositionLocalOf<VectorPainterCache> { error("CompositionLocal LocalVectorPainterCache not present! Provide it via ProvideVectorPainterCache.") }
