@@ -47,6 +47,7 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.AnnotatedString
@@ -65,8 +66,12 @@ import com.ehviewer.core.database.model.HistoryInfo
 import com.ehviewer.core.database.model.LocalFavoriteInfo
 import com.ehviewer.core.i18n.MR
 import com.ehviewer.core.model.BaseGalleryInfo
+import com.ehviewer.core.shell.nav.AppShell
+import com.ehviewer.core.shell.nav.NavItemSpec
+import com.ehviewer.core.shell.nav.NavPrimaryPolicy
+import com.ehviewer.core.shell.nav.indexOfKey
+import com.ehviewer.core.shell.nav.toPrimaryItems
 import com.ehviewer.core.ui.component.BlurredBar
-import com.ehviewer.core.ui.component.IosLiquidGlassNavigationBar
 import com.ehviewer.core.ui.component.LocalBackdrop
 import com.ehviewer.core.ui.component.SquircleShape
 import com.ehviewer.core.ui.component.blurBackdropSource
@@ -100,9 +105,6 @@ import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
-import top.yukonga.miuix.kmp.basic.NavigationItem
-import top.yukonga.miuix.kmp.basic.NavigationRail
-import top.yukonga.miuix.kmp.basic.NavigationRailItem
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -150,10 +152,22 @@ fun main() {
                 },
             )
         }
+        // 恢复尺寸钳入目标屏幕工作区（dp）：超屏尺寸会被 AWT 钳到最小值并使 windowState 与实际窗口脱钩
+        val restoredPosition = rememberedWindowPosition()
+        val restoredSize = run {
+            val x = if (restoredPosition is androidx.compose.ui.window.WindowPosition.Absolute) restoredPosition.x.value.toInt() else Int.MIN_VALUE
+            val (w, h) = DesktopWindowPlacement.clampWindowSizeToWorkArea(
+                widthDp = DesktopSettings.windowWidth,
+                heightDp = DesktopSettings.windowHeight,
+                minWidthDp = DesktopLayoutPolicy.WINDOW_MIN_WIDTH_DP,
+                minHeightDp = DesktopLayoutPolicy.WINDOW_MIN_HEIGHT_DP,
+                workArea = screenWorkAreaDp(x, y = if (x == Int.MIN_VALUE) Int.MIN_VALUE else restoredPosition.y.value.toInt()),
+            )
+            androidx.compose.ui.unit.DpSize(w.dp, h.dp)
+        }
         val windowState = rememberWindowState(
-            width = DesktopSettings.windowWidth.dp,
-            height = DesktopSettings.windowHeight.dp,
-            position = rememberedWindowPosition(),
+            size = restoredSize,
+            position = restoredPosition,
         )
         var isWindowVisible by remember { mutableStateOf(true) }
         var focusRequestVersion by remember { mutableIntStateOf(0) }
@@ -404,28 +418,82 @@ fun main() {
                                         .blurBackdropSource(backdrop),
                                 ) {
                                     val isReader = pages.last() is DesktopPage.Reader
-                                    val showRail = !isReader && when (navBarStyle) {
-                                        DesktopNavBarStyle.Rail -> true
-                                        DesktopNavBarStyle.FloatingBottomBar -> false
-                                        // Auto = 共享宽高双门槛：矮窗口（高 <600dp）自动落回悬浮底栏
-                                        DesktopNavBarStyle.Auto -> windowLayout.navigationChrome == NavigationChrome.Rail
+                                    // 导航形态：设置强制优先，Auto 走共享宽高双门槛（矮窗口自动落回底栏）；阅读器全屏无外壳
+                                    val chrome = when {
+                                        isReader -> null
+                                        navBarStyle == DesktopNavBarStyle.Rail -> NavigationChrome.Rail
+                                        navBarStyle == DesktopNavBarStyle.FloatingBottomBar -> NavigationChrome.BottomBar
+                                        else -> windowLayout.navigationChrome
                                     }
-                                    val showBottomBar = !isReader && !showRail
-                                    Row(modifier = Modifier.fillMaxSize()) {
-                                        if (showRail) {
-                                            DesktopNavRail(
-                                                currentPage = pages.last(),
-                                                activeTab = libraryTab,
-                                                items = navItems,
-                                                onSelectItem = selectNavItem,
+                                    if (chrome == null) {
+                                        when (val page = pages.last()) {
+                                            is DesktopPage.Reader -> ReaderScreen(gallery = page.gallery, onClose = popPage)
+                                            else -> {}
+                                        }
+                                    } else {
+                                        val shellDensity = LocalDensity.current.density
+                                        LaunchedEffect(chrome, navBarStyle, windowLayout) {
+                                            logcat("Shell", LogPriority.INFO) {
+                                                "CHROME style=$navBarStyle chrome=$chrome window=${windowLayout.widthDp}x${windowLayout.heightDp}" +
+                                                    " density=$shellDensity awt=${awtWindow.size.width}x${awtWindow.size.height}" +
+                                                    " gc=${awtWindow.graphicsConfiguration.bounds}"
+                                            }
+                                        }
+                                        // 与移动端 MainNavPolicy 同源的主项归并：Toplist→Whatshot、History→Downloads 进底栏
+                                        val navPolicy = remember {
+                                            NavPrimaryPolicy(
+                                                primaryKeys = listOf(
+                                                    DesktopNavItem.Home.name,
+                                                    DesktopNavItem.Subscription.name,
+                                                    DesktopNavItem.Whatshot.name,
+                                                    DesktopNavItem.Favorites.name,
+                                                    DesktopNavItem.Downloads.name,
+                                                    DesktopNavItem.Settings.name,
+                                                ),
+                                                mergeAliases = mapOf(
+                                                    DesktopNavItem.Toplist.name to DesktopNavItem.Whatshot.name,
+                                                    DesktopNavItem.History.name to DesktopNavItem.Downloads.name,
+                                                ),
                                             )
                                         }
-                                        Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                                        val navSpecs = navItems.map { item ->
+                                            NavItemSpec(key = item.name, label = stringResource(item.titleRes), icon = navItemIcon(item))
+                                        }
+                                        val primarySpecs = navSpecs.toPrimaryItems(navPolicy)
+                                        // 选中语义照抄移动端：库根页高亮当前 Tab，设置系页高亮设置项，二级页不选中
+                                        val selectedKey = when (val page = pages.last()) {
+                                            is DesktopPage.Library -> libraryTab.name
+                                            is DesktopPage.Settings, is DesktopPage.NavItems -> DesktopNavItem.Settings.name
+                                            else -> null
+                                        }
+                                        // 主级目的地（库页/设置页）才显示悬浮底栏，详情等二级页隐藏（移动端 isPrimaryDestination 语义）
+                                        val bottomBarVisible = pages.last() is DesktopPage.Library || pages.last() is DesktopPage.Settings
+                                        AppShell(
+                                            items = navSpecs,
+                                            primaryItems = primarySpecs,
+                                            selectedIndex = navSpecs.indexOfKey(selectedKey),
+                                            primarySelectedIndex = navPolicy.primaryIndexOf(selectedKey),
+                                            chrome = chrome,
+                                            bottomBarVisible = bottomBarVisible,
+                                            backdrop = backdrop,
+                                            onItemSelected = { index ->
+                                                navSpecs.getOrNull(index)?.key?.let { key -> selectNavItem(DesktopNavItem.valueOf(key)) }
+                                            },
+                                            onPrimarySelected = { index ->
+                                                primarySpecs.getOrNull(index)?.key?.let { key -> selectNavItem(DesktopNavItem.valueOf(key)) }
+                                            },
+                                        ) {
                                             // 悬浮底栏可见时页面内容整体避让，列表末行不被遮挡（对齐移动端 bottomBarPadding 语义）
                                             Box(
                                                 modifier = Modifier
                                                     .fillMaxSize()
-                                                    .padding(bottom = if (showBottomBar) FLOATING_BAR_CONTENT_PADDING else 0.dp),
+                                                    .padding(
+                                                        bottom = if (bottomBarVisible && chrome == NavigationChrome.BottomBar) {
+                                                            FLOATING_BAR_CONTENT_PADDING
+                                                        } else {
+                                                            0.dp
+                                                        },
+                                                    ),
                                             ) {
                                                 when (val page = pages.last()) {
                                                     DesktopPage.Library -> LibraryScreen(
@@ -473,53 +541,39 @@ fun main() {
                                                     )
                                                 }
                                             }
-                                            androidx.compose.animation.AnimatedVisibility(
-                                                visible = showBottomBar,
-                                                enter = slideInVertically { it } + fadeIn(),
-                                                exit = slideOutVertically { it } + fadeOut(),
-                                                modifier = Modifier.align(Alignment.BottomCenter),
-                                            ) {
-                                                DesktopFloatingNavBar(
-                                                    currentPage = pages.last(),
-                                                    activeTab = libraryTab,
-                                                    items = navItems,
-                                                    onSelectItem = selectNavItem,
-                                                    backdrop = backdrop,
-                                                )
-                                            }
-                                            if (dragHovering) {
-                                                // 拖拽放置高亮：全窗口主色描边 + 半透明衬底与居中提示胶囊（穿透点击，不拦截落点）
-                                                val dropHintText = stringResource(MR.strings.desktop_drop_to_open)
-                                                Box(
-                                                    modifier = Modifier
-                                                        .fillMaxSize()
-                                                        .background(MiuixTheme.colorScheme.primary.copy(alpha = 0.08f))
-                                                        .border(2.dp, MiuixTheme.colorScheme.primary.copy(alpha = 0.6f)),
-                                                )
-                                                Box(
-                                                    modifier = Modifier.align(Alignment.Center),
-                                                ) {
-                                                    Text(
-                                                        text = dropHintText,
-                                                        color = MiuixTheme.colorScheme.primary,
-                                                        fontSize = 14.sp,
-                                                        fontWeight = FontWeight.Medium,
-                                                        modifier = Modifier
-                                                            .shadow(8.dp, SquircleShape(12.dp))
-                                                            .clip(SquircleShape(12.dp))
-                                                            .background(MiuixTheme.colorScheme.surface)
-                                                            .border(1.dp, MiuixTheme.colorScheme.outline.copy(alpha = 0.15f), SquircleShape(12.dp))
-                                                            .padding(horizontal = 20.dp, vertical = 12.dp),
-                                                    )
-                                                }
-                                            }
-                                            if (showShortcutsHelp) {
-                                                ShortcutsHelpDialog(onDismiss = { showShortcutsHelp = false })
-                                            }
-                                            if (showAbout) {
-                                                AboutDialog(onDismiss = { showAbout = false })
-                                            }
                                         }
+                                    }
+                                    if (dragHovering) {
+                                        // 拖拽放置高亮：全窗口主色描边 + 半透明衬底与居中提示胶囊（穿透点击，不拦截落点）
+                                        val dropHintText = stringResource(MR.strings.desktop_drop_to_open)
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxSize()
+                                                .background(MiuixTheme.colorScheme.primary.copy(alpha = 0.08f))
+                                                .border(2.dp, MiuixTheme.colorScheme.primary.copy(alpha = 0.6f)),
+                                        )
+                                        Box(
+                                            modifier = Modifier.align(Alignment.Center),
+                                        ) {
+                                            Text(
+                                                text = dropHintText,
+                                                color = MiuixTheme.colorScheme.primary,
+                                                fontSize = 14.sp,
+                                                fontWeight = FontWeight.Medium,
+                                                modifier = Modifier
+                                                    .shadow(8.dp, SquircleShape(12.dp))
+                                                    .clip(SquircleShape(12.dp))
+                                                    .background(MiuixTheme.colorScheme.surface)
+                                                    .border(1.dp, MiuixTheme.colorScheme.outline.copy(alpha = 0.15f), SquircleShape(12.dp))
+                                                    .padding(horizontal = 20.dp, vertical = 12.dp),
+                                            )
+                                        }
+                                    }
+                                    if (showShortcutsHelp) {
+                                        ShortcutsHelpDialog(onDismiss = { showShortcutsHelp = false })
+                                    }
+                                    if (showAbout) {
+                                        AboutDialog(onDismiss = { showAbout = false })
                                     }
                                 }
                             }
@@ -592,6 +646,24 @@ private fun rememberedWindowPosition(): androidx.compose.ui.window.WindowPositio
         androidx.compose.ui.window.WindowPosition.PlatformDefault
     }
 }
+
+// 目标屏幕工作区的 dp 尺寸：坐标命中哪块屏就取哪块（未记忆位置取主屏）。
+// aware AWT 上报物理像素（defaultTransform=缩放），非 aware 上报逻辑像素（transform=1），
+// 两种情形「上报值 / transform」均为 dp；枚举失败（headless 等异常环境）返回 null 由调用方跳过钳制
+private fun screenWorkAreaDp(x: Int, y: Int): DesktopWindowPlacement.WorkArea? = runCatching {
+    val ge = java.awt.GraphicsEnvironment.getLocalGraphicsEnvironment()
+    val gc = ge.screenDevices
+        .map { it.defaultConfiguration }
+        .firstOrNull { x != Int.MIN_VALUE && y != Int.MIN_VALUE && it.bounds.contains(x, y) }
+        ?: ge.defaultScreenDevice.defaultConfiguration
+    val b = gc.bounds
+    val insets = java.awt.Toolkit.getDefaultToolkit().getScreenInsets(gc)
+    val scale = gc.defaultTransform.scaleX.takeIf { it > 0.0 } ?: 1.0
+    DesktopWindowPlacement.WorkArea(
+        width = ((b.width - insets.left - insets.right) / scale).roundToInt(),
+        height = ((b.height - insets.top - insets.bottom) / scale).roundToInt(),
+    )
+}.getOrNull()
 
 private fun isReachableScreenPoint(x: Int, y: Int): Boolean = runCatching {
     java.awt.GraphicsEnvironment.getLocalGraphicsEnvironment().screenDevices.any { device ->
@@ -1083,54 +1155,4 @@ private fun navItemIcon(item: DesktopNavItem): ImageVector = when (item) {
     DesktopNavItem.History -> MiuixIcons.Recent
     DesktopNavItem.Downloads -> MiuixIcons.Download
     DesktopNavItem.Settings -> MiuixIcons.Settings
-}
-
-// 选中态判定：设置项看当前页，库 Tab 项看激活 Tab 且当前不在设置页
-private fun isNavItemSelected(item: DesktopNavItem, currentPage: DesktopPage, activeTab: LibraryTab): Boolean = if (item == DesktopNavItem.Settings) {
-    currentPage is DesktopPage.Settings
-} else {
-    currentPage !is DesktopPage.Settings && item.toLibraryTab() == activeTab
-}
-
-// 宽屏左侧导航外壳（MIUIX NavigationRail）：按可配置导航项列表渲染（设计文档 §4.5 / §6.6）
-@Composable
-private fun DesktopNavRail(
-    currentPage: DesktopPage,
-    activeTab: LibraryTab,
-    items: List<DesktopNavItem>,
-    onSelectItem: (DesktopNavItem) -> Unit,
-) {
-    NavigationRail(expanded = false, scrollState = rememberScrollState()) {
-        items.forEach { item ->
-            NavigationRailItem(
-                selected = isNavItemSelected(item, currentPage, activeTab),
-                onClick = { onSelectItem(item) },
-                icon = navItemIcon(item),
-                label = stringResource(item.titleRes),
-            )
-        }
-    }
-}
-
-// 底部液态玻璃悬浮导航栏（MIUIX / Liquid Glass）：按可配置导航项列表渲染，实时折射底层
-@Composable
-private fun DesktopFloatingNavBar(
-    currentPage: DesktopPage,
-    activeTab: LibraryTab,
-    items: List<DesktopNavItem>,
-    onSelectItem: (DesktopNavItem) -> Unit,
-    backdrop: LayerBackdrop?,
-    modifier: Modifier = Modifier,
-) {
-    val navItems = items.map { item ->
-        NavigationItem(stringResource(item.titleRes), navItemIcon(item))
-    }
-    val selectedIndex = items.indexOfFirst { isNavItemSelected(it, currentPage, activeTab) }.coerceAtLeast(0)
-    IosLiquidGlassNavigationBar(
-        items = navItems,
-        selectedIndex = selectedIndex,
-        onItemClick = { index -> items.getOrNull(index)?.let(onSelectItem) },
-        backdrop = backdrop,
-        modifier = modifier,
-    )
 }

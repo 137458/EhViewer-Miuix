@@ -47,6 +47,7 @@ kotlin {
                 implementation(projects.core.common)
                 implementation(projects.core.data)
                 implementation(projects.core.i18n)
+                implementation(projects.core.shell)
                 implementation(projects.core.ui)
                 implementation(libs.serialization.json)
                 implementation(project.dependencies.platform(libs.coil.bom))
