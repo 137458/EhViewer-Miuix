@@ -74,7 +74,6 @@ import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.TextUnit
@@ -271,6 +270,8 @@ fun LibraryScreen(
                             logcat("Library", LogPriority.INFO) { "ONLINE_SEARCH parsed=${list.size} q=$query next=$nextGid" }
                         }.onFailure { e ->
                             logcat("Library", LogPriority.WARN) { "ONLINE_SEARCH parse failed: $e" }
+                            // 与 refreshGalleries 同约定：解析失败静默会让徽章显示在线但列表已被清空且不更新，补可见反馈
+                            showNotification(onlineParseFailedText)
                         }
                     } else {
                         logcat("Library", LogPriority.WARN) { "ONLINE_SEARCH status=${response.status}" }
@@ -700,18 +701,10 @@ fun LibraryScreen(
                             }
                         }
                         if (currentTab == LibraryTab.History && history.isNotEmpty()) {
-                            val clearHover = remember { MutableInteractionSource() }
-                            val clearHovered by clearHover.collectIsHoveredAsState()
-                            Box(
-                                modifier = Modifier
-                                    .clip(SquircleShape(6.dp))
-                                    .background(MiuixTheme.colorScheme.surfaceContainerHighest)
-                                    .background(if (clearHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
-                                    .hoverable(clearHover)
-                                    .pointerHoverIcon(PointerIcon.Hand)
-                                    .clickable { showClearHistoryConfirm = true }
-                                    .padding(horizontal = 8.dp, vertical = 4.dp),
-                                contentAlignment = Alignment.Center,
+                            DesktopHoverPill(
+                                onClick = { showClearHistoryConfirm = true },
+                                containerColor = MiuixTheme.colorScheme.surfaceContainerHighest,
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
                             ) {
                                 Text(
                                     text = stringResource(MR.strings.clear_all),
@@ -751,21 +744,14 @@ fun LibraryScreen(
                                     }
                                 },
                         )
-                        val sortHover = remember { MutableInteractionSource() }
-                        val sortHovered by sortHover.collectIsHoveredAsState()
-                        Box(
-                            modifier = Modifier
-                                .clip(SquircleShape(6.dp))
-                                .background(MiuixTheme.colorScheme.surfaceContainerHighest)
-                                .background(if (sortHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
-                                .hoverable(sortHover)
-                                .pointerHoverIcon(PointerIcon.Hand)
-                                .clickable {
-                                    sortConfig = sortConfig.cycle().also {
-                                        DesktopSettings.sortConfig.value = it.encode()
-                                    }
+                        DesktopHoverPill(
+                            onClick = {
+                                sortConfig = sortConfig.cycle().also {
+                                    DesktopSettings.sortConfig.value = it.encode()
                                 }
-                                .padding(horizontal = 8.dp, vertical = 6.dp),
+                            },
+                            containerColor = MiuixTheme.colorScheme.surfaceContainerHighest,
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp),
                         ) {
                             Text(
                                 text = if (sortConfig.field == DesktopSortField.Default) {
@@ -781,19 +767,12 @@ fun LibraryScreen(
                                 fontSize = 12.sp,
                             )
                         }
-                        val viewHover = remember { MutableInteractionSource() }
-                        val viewHovered by viewHover.collectIsHoveredAsState()
-                        Box(
-                            modifier = Modifier
-                                .clip(SquircleShape(6.dp))
-                                .background(MiuixTheme.colorScheme.surfaceContainerHighest)
-                                .background(if (viewHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
-                                .hoverable(viewHover)
-                                .pointerHoverIcon(PointerIcon.Hand)
-                                .clickable {
-                                    DesktopSettings.viewMode.value = viewMode.toggle().ordinal
-                                }
-                                .padding(horizontal = 8.dp, vertical = 6.dp),
+                        DesktopHoverPill(
+                            onClick = {
+                                DesktopSettings.viewMode.value = viewMode.toggle().ordinal
+                            },
+                            containerColor = MiuixTheme.colorScheme.surfaceContainerHighest,
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp),
                         ) {
                             Text(
                                 text = if (viewMode == DesktopViewMode.List) {
@@ -840,67 +819,48 @@ fun LibraryScreen(
                                             )
                                         },
                                     ) {
-                                        val chipHover = remember { MutableInteractionSource() }
-                                        val chipHovered by chipHover.collectIsHoveredAsState()
-                                        Row(
-                                            modifier = Modifier
-                                                .clip(SquircleShape(6.dp))
-                                                .background(MiuixTheme.colorScheme.surfaceContainerHighest)
-                                                .background(if (chipHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
-                                                .hoverable(chipHover)
-                                                .pointerHoverIcon(PointerIcon.Hand)
-                                                .clickable {
-                                                    searchFieldState.setTextAndPlaceCursorAtEnd(suggestion)
-                                                    submitSearch(suggestion)
-                                                }
-                                                .padding(start = 8.dp, end = 4.dp, top = 2.dp, bottom = 2.dp),
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                        DesktopHoverPill(
+                                            onClick = {
+                                                searchFieldState.setTextAndPlaceCursorAtEnd(suggestion)
+                                                submitSearch(suggestion)
+                                            },
+                                            containerColor = MiuixTheme.colorScheme.surfaceContainerHighest,
+                                            contentPadding = PaddingValues(start = 8.dp, end = 4.dp, top = 2.dp, bottom = 2.dp),
                                         ) {
-                                            Text(
-                                                text = suggestion,
-                                                fontSize = 11.sp,
-                                                color = MiuixTheme.colorScheme.primary,
-                                                maxLines = 1,
-                                                overflow = TextOverflow.Ellipsis,
-                                            )
-                                            val chipDeleteHover = remember { MutableInteractionSource() }
-                                            val chipDeleteHovered by chipDeleteHover.collectIsHoveredAsState()
-                                            Box(
-                                                modifier = Modifier
-                                                    .clip(SquircleShape(4.dp))
-                                                    .background(if (chipDeleteHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
-                                                    .hoverable(chipDeleteHover)
-                                                    .pointerHoverIcon(PointerIcon.Hand)
-                                                    .clickable {
-                                                        val updated = DesktopSearchHistory.removeQuery(searchHistoryList, suggestion)
-                                                        DesktopSettings.searchHistory.value = DesktopSearchHistory.encode(updated)
-                                                    }
-                                                    .padding(horizontal = 4.dp, vertical = 2.dp),
-                                                contentAlignment = Alignment.Center,
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(4.dp),
                                             ) {
                                                 Text(
-                                                    text = "✕",
-                                                    fontSize = 9.sp,
-                                                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                                    text = suggestion,
+                                                    fontSize = 11.sp,
+                                                    color = MiuixTheme.colorScheme.primary,
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis,
                                                 )
+                                                DesktopHoverPill(
+                                                    onClick = {
+                                                        val updated = DesktopSearchHistory.removeQuery(searchHistoryList, suggestion)
+                                                        DesktopSettings.searchHistory.value = DesktopSearchHistory.encode(updated)
+                                                    },
+                                                    shape = SquircleShape(4.dp),
+                                                    contentPadding = PaddingValues(horizontal = 4.dp, vertical = 2.dp),
+                                                ) {
+                                                    Text(
+                                                        text = "✕",
+                                                        fontSize = 9.sp,
+                                                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                                    )
+                                                }
                                             }
                                         }
                                     }
                                 }
                             }
-                            val clearHistoryHover = remember { MutableInteractionSource() }
-                            val clearHistoryHovered by clearHistoryHover.collectIsHoveredAsState()
-                            Box(
-                                modifier = Modifier
-                                    .clip(SquircleShape(6.dp))
-                                    .background(MiuixTheme.colorScheme.surfaceContainerHighest)
-                                    .background(if (clearHistoryHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
-                                    .hoverable(clearHistoryHover)
-                                    .pointerHoverIcon(PointerIcon.Hand)
-                                    .clickable { clearSearchHistory() }
-                                    .padding(horizontal = 6.dp, vertical = 2.dp),
-                                contentAlignment = Alignment.Center,
+                            DesktopHoverPill(
+                                onClick = { clearSearchHistory() },
+                                containerColor = MiuixTheme.colorScheme.surfaceContainerHighest,
+                                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
                             ) {
                                 Text(
                                     text = stringResource(MR.strings.clear_all),
@@ -927,18 +887,11 @@ fun LibraryScreen(
                                 overflow = TextOverflow.Ellipsis,
                                 modifier = Modifier.weight(1f, fill = false),
                             )
-                            val remoteResetHover = remember { MutableInteractionSource() }
-                            val remoteResetHovered by remoteResetHover.collectIsHoveredAsState()
-                            Box(
-                                modifier = Modifier
-                                    .clip(SquircleShape(4.dp))
-                                    .background(MiuixTheme.colorScheme.surfaceContainerHighest)
-                                    .background(if (remoteResetHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
-                                    .hoverable(remoteResetHover)
-                                    .pointerHoverIcon(PointerIcon.Hand)
-                                    .clickable { clearRemoteSearch() }
-                                    .padding(horizontal = 6.dp, vertical = 2.dp),
-                                contentAlignment = Alignment.Center,
+                            DesktopHoverPill(
+                                onClick = { clearRemoteSearch() },
+                                shape = SquircleShape(4.dp),
+                                containerColor = MiuixTheme.colorScheme.surfaceContainerHighest,
+                                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
                             ) {
                                 Text(
                                     text = "✕",
@@ -947,27 +900,18 @@ fun LibraryScreen(
                                 )
                             }
                             val canGoPrev = DesktopOnlinePagination.canNavigatePrev(cursorIndex)
-                            val onlinePrevHover = remember { MutableInteractionSource() }
-                            val onlinePrevHovered by onlinePrevHover.collectIsHoveredAsState()
-                            Box(
-                                modifier = Modifier
-                                    .clip(SquircleShape(6.dp))
-                                    .background(
-                                        if (canGoPrev) {
-                                            MiuixTheme.colorScheme.surfaceContainerHighest
-                                        } else {
-                                            MiuixTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.35f)
-                                        },
-                                    )
-                                    .background(if (onlinePrevHovered && canGoPrev) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
-                                    .hoverable(onlinePrevHover)
-                                    .pointerHoverIcon(if (canGoPrev) PointerIcon.Hand else PointerIcon.Default)
-                                    .clickable(enabled = canGoPrev) {
-                                        cursorIndex -= 1
-                                        remoteSearch(remoteSearchQuery, nextGid = cursorStack[cursorIndex], pushCursor = false)
-                                    }
-                                    .padding(horizontal = 8.dp, vertical = 4.dp),
-                                contentAlignment = Alignment.Center,
+                            DesktopHoverPill(
+                                onClick = {
+                                    cursorIndex -= 1
+                                    remoteSearch(remoteSearchQuery, nextGid = cursorStack[cursorIndex], pushCursor = false)
+                                },
+                                enabled = canGoPrev,
+                                containerColor = if (canGoPrev) {
+                                    MiuixTheme.colorScheme.surfaceContainerHighest
+                                } else {
+                                    MiuixTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.35f)
+                                },
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
                             ) {
                                 Text(
                                     text = stringResource(MR.strings.desktop_reader_prev),
@@ -995,33 +939,24 @@ fun LibraryScreen(
                                 )
                             }
                             Box(modifier = Modifier.weight(1f))
-                            val canGoNext = DesktopOnlinePagination.canNavigateNext(online.isNotEmpty())
-                            val onlineNextHover = remember { MutableInteractionSource() }
-                            val onlineNextHovered by onlineNextHover.collectIsHoveredAsState()
-                            Box(
-                                modifier = Modifier
-                                    .clip(SquircleShape(6.dp))
-                                    .background(
-                                        if (canGoNext) {
-                                            MiuixTheme.colorScheme.surfaceContainerHighest
-                                        } else {
-                                            MiuixTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.35f)
-                                        },
-                                    )
-                                    .background(if (onlineNextHovered && canGoNext) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
-                                    .hoverable(onlineNextHover)
-                                    .pointerHoverIcon(if (canGoNext) PointerIcon.Hand else PointerIcon.Default)
-                                    .clickable(enabled = canGoNext) {
-                                        val lastGid = online.lastOrNull()?.gid
-                                        if (lastGid != null) {
-                                            while (cursorStack.size > cursorIndex + 1) cursorStack.removeAt(cursorStack.size - 1)
-                                            cursorStack.add(lastGid)
-                                            cursorIndex += 1
-                                            remoteSearch(remoteSearchQuery, nextGid = lastGid, pushCursor = false)
-                                        }
+                            val canGoNext = online.isNotEmpty()
+                            DesktopHoverPill(
+                                onClick = {
+                                    val lastGid = online.lastOrNull()?.gid
+                                    if (lastGid != null) {
+                                        while (cursorStack.size > cursorIndex + 1) cursorStack.removeAt(cursorStack.size - 1)
+                                        cursorStack.add(lastGid)
+                                        cursorIndex += 1
+                                        remoteSearch(remoteSearchQuery, nextGid = lastGid, pushCursor = false)
                                     }
-                                    .padding(horizontal = 8.dp, vertical = 4.dp),
-                                contentAlignment = Alignment.Center,
+                                },
+                                enabled = canGoNext,
+                                containerColor = if (canGoNext) {
+                                    MiuixTheme.colorScheme.surfaceContainerHighest
+                                } else {
+                                    MiuixTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.35f)
+                                },
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
                             ) {
                                 Text(
                                     text = stringResource(MR.strings.desktop_online_next),
@@ -1049,18 +984,10 @@ fun LibraryScreen(
                                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                         fontSize = 13.sp,
                                     )
-                                    val emptyResetHover = remember { MutableInteractionSource() }
-                                    val emptyResetHovered by emptyResetHover.collectIsHoveredAsState()
-                                    Box(
-                                        modifier = Modifier
-                                            .clip(SquircleShape(8.dp))
-                                            .background(MiuixTheme.colorScheme.surfaceContainerHighest)
-                                            .background(if (emptyResetHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
-                                            .hoverable(emptyResetHover)
-                                            .pointerHoverIcon(PointerIcon.Hand)
-                                            .clickable { searchFieldState.clearText() }
-                                            .padding(horizontal = 14.dp, vertical = 6.dp),
-                                        contentAlignment = Alignment.Center,
+                                    DesktopHoverPill(
+                                        onClick = { searchFieldState.clearText() },
+                                        containerColor = MiuixTheme.colorScheme.surfaceContainerHighest,
+                                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
                                     ) {
                                         Text(
                                             text = stringResource(MR.strings.clear_all),
@@ -1111,22 +1038,15 @@ fun LibraryScreen(
                                                         text = stringResource(MR.strings.desktop_status_offline) + ": ${status.reason}",
                                                         color = MiuixTheme.colorScheme.error,
                                                     )
-                                                    val emptyRetryHover = remember { MutableInteractionSource() }
-                                                    val emptyRetryHovered by emptyRetryHover.collectIsHoveredAsState()
-                                                    Box(
-                                                        modifier = Modifier
-                                                            .clip(SquircleShape(6.dp))
-                                                            .background(MiuixTheme.colorScheme.surfaceContainerHighest)
-                                                            .background(if (emptyRetryHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
-                                                            .hoverable(emptyRetryHover)
-                                                            .pointerHoverIcon(PointerIcon.Hand)
-                                                            .clickable {
-                                                                coroutineScope.launch {
-                                                                    showNotification(checkingConnectionText)
-                                                                    refreshGalleries()
-                                                                }
+                                                    DesktopHoverPill(
+                                                        onClick = {
+                                                            coroutineScope.launch {
+                                                                showNotification(checkingConnectionText)
+                                                                refreshGalleries()
                                                             }
-                                                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                                                        },
+                                                        containerColor = MiuixTheme.colorScheme.surfaceContainerHighest,
+                                                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
                                                     ) {
                                                         Text(
                                                             text = stringResource(MR.strings.action_retry),
@@ -1478,28 +1398,21 @@ fun LibraryScreen(
                                 }
                             }
                             if (canScrollToTop && !multiSelection.isActive) {
-                                val topHover = remember { MutableInteractionSource() }
-                                val topHovered by topHover.collectIsHoveredAsState()
-                                Box(
-                                    modifier = Modifier
-                                        .align(Alignment.BottomEnd)
-                                        .padding(end = 16.dp, bottom = 16.dp)
-                                        .clip(SquircleShape(8.dp))
-                                        .background(MiuixTheme.colorScheme.surfaceContainerHighest)
-                                        .background(if (topHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
-                                        .hoverable(topHover)
-                                        .pointerHoverIcon(PointerIcon.Hand)
-                                        .clickable {
-                                            coroutineScope.launch {
-                                                if (viewMode == DesktopViewMode.List) {
-                                                    listState.animateScrollToItem(0)
-                                                } else {
-                                                    gridState.animateScrollToItem(0)
-                                                }
+                                DesktopHoverPill(
+                                    onClick = {
+                                        coroutineScope.launch {
+                                            if (viewMode == DesktopViewMode.List) {
+                                                listState.animateScrollToItem(0)
+                                            } else {
+                                                gridState.animateScrollToItem(0)
                                             }
                                         }
-                                        .padding(horizontal = 8.dp, vertical = 6.dp),
-                                    contentAlignment = Alignment.Center,
+                                    },
+                                    modifier = Modifier
+                                        .align(Alignment.BottomEnd)
+                                        .padding(end = 16.dp, bottom = 16.dp),
+                                    containerColor = MiuixTheme.colorScheme.surfaceContainerHighest,
+                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp),
                                 ) {
                                     Text(
                                         text = "↑",
@@ -1571,18 +1484,10 @@ fun LibraryScreen(
                             fontWeight = FontWeight.Bold,
                         )
                     }
-                    val cancelHover = remember { MutableInteractionSource() }
-                    val cancelHovered by cancelHover.collectIsHoveredAsState()
-                    Box(
-                        modifier = Modifier
-                            .clip(SquircleShape(8.dp))
-                            .background(MiuixTheme.colorScheme.surface)
-                            .background(if (cancelHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
-                            .hoverable(cancelHover)
-                            .pointerHoverIcon(PointerIcon.Hand)
-                            .clickable { multiSelection.clear() }
-                            .padding(horizontal = 12.dp, vertical = 6.dp),
-                        contentAlignment = Alignment.Center,
+                    DesktopHoverPill(
+                        onClick = { multiSelection.clear() },
+                        containerColor = MiuixTheme.colorScheme.surface,
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
                     ) {
                         Text(
                             text = stringResource(MR.strings.desktop_action_cancel),
@@ -1591,17 +1496,12 @@ fun LibraryScreen(
                             fontWeight = FontWeight.Medium,
                         )
                     }
-                    val deleteHover = remember { MutableInteractionSource() }
-                    val deleteHovered by deleteHover.collectIsHoveredAsState()
-                    Box(
-                        modifier = Modifier
-                            .clip(SquircleShape(8.dp))
-                            .background(MiuixTheme.colorScheme.error.copy(alpha = if (deleteHovered) 0.25f else 0.15f))
-                            .hoverable(deleteHover)
-                            .pointerHoverIcon(PointerIcon.Hand)
-                            .clickable { showBatchDeleteConfirm = true }
-                            .padding(horizontal = 12.dp, vertical = 6.dp),
-                        contentAlignment = Alignment.Center,
+                    // 替换式加深 hover（error 0.15f→0.25f）：按既有迁移先例以叠加近似，合成深度差 <2% 不可感知
+                    DesktopHoverPill(
+                        onClick = { showBatchDeleteConfirm = true },
+                        containerColor = MiuixTheme.colorScheme.error.copy(alpha = 0.15f),
+                        hoverOverlayColor = MiuixTheme.colorScheme.error.copy(alpha = 0.12f),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
                     ) {
                         Text(
                             text = stringResource(MR.strings.desktop_delete_selected, multiSelection.gids.size),
@@ -1623,44 +1523,13 @@ fun LibraryScreen(
                 horizontalAlignment = Alignment.End,
             ) {
                 notifications.forEach { notice ->
-                    val noticeHover = remember { MutableInteractionSource() }
-                    val noticeHovered by noticeHover.collectIsHoveredAsState()
-                    Box(
-                        modifier = Modifier
-                            .clip(SquircleShape(8.dp))
-                            .background(MiuixTheme.colorScheme.surfaceContainerHighest)
-                            .background(if (noticeHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
-                            .hoverable(noticeHover)
-                            .pointerHoverIcon(PointerIcon.Hand)
-                            .clickable {
-                                notifications = DesktopNotificationManager.dismiss(notifications, notice.id)
-                            }
-                            .padding(horizontal = 12.dp, vertical = 8.dp),
-                    ) {
-                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                            Text(
-                                text = notice.message,
-                                color = MiuixTheme.colorScheme.onSurface,
-                            )
-                            // 带动作的通知（如历史删除撤销）：点击动作区执行并随通知一并消失，悬停下划线提示可点击
-                            if (notice.actionLabel != null) {
-                                val actionHover = remember { MutableInteractionSource() }
-                                val actionHovered by actionHover.collectIsHoveredAsState()
-                                Text(
-                                    text = notice.actionLabel,
-                                    color = MiuixTheme.colorScheme.primary,
-                                    textDecoration = if (actionHovered) TextDecoration.Underline else null,
-                                    modifier = Modifier
-                                        .hoverable(actionHover)
-                                        .pointerHoverIcon(PointerIcon.Hand)
-                                        .clickable {
-                                            notice.onAction?.invoke()
-                                            notifications = DesktopNotificationManager.dismiss(notifications, notice.id)
-                                        },
-                                )
-                            }
-                        }
-                    }
+                    // 带动作的通知（如历史删除撤销）：动作区点击执行并随通知一并消失，其余区域点击仅消失
+                    DesktopNotificationBubble(
+                        notice = notice,
+                        onDismiss = {
+                            notifications = DesktopNotificationManager.dismiss(notifications, notice.id)
+                        },
+                    )
                 }
             }
         }
@@ -1700,128 +1569,128 @@ fun LibraryScreen(
         }
 
         if (showClearHistoryConfirm) {
-            val confirmTitle = stringResource(MR.strings.clear_all_history)
-            val cancelLabel = stringResource(MR.strings.desktop_action_cancel)
-            val clearLabel = stringResource(MR.strings.clear_all)
-            DesktopModalCard(
-                title = confirmTitle,
+            ClearHistoryConfirmDialog(
                 onDismiss = { showClearHistoryConfirm = false },
-            ) {
-                val clearCancelHover = remember { MutableInteractionSource() }
-                val clearCancelHovered by clearCancelHover.collectIsHoveredAsState()
-                val clearConfirmHover = remember { MutableInteractionSource() }
-                val clearConfirmHovered by clearConfirmHover.collectIsHoveredAsState()
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End),
-                ) {
-                    Text(
-                        text = cancelLabel,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        modifier = Modifier
-                            .clip(SquircleShape(8.dp))
-                            .background(if (clearCancelHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
-                            .hoverable(clearCancelHover)
-                            .pointerHoverIcon(PointerIcon.Hand)
-                            .clickable { showClearHistoryConfirm = false }
-                            .padding(horizontal = 8.dp, vertical = 4.dp),
-                    )
-                    Text(
-                        text = clearLabel,
-                        color = MiuixTheme.colorScheme.error,
-                        fontWeight = FontWeight.Medium,
-                        modifier = Modifier
-                            .clip(SquircleShape(8.dp))
-                            .background(if (clearConfirmHovered) MiuixTheme.colorScheme.error.copy(alpha = 0.12f) else Color.Transparent)
-                            .hoverable(clearConfirmHover)
-                            .pointerHoverIcon(PointerIcon.Hand)
-                            .clickable {
-                                showClearHistoryConfirm = false
-                                coroutineScope.launch {
-                                    withContext(Dispatchers.IO) {
-                                        DesktopDatabase.eh.historyDao().deleteAll()
-                                    }
-                                    selected = DesktopHistoryState.updateSelectionAfterClearAll(
-                                        currentSelected = selected,
-                                        currentTabIsHistory = true,
-                                    )
-                                    showNotification(historyClearedMessage)
-                                }
-                            }
-                            .padding(horizontal = 8.dp, vertical = 4.dp),
-                    )
-                }
-            }
+                onConfirm = {
+                    showClearHistoryConfirm = false
+                    coroutineScope.launch {
+                        withContext(Dispatchers.IO) {
+                            DesktopDatabase.eh.historyDao().deleteAll()
+                        }
+                        selected = DesktopHistoryState.updateSelectionAfterClearAll(
+                            currentSelected = selected,
+                            currentTabIsHistory = true,
+                        )
+                        showNotification(historyClearedMessage)
+                    }
+                },
+            )
         }
 
         if (showBatchDeleteConfirm) {
             val confirmTitle = stringResource(MR.strings.desktop_delete_selected, multiSelection.gids.size)
-            val cancelLabel = stringResource(MR.strings.desktop_action_cancel)
-            val deleteLabel = stringResource(MR.strings.delete)
-            DesktopModalCard(
+            BatchDeleteConfirmDialog(
                 title = confirmTitle,
                 onDismiss = { showBatchDeleteConfirm = false },
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    val batchCancelHover = remember { MutableInteractionSource() }
-                    val batchCancelHovered by batchCancelHover.collectIsHoveredAsState()
-                    Box(
-                        modifier = Modifier
-                            .clip(SquircleShape(8.dp))
-                            .background(if (batchCancelHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
-                            .hoverable(batchCancelHover)
-                            .pointerHoverIcon(PointerIcon.Hand)
-                            .clickable { showBatchDeleteConfirm = false }
-                            .padding(horizontal = 14.dp, vertical = 7.dp),
-                    ) {
-                        Text(
-                            text = cancelLabel,
-                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                            fontSize = 13.sp,
-                        )
-                    }
-                    val batchDeleteHover = remember { MutableInteractionSource() }
-                    val batchDeleteHovered by batchDeleteHover.collectIsHoveredAsState()
-                    Box(
-                        modifier = Modifier
-                            .clip(SquircleShape(8.dp))
-                            .background(MiuixTheme.colorScheme.error.copy(alpha = if (batchDeleteHovered) 0.24f else 0.12f))
-                            .hoverable(batchDeleteHover)
-                            .pointerHoverIcon(PointerIcon.Hand)
-                            .clickable {
-                                showBatchDeleteConfirm = false
-                                coroutineScope.launch {
-                                    val gids = multiSelection.gids.toList()
-                                    withContext(Dispatchers.IO) {
-                                        when (currentTab) {
-                                            LibraryTab.History -> gids.forEach {
-                                                DesktopDatabase.eh.historyDao().deleteByKey(it)
-                                            }
-                                            LibraryTab.Favorites -> gids.forEach {
-                                                DesktopDatabase.eh.localFavoritesDao().deleteByKey(it)
-                                            }
-                                            else -> return@withContext
-                                        }
-                                    }
-                                    multiSelection.clear()
-                                    selected = null
-                                    showNotification(confirmTitle)
+                onConfirm = {
+                    showBatchDeleteConfirm = false
+                    coroutineScope.launch {
+                        val gids = multiSelection.gids.toList()
+                        withContext(Dispatchers.IO) {
+                            when (currentTab) {
+                                LibraryTab.History -> gids.forEach {
+                                    DesktopDatabase.eh.historyDao().deleteByKey(it)
                                 }
+                                LibraryTab.Favorites -> gids.forEach {
+                                    DesktopDatabase.eh.localFavoritesDao().deleteByKey(it)
+                                }
+                                else -> return@withContext
                             }
-                            .padding(horizontal = 16.dp, vertical = 7.dp),
-                    ) {
-                        Text(
-                            text = deleteLabel,
-                            color = MiuixTheme.colorScheme.error,
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Medium,
-                        )
+                        }
+                        multiSelection.clear()
+                        selected = null
+                        showNotification(confirmTitle)
                     }
-                }
+                },
+            )
+        }
+    }
+}
+
+@Composable
+private fun ClearHistoryConfirmDialog(
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
+) {
+    DesktopModalCard(
+        title = stringResource(MR.strings.clear_all_history),
+        onDismiss = onDismiss,
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End),
+        ) {
+            DesktopHoverPill(
+                onClick = onDismiss,
+                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+            ) {
+                Text(
+                    text = stringResource(MR.strings.desktop_action_cancel),
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                )
+            }
+            DesktopHoverPill(
+                onClick = onConfirm,
+                hoverOverlayColor = MiuixTheme.colorScheme.error.copy(alpha = 0.12f),
+                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+            ) {
+                Text(
+                    text = stringResource(MR.strings.clear_all),
+                    color = MiuixTheme.colorScheme.error,
+                    fontWeight = FontWeight.Medium,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun BatchDeleteConfirmDialog(
+    title: String,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
+) {
+    DesktopModalCard(
+        title = title,
+        onDismiss = onDismiss,
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            DesktopHoverPill(
+                onClick = onDismiss,
+                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 7.dp),
+            ) {
+                Text(
+                    text = stringResource(MR.strings.desktop_action_cancel),
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    fontSize = 13.sp,
+                )
+            }
+            DesktopHoverPill(
+                onClick = onConfirm,
+                containerColor = MiuixTheme.colorScheme.error.copy(alpha = 0.12f),
+                hoverOverlayColor = MiuixTheme.colorScheme.error.copy(alpha = 0.12f),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 7.dp),
+            ) {
+                Text(
+                    text = stringResource(MR.strings.delete),
+                    color = MiuixTheme.colorScheme.error,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium,
+                )
             }
         }
     }
@@ -1872,26 +1741,18 @@ private fun OpenGalleryDialog(
                 },
                 modifier = Modifier.weight(1f),
             )
-            val pasteHover = remember { MutableInteractionSource() }
-            val pasteHovered by pasteHover.collectIsHoveredAsState()
-            Box(
-                modifier = Modifier
-                    .clip(SquircleShape(6.dp))
-                    .background(MiuixTheme.colorScheme.surfaceContainerHighest)
-                    .background(if (pasteHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
-                    .hoverable(pasteHover)
-                    .pointerHoverIcon(PointerIcon.Hand)
-                    .clickable {
-                        val pasted = runCatching {
-                            java.awt.Toolkit.getDefaultToolkit().systemClipboard
-                                .getData(java.awt.datatransfer.DataFlavor.stringFlavor) as? String
-                        }.getOrNull()
-                        if (!pasted.isNullOrBlank()) {
-                            inputState.setTextAndPlaceCursorAtEnd(pasted.trim())
-                        }
+            DesktopHoverPill(
+                onClick = {
+                    val pasted = runCatching {
+                        java.awt.Toolkit.getDefaultToolkit().systemClipboard
+                            .getData(java.awt.datatransfer.DataFlavor.stringFlavor) as? String
+                    }.getOrNull()
+                    if (!pasted.isNullOrBlank()) {
+                        inputState.setTextAndPlaceCursorAtEnd(pasted.trim())
                     }
-                    .padding(horizontal = 10.dp, vertical = 8.dp),
-                contentAlignment = Alignment.Center,
+                },
+                containerColor = MiuixTheme.colorScheme.surfaceContainerHighest,
+                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp),
             ) {
                 Text(
                     text = pasteLabel,
@@ -1912,16 +1773,9 @@ private fun OpenGalleryDialog(
             horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            val cancelHover = remember { MutableInteractionSource() }
-            val cancelHovered by cancelHover.collectIsHoveredAsState()
-            Box(
-                modifier = Modifier
-                    .clip(SquircleShape(8.dp))
-                    .background(if (cancelHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
-                    .hoverable(cancelHover)
-                    .pointerHoverIcon(PointerIcon.Hand)
-                    .clickable(onClick = onDismiss)
-                    .padding(horizontal = 14.dp, vertical = 7.dp),
+            DesktopHoverPill(
+                onClick = onDismiss,
+                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 7.dp),
             ) {
                 Text(
                     text = cancelLabel,
@@ -2023,8 +1877,6 @@ internal fun GalleryDetailPane(
                 val retryActionText = stringResource(MR.strings.action_retry)
                 val coverCopyLinkText = stringResource(MR.strings.copy_link)
                 val coverOpenBrowserText = stringResource(MR.strings.open_in_browser)
-                val coverHover = remember { MutableInteractionSource() }
-                val coverHovered by coverHover.collectIsHoveredAsState()
                 ContextMenuArea(
                     items = {
                         listOf(
@@ -2037,19 +1889,15 @@ internal fun GalleryDetailPane(
                         )
                     },
                 ) {
-                    Box(
+                    DesktopHoverPill(
+                        onClick = {
+                            val allUrls = listOfNotNull(thumb) + (detailExtras?.detail?.previewList?.map { it.url } ?: emptyList())
+                            onPreviewCover?.invoke(thumb, allUrls)
+                        },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(200.dp)
-                            .clip(SquircleShape(8.dp))
-                            .background(if (coverHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
-                            .hoverable(coverHover)
-                            .pointerHoverIcon(PointerIcon.Hand)
-                            .clickable {
-                                val allUrls = listOfNotNull(thumb) + (detailExtras?.detail?.previewList?.map { it.url } ?: emptyList())
-                                onPreviewCover?.invoke(thumb, allUrls)
-                            },
-                        contentAlignment = Alignment.Center,
+                            .height(200.dp),
+                        contentPadding = PaddingValues(0.dp),
                     ) {
                         key(thumb, imageState.retryCount) {
                             AsyncImage(
@@ -2218,23 +2066,16 @@ internal fun GalleryDetailPane(
                                                 )
                                             },
                                         ) {
-                                            val tagHover = remember { MutableInteractionSource() }
-                                            val tagHovered by tagHover.collectIsHoveredAsState()
-                                            Box(
-                                                modifier = Modifier
-                                                    .clip(SquircleShape(6.dp))
-                                                    .background(MiuixTheme.colorScheme.surfaceContainerHighest)
-                                                    .background(if (tagHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
-                                                    .hoverable(tagHover)
-                                                    .pointerHoverIcon(PointerIcon.Hand)
-                                                    .clickable {
-                                                        if (onSearchTag != null) {
-                                                            onSearchTag(fullTag)
-                                                        } else {
-                                                            onCopy(fullTag, tagLabel)
-                                                        }
+                                            DesktopHoverPill(
+                                                onClick = {
+                                                    if (onSearchTag != null) {
+                                                        onSearchTag(fullTag)
+                                                    } else {
+                                                        onCopy(fullTag, tagLabel)
                                                     }
-                                                    .padding(horizontal = 8.dp, vertical = 3.dp),
+                                                },
+                                                containerColor = MiuixTheme.colorScheme.surfaceContainerHighest,
+                                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 3.dp),
                                             ) {
                                                 Text(
                                                     text = tagName,
@@ -2459,23 +2300,18 @@ internal fun CoverPreviewDialog(
 
         // 浮动前后翻页胶囊（在提供了上一张/下一张回调时呈现）
         if (onPrevious != null) {
-            val prevHover = remember { MutableInteractionSource() }
-            val prevHovered by prevHover.collectIsHoveredAsState()
-            Box(
+            DesktopHoverPill(
+                onClick = {
+                    zoomState = DesktopReaderZoomState()
+                    onPrevious()
+                },
                 modifier = Modifier
                     .align(Alignment.CenterStart)
-                    .padding(start = 24.dp)
-                    .clip(SquircleShape(12.dp))
-                    .background(MiuixTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.9f))
-                    .background(if (prevHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.12f) else Color.Transparent)
-                    .hoverable(prevHover)
-                    .pointerHoverIcon(PointerIcon.Hand)
-                    .clickable {
-                        zoomState = DesktopReaderZoomState()
-                        onPrevious()
-                    }
-                    .padding(horizontal = 14.dp, vertical = 18.dp),
-                contentAlignment = Alignment.Center,
+                    .padding(start = 24.dp),
+                shape = SquircleShape(12.dp),
+                containerColor = MiuixTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.9f),
+                hoverOverlayColor = MiuixTheme.colorScheme.primary.copy(alpha = 0.12f),
+                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 18.dp),
             ) {
                 Text(
                     text = "‹",
@@ -2487,23 +2323,18 @@ internal fun CoverPreviewDialog(
         }
 
         if (onNext != null) {
-            val nextHover = remember { MutableInteractionSource() }
-            val nextHovered by nextHover.collectIsHoveredAsState()
-            Box(
+            DesktopHoverPill(
+                onClick = {
+                    zoomState = DesktopReaderZoomState()
+                    onNext()
+                },
                 modifier = Modifier
                     .align(Alignment.CenterEnd)
-                    .padding(end = 24.dp)
-                    .clip(SquircleShape(12.dp))
-                    .background(MiuixTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.9f))
-                    .background(if (nextHovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.12f) else Color.Transparent)
-                    .hoverable(nextHover)
-                    .pointerHoverIcon(PointerIcon.Hand)
-                    .clickable {
-                        zoomState = DesktopReaderZoomState()
-                        onNext()
-                    }
-                    .padding(horizontal = 14.dp, vertical = 18.dp),
-                contentAlignment = Alignment.Center,
+                    .padding(end = 24.dp),
+                shape = SquircleShape(12.dp),
+                containerColor = MiuixTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.9f),
+                hoverOverlayColor = MiuixTheme.colorScheme.primary.copy(alpha = 0.12f),
+                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 18.dp),
             ) {
                 Text(
                     text = "›",
@@ -2601,18 +2432,10 @@ private fun EmptyTabBrowseOnlineButton(
     text: String,
     onClick: () -> Unit,
 ) {
-    val hoverInteraction = remember { MutableInteractionSource() }
-    val hovered by hoverInteraction.collectIsHoveredAsState()
-    Box(
-        modifier = Modifier
-            .clip(SquircleShape(8.dp))
-            .background(MiuixTheme.colorScheme.surfaceContainerHighest)
-            .background(if (hovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
-            .hoverable(hoverInteraction)
-            .pointerHoverIcon(PointerIcon.Hand)
-            .clickable(onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 6.dp),
-        contentAlignment = Alignment.Center,
+    DesktopHoverPill(
+        onClick = onClick,
+        containerColor = MiuixTheme.colorScheme.surfaceContainerHighest,
+        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
     ) {
         Text(
             text = text,

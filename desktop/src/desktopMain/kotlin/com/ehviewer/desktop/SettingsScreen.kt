@@ -65,7 +65,8 @@ fun SettingsScreen(
     val blackDarkTheme by DesktopSettings.blackDarkTheme.valueFlow().collectAsState(DesktopSettings.blackDarkTheme.value)
     val restoreSession by DesktopSettings.restoreSession.valueFlow().collectAsState(DesktopSettings.restoreSession.value)
     val restoreLimit by DesktopSettings.restoreLimit.valueFlow().collectAsState(DesktopSettings.restoreLimit.value)
-    val direction by DesktopSettings.readingDirection.valueFlow().collectAsState(DesktopSettings.readingDirection.value)
+    val directionRaw by DesktopSettings.readingDirection.valueFlow().collectAsState(DesktopSettings.readingDirection.value)
+    val direction = DesktopReadingDirection.fromPersisted(directionRaw)
 
     Box(
         modifier = Modifier
@@ -157,21 +158,13 @@ fun SettingsScreen(
                         )
                         if (restoreSession) {
                             // 会话恢复数量显式三选（5/10/20），替代点击循环
-                            SelectionRow(
-                                title = "5",
-                                selected = DesktopPageStack.sanitizeRestoreLimit(restoreLimit) == 5,
-                                onClick = { DesktopSettings.restoreLimit.value = 5 },
-                            )
-                            SelectionRow(
-                                title = "10",
-                                selected = DesktopPageStack.sanitizeRestoreLimit(restoreLimit) == 10,
-                                onClick = { DesktopSettings.restoreLimit.value = 10 },
-                            )
-                            SelectionRow(
-                                title = "20",
-                                selected = DesktopPageStack.sanitizeRestoreLimit(restoreLimit) == 20,
-                                onClick = { DesktopSettings.restoreLimit.value = 20 },
-                            )
+                            listOf(5, 10, 20).forEach { limit ->
+                                SelectionRow(
+                                    title = limit.toString(),
+                                    selected = DesktopPageStack.sanitizeRestoreLimit(restoreLimit) == limit,
+                                    onClick = { DesktopSettings.restoreLimit.value = limit },
+                                )
+                            }
                         }
                     }
                 }
@@ -190,13 +183,13 @@ fun SettingsScreen(
                         // 两态显式选择替代点击翻转，与主题/关闭行为交互范式一致
                         SelectionRow(
                             title = stringResource(MR.strings.settings_reading_direction_ltr),
-                            selected = direction == "LTR",
-                            onClick = { DesktopSettings.readingDirection.value = "LTR" },
+                            selected = direction == DesktopReadingDirection.LTR,
+                            onClick = { DesktopSettings.readingDirection.value = DesktopReadingDirection.LTR.name },
                         )
                         SelectionRow(
                             title = stringResource(MR.strings.settings_reading_direction_rtl),
-                            selected = direction == "RTL",
-                            onClick = { DesktopSettings.readingDirection.value = "RTL" },
+                            selected = direction == DesktopReadingDirection.RTL,
+                            onClick = { DesktopSettings.readingDirection.value = DesktopReadingDirection.RTL.name },
                         )
                     }
                 }

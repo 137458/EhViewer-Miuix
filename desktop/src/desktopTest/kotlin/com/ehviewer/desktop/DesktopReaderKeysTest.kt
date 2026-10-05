@@ -18,9 +18,15 @@ class DesktopReaderKeysTest {
         assertFalse(canNavigateByDelta(page = 10, delta = 1, totalPages = 10))
         assertTrue(canNavigateByDelta(page = 9, delta = 1, totalPages = 10))
 
-        // RTL 增量反转（prev=+1 / next=-1）：末页无上一页，首页无下一页
-        assertFalse(canNavigateByDelta(page = 10, delta = 1, totalPages = 10))
-        assertFalse(canNavigateByDelta(page = 1, delta = -1, totalPages = 10))
+        // RTL 方向反转与边界检查的合成：反转后的合法方向落在界内放行，越界拒绝
+        val rtlForward = DesktopReadingDirection.RTL.pageDeltaForNav(DesktopReaderNav.RelativeForward)
+        val rtlBackward = DesktopReadingDirection.RTL.pageDeltaForNav(DesktopReaderNav.RelativeBackward)
+        assertEquals(-1, rtlForward)
+        assertEquals(1, rtlBackward)
+        assertTrue(canNavigateByDelta(page = 2, delta = rtlForward, totalPages = 10))
+        assertFalse(canNavigateByDelta(page = 1, delta = rtlForward, totalPages = 10))
+        assertTrue(canNavigateByDelta(page = 9, delta = rtlBackward, totalPages = 10))
+        assertFalse(canNavigateByDelta(page = 10, delta = rtlBackward, totalPages = 10))
 
         // 多页增量同样受边界钳制，不针对 ±1 特化
         assertFalse(canNavigateByDelta(page = 9, delta = 2, totalPages = 10))

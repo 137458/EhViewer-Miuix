@@ -3,9 +3,6 @@ package com.ehviewer.desktop
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.hoverable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -417,16 +414,7 @@ private fun SaveWindowSize(windowState: androidx.compose.ui.window.WindowState) 
             .drop(1)
             .debounce(500)
             .collect { (position, placement) ->
-                val x = position.x.value.toInt()
-                val y = position.y.value.toInt()
-                if (placement == WindowPlacement.Floating &&
-                    position.x.value.isFinite() &&
-                    position.y.value.isFinite() &&
-                    isPositionWithinScreens(x, y, visibleScreenBounds())
-                ) {
-                    DesktopSettings.windowX = x
-                    DesktopSettings.windowY = y
-                }
+                persistWindowPosition(position, placement)
             }
     }
 }
@@ -437,19 +425,24 @@ private fun visibleScreenBounds(): List<java.awt.Rectangle> = runCatching {
         .screenDevices.map { it.defaultConfiguration.bounds }
 }.getOrDefault(emptyList())
 
-private fun saveWindowPlacement(windowState: androidx.compose.ui.window.WindowState) {
-    DesktopSettings.windowWidth = windowState.size.width.value.toInt()
-    DesktopSettings.windowHeight = windowState.size.height.value.toInt()
-    val x = windowState.position.x.value.toInt()
-    val y = windowState.position.y.value.toInt()
-    if (windowState.placement == WindowPlacement.Floating &&
-        windowState.position.x.value.isFinite() &&
-        windowState.position.y.value.isFinite() &&
+// 浮动态且坐标有限且落在任一可见屏幕内才落盘；拖拽路径与退出保存路径共用同一守卫
+private fun persistWindowPosition(position: androidx.compose.ui.window.WindowPosition, placement: WindowPlacement) {
+    val x = position.x.value.toInt()
+    val y = position.y.value.toInt()
+    if (placement == WindowPlacement.Floating &&
+        position.x.value.isFinite() &&
+        position.y.value.isFinite() &&
         isPositionWithinScreens(x, y, visibleScreenBounds())
     ) {
         DesktopSettings.windowX = x
         DesktopSettings.windowY = y
     }
+}
+
+private fun saveWindowPlacement(windowState: androidx.compose.ui.window.WindowState) {
+    DesktopSettings.windowWidth = windowState.size.width.value.toInt()
+    DesktopSettings.windowHeight = windowState.size.height.value.toInt()
+    persistWindowPosition(windowState.position, windowState.placement)
 }
 
 // 恢复记忆位置；坐标落在任何已接显示器边界外（如拔掉外接屏）时回退平台默认，防窗口飘出可达区域
@@ -914,41 +907,12 @@ private fun GalleryDetailPageContent(
                     horizontalAlignment = Alignment.End,
                 ) {
                     notifications.forEach { notice ->
-                        DesktopHoverPill(
-                            onClick = {
+                        DesktopNotificationBubble(
+                            notice = notice,
+                            onDismiss = {
                                 notifications = DesktopNotificationManager.dismiss(notifications, notice.id)
                             },
-                            shape = SquircleShape(8.dp),
-                            containerColor = MiuixTheme.colorScheme.surfaceContainerHighest,
-                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
-                        ) {
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Text(
-                                    text = notice.message,
-                                    color = MiuixTheme.colorScheme.onSurface,
-                                )
-                                if (notice.actionLabel != null) {
-                                    val actionHover = remember { MutableInteractionSource() }
-                                    val actionHovered by actionHover.collectIsHoveredAsState()
-                                    Text(
-                                        text = notice.actionLabel,
-                                        color = MiuixTheme.colorScheme.primary,
-                                        fontWeight = FontWeight.Medium,
-                                        textDecoration = if (actionHovered) TextDecoration.Underline else null,
-                                        modifier = Modifier
-                                            .hoverable(actionHover)
-                                            .pointerHoverIcon(PointerIcon.Hand)
-                                            .clickable {
-                                                notice.onAction?.invoke()
-                                                notifications = DesktopNotificationManager.dismiss(notifications, notice.id)
-                                            },
-                                    )
-                                }
-                            }
-                        }
+                        )
                     }
                 }
             }

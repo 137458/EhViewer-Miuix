@@ -21,6 +21,5 @@ object DesktopSearchUrl {
 
 object DesktopOnlinePagination {
     fun canNavigatePrev(cursorIndex: Int): Boolean = cursorIndex > 0
-    fun canNavigateNext(hasItems: Boolean): Boolean = hasItems
     fun pageDisplayNumber(cursorIndex: Int): Int = (cursorIndex + 1).coerceAtLeast(1)
 }

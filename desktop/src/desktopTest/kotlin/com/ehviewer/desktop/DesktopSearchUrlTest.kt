@@ -89,11 +89,6 @@ class DesktopSearchUrlTest {
         assertTrue(DesktopOnlinePagination.canNavigatePrev(1))
         assertTrue(DesktopOnlinePagination.canNavigatePrev(5))
 
-        // 结果为空时无下一页
-        assertFalse(DesktopOnlinePagination.canNavigateNext(hasItems = false))
-        // 有结果时有下一页
-        assertTrue(DesktopOnlinePagination.canNavigateNext(hasItems = true))
-
         // 页码展示计算
         assertEquals(1, DesktopOnlinePagination.pageDisplayNumber(0))
         assertEquals(2, DesktopOnlinePagination.pageDisplayNumber(1))

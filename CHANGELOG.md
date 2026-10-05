@@ -2,6 +2,14 @@
 
 ### 新增
 
+- 支持了桌面端 ja/zh-rHK/zh-rTW 翻译补齐：桌面端实际消费的 44/48/43 个词条（快捷键指南、主题与阅读方向设置、托盘菜单、搜索提示等）此前缺失回退英文，现三语言补齐以对齐五语言守卫约定；分类名（Manga/Doujinshi 等）沿用上游惯例保持英文回退。
+
+- 修复了桌面端远程搜索解析失败静默的问题：在线搜索列表解析失败时（原仅记日志，徽章已显示在线而列表被清空且不更新）弹出「在线画廊解析失败」通知，与首页刷新路径的反馈约定对齐。
+
+- 优化了桌面端悬停微交互收敛（全量审查修复）：LibraryScreen/ReaderScreen 共 32 处内联悬停胶囊统一迁移至共享 DesktopHoverPill（三态分段 Tab、combinedClickable 列表行/网格卡、链接悬停下划线等不适用处保留）；三处通知气泡渲染（主窗/画廊库/阅读器）提取为共用的 DesktopNotificationBubble；清空历史/批量删除确认对话框提取为私有组合项。
+
+- 优化了桌面端零散重复逻辑清理：窗口位置落盘守卫提取 persistWindowPosition（拖拽与退出两保存路径共用同一校验）；设置页阅读方向改用 DesktopReadingDirection 枚举替代 "LTR"/"RTL" 魔法字符串；移除 DesktopOnlinePagination.canNavigateNext 纯转发包装；会话恢复数量三选改 listOf(5, 10, 20).forEach；阅读器边界测试补 RTL 方向反转与边界检查的真实合成断言。
+
 - 支持了桌面端「关于」对话框手动检查更新：新增「检查更新」入口（悬停高亮胶囊），行内反馈检查中/已是最新版本/新版本 tag 三态（新版本可点击直达 Releases 页），对齐移动端更新检查能力；检查词条新增 desktop_check_update/up_to_date/checking 五语言资源。
 
 - 修复了桌面端窗口位置保存的屏幕外边界：拖拽/退出保存前校验坐标落在任一可见屏幕内（新增 isPositionWithinScreens 纯函数 + 5 用例测试），外接显示器拔除后不再把窗口恢复到不可见区域；屏幕枚举异常时保守跳过位置更新。
