@@ -13,6 +13,10 @@ kotlin {
                 api(projects.core.i18n)
                 api(projects.core.ui)
                 api(libs.androidx.paging.compose)
+                api(libs.material.kolor)
+                implementation(project.dependencies.platform(libs.coil.bom))
+                implementation(libs.coil.compose)
+                implementation(libs.moko.resources.compose)
                 implementation(libs.compose.ui.backhandler)
                 implementation(libs.compose.ui.tooling.preview)
             }

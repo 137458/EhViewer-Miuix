@@ -31,6 +31,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.scrollbar.rememberScrollbarAdapter
 import androidx.compose.foundation.text.KeyboardOptions
@@ -90,6 +91,10 @@ import com.ehviewer.core.database.model.LocalFavoriteInfo
 import com.ehviewer.core.i18n.MR
 import com.ehviewer.core.model.BaseGalleryInfo
 import com.ehviewer.core.network.EhCookieStore
+import com.ehviewer.core.shell.list.GalleryInfoGridItem
+import com.ehviewer.core.shell.list.GalleryInfoListItem
+import com.ehviewer.core.shell.list.GalleryItemStatus
+import com.ehviewer.core.shell.list.GalleryListBody
 import com.ehviewer.core.ui.component.BlurredBar
 import com.ehviewer.core.ui.component.GalleryListCardRating
 import com.ehviewer.core.ui.component.LocalBackdrop
@@ -125,6 +130,14 @@ private fun formatBrowseTime(epochMillis: Long): String = java.time.Instant.ofEp
     .format(java.time.format.DateTimeFormatter.ofPattern("MM-dd HH:mm"))
 
 fun formatGalleryTags(tags: List<String>?): String = tags?.joinToString(", ") ?: ""
+
+// 桌面交互叠加：单选/Ctrl 批量多选的描边高亮（共享条目无此概念，移动端无多选语义）
+@Composable
+private fun Modifier.gallerySelectionBorder(selected: Boolean, multiSelected: Boolean): Modifier = when {
+    multiSelected -> border(2.dp, MiuixTheme.colorScheme.primary, SquircleShape(12.dp))
+    selected -> border(2.dp, MiuixTheme.colorScheme.primary.copy(alpha = 0.5f), SquircleShape(12.dp))
+    else -> this
+}
 
 // 本地库：左侧导航 Rail（Main 壳层）+ 画廊列表 + 选中画廊详情(右) 主从双栏 + 连接诊断行。
 // Tab 选中态由 Main 上提持有（Rail 与库页共用），本组件只消费 activeTab 并回调选择。
@@ -297,6 +310,45 @@ fun LibraryScreen(
     fun clearSearchHistory() {
         DesktopSettings.searchHistory.value = ""
         showNotification(historyClearedMessage)
+    }
+
+    // 触底增量加载（共享列表体 onLoadMore）：以末位 gid 为游标拉下一页，按 gid 去重后追加；
+    // 追加为空即到底，静默收尾。prev/next 翻页胶囊保持既有语义不变。
+    var loadingMoreOnline by remember { mutableStateOf(false) }
+    var loadMoreErrorText by remember { mutableStateOf<String?>(null) }
+    suspend fun loadMoreOnline() {
+        if (!currentTab.isOnline || loadingMoreOnline || remoteSearching) return
+        val lastGid = online.lastOrNull()?.gid ?: return
+        val url = DesktopSearchUrl.build(remoteSearchQuery, nextGid = lastGid) ?: return
+        loadingMoreOnline = true
+        loadMoreErrorText = null
+        try {
+            runCatching {
+                withContext(Dispatchers.IO) { desktopGet(url) }
+            }.onSuccess { response ->
+                if (response.status in 200..299) {
+                    runCatching {
+                        withContext(Dispatchers.IO) {
+                            parseGalleryList(response.toByteBuffer() ?: error("HTTP ${response.status}")).galleryInfoList.toList()
+                        }
+                    }.onSuccess { list ->
+                        val known = online.asSequence().map { it.gid }.toHashSet()
+                        val fresh = list.filterNot { it.gid in known }
+                        if (fresh.isNotEmpty()) online = online + fresh
+                        logcat("Library", LogPriority.INFO) { "ONLINE_LOAD_MORE parsed=${list.size} fresh=${fresh.size}" }
+                    }.onFailure { e ->
+                        loadMoreErrorText = e.message
+                        logcat("Library", LogPriority.WARN) { "ONLINE_LOAD_MORE parse failed: $e" }
+                    }
+                } else {
+                    logcat("Library", LogPriority.WARN) { "ONLINE_LOAD_MORE status=${response.status}" }
+                }
+            }.onFailure { e ->
+                loadMoreErrorText = DesktopConnectionState.cleanErrorMessage(e.message ?: e::class.simpleName, connectionErrorLabels)
+            }
+        } finally {
+            loadingMoreOnline = false
+        }
     }
 
     AutoExpireNotifications(notifications) { notifications = it }
@@ -1114,136 +1166,119 @@ fun LibraryScreen(
                         return menuItems
                     }
 
-                    val listState = rememberLazyListState()
-                    val gridState = rememberLazyGridState()
+                    val detailListState = rememberLazyGridState()
+                    val thumbListState = rememberLazyStaggeredGridState()
                     val canScrollToTop by remember {
                         derivedStateOf {
                             if (viewMode == DesktopViewMode.List) {
-                                listState.firstVisibleItemIndex > 3
+                                detailListState.firstVisibleItemIndex > 3
                             } else {
-                                gridState.firstVisibleItemIndex > 3
+                                thumbListState.firstVisibleItemIndex > 3
                             }
                         }
                     }
                     Box(modifier = Modifier.fillMaxSize()) {
-                        if (viewMode == DesktopViewMode.List) {
-                            Row(modifier = Modifier.fillMaxSize()) {
-                                // 全宽列表模式：行内容限宽居中（可读宽度随窗口阶梯自适应，与移动端 readableWidth 同源）
-                                Box(
-                                    modifier = Modifier.weight(1f).fillMaxHeight(),
-                                    contentAlignment = Alignment.TopCenter,
+                        // 共享列表体（移动端 GalleryList 同构）：列表模式=详情卡网格 / 网格模式=瀑布流缩略图
+                        GalleryListBody(
+                            items = filteredItems,
+                            listMode = if (viewMode == DesktopViewMode.List) 0 else 1,
+                            emptyText = onlineEmptyText,
+                            modifier = Modifier.fillMaxSize(),
+                            refreshing = if (currentTab.isOnline) refreshing else false,
+                            onRefresh = {
+                                coroutineScope.launch { refreshGalleries() }
+                            },
+                            onLoadMore = {
+                                coroutineScope.launch { loadMoreOnline() }
+                            },
+                            loadingMore = loadingMoreOnline,
+                            loadMoreError = loadMoreErrorText,
+                            onRetryLoadMore = {
+                                coroutineScope.launch { loadMoreOnline() }
+                            },
+                            detailListState = detailListState,
+                            thumbListState = thumbListState,
+                            detailItemContent = { gallery ->
+                                val title = galleryDisplayTitle(gallery.title, gallery.gid)
+                                val link = galleryWebUrl(gallery.gid, gallery.token)
+                                ContextMenuArea(
+                                    items = { buildGalleryContextMenu(gallery, title, link) },
                                 ) {
-                                    LazyColumn(
-                                        state = listState,
-                                        modifier = Modifier
-                                            .readableWidth()
-                                            .fillMaxSize(),
-                                    ) {
-                                        items(
-                                            filteredItems.size,
-                                            key = { index -> filteredItems[index].gid },
-                                        ) { index ->
-                                            val gallery = filteredItems[index]
-                                            val title = galleryDisplayTitle(gallery.title, gallery.gid)
-                                            val link = galleryWebUrl(gallery.gid, gallery.token)
-                                            ContextMenuArea(
-                                                items = { buildGalleryContextMenu(gallery, title, link) },
-                                            ) {
-                                                DesktopGalleryListItem(
-                                                    gallery = gallery,
-                                                    title = title,
-                                                    browseTime = when (currentTab) {
-                                                        LibraryTab.History -> historyTimeByGid[gallery.gid]?.let(::formatBrowseTime)
-                                                        LibraryTab.Favorites -> favoriteTimeByGid[gallery.gid]?.let(::formatBrowseTime)
-                                                        else -> null
-                                                    },
-                                                    isMultiSelected = gallery.gid in multiSelection.gids,
-                                                    isSelected = selected?.gid == gallery.gid,
-                                                    isFavorite = DesktopFavoritesState.isFavorite(favoriteGids, gallery.gid),
-                                                    isDownloaded = currentTab == LibraryTab.Downloads,
-                                                    onClick = {
-                                                        if (ctrlDown) {
-                                                            multiSelection.toggle(gallery.gid)
-                                                        } else {
-                                                            multiSelection.clear()
-                                                            selected = gallery
-                                                            onOpenGallery?.invoke(gallery)
-                                                        }
-                                                    },
-                                                    onLongClick = {
-                                                        multiSelection.clear()
-                                                        selected = gallery
-                                                        onOpenGallery?.invoke(gallery)
-                                                    },
-                                                )
+                                    GalleryInfoListItem(
+                                        onClick = {
+                                            // Ctrl+点击进入/退出批量多选；普通点击收敛多选并单选（Ctrl 状态由根 onPreviewKeyEvent 双沿跟踪）
+                                            if (ctrlDown) {
+                                                multiSelection.toggle(gallery.gid)
+                                            } else {
+                                                multiSelection.clear()
+                                                selected = gallery
+                                                onOpenGallery?.invoke(gallery)
                                             }
-                                        }
-                                    }
-                                    VerticalScrollbar(
-                                        adapter = rememberScrollbarAdapter(listState),
-                                        isScrollInProgress = listState.isScrollInProgress,
+                                        },
+                                        onLongClick = {
+                                            multiSelection.clear()
+                                            selected = gallery
+                                            onOpenGallery?.invoke(gallery)
+                                        },
+                                        info = gallery,
+                                        title = title,
+                                        status = GalleryItemStatus(
+                                            isFavorited = DesktopFavoritesState.isFavorite(favoriteGids, gallery.gid),
+                                            isDownloaded = currentTab == LibraryTab.Downloads,
+                                        ),
+                                        postedText = when (currentTab) {
+                                            LibraryTab.History -> historyTimeByGid[gallery.gid]?.let(::formatBrowseTime)
+                                            LibraryTab.Favorites -> favoriteTimeByGid[gallery.gid]?.let(::formatBrowseTime)
+                                            else -> null
+                                        },
+                                        modifier = Modifier.gallerySelectionBorder(
+                                            selected = selected?.gid == gallery.gid,
+                                            multiSelected = gallery.gid in multiSelection.gids,
+                                        ),
                                     )
                                 }
-                            }
-                        } else {
-                            Row(modifier = Modifier.fillMaxSize()) {
-                                LazyVerticalGrid(
-                                    state = gridState,
-                                    // 自适应列数：卡片最小 200dp（共享断点常量，与移动端瀑布流同源），宽度换列数
-                                    columns = GridCells.Adaptive(AdaptiveBreakpoints.THUMB_MIN_COLUMN_WIDTH_DP.dp),
-                                    modifier = Modifier.weight(1f).padding(horizontal = 8.dp, vertical = 4.dp),
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                            },
+                            thumbItemContent = { gallery ->
+                                val title = galleryDisplayTitle(gallery.title, gallery.gid)
+                                val link = galleryWebUrl(gallery.gid, gallery.token)
+                                ContextMenuArea(
+                                    items = { buildGalleryContextMenu(gallery, title, link) },
                                 ) {
-                                    items(
-                                        filteredItems.size,
-                                        key = { index -> filteredItems[index].gid },
-                                    ) { index ->
-                                        val gallery = filteredItems[index]
-                                        val title = galleryDisplayTitle(gallery.title, gallery.gid)
-                                        val link = galleryWebUrl(gallery.gid, gallery.token)
-                                        ContextMenuArea(
-                                            items = { buildGalleryContextMenu(gallery, title, link) },
-                                        ) {
-                                            DesktopGalleryGridItem(
-                                                gallery = gallery,
-                                                title = title,
-                                                isMultiSelected = gallery.gid in multiSelection.gids,
-                                                isSelected = selected?.gid == gallery.gid,
-                                                isFavorite = DesktopFavoritesState.isFavorite(favoriteGids, gallery.gid),
-                                                onClick = {
-                                                    // Ctrl+点击进入/退出批量多选；普通点击收敛多选并单选（Ctrl 按住状态由根 onPreviewKeyEvent 双沿跟踪）
-                                                    if (ctrlDown) {
-                                                        multiSelection.toggle(gallery.gid)
-                                                    } else {
-                                                        multiSelection.clear()
-                                                        selected = gallery
-                                                        onOpenGallery?.invoke(gallery)
-                                                    }
-                                                },
-                                                onLongClick = {
-                                                    multiSelection.clear()
-                                                    selected = gallery
-                                                    onOpenGallery?.invoke(gallery)
-                                                },
-                                            )
-                                        }
-                                    }
+                                    GalleryInfoGridItem(
+                                        onClick = {
+                                            if (ctrlDown) {
+                                                multiSelection.toggle(gallery.gid)
+                                            } else {
+                                                multiSelection.clear()
+                                                selected = gallery
+                                                onOpenGallery?.invoke(gallery)
+                                            }
+                                        },
+                                        onLongClick = {
+                                            multiSelection.clear()
+                                            selected = gallery
+                                            onOpenGallery?.invoke(gallery)
+                                        },
+                                        info = gallery,
+                                        status = GalleryItemStatus(
+                                            isFavorited = DesktopFavoritesState.isFavorite(favoriteGids, gallery.gid),
+                                        ),
+                                        modifier = Modifier.gallerySelectionBorder(
+                                            selected = selected?.gid == gallery.gid,
+                                            multiSelected = gallery.gid in multiSelection.gids,
+                                        ),
+                                    )
                                 }
-                                VerticalScrollbar(
-                                    adapter = rememberScrollbarAdapter(gridState),
-                                    isScrollInProgress = gridState.isScrollInProgress,
-                                )
-                            }
-                        }
+                            },
+                        )
                         if (canScrollToTop && !multiSelection.isActive) {
                             DesktopLiquidGlassPill(
                                 onClick = {
                                     coroutineScope.launch {
                                         if (viewMode == DesktopViewMode.List) {
-                                            listState.animateScrollToItem(0)
+                                            detailListState.animateScrollToItem(0)
                                         } else {
-                                            gridState.animateScrollToItem(0)
+                                            thumbListState.animateScrollToItem(0)
                                         }
                                     }
                                 },

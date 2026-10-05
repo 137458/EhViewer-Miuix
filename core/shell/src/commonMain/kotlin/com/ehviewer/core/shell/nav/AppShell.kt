@@ -168,8 +168,7 @@ fun AppShell(
 }
 
 // 由完整导航集合按主项策略派生底栏集合；顺序即策略 primaryKeys 顺序
-fun List<NavItemSpec>.toPrimaryItems(policy: NavPrimaryPolicy): List<NavItemSpec> =
-    policy.primaryKeys.mapNotNull { key -> firstOrNull { it.key == key } }
+fun List<NavItemSpec>.toPrimaryItems(policy: NavPrimaryPolicy): List<NavItemSpec> = policy.primaryKeys.mapNotNull { key -> firstOrNull { it.key == key } }
 
 // 宿主选中 key → 集合索引；未命中返回 -1，由调用方 clamp
 fun List<NavItemSpec>.indexOfKey(key: String?): Int = indexOfFirst { it.key == key }
