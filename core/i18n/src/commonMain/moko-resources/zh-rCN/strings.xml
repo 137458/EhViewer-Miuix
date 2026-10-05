@@ -808,5 +808,12 @@
     <string name="desktop_nav_bar_style_auto">自动响应式</string>
     <string name="desktop_nav_bar_style_rail">左侧侧栏 (Rail)</string>
     <string name="desktop_nav_bar_style_floating">底部液态玻璃悬浮栏</string>
+    <string name="desktop_nav_items_title">导航项</string>
+    <string name="desktop_nav_items_summary">选择显示哪些导航项及它们的顺序</string>
+    <string name="desktop_nav_items_reset">恢复默认</string>
+    <string name="desktop_nav_items_hint">拖拽 ≡ 排序，点击行切换显示；至少保留一个可见项。</string>
+    <string name="desktop_ui_scale">界面缩放</string>
+    <string name="desktop_ui_scale_summary">整体缩放界面，系统 DPI 缩放不可用时作为兜底</string>
+    <string name="desktop_a11y_menu">更多</string>
     <!-- Tachiyomi Reader End-->
 </resources>

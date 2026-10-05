@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.TextFieldLineLimits
@@ -37,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ehviewer.core.i18n.MR
 import com.ehviewer.core.ui.component.SquircleShape
+import com.ehviewer.core.ui.util.readableWidth
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.FlowPreview
 import top.yukonga.miuix.kmp.basic.BasicComponent
@@ -59,6 +59,7 @@ fun SettingsScreen(
     onBack: (() -> Unit)? = null,
     onShowShortcuts: (() -> Unit)? = null,
     onShowAbout: (() -> Unit)? = null,
+    onOpenNavItems: (() -> Unit)? = null,
 ) {
     val themeMode by DesktopSettings.themeMode.valueFlow().collectAsState(DesktopSettings.themeMode.value)
     val closeToTray by DesktopSettings.closeToTray.valueFlow().collectAsState(DesktopSettings.closeToTray.value)
@@ -66,6 +67,7 @@ fun SettingsScreen(
     val restoreSession by DesktopSettings.restoreSession.valueFlow().collectAsState(DesktopSettings.restoreSession.value)
     val restoreLimit by DesktopSettings.restoreLimit.valueFlow().collectAsState(DesktopSettings.restoreLimit.value)
     val navBarStyle by DesktopSettings.navBarStyle.valueFlow().collectAsState(DesktopSettings.navBarStyle.value)
+    val uiScale by DesktopSettings.uiScale.valueFlow().collectAsState(DesktopSettings.uiScale.value)
     val directionRaw by DesktopSettings.readingDirection.valueFlow().collectAsState(DesktopSettings.readingDirection.value)
     val direction = DesktopReadingDirection.fromPersisted(directionRaw)
 
@@ -78,7 +80,7 @@ fun SettingsScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .widthIn(max = 760.dp),
+                .readableWidth(),
         ) {
             // 顶部导航栏：与移动端一致的返回键 + 标题
             Row(
@@ -196,6 +198,42 @@ fun SettingsScreen(
                             selected = navBarStyle == 2,
                             onClick = { DesktopSettings.navBarStyle.value = 2 },
                         )
+                        // 导航项自定义：显示哪些 + 顺序，入口内联（设计文档 §4.5 / §6.6）
+                        if (onOpenNavItems != null) {
+                            ArrowPreference(
+                                title = stringResource(MR.strings.desktop_nav_items_title),
+                                summary = stringResource(MR.strings.desktop_nav_items_summary),
+                                onClick = onOpenNavItems,
+                                modifier = Modifier.pointerHoverIcon(PointerIcon.Hand),
+                            )
+                        }
+                    }
+                }
+
+                // 界面缩放：DPI 感知失效时的兜底（设计文档 §4.7 / §6.8）
+                item {
+                    SmallTitle(
+                        text = stringResource(MR.strings.desktop_ui_scale),
+                        modifier = Modifier.padding(start = 24.dp, top = 16.dp, bottom = 4.dp),
+                    )
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 4.dp),
+                    ) {
+                        Text(
+                            text = stringResource(MR.strings.desktop_ui_scale_summary),
+                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                            fontSize = 12.sp,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                        )
+                        DesktopUiScale.OPTIONS.forEach { option ->
+                            SelectionRow(
+                                title = "$option%",
+                                selected = DesktopUiScale.sanitize(uiScale) == option,
+                                onClick = { DesktopSettings.uiScale.value = option },
+                            )
+                        }
                     }
                 }
 

@@ -825,5 +825,12 @@
     <string name="desktop_nav_bar_style_auto">Auto (Responsive)</string>
     <string name="desktop_nav_bar_style_rail">Left Rail</string>
     <string name="desktop_nav_bar_style_floating">Liquid Glass Floating Bar</string>
+    <string name="desktop_nav_items_title">Navigation Items</string>
+    <string name="desktop_nav_items_summary">Choose which items appear and their order</string>
+    <string name="desktop_nav_items_reset">Reset</string>
+    <string name="desktop_nav_items_hint">Drag ≡ to reorder, tap a row to show or hide. At least one item stays visible.</string>
+    <string name="desktop_ui_scale">Interface Scale</string>
+    <string name="desktop_ui_scale_summary">Scale the whole interface; fallback when system DPI scaling is unavailable</string>
+    <string name="desktop_a11y_menu">More</string>
     <!-- Tachiyomi Reader End-->
 </resources>

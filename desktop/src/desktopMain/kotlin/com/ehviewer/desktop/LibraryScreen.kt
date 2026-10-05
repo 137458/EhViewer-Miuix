@@ -6,7 +6,6 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
@@ -49,6 +48,7 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -80,7 +80,8 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.runtime.produceState
+import androidx.compose.ui.window.Popup
+import androidx.compose.ui.window.PopupProperties
 import coil3.compose.AsyncImage
 import com.ehviewer.core.database.client.thumbUrl
 import com.ehviewer.core.database.model.GalleryEntity
@@ -95,6 +96,8 @@ import com.ehviewer.core.ui.component.LocalBackdrop
 import com.ehviewer.core.ui.component.SquircleShape
 import com.ehviewer.core.ui.component.VerticalScrollbar
 import com.ehviewer.core.ui.component.liquidGlass
+import com.ehviewer.core.ui.util.AdaptiveBreakpoints
+import com.ehviewer.core.ui.util.readableWidth
 import com.ehviewer.core.util.LogPriority
 import com.ehviewer.core.util.logcat
 import com.hippo.ehviewer.client.parser.GalleryDetailParser
@@ -116,6 +119,11 @@ fun galleryWebUrl(gid: Long, token: String): String = "https://e-hentai.org/g/$g
 
 fun galleryDisplayTitle(title: String?, gid: Long): String = title?.trim()?.takeIf { it.isNotEmpty() } ?: gid.toString()
 
+// 本地浏览时间（历史/收藏行右侧）展示格式
+private fun formatBrowseTime(epochMillis: Long): String = java.time.Instant.ofEpochMilli(epochMillis)
+    .atZone(java.time.ZoneId.systemDefault())
+    .format(java.time.format.DateTimeFormatter.ofPattern("MM-dd HH:mm"))
+
 fun formatGalleryTags(tags: List<String>?): String = tags?.joinToString(", ") ?: ""
 
 // 本地库：左侧导航 Rail（Main 壳层）+ 画廊列表 + 选中画廊详情(右) 主从双栏 + 连接诊断行。
@@ -130,6 +138,10 @@ fun LibraryScreen(
     openGalleryDialogVisible: Boolean = false,
     onOpenGalleryDialogOpen: () -> Unit = {},
     onOpenGalleryDialogClose: () -> Unit = {},
+    onOpenSettings: () -> Unit = {},
+    onShowShortcuts: () -> Unit = {},
+    onShowAbout: () -> Unit = {},
+    onExit: () -> Unit = {},
 ) {
     val downloadLabels by DesktopDatabase.eh.downloadsDao()
         .countByLabel()
@@ -445,7 +457,8 @@ fun LibraryScreen(
         LibraryTab.Home,
         LibraryTab.Subscription,
         LibraryTab.Whatshot,
-        LibraryTab.Toplist -> online
+        LibraryTab.Toplist,
+        -> online
         LibraryTab.Favorites -> favorites
         LibraryTab.History -> history
         LibraryTab.Downloads -> downloads
@@ -683,6 +696,14 @@ fun LibraryScreen(
                                 )
                             }
                         }
+                        // 原生菜单栏移除后的内联入口：文件/设置/快捷键/关于/退出（设计文档 §4.5 / §6.7）
+                        LibraryOverflowMenu(
+                            onOpenGallery = onOpenGalleryDialogOpen,
+                            onOpenSettings = onOpenSettings,
+                            onShowShortcuts = onShowShortcuts,
+                            onShowAbout = onShowAbout,
+                            onExit = onExit,
+                        )
                     }
                     val suggestions = remember(searchHistoryList, searchQuery) {
                         DesktopSearchHistory.filterSuggestions(searchHistoryList, searchQuery, maxSuggestions = 5)
@@ -880,353 +901,243 @@ fun LibraryScreen(
                     .fillMaxWidth()
                     .weight(1f),
             ) {
-                    if (filteredItems.isEmpty()) {
-                        Box(modifier = Modifier.fillMaxSize().padding(16.dp), contentAlignment = Alignment.Center) {
-                            if (searchQuery.isNotBlank() && currentItems.isNotEmpty()) {
-                                Column(
+                if (filteredItems.isEmpty()) {
+                    Box(modifier = Modifier.fillMaxSize().padding(16.dp), contentAlignment = Alignment.Center) {
+                        if (searchQuery.isNotBlank() && currentItems.isNotEmpty()) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(10.dp),
+                            ) {
+                                Text(
+                                    text = stringResource(MR.strings.desktop_empty_no_match),
+                                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                    fontSize = 13.sp,
+                                )
+                                DesktopHoverPill(
+                                    onClick = { searchFieldState.clearText() },
+                                    containerColor = MiuixTheme.colorScheme.surfaceContainerHighest,
+                                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
+                                ) {
+                                    Text(
+                                        text = stringResource(MR.strings.clear_all),
+                                        color = MiuixTheme.colorScheme.primary,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Medium,
+                                    )
+                                }
+                            }
+                        } else {
+                            val browseOnlineText = stringResource(MR.strings.desktop_empty_browse_online)
+                            when (currentTab) {
+                                LibraryTab.History -> Column(
                                     horizontalAlignment = Alignment.CenterHorizontally,
                                     verticalArrangement = Arrangement.spacedBy(10.dp),
                                 ) {
                                     Text(
-                                        text = stringResource(MR.strings.desktop_empty_no_match),
+                                        text = stringResource(MR.strings.desktop_empty_no_history),
                                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                        fontSize = 13.sp,
                                     )
-                                    DesktopHoverPill(
-                                        onClick = { searchFieldState.clearText() },
-                                        containerColor = MiuixTheme.colorScheme.surfaceContainerHighest,
-                                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
-                                    ) {
-                                        Text(
-                                            text = stringResource(MR.strings.clear_all),
-                                            color = MiuixTheme.colorScheme.primary,
-                                            fontSize = 12.sp,
-                                            fontWeight = FontWeight.Medium,
-                                        )
-                                    }
+                                    EmptyTabBrowseOnlineButton(text = browseOnlineText) { switchTab(LibraryTab.Home) }
                                 }
-                            } else {
-                                val browseOnlineText = stringResource(MR.strings.desktop_empty_browse_online)
-                                when (currentTab) {
-                                    LibraryTab.History -> Column(
+                                LibraryTab.Favorites -> Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                                ) {
+                                    Text(
+                                        text = stringResource(MR.strings.desktop_empty_no_favorites),
+                                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                    )
+                                    EmptyTabBrowseOnlineButton(text = browseOnlineText) { switchTab(LibraryTab.Home) }
+                                }
+                                LibraryTab.Downloads -> Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                                ) {
+                                    Text(
+                                        text = stringResource(MR.strings.desktop_download_dir_default, ""),
+                                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                    )
+                                    EmptyTabBrowseOnlineButton(text = browseOnlineText) { switchTab(LibraryTab.Home) }
+                                }
+                                LibraryTab.Home,
+                                LibraryTab.Subscription,
+                                LibraryTab.Whatshot,
+                                LibraryTab.Toplist,
+                                -> {
+                                    Column(
                                         horizontalAlignment = Alignment.CenterHorizontally,
-                                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                                        verticalArrangement = Arrangement.spacedBy(8.dp),
                                     ) {
-                                        Text(
-                                            text = stringResource(MR.strings.desktop_empty_no_history),
-                                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                        )
-                                        EmptyTabBrowseOnlineButton(text = browseOnlineText) { switchTab(LibraryTab.Home) }
-                                    }
-                                    LibraryTab.Favorites -> Column(
-                                        horizontalAlignment = Alignment.CenterHorizontally,
-                                        verticalArrangement = Arrangement.spacedBy(10.dp),
-                                    ) {
-                                        Text(
-                                            text = stringResource(MR.strings.desktop_empty_no_favorites),
-                                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                        )
-                                        EmptyTabBrowseOnlineButton(text = browseOnlineText) { switchTab(LibraryTab.Home) }
-                                    }
-                                    LibraryTab.Downloads -> Column(
-                                        horizontalAlignment = Alignment.CenterHorizontally,
-                                        verticalArrangement = Arrangement.spacedBy(10.dp),
-                                    ) {
-                                        Text(
-                                            text = stringResource(MR.strings.desktop_download_dir_default, ""),
-                                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                        )
-                                        EmptyTabBrowseOnlineButton(text = browseOnlineText) { switchTab(LibraryTab.Home) }
-                                    }
-                                    LibraryTab.Home,
-                                    LibraryTab.Subscription,
-                                    LibraryTab.Whatshot,
-                                    LibraryTab.Toplist -> {
-                                        Column(
-                                            horizontalAlignment = Alignment.CenterHorizontally,
-                                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                                        ) {
-                                            if (remoteSearchQuery.isNotBlank() && connectionStatus is DesktopConnectionStatus.Online) {
-                                                // 远程搜索已完成但无结果：与连接失败区分
+                                        if (remoteSearchQuery.isNotBlank() && connectionStatus is DesktopConnectionStatus.Online) {
+                                            // 远程搜索已完成但无结果：与连接失败区分
+                                            Text(
+                                                text = stringResource(MR.strings.desktop_search_no_results) + ": $remoteSearchQuery",
+                                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                            )
+                                        }
+                                        when (val status = connectionStatus) {
+                                            is DesktopConnectionStatus.Offline -> {
                                                 Text(
-                                                    text = stringResource(MR.strings.desktop_search_no_results) + ": $remoteSearchQuery",
+                                                    text = stringResource(MR.strings.desktop_status_offline) + ": ${status.reason}",
+                                                    color = MiuixTheme.colorScheme.error,
+                                                )
+                                                DesktopHoverPill(
+                                                    onClick = {
+                                                        coroutineScope.launch {
+                                                            showNotification(checkingConnectionText)
+                                                            refreshGalleries()
+                                                        }
+                                                    },
+                                                    containerColor = MiuixTheme.colorScheme.surfaceContainerHighest,
+                                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                                                ) {
+                                                    Text(
+                                                        text = stringResource(MR.strings.action_retry),
+                                                        color = MiuixTheme.colorScheme.primary,
+                                                        fontSize = 12.sp,
+                                                    )
+                                                }
+                                            }
+                                            DesktopConnectionStatus.Checking -> {
+                                                Text(
+                                                    text = connectingServerText,
                                                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                                 )
                                             }
-                                            when (val status = connectionStatus) {
-                                                is DesktopConnectionStatus.Offline -> {
-                                                    Text(
-                                                        text = stringResource(MR.strings.desktop_status_offline) + ": ${status.reason}",
-                                                        color = MiuixTheme.colorScheme.error,
-                                                    )
-                                                    DesktopHoverPill(
-                                                        onClick = {
-                                                            coroutineScope.launch {
-                                                                showNotification(checkingConnectionText)
-                                                                refreshGalleries()
-                                                            }
-                                                        },
-                                                        containerColor = MiuixTheme.colorScheme.surfaceContainerHighest,
-                                                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-                                                    ) {
-                                                        Text(
-                                                            text = stringResource(MR.strings.action_retry),
-                                                            color = MiuixTheme.colorScheme.primary,
-                                                            fontSize = 12.sp,
-                                                        )
-                                                    }
-                                                }
-                                                DesktopConnectionStatus.Checking -> {
-                                                    Text(
-                                                        text = connectingServerText,
-                                                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                                    )
-                                                }
-                                                is DesktopConnectionStatus.Online -> {
-                                                    Text(
-                                                        text = onlineEmptyText,
-                                                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                                    )
-                                                }
+                                            is DesktopConnectionStatus.Online -> {
+                                                Text(
+                                                    text = onlineEmptyText,
+                                                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                                )
                                             }
                                         }
                                     }
                                 }
                             }
                         }
-                    } else {
-                        val copyTitleLabel = stringResource(MR.strings.copy_title)
-                        val copyLinkLabel = stringResource(MR.strings.copy_link)
-                        val openBrowserLabel = stringResource(MR.strings.open_in_browser)
-                        val openGalleryLabel = stringResource(MR.strings.desktop_open_gallery_title)
-                        val readLabel = stringResource(MR.strings.menu_read)
-                        val deleteLabel = stringResource(MR.strings.delete)
-                        val addFavoriteLabel = stringResource(MR.strings.add_favorites_dialog_title)
-                        val deleteFavoriteLabel = stringResource(MR.strings.delete_favorites_dialog_title)
-                        val batchDeleteLabel = stringResource(MR.strings.desktop_delete_selected, multiSelection.gids.size)
+                    }
+                } else {
+                    val copyTitleLabel = stringResource(MR.strings.copy_title)
+                    val copyLinkLabel = stringResource(MR.strings.copy_link)
+                    val openBrowserLabel = stringResource(MR.strings.open_in_browser)
+                    val openGalleryLabel = stringResource(MR.strings.desktop_open_gallery_title)
+                    val readLabel = stringResource(MR.strings.menu_read)
+                    val deleteLabel = stringResource(MR.strings.delete)
+                    val addFavoriteLabel = stringResource(MR.strings.add_favorites_dialog_title)
+                    val deleteFavoriteLabel = stringResource(MR.strings.delete_favorites_dialog_title)
+                    val batchDeleteLabel = stringResource(MR.strings.desktop_delete_selected, multiSelection.gids.size)
 
-                        fun buildGalleryContextMenu(
-                            gallery: BaseGalleryInfo,
-                            title: String,
-                            link: String,
-                        ): List<ContextMenuItem> {
-                            val menuItems = mutableListOf<ContextMenuItem>()
-                            // 批量多选激活时置顶批量删除（按当前 Tab 作用于历史或收藏）；毁灭性操作先确认
-                            if (multiSelection.isActive && (currentTab == LibraryTab.History || currentTab == LibraryTab.Favorites)) {
-                                menuItems.add(
-                                    ContextMenuItem(batchDeleteLabel) {
-                                        showBatchDeleteConfirm = true
-                                    },
-                                )
-                            }
-                            if (onOpenReader != null) {
-                                menuItems.add(
-                                    ContextMenuItem(readLabel) {
-                                        onOpenReader(gallery)
-                                    },
-                                )
-                            }
-                            if (onOpenGallery != null) {
-                                menuItems.add(
-                                    ContextMenuItem(openGalleryLabel) {
-                                        onOpenGallery(gallery)
-                                    },
-                                )
-                            }
+                    fun buildGalleryContextMenu(
+                        gallery: BaseGalleryInfo,
+                        title: String,
+                        link: String,
+                    ): List<ContextMenuItem> {
+                        val menuItems = mutableListOf<ContextMenuItem>()
+                        // 批量多选激活时置顶批量删除（按当前 Tab 作用于历史或收藏）；毁灭性操作先确认
+                        if (multiSelection.isActive && (currentTab == LibraryTab.History || currentTab == LibraryTab.Favorites)) {
                             menuItems.add(
-                                ContextMenuItem(
-                                    if (DesktopFavoritesState.isFavorite(favoriteGids, gallery.gid)) {
-                                        deleteFavoriteLabel
-                                    } else {
-                                        addFavoriteLabel
-                                    },
-                                ) {
-                                    toggleFavorite(gallery)
+                                ContextMenuItem(batchDeleteLabel) {
+                                    showBatchDeleteConfirm = true
                                 },
                             )
-                            menuItems.add(
-                                ContextMenuItem(copyTitleLabel) {
-                                    clipboard.setText(AnnotatedString(title))
-                                    showNotification("$copiedText: $title")
-                                },
-                            )
-                            menuItems.add(
-                                ContextMenuItem(copyLinkLabel) {
-                                    clipboard.setText(AnnotatedString(link))
-                                    showNotification(linkCopiedText)
-                                },
-                            )
-                            menuItems.add(
-                                ContextMenuItem(openBrowserLabel) {
-                                    DesktopBrowser.openUrl(link)
-                                },
-                            )
-                            if (currentTab == LibraryTab.History) {
-                                menuItems.add(
-                                    ContextMenuItem(deleteLabel) {
-                                        coroutineScope.launch {
-                                            withContext(Dispatchers.IO) {
-                                                DesktopDatabase.eh.historyDao().deleteByKey(gallery.gid)
-                                            }
-                                            selected = DesktopHistoryState.updateSelectionAfterDelete(selected, gallery.gid)
-                                            // 撤销 = 重新写回该 gid 的历史行（时间戳刷新置顶）
-                                            notifications = DesktopNotificationManager.post(
-                                                current = notifications,
-                                                message = removedFromHistoryText,
-                                                timestamp = System.currentTimeMillis(),
-                                                idProvider = { nextNotificationId.getAndIncrement() },
-                                                actionLabel = undoText,
-                                                onAction = {
-                                                    coroutineScope.launch {
-                                                        withContext(Dispatchers.IO) {
-                                                            DesktopDatabase.eh.historyDao()
-                                                                .upsert(HistoryInfo(gallery.gid))
-                                                        }
-                                                    }
-                                                },
-                                            )
-                                        }
-                                    },
-                                )
-                            }
-                            return menuItems
                         }
-
-                        val listState = rememberLazyListState()
-                        val gridState = rememberLazyGridState()
-                        val canScrollToTop by remember {
-                            derivedStateOf {
-                                if (viewMode == DesktopViewMode.List) {
-                                    listState.firstVisibleItemIndex > 3
+                        if (onOpenReader != null) {
+                            menuItems.add(
+                                ContextMenuItem(readLabel) {
+                                    onOpenReader(gallery)
+                                },
+                            )
+                        }
+                        if (onOpenGallery != null) {
+                            menuItems.add(
+                                ContextMenuItem(openGalleryLabel) {
+                                    onOpenGallery(gallery)
+                                },
+                            )
+                        }
+                        menuItems.add(
+                            ContextMenuItem(
+                                if (DesktopFavoritesState.isFavorite(favoriteGids, gallery.gid)) {
+                                    deleteFavoriteLabel
                                 } else {
-                                    gridState.firstVisibleItemIndex > 3
-                                }
-                            }
-                        }
-                        Box(modifier = Modifier.fillMaxSize()) {
-                            if (viewMode == DesktopViewMode.List) {
-                                Row(modifier = Modifier.fillMaxSize()) {
-                                    // 全宽列表模式：行内容限宽居中（MIUIX 规范 4.1），避免宽屏行被无限拉伸
-                                    Box(
-                                        modifier = Modifier.weight(1f).fillMaxHeight(),
-                                        contentAlignment = Alignment.TopCenter,
-                                    ) {
-                                        LazyColumn(
-                                            state = listState,
-                                            modifier = Modifier
-                                                .widthIn(max = DesktopLayoutPolicy.CONTENT_MAX_WIDTH_DP.dp)
-                                                .fillMaxSize(),
-                                        ) {
-                                            items(
-                                                filteredItems.size,
-                                                key = { index -> filteredItems[index].gid },
-                                            ) { index ->
-                                                val gallery = filteredItems[index]
-                                                val title = galleryDisplayTitle(gallery.title, gallery.gid)
-                                                val link = galleryWebUrl(gallery.gid, gallery.token)
-                                                ContextMenuArea(
-                                                    items = { buildGalleryContextMenu(gallery, title, link) },
-                                                ) {
-                                                    val rowInteraction = remember { MutableInteractionSource() }
-                                                    val rowHovered by rowInteraction.collectIsHoveredAsState()
-                                                    Row(
-                                                        modifier = Modifier.fillMaxWidth()
-                                                            .clip(SquircleShape(8.dp))
-                                                            .pointerHoverIcon(PointerIcon.Hand)
-                                                            .combinedClickable(
-                                                                interactionSource = rowInteraction,
-                                                                onClick = {
-                                                                    if (ctrlDown) {
-                                                                        multiSelection.toggle(gallery.gid)
-                                                                    } else {
-                                                                        multiSelection.clear()
-                                                                        selected = gallery
-                                                                        onOpenGallery?.invoke(gallery)
-                                                                    }
-                                                                },
-                                                                onDoubleClick = {
-                                                                    multiSelection.clear()
-                                                                    selected = gallery
-                                                                    onOpenGallery?.invoke(gallery)
-                                                                },
-                                                            )
-                                                            .background(
-                                                                when {
-                                                                    gallery.gid in multiSelection.gids -> MiuixTheme.colorScheme.primary.copy(alpha = 0.20f)
-                                                                    selected?.gid == gallery.gid -> MiuixTheme.colorScheme.primary.copy(alpha = 0.12f)
-                                                                    rowHovered -> MiuixTheme.colorScheme.primary.copy(alpha = 0.06f)
-                                                                    else -> Color.Transparent
-                                                                },
-                                                            )
-                                                            .padding(horizontal = 8.dp, vertical = 6.dp),
-                                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                                        verticalAlignment = Alignment.CenterVertically,
-                                                    ) {
-                                                        gallery.thumbUrl?.let { thumb ->
-                                                            AsyncImage(
-                                                                model = thumb,
-                                                                contentDescription = null,
-                                                                modifier = Modifier
-                                                                    .width(42.dp)
-                                                                    .height(56.dp)
-                                                                    .clip(SquircleShape(4.dp)),
-                                                                contentScale = ContentScale.Crop,
-                                                            )
-                                                        }
-                                                        Text(
-                                                            text = title,
-                                                            maxLines = 1,
-                                                            overflow = TextOverflow.Ellipsis,
-                                                            modifier = Modifier.weight(1f),
-                                                            color = MiuixTheme.colorScheme.onBackground,
-                                                        )
-                                                        val browseTime = when (currentTab) {
-                                                            LibraryTab.History -> historyTimeByGid[gallery.gid]?.let { time ->
-                                                                java.time.Instant.ofEpochMilli(time)
-                                                                    .atZone(java.time.ZoneId.systemDefault())
-                                                                    .format(java.time.format.DateTimeFormatter.ofPattern("MM-dd HH:mm"))
-                                                            }
-                                                            LibraryTab.Favorites -> favoriteTimeByGid[gallery.gid]?.let { time ->
-                                                                java.time.Instant.ofEpochMilli(time)
-                                                                    .atZone(java.time.ZoneId.systemDefault())
-                                                                    .format(java.time.format.DateTimeFormatter.ofPattern("MM-dd HH:mm"))
-                                                            }
-                                                            LibraryTab.Home,
-                                                            LibraryTab.Subscription,
-                                                            LibraryTab.Whatshot,
-                                                            LibraryTab.Toplist -> gallery.posted?.take(10)
-                                                            LibraryTab.Downloads -> null
-                                                        }
-                                                        browseTime?.let { time ->
-                                                            Text(
-                                                                text = time,
-                                                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                                                fontSize = 11.sp,
-                                                            )
-                                                        }
-                                                        Text(
-                                                            text = DesktopCategories.displayName(gallery.category),
-                                                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                                        )
+                                    addFavoriteLabel
+                                },
+                            ) {
+                                toggleFavorite(gallery)
+                            },
+                        )
+                        menuItems.add(
+                            ContextMenuItem(copyTitleLabel) {
+                                clipboard.setText(AnnotatedString(title))
+                                showNotification("$copiedText: $title")
+                            },
+                        )
+                        menuItems.add(
+                            ContextMenuItem(copyLinkLabel) {
+                                clipboard.setText(AnnotatedString(link))
+                                showNotification(linkCopiedText)
+                            },
+                        )
+                        menuItems.add(
+                            ContextMenuItem(openBrowserLabel) {
+                                DesktopBrowser.openUrl(link)
+                            },
+                        )
+                        if (currentTab == LibraryTab.History) {
+                            menuItems.add(
+                                ContextMenuItem(deleteLabel) {
+                                    coroutineScope.launch {
+                                        withContext(Dispatchers.IO) {
+                                            DesktopDatabase.eh.historyDao().deleteByKey(gallery.gid)
+                                        }
+                                        selected = DesktopHistoryState.updateSelectionAfterDelete(selected, gallery.gid)
+                                        // 撤销 = 重新写回该 gid 的历史行（时间戳刷新置顶）
+                                        notifications = DesktopNotificationManager.post(
+                                            current = notifications,
+                                            message = removedFromHistoryText,
+                                            timestamp = System.currentTimeMillis(),
+                                            idProvider = { nextNotificationId.getAndIncrement() },
+                                            actionLabel = undoText,
+                                            onAction = {
+                                                coroutineScope.launch {
+                                                    withContext(Dispatchers.IO) {
+                                                        DesktopDatabase.eh.historyDao()
+                                                            .upsert(HistoryInfo(gallery.gid))
                                                     }
                                                 }
-                                            }
-                                        }
-                                        VerticalScrollbar(
-                                            adapter = rememberScrollbarAdapter(listState),
-                                            isScrollInProgress = listState.isScrollInProgress,
+                                            },
                                         )
                                     }
-                                }
+                                },
+                            )
+                        }
+                        return menuItems
+                    }
+
+                    val listState = rememberLazyListState()
+                    val gridState = rememberLazyGridState()
+                    val canScrollToTop by remember {
+                        derivedStateOf {
+                            if (viewMode == DesktopViewMode.List) {
+                                listState.firstVisibleItemIndex > 3
                             } else {
-                                Row(modifier = Modifier.fillMaxSize()) {
-                                    LazyVerticalGrid(
-                                        state = gridState,
-                                        // 大屏自适应列数（MIUIX 规范 4.2：卡片最小 180dp，宽度换列数）
-                                        columns = GridCells.Adaptive(DesktopLayoutPolicy.GRID_CARD_MIN_WIDTH_DP.dp),
-                                        modifier = Modifier.weight(1f).padding(horizontal = 8.dp, vertical = 4.dp),
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                                gridState.firstVisibleItemIndex > 3
+                            }
+                        }
+                    }
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        if (viewMode == DesktopViewMode.List) {
+                            Row(modifier = Modifier.fillMaxSize()) {
+                                // 全宽列表模式：行内容限宽居中（可读宽度随窗口阶梯自适应，与移动端 readableWidth 同源）
+                                Box(
+                                    modifier = Modifier.weight(1f).fillMaxHeight(),
+                                    contentAlignment = Alignment.TopCenter,
+                                ) {
+                                    LazyColumn(
+                                        state = listState,
+                                        modifier = Modifier
+                                            .readableWidth()
+                                            .fillMaxSize(),
                                     ) {
                                         items(
                                             filteredItems.size,
@@ -1238,130 +1149,121 @@ fun LibraryScreen(
                                             ContextMenuArea(
                                                 items = { buildGalleryContextMenu(gallery, title, link) },
                                             ) {
-                                                val cardInteraction = remember { MutableInteractionSource() }
-                                                val cardHovered by cardInteraction.collectIsHoveredAsState()
-                                                Box(
-                                                    modifier = Modifier
-                                                        .fillMaxWidth()
-                                                        .clip(SquircleShape(8.dp))
-                                                        .pointerHoverIcon(PointerIcon.Hand)
-                                                        .combinedClickable(
-                                                            interactionSource = cardInteraction,
-                                                            onClick = {
-                                                                // Ctrl+点击进入/退出批量多选；普通点击收敛多选并单选（Ctrl 按住状态由根 onPreviewKeyEvent 双沿跟踪）
-                                                                if (ctrlDown) {
-                                                                    multiSelection.toggle(gallery.gid)
-                                                                } else {
-                                                                    multiSelection.clear()
-                                                                    selected = gallery
-                                                                    onOpenGallery?.invoke(gallery)
-                                                                }
-                                                            },
-                                                            onDoubleClick = {
-                                                                multiSelection.clear()
-                                                                selected = gallery
-                                                                onOpenGallery?.invoke(gallery)
-                                                            },
-                                                        )
-                                                        .background(
-                                                            when {
-                                                                gallery.gid in multiSelection.gids -> MiuixTheme.colorScheme.primary.copy(alpha = 0.20f)
-                                                                selected?.gid == gallery.gid -> MiuixTheme.colorScheme.primary.copy(alpha = 0.12f)
-                                                                cardHovered -> MiuixTheme.colorScheme.primary.copy(alpha = 0.06f)
-                                                                else -> MiuixTheme.colorScheme.surfaceContainerHighest
-                                                            },
-                                                        )
-                                                        .padding(8.dp),
-                                                ) {
-                                                    Column(
-                                                        modifier = Modifier.fillMaxWidth(),
-                                                        verticalArrangement = Arrangement.spacedBy(6.dp),
-                                                    ) {
-                                                        gallery.thumbUrl?.let { thumb ->
-                                                            Box(
-                                                                modifier = Modifier
-                                                                    .fillMaxWidth()
-                                                                    .height(110.dp)
-                                                                    .clip(SquircleShape(6.dp)),
-                                                                contentAlignment = Alignment.Center,
-                                                            ) {
-                                                                AsyncImage(
-                                                                    model = thumb,
-                                                                    contentDescription = title,
-                                                                    modifier = Modifier.fillMaxSize(),
-                                                                    contentScale = ContentScale.Crop,
-                                                                )
-                                                            }
+                                                DesktopGalleryListItem(
+                                                    gallery = gallery,
+                                                    title = title,
+                                                    browseTime = when (currentTab) {
+                                                        LibraryTab.History -> historyTimeByGid[gallery.gid]?.let(::formatBrowseTime)
+                                                        LibraryTab.Favorites -> favoriteTimeByGid[gallery.gid]?.let(::formatBrowseTime)
+                                                        else -> null
+                                                    },
+                                                    isMultiSelected = gallery.gid in multiSelection.gids,
+                                                    isSelected = selected?.gid == gallery.gid,
+                                                    isFavorite = DesktopFavoritesState.isFavorite(favoriteGids, gallery.gid),
+                                                    isDownloaded = currentTab == LibraryTab.Downloads,
+                                                    onClick = {
+                                                        if (ctrlDown) {
+                                                            multiSelection.toggle(gallery.gid)
+                                                        } else {
+                                                            multiSelection.clear()
+                                                            selected = gallery
+                                                            onOpenGallery?.invoke(gallery)
                                                         }
-                                                        Text(
-                                                            text = title,
-                                                            maxLines = 2,
-                                                            overflow = TextOverflow.Ellipsis,
-                                                            color = MiuixTheme.colorScheme.onBackground,
-                                                        )
-                                                        Row(
-                                                            modifier = Modifier.fillMaxWidth(),
-                                                            horizontalArrangement = Arrangement.SpaceBetween,
-                                                            verticalAlignment = Alignment.CenterVertically,
-                                                        ) {
-                                                            GalleryListCardRating(rating = gallery.rating)
-                                                            Text(
-                                                                text = DesktopRating.formatCardMeta(gallery.pages, DesktopCategories.displayName(gallery.category)),
-                                                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                                                maxLines = 1,
-                                                                overflow = TextOverflow.Ellipsis,
-                                                            )
-                                                        }
-                                                        if (currentTab.isOnline) {
-                                                            gallery.posted?.take(10)?.let { postedDate ->
-                                                                Text(
-                                                                    text = postedDate,
-                                                                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                                                    fontSize = 11.sp,
-                                                                    maxLines = 1,
-                                                                    overflow = TextOverflow.Ellipsis,
-                                                                )
-                                                            }
-                                                        }
-                                                    }
-                                                }
+                                                    },
+                                                    onLongClick = {
+                                                        multiSelection.clear()
+                                                        selected = gallery
+                                                        onOpenGallery?.invoke(gallery)
+                                                    },
+                                                )
                                             }
                                         }
                                     }
                                     VerticalScrollbar(
-                                        adapter = rememberScrollbarAdapter(gridState),
-                                        isScrollInProgress = gridState.isScrollInProgress,
+                                        adapter = rememberScrollbarAdapter(listState),
+                                        isScrollInProgress = listState.isScrollInProgress,
                                     )
                                 }
                             }
-                            if (canScrollToTop && !multiSelection.isActive) {
-                                DesktopLiquidGlassPill(
-                                    onClick = {
-                                        coroutineScope.launch {
-                                            if (viewMode == DesktopViewMode.List) {
-                                                listState.animateScrollToItem(0)
-                                            } else {
-                                                gridState.animateScrollToItem(0)
-                                            }
-                                        }
-                                    },
-                                    modifier = Modifier
-                                        .align(Alignment.BottomEnd)
-                                        .padding(end = 24.dp, bottom = 24.dp),
-                                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
+                        } else {
+                            Row(modifier = Modifier.fillMaxSize()) {
+                                LazyVerticalGrid(
+                                    state = gridState,
+                                    // 自适应列数：卡片最小 200dp（共享断点常量，与移动端瀑布流同源），宽度换列数
+                                    columns = GridCells.Adaptive(AdaptiveBreakpoints.THUMB_MIN_COLUMN_WIDTH_DP.dp),
+                                    modifier = Modifier.weight(1f).padding(horizontal = 8.dp, vertical = 4.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp),
                                 ) {
-                                    Text(
-                                        text = "↑",
-                                        color = MiuixTheme.colorScheme.primary,
-                                        fontSize = 14.sp,
-                                        fontWeight = FontWeight.Bold,
-                                    )
+                                    items(
+                                        filteredItems.size,
+                                        key = { index -> filteredItems[index].gid },
+                                    ) { index ->
+                                        val gallery = filteredItems[index]
+                                        val title = galleryDisplayTitle(gallery.title, gallery.gid)
+                                        val link = galleryWebUrl(gallery.gid, gallery.token)
+                                        ContextMenuArea(
+                                            items = { buildGalleryContextMenu(gallery, title, link) },
+                                        ) {
+                                            DesktopGalleryGridItem(
+                                                gallery = gallery,
+                                                title = title,
+                                                isMultiSelected = gallery.gid in multiSelection.gids,
+                                                isSelected = selected?.gid == gallery.gid,
+                                                isFavorite = DesktopFavoritesState.isFavorite(favoriteGids, gallery.gid),
+                                                onClick = {
+                                                    // Ctrl+点击进入/退出批量多选；普通点击收敛多选并单选（Ctrl 按住状态由根 onPreviewKeyEvent 双沿跟踪）
+                                                    if (ctrlDown) {
+                                                        multiSelection.toggle(gallery.gid)
+                                                    } else {
+                                                        multiSelection.clear()
+                                                        selected = gallery
+                                                        onOpenGallery?.invoke(gallery)
+                                                    }
+                                                },
+                                                onLongClick = {
+                                                    multiSelection.clear()
+                                                    selected = gallery
+                                                    onOpenGallery?.invoke(gallery)
+                                                },
+                                            )
+                                        }
+                                    }
                                 }
+                                VerticalScrollbar(
+                                    adapter = rememberScrollbarAdapter(gridState),
+                                    isScrollInProgress = gridState.isScrollInProgress,
+                                )
+                            }
+                        }
+                        if (canScrollToTop && !multiSelection.isActive) {
+                            DesktopLiquidGlassPill(
+                                onClick = {
+                                    coroutineScope.launch {
+                                        if (viewMode == DesktopViewMode.List) {
+                                            listState.animateScrollToItem(0)
+                                        } else {
+                                            gridState.animateScrollToItem(0)
+                                        }
+                                    }
+                                },
+                                modifier = Modifier
+                                    .align(Alignment.BottomEnd)
+                                    .padding(end = 24.dp, bottom = 24.dp),
+                                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
+                            ) {
+                                Text(
+                                    text = "↑",
+                                    color = MiuixTheme.colorScheme.primary,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold,
+                                )
                             }
                         }
                     }
                 }
             }
+        }
 
         if (multiSelection.isActive && (currentTab == LibraryTab.History || currentTab == LibraryTab.Favorites)) {
             Box(
@@ -1757,14 +1659,14 @@ internal fun GalleryDetailPane(
         }
     }
     Row(modifier = Modifier.fillMaxSize()) {
-        // 宽屏详情正文限宽居中（MIUIX 规范 4.1：单列内容 760dp）
+        // 宽屏详情正文限宽居中（可读宽度随窗口阶梯自适应，与移动端 readableWidth 同源）
         Box(
             modifier = Modifier.weight(1f).fillMaxHeight(),
             contentAlignment = Alignment.TopCenter,
         ) {
             Column(
                 modifier = Modifier
-                    .widthIn(max = DesktopLayoutPolicy.CONTENT_MAX_WIDTH_DP.dp)
+                    .readableWidth()
                     .fillMaxWidth()
                     .verticalScroll(detailScrollState)
                     .padding(16.dp),
@@ -2361,5 +2263,113 @@ private fun EmptyTabBrowseOnlineButton(
             fontSize = 12.sp,
             fontWeight = FontWeight.Medium,
         )
+    }
+}
+
+// 库页顶栏溢出菜单：原生菜单栏（MenuBar）移除后，文件/设置/快捷键/关于/退出 入口内联到应用（设计文档 §4.5 / §6.7）
+@Composable
+private fun LibraryOverflowMenu(
+    onOpenGallery: () -> Unit,
+    onOpenSettings: () -> Unit,
+    onShowShortcuts: () -> Unit,
+    onShowAbout: () -> Unit,
+    onExit: () -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    Box {
+        DesktopHoverPill(
+            onClick = { expanded = true },
+            containerColor = MiuixTheme.colorScheme.surfaceContainerHighest,
+            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 5.dp),
+        ) {
+            Text(
+                text = stringResource(MR.strings.desktop_a11y_menu),
+                color = MiuixTheme.colorScheme.primary,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+            )
+        }
+        if (expanded) {
+            Popup(
+                alignment = Alignment.BottomEnd,
+                onDismissRequest = { expanded = false },
+                properties = PopupProperties(focusable = true),
+            ) {
+                Column(
+                    modifier = Modifier
+                        .padding(top = 6.dp)
+                        .shadow(8.dp, SquircleShape(12.dp))
+                        .clip(SquircleShape(12.dp))
+                        .background(MiuixTheme.colorScheme.surface)
+                        .border(1.dp, MiuixTheme.colorScheme.outline.copy(alpha = 0.15f), SquircleShape(12.dp))
+                        .widthIn(min = 220.dp)
+                        .padding(vertical = 4.dp),
+                ) {
+                    val openGalleryShortcut = "Ctrl+O"
+                    val exitShortcut = "Ctrl+Q"
+                    val shortcutsShortcut = "F1"
+                    LibraryMenuRow(stringResource(MR.strings.desktop_open_gallery_title), openGalleryShortcut) {
+                        expanded = false
+                        onOpenGallery()
+                    }
+                    LibraryMenuRow(stringResource(MR.strings.menu_settings), null) {
+                        expanded = false
+                        onOpenSettings()
+                    }
+                    LibraryMenuRow(stringResource(MR.strings.menu_keyboard_shortcuts), shortcutsShortcut) {
+                        expanded = false
+                        onShowShortcuts()
+                    }
+                    LibraryMenuRow(stringResource(MR.strings.menu_about), null) {
+                        expanded = false
+                        onShowAbout()
+                    }
+                    LibraryMenuRow(stringResource(MR.strings.menu_exit), exitShortcut) {
+                        expanded = false
+                        onExit()
+                    }
+                }
+            }
+        }
+    }
+}
+
+// 溢出菜单行：label 靠左 + 快捷键徽记靠右，悬停高亮，点击后收起并执行动作
+@Composable
+private fun LibraryMenuRow(
+    label: String,
+    shortcut: String?,
+    onClick: () -> Unit,
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val hovered by interactionSource.collectIsHoveredAsState()
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(if (hovered) MiuixTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
+            .hoverable(interactionSource)
+            .pointerHoverIcon(PointerIcon.Hand)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onClick,
+            )
+            .padding(horizontal = 14.dp, vertical = 9.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = label,
+            color = MiuixTheme.colorScheme.onSurface,
+            fontSize = 13.sp,
+            modifier = Modifier.weight(1f),
+        )
+        if (shortcut != null) {
+            Text(
+                text = shortcut,
+                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                fontSize = 11.sp,
+            )
+        }
     }
 }

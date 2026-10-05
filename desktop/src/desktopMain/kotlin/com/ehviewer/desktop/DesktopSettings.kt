@@ -53,6 +53,12 @@ object DesktopSettings : DataStorePreferences("desktop") {
     // 导航栏样式：0 = 自动（宽屏侧栏/窄屏底栏），1 = 侧边导航栏 (Rail)，2 = 底部液态玻璃悬浮栏 (FloatingBottomBar)
     val navBarStyle = intPref("nav_bar_style", 0)
 
+    // 导航项顺序与显隐（DesktopNavItems 编码串，空 = 默认全显；见设计文档 §4.5「导航项」页）
+    val navItems = stringPref("nav_items", "")
+
+    // 应用内界面缩放（百分比，80~150；DPI 感知失效时的兜底，见设计文档 §4.7）
+    val uiScale = intPref("ui_scale", 100)
+
     // false = 启动不恢复上次会话窗口，true = 恢复
     val restoreSession = boolPref("restore_session", true)
 }

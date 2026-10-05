@@ -1,12 +1,16 @@
 package com.ehviewer.desktop
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -36,6 +40,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.isCtrlPressed
 import androidx.compose.ui.input.key.key
@@ -43,14 +48,14 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.FrameWindowScope
-import androidx.compose.ui.window.MenuBar
 import androidx.compose.ui.window.Tray
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowPlacement
@@ -60,10 +65,23 @@ import com.ehviewer.core.database.model.HistoryInfo
 import com.ehviewer.core.database.model.LocalFavoriteInfo
 import com.ehviewer.core.i18n.MR
 import com.ehviewer.core.model.BaseGalleryInfo
+import com.ehviewer.core.ui.component.BlurredBar
+import com.ehviewer.core.ui.component.IosLiquidGlassNavigationBar
+import com.ehviewer.core.ui.component.LocalBackdrop
 import com.ehviewer.core.ui.component.SquircleShape
+import com.ehviewer.core.ui.component.blurBackdropSource
 import com.ehviewer.core.ui.component.scrollbarStyle
+import com.ehviewer.core.ui.icons.EhIcons
+import com.ehviewer.core.ui.icons.filled.Bookmarks
+import com.ehviewer.core.ui.icons.filled.FormatListNumbered
+import com.ehviewer.core.ui.icons.filled.Home
+import com.ehviewer.core.ui.icons.filled.Subscriptions
+import com.ehviewer.core.ui.icons.filled.Whatshot
 import com.ehviewer.core.ui.theme.rememberMiuixThemeController
+import com.ehviewer.core.ui.util.LocalWindowLayout
+import com.ehviewer.core.ui.util.NavigationChrome
 import com.ehviewer.core.ui.util.ProvideVectorPainterCache
+import com.ehviewer.core.ui.util.WindowLayout
 import com.ehviewer.core.util.DesktopFileLog
 import com.ehviewer.core.util.LogPriority
 import com.ehviewer.core.util.logcat
@@ -72,6 +90,7 @@ import dev.icerock.moko.resources.desc.ResourceFormatted
 import dev.icerock.moko.resources.desc.StringDesc
 import java.awt.Window as AwtWindow
 import java.util.concurrent.atomic.AtomicLong
+import kotlin.math.roundToInt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.debounce
@@ -81,30 +100,22 @@ import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.NavigationItem
 import top.yukonga.miuix.kmp.basic.NavigationRail
 import top.yukonga.miuix.kmp.basic.NavigationRailItem
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.blur.LayerBackdrop
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.Download
 import top.yukonga.miuix.kmp.icon.extended.Recent
 import top.yukonga.miuix.kmp.icon.extended.Settings
-import com.ehviewer.core.ui.component.BlurredBar
-import com.ehviewer.core.ui.component.IosLiquidGlassNavigationBar
-import com.ehviewer.core.ui.component.LocalBackdrop
-import com.ehviewer.core.ui.component.blurBackdropSource
-import com.ehviewer.core.ui.icons.EhIcons
-import com.ehviewer.core.ui.icons.filled.Bookmarks
-import com.ehviewer.core.ui.icons.filled.FormatListNumbered
-import com.ehviewer.core.ui.icons.filled.Home
-import com.ehviewer.core.ui.icons.filled.Subscriptions
-import com.ehviewer.core.ui.icons.filled.Whatshot
-import top.yukonga.miuix.kmp.basic.NavigationItem
-import top.yukonga.miuix.kmp.blur.Backdrop
-import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 // 桌面壳骨架：单窗口页面栈（库 → 详情 → 阅读；设置）+ Miuix 主题三态 + 菜单栏 + 托盘驻留 + 尺寸记忆 + 会话恢复
+
+// 悬浮底栏可见时页面内容的底部避让量（底栏胶囊高度 + 上下留白，对齐移动端 bottomBarPadding 88dp）
+private val FLOATING_BAR_CONTENT_PADDING = 88.dp
 
 private object EhViewerTrayPainter : Painter() {
     override val intrinsicSize: Size = Size(32f, 32f)
@@ -114,6 +125,8 @@ private object EhViewerTrayPainter : Painter() {
 }
 
 fun main() {
+    // DPI 感知须在任何 AWT/Swing 类初始化前声明（设计文档 §4.7），否则高缩放显示器上内容被位图放大发虚
+    DesktopDpi.install()
     val startupStartMs = System.currentTimeMillis()
     // 单实例锁：已有实例在运行时直接退出，防 DataStore/Room 多进程并发写坏数据
     if (!DesktopSingleInstance.tryAcquire()) {
@@ -181,6 +194,18 @@ fun main() {
             libraryTab = tab
             DesktopSettings.lastTab.value = tab.name
         }
+        // 导航项统一入口：库 Tab 回到根并切换 Tab，设置项推入/关闭设置页
+        val selectNavItem: (DesktopNavItem) -> Unit = { item ->
+            val tab = item.toLibraryTab()
+            if (tab != null) {
+                pages = DesktopPageStack.popToRoot(pages)
+                selectTab(tab)
+            } else if (pages.last() is DesktopPage.Settings) {
+                popPage()
+            } else {
+                pages = DesktopPageStack.push(pages, DesktopPage.Settings)
+            }
+        }
 
         fun hideOrExit() {
             val behavior = if (closeToTray) CloseBehavior.MINIMIZE_TO_TRAY else CloseBehavior.EXIT
@@ -217,6 +242,7 @@ fun main() {
                     untitledLabel = stringResource(MR.strings.desktop_untitled),
                     settingsLabel = stringResource(MR.strings.menu_settings),
                     readingLabel = stringResource(MR.strings.desktop_window_reading),
+                    navItemsLabel = stringResource(MR.strings.desktop_nav_items_title),
                 ),
                 onKeyEvent = { event ->
                     val action = resolveKeyAction(
@@ -283,15 +309,6 @@ fun main() {
                         awtWindow.requestFocus()
                     }
                 }
-                AppMenus(
-                    onOpenSettings = {
-                        pages = DesktopPageStack.push(pages, DesktopPage.Settings)
-                    },
-                    onShowShortcutsHelp = { showShortcutsHelp = true },
-                    onShowAbout = { showAbout = true },
-                    onExit = { exitApplication() },
-                    onOpenGallery = { showOpenGalleryDialog = true },
-                )
                 // 桌面拖拽惯例：浏览器链接等文本拖入窗口即解析打开画廊（任意页面均可），拖入期间显示放置高亮
                 var dragHovering by remember { mutableStateOf(false) }
                 DisposableEffect(awtWindow) {
@@ -348,128 +365,160 @@ fun main() {
                 val themeController = rememberMiuixThemeController(useDarkTheme = darkTheme, isAmoled = amoled)
                 // 与移动端 Theme.setMiuixContent 同源：IconCached 消费点（RatingWidget 等）在缓存局部量缺失时直接崩溃
                 ProvideVectorPainterCache {
-                    MiuixTheme(controller = themeController) {
-                        // 滚动条接入 Miuix 配色：静息半透明轮廓色，悬停加深（桌面惯例）
-                        val scrollbarStyle = scrollbarStyle(
-                            thumbColor = MiuixTheme.colorScheme.outline.copy(alpha = 0.45f),
-                            hoverThumbColor = MiuixTheme.colorScheme.outline.copy(alpha = 0.9f),
-                        )
-                        val backdrop = rememberLayerBackdrop()
-                        val navBarStyleValue by DesktopSettings.navBarStyle.valueFlow().collectAsState(DesktopSettings.navBarStyle.value)
-                        val navBarStyle = DesktopNavBarStyle.fromValue(navBarStyleValue)
-                        CompositionLocalProvider(
-                            LocalScrollbarStyle provides scrollbarStyle,
-                            LocalBackdrop provides backdrop,
-                        ) {
-                            BoxWithConstraints(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .blurBackdropSource(backdrop),
-                            ) {
-                                val isReader = pages.last() is DesktopPage.Reader
-                                val isWideScreen = DesktopLayoutPolicy.isWideScreen(maxWidth.value)
-                                val showRail = !isReader && when (navBarStyle) {
-                                    DesktopNavBarStyle.Rail -> true
-                                    DesktopNavBarStyle.FloatingBottomBar -> false
-                                    DesktopNavBarStyle.Auto -> isWideScreen
+                    // 应用内界面缩放兜底（设计文档 §4.7）：整体按密度缩放，文字/矢量按新密度重绘保持清晰
+                    val baseDensity = LocalDensity.current
+                    val uiScaleValue by DesktopSettings.uiScale.valueFlow().collectAsState(DesktopSettings.uiScale.value)
+                    val scaledDensity = remember(baseDensity, uiScaleValue) {
+                        Density(baseDensity.density * DesktopUiScale.factor(uiScaleValue), baseDensity.fontScale)
+                    }
+                    CompositionLocalProvider(LocalDensity provides scaledDensity) {
+                        MiuixTheme(controller = themeController) {
+                            // 滚动条接入 Miuix 配色：静息半透明轮廓色，悬停加深（桌面惯例）
+                            val scrollbarStyle = scrollbarStyle(
+                                thumbColor = MiuixTheme.colorScheme.outline.copy(alpha = 0.45f),
+                                hoverThumbColor = MiuixTheme.colorScheme.outline.copy(alpha = 0.9f),
+                            )
+                            val backdrop: LayerBackdrop? = null
+                            val navBarStyleValue by DesktopSettings.navBarStyle.valueFlow().collectAsState(DesktopSettings.navBarStyle.value)
+                            val navBarStyle = DesktopNavBarStyle.fromValue(navBarStyleValue)
+                            // 导航项来自可配置列表（设计文档 §4.5 / §6.6）；异常配置兜底为全显默认
+                            val navItemsRaw by DesktopSettings.navItems.valueFlow().collectAsState(DesktopSettings.navItems.value)
+                            val navItems = remember(navItemsRaw) {
+                                DesktopNavItems.visible(DesktopNavItems.decode(navItemsRaw)).ifEmpty {
+                                    DesktopNavItems.visible(DesktopNavItems.defaultConfig())
                                 }
-                                val showBottomBar = !isReader && !showRail
-                                Row(modifier = Modifier.fillMaxSize()) {
-                                    if (showRail) {
-                                        DesktopNavRail(
-                                            currentPage = pages.last(),
-                                            activeTab = libraryTab,
-                                            onSelectTab = { tab ->
-                                                pages = DesktopPageStack.popToRoot(pages)
-                                                selectTab(tab)
-                                            },
-                                            onSelectSettings = {
-                                                if (pages.last() is DesktopPage.Settings) popPage() else pages = DesktopPageStack.push(pages, DesktopPage.Settings)
-                                            },
-                                        )
+                            }
+                            // 与移动端 MainActivity 同源：窗口判定统一走共享 WindowLayout，断点常量不再桌面自持
+                            val windowLayout = WindowLayout(
+                                widthDp = windowState.size.width.value.roundToInt(),
+                                heightDp = windowState.size.height.value.roundToInt(),
+                            )
+                            CompositionLocalProvider(
+                                LocalScrollbarStyle provides scrollbarStyle,
+                                LocalBackdrop provides backdrop,
+                                LocalWindowLayout provides windowLayout,
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .blurBackdropSource(backdrop),
+                                ) {
+                                    val isReader = pages.last() is DesktopPage.Reader
+                                    val showRail = !isReader && when (navBarStyle) {
+                                        DesktopNavBarStyle.Rail -> true
+                                        DesktopNavBarStyle.FloatingBottomBar -> false
+                                        // Auto = 共享宽高双门槛：矮窗口（高 <600dp）自动落回悬浮底栏
+                                        DesktopNavBarStyle.Auto -> windowLayout.navigationChrome == NavigationChrome.Rail
                                     }
-                                    Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
-                                        when (val page = pages.last()) {
-                                            DesktopPage.Library -> LibraryScreen(
-                                                activeTab = libraryTab,
-                                                onTabSelect = selectTab,
-                                                openGalleryDialogVisible = showOpenGalleryDialog,
-                                                onOpenGalleryDialogOpen = { showOpenGalleryDialog = true },
-                                                onOpenGalleryDialogClose = { showOpenGalleryDialog = false },
-                                                onOpenGallery = openGallery,
-                                                onOpenReader = openReader,
-                                            )
-                                            DesktopPage.Settings -> SettingsScreen(
-                                                onBack = popPage,
-                                                onShowShortcuts = { showShortcutsHelp = true },
-                                                onShowAbout = { showAbout = true },
-                                            )
-                                            is DesktopPage.GalleryDetail -> GalleryDetailPageContent(
-                                                gallery = page.gallery,
-                                                onBack = popPage,
-                                                onGalleryUpdated = { updated ->
-                                                    // hydrate 回写：栈顶详情页替换为真实元数据，窗口标题随之更新
-                                                    pages = DesktopPageStack.updateTopGallery(pages, updated)
-                                                },
-                                                onOpenReader = openReader,
-                                                onSearchTag = { tag ->
-                                                    // 标签搜索：回到库页后驱动主库即时搜索（页面栈语义下的窗口内联动）
-                                                    pages = DesktopPageStack.popToRoot(pages)
-                                                    DesktopSearchBus.request(tag)
-                                                    logcat("DetailPage", LogPriority.INFO) { "Tag search dispatched: $tag" }
-                                                },
-                                            )
-                                            is DesktopPage.Reader -> ReaderScreen(
-                                                gallery = page.gallery,
-                                                onClose = popPage,
-                                            )
-                                        }
-                                        if (showBottomBar) {
-                                            DesktopFloatingNavBar(
+                                    val showBottomBar = !isReader && !showRail
+                                    Row(modifier = Modifier.fillMaxSize()) {
+                                        if (showRail) {
+                                            DesktopNavRail(
                                                 currentPage = pages.last(),
                                                 activeTab = libraryTab,
-                                                onSelectTab = { tab ->
-                                                    pages = DesktopPageStack.popToRoot(pages)
-                                                    selectTab(tab)
-                                                },
-                                                onSelectSettings = {
-                                                    if (pages.last() is DesktopPage.Settings) popPage() else pages = DesktopPageStack.push(pages, DesktopPage.Settings)
-                                                },
-                                                backdrop = backdrop,
-                                                modifier = Modifier.align(Alignment.BottomCenter),
+                                                items = navItems,
+                                                onSelectItem = selectNavItem,
                                             )
                                         }
-                                        if (dragHovering) {
-                                            // 拖拽放置高亮：全窗口主色描边 + 半透明衬底与居中提示胶囊（穿透点击，不拦截落点）
-                                            val dropHintText = stringResource(MR.strings.desktop_drop_to_open)
+                                        Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                                            // 悬浮底栏可见时页面内容整体避让，列表末行不被遮挡（对齐移动端 bottomBarPadding 语义）
                                             Box(
                                                 modifier = Modifier
                                                     .fillMaxSize()
-                                                    .background(MiuixTheme.colorScheme.primary.copy(alpha = 0.08f))
-                                                    .border(2.dp, MiuixTheme.colorScheme.primary.copy(alpha = 0.6f)),
-                                            )
-                                            Box(
-                                                modifier = Modifier.align(Alignment.Center),
+                                                    .padding(bottom = if (showBottomBar) FLOATING_BAR_CONTENT_PADDING else 0.dp),
                                             ) {
-                                                Text(
-                                                    text = dropHintText,
-                                                    color = MiuixTheme.colorScheme.primary,
-                                                    fontSize = 14.sp,
-                                                    fontWeight = FontWeight.Medium,
-                                                    modifier = Modifier
-                                                        .shadow(8.dp, SquircleShape(12.dp))
-                                                        .clip(SquircleShape(12.dp))
-                                                        .background(MiuixTheme.colorScheme.surface)
-                                                        .border(1.dp, MiuixTheme.colorScheme.outline.copy(alpha = 0.15f), SquircleShape(12.dp))
-                                                        .padding(horizontal = 20.dp, vertical = 12.dp),
+                                                when (val page = pages.last()) {
+                                                    DesktopPage.Library -> LibraryScreen(
+                                                        activeTab = libraryTab,
+                                                        onTabSelect = selectTab,
+                                                        openGalleryDialogVisible = showOpenGalleryDialog,
+                                                        onOpenGalleryDialogOpen = { showOpenGalleryDialog = true },
+                                                        onOpenGalleryDialogClose = { showOpenGalleryDialog = false },
+                                                        onOpenGallery = openGallery,
+                                                        onOpenReader = openReader,
+                                                        onOpenSettings = {
+                                                            if (pages.last() is DesktopPage.Settings) popPage() else pages = DesktopPageStack.push(pages, DesktopPage.Settings)
+                                                        },
+                                                        onShowShortcuts = { showShortcutsHelp = true },
+                                                        onShowAbout = { showAbout = true },
+                                                        onExit = { exitApplication() },
+                                                    )
+                                                    DesktopPage.Settings -> SettingsScreen(
+                                                        onBack = popPage,
+                                                        onShowShortcuts = { showShortcutsHelp = true },
+                                                        onShowAbout = { showAbout = true },
+                                                        onOpenNavItems = {
+                                                            pages = DesktopPageStack.push(pages, DesktopPage.NavItems)
+                                                        },
+                                                    )
+                                                    DesktopPage.NavItems -> NavItemsScreen(onBack = popPage)
+                                                    is DesktopPage.GalleryDetail -> GalleryDetailPageContent(
+                                                        gallery = page.gallery,
+                                                        onBack = popPage,
+                                                        onGalleryUpdated = { updated ->
+                                                            // hydrate 回写：栈顶详情页替换为真实元数据，窗口标题随之更新
+                                                            pages = DesktopPageStack.updateTopGallery(pages, updated)
+                                                        },
+                                                        onOpenReader = openReader,
+                                                        onSearchTag = { tag ->
+                                                            // 标签搜索：回到库页后驱动主库即时搜索（页面栈语义下的窗口内联动）
+                                                            pages = DesktopPageStack.popToRoot(pages)
+                                                            DesktopSearchBus.request(tag)
+                                                            logcat("DetailPage", LogPriority.INFO) { "Tag search dispatched: $tag" }
+                                                        },
+                                                    )
+                                                    is DesktopPage.Reader -> ReaderScreen(
+                                                        gallery = page.gallery,
+                                                        onClose = popPage,
+                                                    )
+                                                }
+                                            }
+                                            androidx.compose.animation.AnimatedVisibility(
+                                                visible = showBottomBar,
+                                                enter = slideInVertically { it } + fadeIn(),
+                                                exit = slideOutVertically { it } + fadeOut(),
+                                                modifier = Modifier.align(Alignment.BottomCenter),
+                                            ) {
+                                                DesktopFloatingNavBar(
+                                                    currentPage = pages.last(),
+                                                    activeTab = libraryTab,
+                                                    items = navItems,
+                                                    onSelectItem = selectNavItem,
+                                                    backdrop = backdrop,
                                                 )
                                             }
-                                        }
-                                        if (showShortcutsHelp) {
-                                            ShortcutsHelpDialog(onDismiss = { showShortcutsHelp = false })
-                                        }
-                                        if (showAbout) {
-                                            AboutDialog(onDismiss = { showAbout = false })
+                                            if (dragHovering) {
+                                                // 拖拽放置高亮：全窗口主色描边 + 半透明衬底与居中提示胶囊（穿透点击，不拦截落点）
+                                                val dropHintText = stringResource(MR.strings.desktop_drop_to_open)
+                                                Box(
+                                                    modifier = Modifier
+                                                        .fillMaxSize()
+                                                        .background(MiuixTheme.colorScheme.primary.copy(alpha = 0.08f))
+                                                        .border(2.dp, MiuixTheme.colorScheme.primary.copy(alpha = 0.6f)),
+                                                )
+                                                Box(
+                                                    modifier = Modifier.align(Alignment.Center),
+                                                ) {
+                                                    Text(
+                                                        text = dropHintText,
+                                                        color = MiuixTheme.colorScheme.primary,
+                                                        fontSize = 14.sp,
+                                                        fontWeight = FontWeight.Medium,
+                                                        modifier = Modifier
+                                                            .shadow(8.dp, SquircleShape(12.dp))
+                                                            .clip(SquircleShape(12.dp))
+                                                            .background(MiuixTheme.colorScheme.surface)
+                                                            .border(1.dp, MiuixTheme.colorScheme.outline.copy(alpha = 0.15f), SquircleShape(12.dp))
+                                                            .padding(horizontal = 20.dp, vertical = 12.dp),
+                                                    )
+                                                }
+                                            }
+                                            if (showShortcutsHelp) {
+                                                ShortcutsHelpDialog(onDismiss = { showShortcutsHelp = false })
+                                            }
+                                            if (showAbout) {
+                                                AboutDialog(onDismiss = { showAbout = false })
+                                            }
                                         }
                                     }
                                 }
@@ -550,27 +599,6 @@ private fun isReachableScreenPoint(x: Int, y: Int): Boolean = runCatching {
         x >= b.x - 200 && x < b.x + b.width && y >= b.y - 100 && y < b.y + b.height
     }
 }.getOrDefault(false)
-
-@Composable
-private fun FrameWindowScope.AppMenus(
-    onOpenSettings: () -> Unit,
-    onShowShortcutsHelp: () -> Unit,
-    onShowAbout: () -> Unit,
-    onExit: () -> Unit,
-    onOpenGallery: () -> Unit,
-) = MenuBar {
-    Menu(stringResource(MR.strings.menu_file)) {
-        Item("${stringResource(MR.strings.desktop_open_gallery_title)}... (Ctrl+O)", onClick = onOpenGallery)
-        Item(stringResource(MR.strings.menu_exit), onClick = onExit)
-    }
-    Menu(stringResource(MR.strings.menu_settings)) {
-        Item(stringResource(MR.strings.menu_settings), onClick = onOpenSettings)
-    }
-    Menu(stringResource(MR.strings.menu_help)) {
-        Item("${stringResource(MR.strings.menu_keyboard_shortcuts)} (F1)", onClick = onShowShortcutsHelp)
-        Item(stringResource(MR.strings.menu_about), onClick = onShowAbout)
-    }
-}
 
 // 关于对话框：应用名 + 版本 + 仓库链接（桌面应用惯例的 Help/About 入口）
 @Composable
@@ -1045,114 +1073,63 @@ private sealed interface AboutUpdateCheckState {
     data class Unavailable(val label: String) : AboutUpdateCheckState
 }
 
-// 宽屏左侧导航外壳（MIUIX NavigationRail）：对齐移动端 8 项导航
+// 导航项图标映射：库 Tab 用 EhIcons，系统项用 MiuixIcons
+private fun navItemIcon(item: DesktopNavItem): ImageVector = when (item) {
+    DesktopNavItem.Home -> EhIcons.Filled.Home
+    DesktopNavItem.Subscription -> EhIcons.Filled.Subscriptions
+    DesktopNavItem.Whatshot -> EhIcons.Filled.Whatshot
+    DesktopNavItem.Toplist -> EhIcons.Filled.FormatListNumbered
+    DesktopNavItem.Favorites -> EhIcons.Filled.Bookmarks
+    DesktopNavItem.History -> MiuixIcons.Recent
+    DesktopNavItem.Downloads -> MiuixIcons.Download
+    DesktopNavItem.Settings -> MiuixIcons.Settings
+}
+
+// 选中态判定：设置项看当前页，库 Tab 项看激活 Tab 且当前不在设置页
+private fun isNavItemSelected(item: DesktopNavItem, currentPage: DesktopPage, activeTab: LibraryTab): Boolean = if (item == DesktopNavItem.Settings) {
+    currentPage is DesktopPage.Settings
+} else {
+    currentPage !is DesktopPage.Settings && item.toLibraryTab() == activeTab
+}
+
+// 宽屏左侧导航外壳（MIUIX NavigationRail）：按可配置导航项列表渲染（设计文档 §4.5 / §6.6）
 @Composable
 private fun DesktopNavRail(
     currentPage: DesktopPage,
     activeTab: LibraryTab,
-    onSelectTab: (LibraryTab) -> Unit,
-    onSelectSettings: () -> Unit,
+    items: List<DesktopNavItem>,
+    onSelectItem: (DesktopNavItem) -> Unit,
 ) {
     NavigationRail(expanded = false, scrollState = rememberScrollState()) {
-        NavigationRailItem(
-            selected = currentPage !is DesktopPage.Settings && activeTab == LibraryTab.Home,
-            onClick = { onSelectTab(LibraryTab.Home) },
-            icon = EhIcons.Filled.Home,
-            label = stringResource(MR.strings.homepage),
-        )
-        NavigationRailItem(
-            selected = currentPage !is DesktopPage.Settings && activeTab == LibraryTab.Subscription,
-            onClick = { onSelectTab(LibraryTab.Subscription) },
-            icon = EhIcons.Filled.Subscriptions,
-            label = stringResource(MR.strings.subscription),
-        )
-        NavigationRailItem(
-            selected = currentPage !is DesktopPage.Settings && activeTab == LibraryTab.Whatshot,
-            onClick = { onSelectTab(LibraryTab.Whatshot) },
-            icon = EhIcons.Filled.Whatshot,
-            label = stringResource(MR.strings.whats_hot),
-        )
-        NavigationRailItem(
-            selected = currentPage !is DesktopPage.Settings && activeTab == LibraryTab.Toplist,
-            onClick = { onSelectTab(LibraryTab.Toplist) },
-            icon = EhIcons.Filled.FormatListNumbered,
-            label = stringResource(MR.strings.toplist),
-        )
-        NavigationRailItem(
-            selected = currentPage !is DesktopPage.Settings && activeTab == LibraryTab.Favorites,
-            onClick = { onSelectTab(LibraryTab.Favorites) },
-            icon = EhIcons.Filled.Bookmarks,
-            label = stringResource(MR.strings.local_favorites),
-        )
-        NavigationRailItem(
-            selected = currentPage !is DesktopPage.Settings && activeTab == LibraryTab.History,
-            onClick = { onSelectTab(LibraryTab.History) },
-            icon = MiuixIcons.Recent,
-            label = stringResource(MR.strings.history),
-        )
-        NavigationRailItem(
-            selected = currentPage !is DesktopPage.Settings && activeTab == LibraryTab.Downloads,
-            onClick = { onSelectTab(LibraryTab.Downloads) },
-            icon = MiuixIcons.Download,
-            label = stringResource(MR.strings.download),
-        )
-        NavigationRailItem(
-            selected = currentPage is DesktopPage.Settings,
-            onClick = onSelectSettings,
-            icon = MiuixIcons.Settings,
-            label = stringResource(MR.strings.menu_settings),
-        )
+        items.forEach { item ->
+            NavigationRailItem(
+                selected = isNavItemSelected(item, currentPage, activeTab),
+                onClick = { onSelectItem(item) },
+                icon = navItemIcon(item),
+                label = stringResource(item.titleRes),
+            )
+        }
     }
 }
 
-// 底部液态玻璃悬浮导航栏（MIUIX / Liquid Glass）：全量 8 项导航，实时折射底层
+// 底部液态玻璃悬浮导航栏（MIUIX / Liquid Glass）：按可配置导航项列表渲染，实时折射底层
 @Composable
 private fun DesktopFloatingNavBar(
     currentPage: DesktopPage,
     activeTab: LibraryTab,
-    onSelectTab: (LibraryTab) -> Unit,
-    onSelectSettings: () -> Unit,
-    backdrop: Backdrop?,
+    items: List<DesktopNavItem>,
+    onSelectItem: (DesktopNavItem) -> Unit,
+    backdrop: LayerBackdrop?,
     modifier: Modifier = Modifier,
 ) {
-    val items = listOf(
-        NavigationItem(stringResource(MR.strings.homepage), EhIcons.Filled.Home),
-        NavigationItem(stringResource(MR.strings.subscription), EhIcons.Filled.Subscriptions),
-        NavigationItem(stringResource(MR.strings.whats_hot), EhIcons.Filled.Whatshot),
-        NavigationItem(stringResource(MR.strings.toplist), EhIcons.Filled.FormatListNumbered),
-        NavigationItem(stringResource(MR.strings.local_favorites), EhIcons.Filled.Bookmarks),
-        NavigationItem(stringResource(MR.strings.history), MiuixIcons.Recent),
-        NavigationItem(stringResource(MR.strings.download), MiuixIcons.Download),
-        NavigationItem(stringResource(MR.strings.menu_settings), MiuixIcons.Settings),
-    )
-    val selectedIndex = if (currentPage is DesktopPage.Settings) {
-        7
-    } else {
-        when (activeTab) {
-            LibraryTab.Home -> 0
-            LibraryTab.Subscription -> 1
-            LibraryTab.Whatshot -> 2
-            LibraryTab.Toplist -> 3
-            LibraryTab.Favorites -> 4
-            LibraryTab.History -> 5
-            LibraryTab.Downloads -> 6
-        }
+    val navItems = items.map { item ->
+        NavigationItem(stringResource(item.titleRes), navItemIcon(item))
     }
+    val selectedIndex = items.indexOfFirst { isNavItemSelected(it, currentPage, activeTab) }.coerceAtLeast(0)
     IosLiquidGlassNavigationBar(
-        items = items,
+        items = navItems,
         selectedIndex = selectedIndex,
-        onItemClick = { index ->
-            when (index) {
-                0 -> onSelectTab(LibraryTab.Home)
-                1 -> onSelectTab(LibraryTab.Subscription)
-                2 -> onSelectTab(LibraryTab.Whatshot)
-                3 -> onSelectTab(LibraryTab.Toplist)
-                4 -> onSelectTab(LibraryTab.Favorites)
-                5 -> onSelectTab(LibraryTab.History)
-                6 -> onSelectTab(LibraryTab.Downloads)
-                7 -> onSelectSettings()
-            }
-        },
+        onItemClick = { index -> items.getOrNull(index)?.let(onSelectItem) },
         backdrop = backdrop,
         modifier = modifier,
     )

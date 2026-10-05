@@ -60,7 +60,8 @@ val LibraryTab.isOnline: Boolean
         LibraryTab.Home,
         LibraryTab.Subscription,
         LibraryTab.Whatshot,
-        LibraryTab.Toplist -> true
+        LibraryTab.Toplist,
+        -> true
         else -> false
     }
 
@@ -74,4 +75,3 @@ val LibraryTab.titleRes: StringResource
         LibraryTab.History -> MR.strings.history
         LibraryTab.Downloads -> MR.strings.download
     }
-

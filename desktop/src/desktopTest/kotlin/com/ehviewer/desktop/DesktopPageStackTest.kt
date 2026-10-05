@@ -188,26 +188,29 @@ class DesktopPageStackTest {
         val untitled = "(Untitled)"
         val settingsLabel = "Settings"
         val readingLabel = "Reading"
-        assertEquals("EhViewer", DesktopPageStack.pageTitle(DesktopPage.Library, untitled, settingsLabel, readingLabel))
-        assertEquals("EhViewer Settings", DesktopPageStack.pageTitle(DesktopPage.Settings, untitled, settingsLabel, readingLabel))
+        val navItemsLabel = "Nav Items"
+        assertEquals("EhViewer", DesktopPageStack.pageTitle(DesktopPage.Library, untitled, settingsLabel, readingLabel, navItemsLabel))
+        assertEquals("EhViewer Settings", DesktopPageStack.pageTitle(DesktopPage.Settings, untitled, settingsLabel, readingLabel, navItemsLabel))
+        // 导航项子页标题跟随本地化标签
+        assertEquals("EhViewer Nav Items", DesktopPageStack.pageTitle(DesktopPage.NavItems, untitled, settingsLabel, readingLabel, navItemsLabel))
         assertEquals(
             "Gallery A - EhViewer",
-            DesktopPageStack.pageTitle(DesktopPage.GalleryDetail(g1), untitled, settingsLabel, readingLabel),
+            DesktopPageStack.pageTitle(DesktopPage.GalleryDetail(g1), untitled, settingsLabel, readingLabel, navItemsLabel),
         )
         // 无标题详情回退 untitled 标签
         val noTitle = BaseGalleryInfo(gid = 1003, token = "t3")
         assertEquals(
             "(Untitled) - EhViewer",
-            DesktopPageStack.pageTitle(DesktopPage.GalleryDetail(noTitle), untitled, settingsLabel, readingLabel),
+            DesktopPageStack.pageTitle(DesktopPage.GalleryDetail(noTitle), untitled, settingsLabel, readingLabel, navItemsLabel),
         )
         assertEquals(
             "Gallery A - Reading",
-            DesktopPageStack.pageTitle(DesktopPage.Reader(g1), untitled, settingsLabel, readingLabel),
+            DesktopPageStack.pageTitle(DesktopPage.Reader(g1), untitled, settingsLabel, readingLabel, navItemsLabel),
         )
         // 无标题阅读页同样回退 untitled 标签（不再回退 GID）
         assertEquals(
             "(Untitled) - Reading",
-            DesktopPageStack.pageTitle(DesktopPage.Reader(noTitle), untitled, settingsLabel, readingLabel),
+            DesktopPageStack.pageTitle(DesktopPage.Reader(noTitle), untitled, settingsLabel, readingLabel, navItemsLabel),
         )
     }
 }

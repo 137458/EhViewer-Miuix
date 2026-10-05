@@ -620,4 +620,11 @@
     <string name="desktop_nav_bar_style_auto">自動響應式</string>
     <string name="desktop_nav_bar_style_rail">左側側欄 (Rail)</string>
     <string name="desktop_nav_bar_style_floating">底部液態玻璃懸浮欄</string>
+    <string name="desktop_nav_items_title">導航項</string>
+    <string name="desktop_nav_items_summary">選擇顯示哪些導航項及其順序</string>
+    <string name="desktop_nav_items_reset">恢復預設</string>
+    <string name="desktop_nav_items_hint">拖拽 ≡ 排序，點擊行切換顯示；至少保留一個可見項。</string>
+    <string name="desktop_ui_scale">介面縮放</string>
+    <string name="desktop_ui_scale_summary">整體縮放介面，系統 DPI 縮放不可用時作為兜底</string>
+    <string name="desktop_a11y_menu">更多</string>
 </resources>

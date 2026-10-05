@@ -9,6 +9,7 @@ import kotlinx.serialization.json.Json
 sealed interface DesktopPage {
     data object Library : DesktopPage
     data object Settings : DesktopPage
+    data object NavItems : DesktopPage
     data class GalleryDetail(val gallery: BaseGalleryInfo) : DesktopPage
     data class Reader(val gallery: BaseGalleryInfo) : DesktopPage
 }
@@ -73,9 +74,11 @@ object DesktopPageStack {
         untitledLabel: String,
         settingsLabel: String,
         readingLabel: String,
+        navItemsLabel: String,
     ): String = when (val p = page) {
         DesktopPage.Library -> "EhViewer"
         DesktopPage.Settings -> "EhViewer $settingsLabel"
+        DesktopPage.NavItems -> "EhViewer $navItemsLabel"
         is DesktopPage.GalleryDetail -> "${p.gallery.displayTitle(untitledLabel)} - EhViewer"
         is DesktopPage.Reader -> "${p.gallery.displayTitle(untitledLabel)} - $readingLabel"
     }
