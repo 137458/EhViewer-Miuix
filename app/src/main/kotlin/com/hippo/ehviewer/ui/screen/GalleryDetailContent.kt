@@ -368,6 +368,7 @@ fun GalleryDetailContent(
             } else {
                 0.5f
             }
+            // splitFraction 语义：缩略图栏的宽度占比（详情栏居左、缩略图栏居右，仅位置调换不改变语义）
             var splitFraction by remember {
                 mutableFloatStateOf(
                     Settings.galleryDetailSplitPercent.value.coerceIn(AdaptiveBreakpoints.GALLERY_DETAIL_SPLIT_PERCENT_RANGE) / 100f,
@@ -375,51 +376,6 @@ fun GalleryDetailContent(
             }
             val paneFraction = splitFraction.coerceIn(minPaneFraction, 1f - minPaneFraction)
             Row(modifier = Modifier.fillMaxSize()) {
-                BoxWithConstraints(modifier = Modifier.weight(paneFraction).fillMaxHeight()) {
-                    // 列数必须按网格自身的可用宽度算，否则会把两侧 keyline 内边距也算成可排布宽度、多补一列
-                    val leftWidthDp = (maxWidth - keylineMargin * 2).value.roundToInt().coerceAtLeast(1)
-                    FastScrollLazyVerticalGrid(
-                        columns = GridCells.Fixed(WindowLayout.thumbGridColumns(leftWidthDp, thumbColumns)),
-                        contentPadding = contentPadding,
-                        modifier = Modifier.fillMaxSize().padding(horizontal = keylineMargin),
-                        horizontalArrangement = Arrangement.spacedBy(stripSpacing),
-                        verticalArrangement = Arrangement.spacedBy(verticalSpacing),
-                    ) {
-                        if (galleryDetail != null && previews != null) {
-                            galleryPreview(galleryDetail, previews) { navToReader(galleryDetail.galleryInfo, it) }
-                        }
-                    }
-                }
-                Box(
-                    modifier = Modifier
-                        .fillMaxHeight()
-                        .width(AdaptiveBreakpoints.GALLERY_DETAIL_DIVIDER_WIDTH_DP.dp)
-                        .draggable(
-                            orientation = Orientation.Horizontal,
-                            state = rememberDraggableState { delta ->
-                                if (totalWidthPx > 0f) {
-                                    splitFraction = (splitFraction + delta / totalWidthPx).coerceIn(
-                                        AdaptiveBreakpoints.GALLERY_DETAIL_SPLIT_PERCENT_RANGE.first / 100f,
-                                        AdaptiveBreakpoints.GALLERY_DETAIL_SPLIT_PERCENT_RANGE.last / 100f,
-                                    )
-                                }
-                            },
-                            onDragStopped = {
-                                // 存的是拖拽意图 splitFraction，而非被窗口宽度钳制过的 paneFraction：
-                                // 窄窗口下后者恒为 0.5，写回会把用户偏好的比例抹掉且窗口变宽后无法恢复。
-                                Settings.galleryDetailSplitPercent.value = (splitFraction * 100).roundToInt()
-                            },
-                        ),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .width(4.dp)
-                            .height(48.dp)
-                            .clip(RoundedCornerShape(2.dp))
-                            .background(MiuixTheme.colorScheme.onSurface.copy(alpha = 0.2f)),
-                    )
-                }
                 // 信息栏不需要单栏分支那句 LocalPinnableContainer pin：pin 只在懒加载 item 作用域里存在
                 // （这里取 current 只会拿到 null），用途是阻止 item 滚出视口后被回收；信息栏是常驻组合的
                 // verticalScroll 容器，本来就没有会被回收的内容。
@@ -467,6 +423,51 @@ fun GalleryDetailContent(
                             ) {
                                 InfiniteProgressIndicator()
                             }
+                        }
+                    }
+                }
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .width(AdaptiveBreakpoints.GALLERY_DETAIL_DIVIDER_WIDTH_DP.dp)
+                        .draggable(
+                            orientation = Orientation.Horizontal,
+                            state = rememberDraggableState { delta ->
+                                if (totalWidthPx > 0f) {
+                                    splitFraction = (splitFraction + delta / totalWidthPx).coerceIn(
+                                        AdaptiveBreakpoints.GALLERY_DETAIL_SPLIT_PERCENT_RANGE.first / 100f,
+                                        AdaptiveBreakpoints.GALLERY_DETAIL_SPLIT_PERCENT_RANGE.last / 100f,
+                                    )
+                                }
+                            },
+                            onDragStopped = {
+                                // 存的是拖拽意图 splitFraction，而非被窗口宽度钳制过的 paneFraction：
+                                // 窄窗口下后者恒为 0.5，写回会把用户偏好的比例抹掉且窗口变宽后无法恢复。
+                                Settings.galleryDetailSplitPercent.value = (splitFraction * 100).roundToInt()
+                            },
+                        ),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .width(4.dp)
+                            .height(48.dp)
+                            .clip(RoundedCornerShape(2.dp))
+                            .background(MiuixTheme.colorScheme.onSurface.copy(alpha = 0.2f)),
+                    )
+                }
+                BoxWithConstraints(modifier = Modifier.weight(paneFraction).fillMaxHeight()) {
+                    // 列数必须按网格自身的可用宽度算，否则会把两侧 keyline 内边距也算成可排布宽度、多补一列
+                    val gridWidthDp = (maxWidth - keylineMargin * 2).value.roundToInt().coerceAtLeast(1)
+                    FastScrollLazyVerticalGrid(
+                        columns = GridCells.Fixed(WindowLayout.thumbGridColumns(gridWidthDp, thumbColumns)),
+                        contentPadding = contentPadding,
+                        modifier = Modifier.fillMaxSize().padding(horizontal = keylineMargin),
+                        horizontalArrangement = Arrangement.spacedBy(stripSpacing),
+                        verticalArrangement = Arrangement.spacedBy(verticalSpacing),
+                    ) {
+                        if (galleryDetail != null && previews != null) {
+                            galleryPreview(galleryDetail, previews) { navToReader(galleryDetail.galleryInfo, it) }
                         }
                     }
                 }
