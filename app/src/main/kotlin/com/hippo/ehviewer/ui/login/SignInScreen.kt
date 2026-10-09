@@ -288,17 +288,17 @@ fun AnimatedVisibilityScope.SignInScreen(navigator: DestinationsNavigator) = Scr
                                 }
                             }
                             Spacer(modifier = Modifier.height(8.dp))
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                            ) {
+                            // 辅助入口全宽纵排：横排时中文长文案会折行且高度参差（曾把游客模式挤出屏幕）
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                 TextButton(
                                     text = stringResource(id = R.string.sign_in_via_webview),
                                     onClick = { navigate(WebViewSignInScreenDestination) },
+                                    modifier = Modifier.fillMaxWidth(),
                                 )
                                 TextButton(
                                     text = stringResource(id = R.string.sign_in_via_cookie),
                                     onClick = { showCookieDialog = true },
+                                    modifier = Modifier.fillMaxWidth(),
                                 )
                                 TextButton(
                                     text = stringResource(id = R.string.guest_mode),
@@ -306,6 +306,7 @@ fun AnimatedVisibilityScope.SignInScreen(navigator: DestinationsNavigator) = Scr
                                         Settings.gallerySite.value = EhUrl.SITE_E
                                         Settings.needSignIn.value = false
                                     },
+                                    modifier = Modifier.fillMaxWidth(),
                                 )
                             }
                         }
@@ -393,17 +394,17 @@ fun AnimatedVisibilityScope.SignInScreen(navigator: DestinationsNavigator) = Scr
                                 }
                             }
                             Spacer(modifier = Modifier.height(8.dp))
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                            ) {
+                            // 辅助入口全宽纵排：横排时中文长文案会折行且高度参差（曾把游客模式挤出屏幕）
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                 TextButton(
                                     text = stringResource(id = R.string.sign_in_via_webview),
                                     onClick = { navigate(WebViewSignInScreenDestination) },
+                                    modifier = Modifier.fillMaxWidth(),
                                 )
                                 TextButton(
                                     text = stringResource(id = R.string.sign_in_via_cookie),
                                     onClick = { showCookieDialog = true },
+                                    modifier = Modifier.fillMaxWidth(),
                                 )
                                 TextButton(
                                     text = stringResource(id = R.string.guest_mode),
@@ -411,6 +412,7 @@ fun AnimatedVisibilityScope.SignInScreen(navigator: DestinationsNavigator) = Scr
                                         Settings.gallerySite.value = EhUrl.SITE_E
                                         Settings.needSignIn.value = false
                                     },
+                                    modifier = Modifier.fillMaxWidth(),
                                 )
                             }
                         }
