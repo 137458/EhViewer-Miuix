@@ -735,6 +735,7 @@
     <string name="desktop_nav_items_summary">表示する項目とその順序を選択</string>
     <string name="desktop_nav_items_reset">リセット</string>
     <string name="desktop_nav_items_hint">≡ をドラッグして並べ替え、行をタップして表示/非表示を切り替え。少なくとも 1 つは表示されます。</string>
+    <string name="settings_hidden_pages">非表示のページ</string>
     <string name="desktop_ui_scale">インターフェースの拡大率</string>
     <string name="desktop_ui_scale_summary">インターフェース全体を拡大縮小。システムの DPI 拡大が使えない場合の代替</string>
     <string name="desktop_a11y_menu">その他</string>

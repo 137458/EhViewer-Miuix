@@ -154,6 +154,7 @@ import com.hippo.ehviewer.ui.destinations.WhatshotScreenDestination
 import com.hippo.ehviewer.ui.screen.asDst
 import com.hippo.ehviewer.ui.screen.asDstWith
 import com.hippo.ehviewer.ui.screen.navWithUrl
+import com.hippo.ehviewer.ui.settings.icon
 import com.hippo.ehviewer.ui.tools.DialogState
 import com.hippo.ehviewer.ui.tools.awaitConfirmationOrCancel
 import com.hippo.ehviewer.ui.tools.awaitInputText
@@ -422,15 +423,12 @@ class MainActivity : AppCompatActivity() {
             )
             val navigationChrome = windowLayout.navigationChrome
             val showNavigationRail = navigationChrome == NavigationChrome.Rail
-            val primaryNavItems = remember {
-                listOf(
-                    Triple(HomePageScreenDestination, R.string.homepage, EhIcons.Default.Home),
-                    Triple(SubscriptionScreenDestination, R.string.subscription, EhIcons.Default.Subscriptions),
-                    Triple(WhatshotScreenDestination, R.string.whats_hot, EhIcons.Default.Whatshot),
-                    Triple(FavouritesScreenDestination, R.string.favourite, MiuixIcons.Favorites),
-                    Triple(DownloadsScreenDestination, R.string.downloads, MiuixIcons.Download),
-                    Triple(SettingsScreenDestination, R.string.settings, MiuixIcons.Settings),
-                )
+            val rawNavConfig by Settings.bottomNavItems.collectAsState()
+            val primaryNavItems = remember(rawNavConfig) {
+                val config = MainNavItems.decode(rawNavConfig)
+                MainNavItems.visible(config).map { item ->
+                    Triple(item.direction, item.titleRes, item.icon())
+                }
             }
             val isPrimaryDestination = navItems.any { it.first.route == currentDestination?.route }
             val primaryIndex = MainNavPolicy.getPrimaryBottomIndex(

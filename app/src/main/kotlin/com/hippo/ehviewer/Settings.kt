@@ -158,6 +158,9 @@ object Settings : DataStorePreferences(null) {
     var requestNewsTime by intPref("request_news_time", 0).observed { updateWhenRequestNewsChanges() }
     var lastDawnDays by intPref("last_dawn_days", 0)
     var recentToplist by stringPref("recent_toplist", "11")
+
+    // 底栏导航项配置（MainNavItems 编码串）；桌面 navItems 同款编解码
+    val bottomNavItems = stringPref("bottom_nav_items", "")
     var defaultDownloadLabel by stringOrNullPref("default_download_label")
     var lastUpdateTime by longPref("last_update_time", BuildConfig.COMMIT_TIME)
 
