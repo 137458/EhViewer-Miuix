@@ -15,14 +15,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.ehviewer.core.i18n.R
 import com.ehviewer.core.network.EhCookieStore
-import com.ehviewer.core.ui.component.BlurredBar
-import com.ehviewer.core.ui.component.blurBackdropSource
-import com.ehviewer.core.ui.component.rememberBlurBackdrop
 import com.ehviewer.core.util.launch
 import com.google.accompanist.web.LoadingState
 import com.google.accompanist.web.WebView
@@ -54,47 +50,42 @@ fun AnimatedVisibilityScope.UConfigScreen(navigator: DestinationsNavigator) = Sc
     val wvNavigator = rememberWebViewNavigator()
     var isApplying by rememberSaveable { mutableStateOf(false) }
 
-    val backdrop = rememberBlurBackdrop()
-
     Scaffold(
         topBar = {
-            BlurredBar(
-                backdrop = backdrop,
-            ) {
-                TopAppBar(
-                    title = stringResource(id = R.string.u_config),
-                    navigationIcon = { NavigationIcon() },
-                    color = if (backdrop != null) Color.Transparent else MiuixTheme.colorScheme.surface,
-                    actions = {
-                        if (isApplying) {
-                            InfiniteProgressIndicator(
-                                modifier = Modifier
-                                    .padding(end = 16.dp)
-                                    .size(24.dp),
+            // WebView 不接入毛玻璃采样：layerBackdrop 每帧会把 WebView 重录进 GraphicsLayer，
+            // 与其硬件加速渲染层冲突会导致页面持续闪烁，故内嵌浏览器页面顶栏一律退回实色
+            TopAppBar(
+                title = stringResource(id = R.string.u_config),
+                navigationIcon = { NavigationIcon() },
+                color = MiuixTheme.colorScheme.surface,
+                actions = {
+                    if (isApplying) {
+                        InfiniteProgressIndicator(
+                            modifier = Modifier
+                                .padding(end = 16.dp)
+                                .size(24.dp),
+                        )
+                    } else {
+                        IconButton(
+                            onClick = {
+                                isApplying = true
+                                wvNavigator.loadUrl(WebInjectionHelper.APPLY_JS)
+                            },
+                        ) {
+                            Icon(
+                                imageVector = MiuixIcons.Ok,
+                                contentDescription = stringResource(id = android.R.string.ok),
                             )
-                        } else {
-                            IconButton(
-                                onClick = {
-                                    isApplying = true
-                                    wvNavigator.loadUrl(WebInjectionHelper.APPLY_JS)
-                                },
-                            ) {
-                                Icon(
-                                    imageVector = MiuixIcons.Ok,
-                                    contentDescription = stringResource(id = android.R.string.ok),
-                                )
-                            }
                         }
-                    },
-                )
-            }
+                    }
+                },
+            )
         },
     ) { paddingValues ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(MiuixTheme.colorScheme.background)
-                .blurBackdropSource(backdrop),
+                .background(MiuixTheme.colorScheme.background),
         ) {
             val state = rememberWebViewState(url = url)
             LaunchedEffect(state.loadingState) {

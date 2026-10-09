@@ -8,12 +8,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import com.ehviewer.core.i18n.R
-import com.ehviewer.core.ui.component.BlurredBar
-import com.ehviewer.core.ui.component.blurBackdropSource
-import com.ehviewer.core.ui.component.rememberBlurBackdrop
 import com.google.accompanist.web.LoadingState
 import com.google.accompanist.web.WebView
 import com.google.accompanist.web.rememberWebViewState
@@ -46,31 +42,26 @@ fun AnimatedVisibilityScope.MyTagsScreen(navigator: DestinationsNavigator) = Scr
         }
     }
 
-    val backdrop = rememberBlurBackdrop()
-
     Scaffold(
         topBar = {
-            BlurredBar(
-                backdrop = backdrop,
-            ) {
-                TopAppBar(
-                    title = stringResource(id = R.string.my_tags),
-                    navigationIcon = { NavigationIcon() },
-                    color = if (backdrop != null) Color.Transparent else MiuixTheme.colorScheme.surface,
-                    actions = {
-                        if (state.isLoading) {
-                            InfiniteProgressIndicator()
-                        }
-                    },
-                )
-            }
+            // WebView 不接入毛玻璃采样：layerBackdrop 每帧会把 WebView 重录进 GraphicsLayer，
+            // 与其硬件加速渲染层冲突会导致页面持续闪烁，故内嵌浏览器页面顶栏一律退回实色
+            TopAppBar(
+                title = stringResource(id = R.string.my_tags),
+                navigationIcon = { NavigationIcon() },
+                color = MiuixTheme.colorScheme.surface,
+                actions = {
+                    if (state.isLoading) {
+                        InfiniteProgressIndicator()
+                    }
+                },
+            )
         },
     ) { paddingValues ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(MiuixTheme.colorScheme.background)
-                .blurBackdropSource(backdrop),
+                .background(MiuixTheme.colorScheme.background),
         ) {
             WebView(
                 state = state,
