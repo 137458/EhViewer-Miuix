@@ -31,6 +31,7 @@ import com.ehviewer.core.ui.icons.filled.SadPanda
 import com.ehviewer.core.ui.util.LocalBottomBarContentPadding
 import com.ehviewer.core.ui.util.readableWidth
 import com.hippo.ehviewer.Settings
+import com.hippo.ehviewer.asMutableState
 import com.hippo.ehviewer.collectAsState
 import com.hippo.ehviewer.ui.MainNavItems
 import com.hippo.ehviewer.ui.Screen
@@ -140,6 +141,20 @@ fun AnimatedVisibilityScope.SettingsScreen(navigator: DestinationsNavigator) = S
                         title = R.string.desktop_nav_items_title,
                         childRoute = BottomNavItemsScreenDestination,
                         navigator = navigator,
+                    )
+                }
+                // 大屏导航栏样式：平板/横屏下可在侧边栏与悬浮底栏间切换，Auto 按窗口尺寸判定
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 4.dp),
+                ) {
+                    SimpleMenuPreferenceInt(
+                        title = stringResource(id = R.string.desktop_nav_bar_style),
+                        summary = stringResource(id = R.string.desktop_nav_bar_style_summary),
+                        entry = com.hippo.ehviewer.R.array.nav_bar_style_entries,
+                        entryValueRes = com.hippo.ehviewer.R.array.nav_bar_style_entry_values,
+                        state = Settings.navBarStyle.asMutableState(),
                     )
                 }
                 // 底栏未显示的页面在此保留入口，避免自定义底栏后页面不可达

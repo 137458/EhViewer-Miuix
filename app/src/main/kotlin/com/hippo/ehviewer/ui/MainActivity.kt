@@ -186,6 +186,8 @@ import splitties.systemservices.connectivityManager
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.NavigationRail
 import top.yukonga.miuix.kmp.basic.NavigationRailItem
+import top.yukonga.miuix.kmp.basic.NavigationRailValue
+import top.yukonga.miuix.kmp.basic.rememberNavigationRailState
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SnackbarHost
 import top.yukonga.miuix.kmp.basic.SnackbarHostState
@@ -421,7 +423,12 @@ class MainActivity : AppCompatActivity() {
                 widthDp = configuration.screenWidthDp,
                 heightDp = configuration.screenHeightDp,
             )
-            val navigationChrome = windowLayout.navigationChrome
+            val navBarStyle by Settings.navBarStyle.collectAsState()
+            val navigationChrome = when (navBarStyle) {
+                1 -> NavigationChrome.Rail
+                2 -> NavigationChrome.BottomBar
+                else -> windowLayout.navigationChrome
+            }
             val showNavigationRail = navigationChrome == NavigationChrome.Rail
             val rawNavConfig by Settings.bottomNavItems.collectAsState()
             val primaryNavItems = remember(rawNavConfig) {
@@ -581,8 +588,10 @@ class MainActivity : AppCompatActivity() {
 
                     Row(modifier = Modifier.fillMaxSize()) {
                         if (showNavigationRail) {
+                            // miuix 规范侧栏：state 驱动的可展开形态（收起纯图标/展开带文字标签）
+                            val railState = rememberNavigationRailState(NavigationRailValue.Collapsed)
                             NavigationRail(
-                                expanded = false,
+                                state = railState,
                                 modifier = Modifier
                                     .fillMaxHeight()
                                     .windowInsetsPadding(
@@ -591,6 +600,8 @@ class MainActivity : AppCompatActivity() {
                                         ),
                                     ),
                                 defaultWindowInsetsPadding = false,
+                                expandContentDescription = stringResource(id = R.string.nav_rail_expand),
+                                collapseContentDescription = stringResource(id = R.string.nav_rail_collapse),
                                 // 侧栏条目多于可用高度时可滚动，避免条目被裁切后无法点击
                                 scrollState = rememberScrollState(),
                                 header = {

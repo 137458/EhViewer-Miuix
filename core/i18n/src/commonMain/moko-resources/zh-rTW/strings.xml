@@ -732,6 +732,8 @@
     <string name="desktop_nav_items_reset">恢復預設</string>
     <string name="desktop_nav_items_hint">拖曳 ≡ 排序，點擊列切換顯示；至少保留一個可見項目。</string>
     <string name="settings_hidden_pages">未顯示頁面</string>
+    <string name="nav_rail_expand">展開側邊導覽列</string>
+    <string name="nav_rail_collapse">收起側邊導覽列</string>
     <string name="desktop_ui_scale">介面縮放</string>
     <string name="desktop_ui_scale_summary">整體縮放介面，系統 DPI 縮放不可用時作為備援</string>
     <string name="desktop_a11y_menu">更多</string>

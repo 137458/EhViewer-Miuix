@@ -830,6 +830,8 @@
     <string name="desktop_nav_items_reset">Reset</string>
     <string name="desktop_nav_items_hint">Drag ≡ to reorder, tap a row to show or hide. At least one item stays visible.</string>
     <string name="settings_hidden_pages">Hidden pages</string>
+    <string name="nav_rail_expand">Expand navigation rail</string>
+    <string name="nav_rail_collapse">Collapse navigation rail</string>
     <string name="desktop_ui_scale">Interface Scale</string>
     <string name="desktop_ui_scale_summary">Scale the whole interface; fallback when system DPI scaling is unavailable</string>
     <string name="desktop_a11y_menu">More</string>

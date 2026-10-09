@@ -161,6 +161,9 @@ object Settings : DataStorePreferences(null) {
 
     // 底栏导航项配置（MainNavItems 编码串）；桌面 navItems 同款编解码
     val bottomNavItems = stringPref("bottom_nav_items", "")
+
+    // 大屏导航栏样式：0 = 跟随窗口尺寸（Auto），1 = 侧边导航栏，2 = 悬浮底栏
+    val navBarStyle = intPref("nav_bar_style", 0)
     var defaultDownloadLabel by stringOrNullPref("default_download_label")
     var lastUpdateTime by longPref("last_update_time", BuildConfig.COMMIT_TIME)
 
