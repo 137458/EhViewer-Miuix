@@ -27,6 +27,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.collectAsState
@@ -130,9 +131,10 @@ class SideSheetState(
     }
 
     companion object {
+        // 侧板是瞬态层：restore 钳回 Closed，避免跨进程恢复 Open 导致启动即弹面板并残留全屏模糊
         val Saver = Saver<SideSheetState, SideSheetValue>(
             save = { it.currentValue },
-            restore = { SideSheetState(it) },
+            restore = { _ -> SideSheetState(SideSheetValue.Closed) },
         )
     }
 }
@@ -174,6 +176,13 @@ fun MutableSideSheet(
 ) {
     val sheet = remember { mutableStateListOf<Sheet>() }
     val f = sheet.firstOrNull()
+    // 宿主界面卸载侧板内容后必须复位：残留 Open 会让下一个无侧板界面继续套全屏模糊，
+    // 也会让重新进入带侧板的界面时直接以打开态弹出快速搜索面板
+    LaunchedEffect(f) {
+        if (f == null && !drawerState.isClosed) {
+            drawerState.snapTo(SideSheetValue.Closed)
+        }
+    }
     val density = LocalDensity.current
     val scope = rememberCoroutineScope()
     val windowInfo = LocalWindowInfo.current
@@ -225,11 +234,15 @@ fun MutableSideSheet(
                     lerp(0, 10, step).dp
                 }
             }.collectAsState(0.dp)
+            // 模糊只随可见的侧板生效：内容卸载后即使 state 残留 Open 也不再采样，
+            // 且半径归零时必须清掉 renderEffect，否则上一帧的模糊会永久留在主内容上
             val blurModifier = Modifier.graphicsLayer {
-                if (radius != 0.dp) {
+                if (f != null && radius != 0.dp) {
                     renderEffect = BlurEffect(radius.toPx(), radius.toPx(), TileMode.Clamp)
                     shape = RectangleShape
                     clip = true
+                } else {
+                    renderEffect = null
                 }
             }
             Box(modifier = Modifier.fillMaxSize().then(blurModifier)) {
