@@ -196,7 +196,9 @@ fun MutableSideSheet(
     } else {
         maxSheetWidth
     }
-    var maxValue by remember { mutableFloatStateOf(with(density) { 360.dp.toPx() }) }
+    // 初始锚点必须取整窗宽：若用小于实际侧板宽的占位值（旧为 360dp），首帧后 onSizeChanged
+    // 更新锚点时 closestAnchor 会把停在占位值的 offset 判为更靠近 Open，启动瞬间直接吸附成打开态
+    var maxValue by remember { mutableFloatStateOf(windowInfo.containerSize.width.toFloat()) }
     val minValue = 0f
     val gesturesEnabled = f != null && enabled
 
