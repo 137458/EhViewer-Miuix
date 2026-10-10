@@ -23,4 +23,7 @@
     <color name="navigation_left">#CC7D1128</color>
 
     <color name="reader_background_dark">#202125</color>
+
+    <!-- Material dark theme surface -->
+    <color name="ic_launcher_background_night">#121212</color>
 </resources>
