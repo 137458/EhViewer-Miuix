@@ -434,7 +434,8 @@ fun GalleryDetailContent(
                             orientation = Orientation.Horizontal,
                             state = rememberDraggableState { delta ->
                                 if (totalWidthPx > 0f) {
-                                    splitFraction = (splitFraction + delta / totalWidthPx).coerceIn(
+                                    // 缩略图栏在分隔条右侧：拖右 = 缩略图收窄，增量取反让分隔条跟手
+                                    splitFraction = (splitFraction - delta / totalWidthPx).coerceIn(
                                         AdaptiveBreakpoints.GALLERY_DETAIL_SPLIT_PERCENT_RANGE.first / 100f,
                                         AdaptiveBreakpoints.GALLERY_DETAIL_SPLIT_PERCENT_RANGE.last / 100f,
                                     )
@@ -460,7 +461,13 @@ fun GalleryDetailContent(
                     // 列数必须按网格自身的可用宽度算，否则会把两侧 keyline 内边距也算成可排布宽度、多补一列
                     val gridWidthDp = (maxWidth - keylineMargin * 2).value.roundToInt().coerceAtLeast(1)
                     FastScrollLazyVerticalGrid(
-                        columns = GridCells.Fixed(WindowLayout.thumbGridColumns(gridWidthDp, thumbColumns)),
+                        columns = GridCells.Fixed(
+                            WindowLayout.thumbGridColumns(
+                                gridWidthDp,
+                                thumbColumns,
+                                minColumnWidthDp = AdaptiveBreakpoints.PREVIEW_STRIP_MIN_COLUMN_WIDTH_DP,
+                            ),
+                        ),
                         contentPadding = contentPadding,
                         modifier = Modifier.fillMaxSize().padding(horizontal = keylineMargin),
                         horizontalArrangement = Arrangement.spacedBy(stripSpacing),

@@ -56,6 +56,9 @@ object AdaptiveBreakpoints {
     /** 缩略图瀑布流单列的最小宽度。 */
     const val THUMB_MIN_COLUMN_WIDTH_DP = 200
 
+    /** 画廊详情预览条的单列最小宽度：比库页更小，拖宽分隔条时优先加列而不是拉伸单元格。 */
+    const val PREVIEW_STRIP_MIN_COLUMN_WIDTH_DP = 120
+
     /** 缩略图列数配置的上限（横屏配置里的 0 表示「未单独设置」，不在本范围内）。 */
     const val THUMB_COLUMNS_MAX = 10
 
@@ -160,8 +163,12 @@ data class WindowLayout(
          * 缩略图瀑布流列数：按可用宽度自适应补足列数，避免固定列数把卡片拉得过宽；
          * 结果不会小于用户配置的列数。[availableWidthDp] 传实际可用于排布的宽度。
          */
-        fun thumbGridColumns(availableWidthDp: Int, configuredColumns: Int): Int {
-            val adaptive = (availableWidthDp / AdaptiveBreakpoints.THUMB_MIN_COLUMN_WIDTH_DP).coerceAtLeast(1)
+        fun thumbGridColumns(
+            availableWidthDp: Int,
+            configuredColumns: Int,
+            minColumnWidthDp: Int = AdaptiveBreakpoints.THUMB_MIN_COLUMN_WIDTH_DP,
+        ): Int {
+            val adaptive = (availableWidthDp / minColumnWidthDp).coerceAtLeast(1)
             return maxOf(configuredColumns.coerceAtLeast(1), adaptive)
         }
 
