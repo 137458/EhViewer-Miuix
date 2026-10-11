@@ -276,3 +276,27 @@ aboutLibraries {
         duplicationRule = DuplicateRule.GROUP
     }
 }
+
+// libehviewer.so 缺失时尽早失败：无 -PbuildNative 且 jniLibs 未预置原生库时，
+// 构建可编译通过但 System.loadLibrary 运行即崩。x86_64 split 一直无原生库，不在校验内。
+if (!project.hasProperty("buildNative") && !project.hasProperty("skipNativeCheck")) {
+    val nativeLibPaths = supportedAbis.map { abi ->
+        projectDir.resolve("src/main/jniLibs/$abi/libehviewer.so").absolutePath
+    }
+    val checkNativeLibs = tasks.register("checkNativeLibs") {
+        doLast {
+            val missing = nativeLibPaths.filterNot { File(it).isFile }
+            if (missing.isNotEmpty()) {
+                throw GradleException(
+                    "缺少原生库 libehviewer.so（ABI: $missing），此 APK 可编译但启动即崩。\n" +
+                        "  1) 带 -PbuildNative 执行原生构建（Windows 主机需 WSL，见 app/src/main/cpp/CMakeLists.txt）；\n" +
+                        "  2) 或将预编译的 libehviewer.so 放入 app/src/main/jniLibs/<abi>/；\n" +
+                        "  仅编译验证 UI 可追加 -PskipNativeCheck 豁免本校验。"
+                )
+            }
+        }
+    }
+    tasks.matching { it.name == "preBuild" }.configureEach {
+        dependsOn(checkNativeLibs)
+    }
+}
