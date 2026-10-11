@@ -8,6 +8,8 @@ EhViewer（E-Hentai 阅读器）的 Miuix/HyperOS 风格定制 fork，基于 Kot
 - 编译生产包：`./gradlew assembleDefaultRelease`
 - 产物：`app/build/outputs/apk/default/release/app-default-*-release.apk`
 - 完成标准 = 编译通过。
+- 原生库：预编译的 `app/src/main/jniLibs/arm64-v8a/libehviewer.so` 已入库，标准命令直接产出可运行包；`externalNativeBuild` 默认关闭（`-PbuildNative` 才注册 CMake/Rust 构建，Windows 主机需 WSL）。**修改 `app/src/main/rust/` 或 `app/src/main/cpp/` 源码后必须带 `-PbuildNative` 重编并同步提交新 .so**，否则仓库二进制与源码脱钩。构建期由 `checkNativeLibs` task 兜底：.so 缺失时 assemble 直接失败（`-PskipNativeCheck` 豁免）。
+- 发版流程：本地构建手动上传 GitHub Release，不经 CI。
 
 ## 项目约定
 
