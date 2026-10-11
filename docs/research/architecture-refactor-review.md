@@ -989,6 +989,7 @@ UI 层由三部分组成：:app 的 com.hippo.ehviewer.ui 包（约 60 个 kt、
 - 结论：自 2026-09-12 起，CI（ci.yml default/marshmallow 两个 job 的 artifact）与发布流水线（releases.yml，tag 触发）构建的 APK 均不含 libehviewer.so，安装即 UnsatisfiedLinkError；门控下 ci.yml 的 CMake Cache 与 rustup target 步骤已无实际作用。
 - 实测更正（2026-10-11 第二轮）：下载 1.15.0 发布 APK（`EhViewer-1.15.0-default-arm64-v8a.apk`）逐文件核对，**包内含 `lib/arm64-v8a/libehviewer.so`（1.1MB）**，不缺库。经仓库维护者确认：发版不走 CI，为本地构建后手动上传（本机 jniLibs 预置 .so）。旁证自洽：assets 无 native-debug-symbols.zip（该产物仅由 externalNativeBuild 产出，本地预置 .so 的构建不会生成）、仅含 arm64+universal 四包（isRelease 任务名形态，与本地 `assembleDefaultRelease` 产物一致）、assets 命名沿用 Rename 脚本惯例。此前「流水线现行缺陷、1.15.0 疑似缺库」的推断前提（1.15.0 由 releases.yml 产出）不成立，予以更正。
 - 最终影响面：1) 维护者本人的发版链路（本地构建+手动上传）无风险；2) CI artifact 与未来若真由 releases.yml 触发的 tag 发版产出缺库 APK——后者会被其 Generate Baseline Profile 步骤（需模拟器启动 app）失败所拦截，属隐性断流而非坏包外流；3) 贡献者/新环境按 AGENTS.md「编译生产包：./gradlew assembleDefaultRelease」产出编译通过但运行即崩的包，且无任何构建期告警。R06 建议优先级 high → medium；修复方向照旧（恢复上游无条件构建语义 / CI 显式补属性 / CI 构建前恢复预编译 .so，三选一），并顺手清理门控下已失效的 CMake Cache 与 rustup target 步骤。
+- 后记（2026-10-11）：经维护者确认「发版为本地构建、CI 无人使用」，ci.yml / releases.yml / baseline-profile.yml 三个构建类 workflow 已删除（lock-threads.yml 为 issue 管理机器人，保留），上述受影响面中 CI 相关两项随之消除，「CI 显式补属性」修复选项失效。R06 剩余有效项：干净 clone / 新环境按 AGENTS.md 标准命令产出缺库 APK 且无告警——建议保留「构建期 fail-fast 校验」或在 AGENTS.md 记录发版流程与 -PbuildNative 前置条件。
 
 ### A.2 签名密钥（R13）——非泄露，改写为"沿袭上游公开钥"的决策项
 
