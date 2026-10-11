@@ -7,7 +7,7 @@
 
 ## 1. 执行摘要
 
-本次静态审查覆盖 8 个 Gradle 模块（main 源集合计 487 个 Kotlin 文件），按数据层、业务引擎、UI 层、桌面端、构建配置、横切面六个领域产出 43 条重构发现（高 18 / 中 20 / 低 5），每条均经独立读码复核并原样附复核备注，无未复核条目。风险集中于四类：签名私钥与口令随公开仓库分发（R13）、无条件加载原生库而标准构建命令不产出该库（R06）构成的安全与构建可信缺口；下载队列三套锁混用（R04）、SpiderQueen 共享状态锁内写锁外读（R05）、收藏落库协程无异常防护（R16）、Room 多步写不开事务（R02）等并发与正确性缺陷；收藏/历史一致性规则未下沉数据层致 `:app` 与 `:desktop` 行为漂移（R01）、站点搜索协议与 Rust 桥双端各持一份（R12/R20）、shell 组件复制中间态（R08/R29）等单一事实源缺失；以及 Rust 产物路径跨模块硬编码 8 处（R15/R18/R19/R28）等构建层反向耦合。报告按「安全与构建可信度 → 运行时正确性 → 数据与协议单源下沉 → shell 迁移闭环与 UI 收敛 → 构建体系收敛 → 清理与长期可测性」六个阶段给出路线图，阶段间仅存少量硬依赖（如 R10→R09、R01→R30、R16→R36），其余可并行小步实施，每阶段附验证方式与回滚策略。全部 43 条发现复核状态均为 verified；本报告为静态审查，各条「验证方式」需在实施阶段实际执行。
+本次静态审查覆盖 8 个 Gradle 模块（main 源集合计 487 个 Kotlin 文件），按数据层、业务引擎、UI 层、桌面端、构建配置、横切面六个领域产出 43 条重构发现（高 18 / 中 20 / 低 5），每条均经独立读码复核并原样附复核备注，无未复核条目。风险集中于四类：CI 与发布流水线自 2026-09-12 起持续产出缺原生库的 APK（R06，2026-10-11 补充复核确认为现行缺陷，见附录 A.1）、沿用上游公开签名密钥的取舍未文档化（R13，同日复核确认非私有密钥泄露，见附录 A.2）构成的安全与构建可信缺口；下载队列三套锁混用（R04）、SpiderQueen 共享状态锁内写锁外读（R05）、收藏落库协程无异常防护（R16）、Room 多步写不开事务（R02）等并发与正确性缺陷；收藏/历史一致性规则未下沉数据层致 `:app` 与 `:desktop` 行为漂移（R01）、站点搜索协议与 Rust 桥双端各持一份（R12/R20）、shell 组件复制中间态（R08/R29）等单一事实源缺失；以及 Rust 产物路径跨模块硬编码 8 处（R15/R18/R19/R28）等构建层反向耦合。报告按「安全与构建可信度 → 运行时正确性 → 数据与协议单源下沉 → shell 迁移闭环与 UI 收敛 → 构建体系收敛 → 清理与长期可测性」六个阶段给出路线图，阶段间仅存少量硬依赖（如 R10→R09、R01→R30、R16→R36），其余可并行小步实施，每阶段附验证方式与回滚策略。全部 43 条发现复核状态均为 verified；本报告为静态审查，各条「验证方式」需在实施阶段实际执行。
 
 ## 2. 架构概览
 
@@ -153,7 +153,7 @@ UI 层由三部分组成：:app 的 com.hippo.ehviewer.ui 包（约 60 个 kt、
 - 5 个 core KMP 模块各自重复声明 jvm("desktop") 目标，hierarchy template 已把 android 编译并入 jvm 组（MultiplatformLibraryConventionPlugin.kt:31-38）
 - :desktop 是唯一不走约定插件的常规模块，手写 spotless（desktop/build.gradle.kts:12-22），且缺 configureKotlin 的 progressiveMode / optIn / -Xcollection-literals（Kotlin.kt:7-24）
 - 桌面 Rust 产物路径在 desktop/build.gradle.kts:24 与 GalleryListParser.kt:75-80 共 8 处硬编码；Android Rust 经 CMake 轨道内 corrosion v0.6.1 构建（app/src/main/cpp/CMakeLists.txt:141-156）
-- Renovate（renovate.json）管理 catalog / CMake GIT_TAG / rust nightly / NDK，AGP 组规则覆盖 com.android.settings（renovate.json:65-71），但 ignorePaths 排除 app/build.gradle.kts；CI 以带 Release 后缀的任务名构建（ci.yml:124）
+- Renovate（renovate.json）管理 catalog / CMake GIT_TAG / rust nightly / NDK，AGP 组规则覆盖 com.android.settings（renovate.json:65-71），但 ignorePaths 排除 app/build.gradle.kts；CI 以带 Release 后缀的任务名构建（ci.yml:124），但自 ee9a51e58（2026-09-12）引入 buildNative 门控后 CI workflow 未同步，流水线产出 APK 缺原生库（见附录 A.1）
 
 #### 2.5.6 横切面
 
@@ -260,6 +260,7 @@ UI 层由三部分组成：:app 的 com.hippo.ehviewer.ui 包（约 60 个 kt、
 #### R06. [业务引擎] 无条件 System.loadLibrary 但原生构建被 -PbuildNative 门控且 .so 目录被 gitignore，标准命令产出的 APK 必崩
 
 - **优先级**：high ｜ **复核状态**：verified
+- **【2026-10-11 补充复核修正】**门控由本仓提交 `ee9a51e58`（2026-09-12）引入而 CI workflow 未同步修改，CI 与 releases 流水线自该日起构建的 APK 均缺 libehviewer.so，定性由「全新 clone 隐患」升级为「流水线现行缺陷」；最新 tag 1.15.0 晚于门控引入，其发布包是否缺库待联网核对 Actions 记录（详见附录 A.1）。修复建议改为恢复上游无条件构建语义或 CI 显式补属性。
 - **位置**：app/src/main/kotlin/com/hippo/ehviewer/EhApplication.kt:116; app/build.gradle.kts:92-98; .gitignore:13
 - **现状**：Application.onCreate 无条件执行 System.loadLibrary("ehviewer")（EhApplication.kt:116）；externalNativeBuild 仅在 hasProperty("buildNative") 时注册 CMake（app/build.gradle.kts:92-98）；预置 .so 目录 app/src/main/jniLibs/ 被 .gitignore:13 忽略——本机存在 arm64-v8a/libehviewer.so，git check-ignore -v 确认其为不入库的本地产物。CMake 侧经 FetchContent+Corrosion 集成 Rust（CMakeLists.txt:141-156），Windows 主机构建 nettle 依赖 WSL（CMakeLists.txt:43-50）。
 - **问题**：全新 clone 按仓库标准命令 ./gradlew assembleDefaultRelease（AGENTS.md 定义完成标准=编译通过）产出的 APK 内没有 libehviewer.so，首帧启动即 UnsatisfiedLinkError；『必须先手工放一个本地产物到 gitignored 目录或带 -PbuildNative 全量编译』这一隐式前提无任何构建期校验与文档提示，编译通过≠可运行。
@@ -365,7 +366,8 @@ UI 层由三部分组成：:app 的 com.hippo.ehviewer.ui 包（约 60 个 kt、
 
 #### R13. [构建配置] 发布签名密钥文件被 Git 跟踪且签名口令硬编码在构建脚本
 
-- **优先级**：high ｜ **复核状态**：verified
+- **优先级**：high ｜ **复核状态**：verified ｜ **建议优先级调整：high → medium**
+- **【2026-10-11 补充复核修正】**该密钥与上游历史提交字节级相同（git hash-object 一致），上游构建脚本同样公开口令 000000，属上游 EhViewer 刻意公开的社区构建签名钥（CN=tarsin，有效期至 2047），非本仓私有密钥泄露；建议由「出库」改写为决策项——维持沿用以保持与上游官方包覆盖安装/无损迁移，或换钥建立独立分发身份（详见附录 A.2）。
 - **位置**：app/build.gradle.kts:33-40
 - **现状**：release signingConfig 把 storeFile 指向 app/keystore/androidkey.jks，storePassword/keyPassword 为硬编码明文常量（app/build.gradle.kts:33-40），enableV3/V4Signing 开启并由 release buildType 引用（:152）；git ls-files 确认 app/keystore/androidkey.jks 被版本库跟踪，由提交 b9729e94f 引入。
 - **问题**：私钥与口令同时进公开仓库，任何能拉取仓库的人都能用同一私钥签出可冒充官方的包，且无法区分公开占位密钥与真实发布密钥；口令写死在脚本里也无法按环境覆盖。
@@ -488,6 +490,7 @@ UI 层由三部分组成：:app 的 com.hippo.ehviewer.ui 包（约 60 个 kt、
 #### R21. [业务引擎] okhttp3 包内嵌 AsyncDns shim：填补依赖工件缺失的类，但与 OkHttp 升级存在同类冲突隐患
 
 - **优先级**：medium ｜ **复核状态**：verified
+- **【2026-10-11 补充复核修正】**已实测 Maven Central 的 okhttp-jvm/okhttp-android 5.5.0 工件均无 okhttp3.AsyncDns 与 okhttp3.android.AndroidAsyncDns，同名类冲突风险对 5.5.0 排除；官方 okhttp-android 5.5.0 已内置等价能力的 AndroidDns（基于 android.net.DnsResolver），建议升级为评估替换 vendored shim 并删除两个文件（详见附录 A.3）。
 - **位置**：app/src/main/kotlin/okhttp3/AsyncDns.kt:85-117; app/src/main/kotlin/okhttp3/android/AndroidAsyncDns.kt:38-96
 - **现状**：仓库以 OkHttp 同名包 okhttp3/okhttp3.android 原样内嵌 Square 的 AsyncDns 接口与基于 android.net.DnsResolver 的实现（Apache-2.0，Copyright 2022 Square），共 2 个文件；唯一消费点是 OkhttpExtensions.kt:8-14，在 API 29+ 用 AsyncDns.toDns(IPv4, IPv6) 给 Ktor 的 OkHttp 引擎装 A+AAAA 并发解析的异步 DNS。
 - **问题**：vendored 代码与 catalog 的 okhttp=5.5.0（gradle/libs.versions.toml:33）无版本绑定且文件内未标注来源版本；实测本机解析到的 okhttp-jvm-5.3.2.jar 与 okhttp-android-5.3.2 aar 均不含 okhttp3.AsyncDns——若未来 OkHttp 正式带出同名类，同包同名类将编译冲突或静默遮蔽。另 AsyncDns.toDns 的 latch.await()（AsyncDns.kt:117）无超时，DNS 回调若缺失则调用线程永久挂起。
@@ -957,8 +960,8 @@ UI 层由三部分组成：:app 的 com.hippo.ehviewer.ui 包（约 60 个 kt、
 |---|---|---|---|
 | 1 | R01（data-repo-missing） | desktop 端 GALLERIES 孤儿行累积的实际严重度取决于线上使用时长，未做数据统计 | 对存量 desktop 数据库做统计：GALLERIES 行数与 LOCAL_FAVORITES/HISTORY 可关联行的差集 |
 | 2 | R03（desktop-db-migration-drift） | 桌面端是否存在 version≤17 的存量数据文件（含用户从 Android 复制 eh.db 的场景）未能在代码中确认，崩溃触发面待人工评估 | 桌面端用户数据文件样本或反馈渠道统计；「desktop 打开 v≤17 库抛 IllegalStateException」属 Room 标准语义，reviewNote 注明未实跑复现，可补一个 v17 库文件的实机打开验证 |
-| 3 | R06（native-lib-load-build-gap） | 本机 jniLibs 中 .so 的确切产生方式（手工 CMake 还是历史构建遗留）；CI 是否始终带 -PbuildNative（发现标注仓内未见 CI 脚本核实） | 注意材料内口径需对齐：构建配置领域材料引用了 ci.yml:124/192 与 baseline-profile.yml:57（CI 脚本存在），而本发现称仓内未见 CI 脚本——需以实际 .github/workflows 内容核对 CI 是否带 -PbuildNative；并向构建者确认 .so 来源 |
-| 4 | R21（okhttp3-vendored-shim） | catalog 声明的 okhttp 5.5.0 工件本机缓存中不存在，无法验证该版本是否已内置 okhttp3.AsyncDns；shim 摘自上游 OkHttp 的具体 commit 未在文件内标注 | 拉取 com.squareup.okhttp3:okhttp 5.5.0 工件核对类清单；对照上游 OkHttp 仓库确定 vendored 来源 commit |
+| 3 | R06（native-lib-load-build-gap） | 本机 jniLibs 中 .so 的确切产生方式（手工 CMake 还是历史构建遗留）；CI 是否始终带 -PbuildNative（发现标注仓内未见 CI 脚本核实） | **已闭环（附录 A.1）**：全部 workflow grep buildNative 零命中，均不带该属性；门控由本仓 ee9a51e58 引入且 CI 未同步，流水线缺库为现行缺陷。.so 产生方式仍未确认，但不影响结论 |
+| 4 | R21（okhttp3-vendored-shim） | catalog 声明的 okhttp 5.5.0 工件本机缓存中不存在，无法验证该版本是否已内置 okhttp3.AsyncDns；shim 摘自上游 OkHttp 的具体 commit 未在文件内标注 | **已闭环（附录 A.3）**：Maven Central 实测 okhttp-jvm/okhttp-android 5.5.0 均无 AsyncDns/AndroidAsyncDns，无冲突；官方 AndroidDns 可作替换目标。shim 来源 commit 仍待对照上游 OkHttp 仓库 |
 | 5 | R26（window-layout-dual-track） | reviewNote 指出 WIDTH_DP_EXPANDED_LOWER_BOUND 为 androidx.window 公开常量（840dp），但依赖内源码未在本仓读取，此值未在本次会话直接验证 | 读取 androidx.window 依赖源码（或官方文档）确认该常量取值 |
 | 6 | R34（locale-filters-triple-maintenance） | "zh" 是否为父语言回退的刻意保留项待确认；「漏改 localeFilters 时新语言资源被静默剔除」为对 AGP localeFilters 语义的推断，本轮未实机构建验证 | 查上游 resConfigs 惯例确认 "zh" 用途；实机构建 diff locales_config.xml 与 APK 内资源语言档 |
 | 7 | R38（core-logic-test-gap） | 仅做静态盘点（rg -c "@Test" 与 find 计数），受只读约束未运行任何 gradle 测试任务验证各测试类实际可执行性与通过率 | 运行 :desktop:desktopTest 与 app test 任务确认通过率（复核已验证静态计数精确，但未运行测试本身） |
@@ -973,4 +976,32 @@ UI 层由三部分组成：:app 的 com.hippo.ehviewer.ui 包（约 60 个 kt、
 - **复核覆盖范围**：六个领域（数据层 7 条、业务引擎 7 条、UI 层 8 条、桌面端 7 条、构建配置 8 条、横切面 6 条）的全部 43 条发现均经独立读码复核；量化口径（文件行数、@Test 计数、文件数、硬编码路径条数）经 wc/grep/find 重算核对。
 - **本报告为静态审查**：撰写过程中未运行任何编译、测试或构建任务（gradlew assembleDefaultRelease、:desktop:desktopTest 等均未执行）；所有「验证方式」为实施阶段需执行的检查清单，本报告不构成其通过证明。测试统计（454 个 @Test 等）为静态计数而非运行结果。Rust 绑定相关的桌面测试按 Assume 机制在无 dll 环境自适应跳过，其实际执行结果需在实施环境确认。
 - **报告撰写口径**：本报告基于既有审查材料整理撰写，全部事实性内容（位置、证据、问题、建议、收益、风险、步骤、验证）取自材料并原样保留；撰写者未新增发现，未独立重跑材料中的代码引用；第 2 章概览与第 4 章路线图为对材料的组织与从各条 risk/steps 推导的编排。
+
+## 附录 A：补充复核（2026-10-11）
+
+针对交付时标注的三个"待确认"项，在本地 git 对象库（保留上游 FooIbar/EhViewer 完整历史，author "Dude so hot"）与 Maven Central 工件上完成查证，三项全部闭环，其中 R06 定性升级、R13 定性反转、R21 建议升级。
+
+### A.1 CI 与 -PbuildNative（R06）——确认为流水线现行缺陷
+
+- `.github/workflows/` 共 4 个工作流，`grep -rn buildNative .github/` 零命中：ci.yml 与 releases.yml 均不带 `-PbuildNative`；gradle.properties / local.properties 亦无该属性；`app/build.gradle.kts:92` 是全仓唯一属性来源（`grep -rn buildNative app/build.gradle.kts build-logic/` 仅 1 处）。
+- 上游历史提交（如 790ae51bb）的 `app/build.gradle.kts:87-91` 中 `externalNativeBuild` 为**无条件注册**，上游 CI 的 `./gradlew assembleRelease` 因此自动完成原生构建；本仓 ci.yml 的 "Install Rust Toolchain / Rust Cache / CMake Cache(app/.cxx)" 步骤即上游无条件原生构建的配套遗留。
+- 门控由本仓提交 `ee9a51e58`（137458，2026-09-12 "refactor(ui): 全面重构业务页面与组件至MIUIX设计系统"）引入，`git log --all -S 'buildNative' -- app/build.gradle.kts` 唯一命中；CI workflow 未同步修改，gradle.properties 无补偿属性。
+- 结论：自 2026-09-12 起，CI（ci.yml default/marshmallow 两个 job 的 artifact）与发布流水线（releases.yml，tag 触发）构建的 APK 均不含 libehviewer.so，安装即 UnsatisfiedLinkError；门控下 ci.yml 的 CMake Cache 与 rustup target 步骤已无实际作用。
+- 时间线与遗留矛盾：最新 tag 1.15.0（2026-09-19，83bf52c59）晚于门控引入。若其 release 由 releases.yml 产出则缺库；但该 workflow 的 "Generate Baseline Profile" 步骤需在模拟器上启动 app，缺库时理应失败——与发版成功存在矛盾，发版是否真由该 workflow 产出、Actions 运行记录如何，需联网核对（本次复核环境 GitHub 不可达），定案前按"流水线缺库"对待。
+- 修复方向（替代原建议的 fail-fast 校验，三选一）：1) 恢复上游语义——`externalNativeBuild` 默认注册，跳过原生构建时显式 `-PbuildNative=false`（CI 零改动即恢复，本地快速编译体验保留）；2) CI 构建前经 actions/cache 恢复预编译 .so 到 jniLibs；3) CI 命令显式加 `-PbuildNative`。同时需决策 ci.yml 中已失效的 CMake Cache / rustup target 步骤的去留。
+
+### A.2 签名密钥（R13）——非泄露，改写为"沿袭上游公开钥"的决策项
+
+- 本地对象库上游历史提交 `442f5c817` 的 `app/keystore/androidkey.jks` 与当前文件 git hash-object **字节级相同**（`a69b7d1cb9b34019f8e21c637ffaf737232018c2`）。
+- 上游历史 `790ae51bb` 的 `app/build.gradle.kts:33-39` 与本仓签名配置逐字段相同（androidkey.jks / 口令 000000 / key0 / V3+V4），即上游 EhViewer 本就以明文口令公开此密钥。
+- keytool 实测：PKCS12，别名 key0，CN=tarsin/O=Person，2048 位 RSA，SHA256withRSA，有效期 2022-05-20 至 2047-05-14，SHA256 指纹 `5D:91:DF:F1:3B:64:89:A9:CF:AD:BB:19:7B:3E:79:5E:EF:C8:C3:9F:84:9C:45:43:F3:2C:16:07:20:FB:40:A6`。CN=tarsin 与仓内上游代码包名 moe.tarsin 对应，为上游维护者身份。
+- 结论：该密钥是上游刻意公开的社区构建签名钥，随上游仓库分发是其常态，非本仓泄露，不构成需应急换钥的安全缺口；"任何人可签出同签名包"在上游生态本就是公开事实，签名在该生态不构成身份鉴别。
+- 残余取舍：与上游官方 APK 同 applicationId + 同签名，用户可在上游与本 fork 之间覆盖安装、无损迁移数据——这是沿用它的实际收益。R13 建议改写为决策项：(a) 维持现状（跟随上游签名，保持互换安装），在 AGENTS.md 或构建文档记录密钥来源与理由；或 (b) 需要独立分发身份时执行原建议（出库 + 条件注入 + releases.yml 调整），并接受与上游包互斥安装的代价。优先级建议 high → medium。
+
+### A.3 okhttp3.AsyncDns shim（R21）——冲突风险排除，出现官方替代
+
+- Maven Central 实测（本机网络可达 Maven Central）：`okhttp-jvm-5.5.0.jar`（384 个类）与 `okhttp-android-5.5.0.aar` 的 classes.jar 均无 `okhttp3.AsyncDns` 与 `okhttp3.android.AndroidAsyncDns`，vendored shim 与 5.5.0 无同名类冲突。
+- 同时 `okhttp-android-5.5.0` 已内置 `okhttp3.android.AndroidDns`（基于 android.net.DnsResolver 的官方实现，配套 OkHttp 5.5 重构后的 Dns.Call/Dns.Record 异步 DNS API 与 okhttp3.internal.dns.* 状态机），与 shim 提供的 A+AAAA 并发解析能力等价。
+- R21 建议升级：优先评估用官方 `AndroidDns` 替换 vendored 两文件（装配点 OkhttpExtensions.kt:11 需适配 Dns 新 API），替换后"同名类冲突"与 `latch.await()` 无超时两个问题一并消失；若暂不替换，保留原建议（文件头标注来源 + await 超时）。
+- 备注：先前复核见到的本机 okhttp 5.3.2 来自 C 盘旧缓存，项目实际使用的 gradle 缓存（D 盘）未能定位；该疑点不影响结论——5.3.2 与 5.5.0 的官方工件均无 AsyncDns/AndroidAsyncDns。
 
