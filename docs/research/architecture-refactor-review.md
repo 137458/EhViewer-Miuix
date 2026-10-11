@@ -7,7 +7,7 @@
 
 ## 1. 执行摘要
 
-本次静态审查覆盖 8 个 Gradle 模块（main 源集合计 487 个 Kotlin 文件），按数据层、业务引擎、UI 层、桌面端、构建配置、横切面六个领域产出 43 条重构发现（高 18 / 中 20 / 低 5），每条均经独立读码复核并原样附复核备注，无未复核条目。风险集中于四类：CI 与发布流水线自 2026-09-12 起持续产出缺原生库的 APK（R06，2026-10-11 补充复核确认为现行缺陷，见附录 A.1）、沿用上游公开签名密钥的取舍未文档化（R13，同日复核确认非私有密钥泄露，见附录 A.2）构成的安全与构建可信缺口；下载队列三套锁混用（R04）、SpiderQueen 共享状态锁内写锁外读（R05）、收藏落库协程无异常防护（R16）、Room 多步写不开事务（R02）等并发与正确性缺陷；收藏/历史一致性规则未下沉数据层致 `:app` 与 `:desktop` 行为漂移（R01）、站点搜索协议与 Rust 桥双端各持一份（R12/R20）、shell 组件复制中间态（R08/R29）等单一事实源缺失；以及 Rust 产物路径跨模块硬编码 8 处（R15/R18/R19/R28）等构建层反向耦合。报告按「安全与构建可信度 → 运行时正确性 → 数据与协议单源下沉 → shell 迁移闭环与 UI 收敛 → 构建体系收敛 → 清理与长期可测性」六个阶段给出路线图，阶段间仅存少量硬依赖（如 R10→R09、R01→R30、R16→R36），其余可并行小步实施，每阶段附验证方式与回滚策略。全部 43 条发现复核状态均为 verified；本报告为静态审查，各条「验证方式」需在实施阶段实际执行。
+本次静态审查覆盖 8 个 Gradle 模块（main 源集合计 487 个 Kotlin 文件），按数据层、业务引擎、UI 层、桌面端、构建配置、横切面六个领域产出 43 条重构发现（高 18 / 中 20 / 低 5），每条均经独立读码复核并原样附复核备注，无未复核条目。风险集中于四类：原生库加载与构建门控在干净环境（含 CI）下产出缺 libehviewer.so 的 APK 且无任何构建期告警（R06，2026-10-11 补充复核：CI artifact 与全新 clone 受影响，实际发版走本地构建不受影响，见附录 A.1）、沿用上游公开签名密钥的取舍未文档化（R13，同日复核确认非私有密钥泄露，见附录 A.2）构成的安全与构建可信缺口；下载队列三套锁混用（R04）、SpiderQueen 共享状态锁内写锁外读（R05）、收藏落库协程无异常防护（R16）、Room 多步写不开事务（R02）等并发与正确性缺陷；收藏/历史一致性规则未下沉数据层致 `:app` 与 `:desktop` 行为漂移（R01）、站点搜索协议与 Rust 桥双端各持一份（R12/R20）、shell 组件复制中间态（R08/R29）等单一事实源缺失；以及 Rust 产物路径跨模块硬编码 8 处（R15/R18/R19/R28）等构建层反向耦合。报告按「安全与构建可信度 → 运行时正确性 → 数据与协议单源下沉 → shell 迁移闭环与 UI 收敛 → 构建体系收敛 → 清理与长期可测性」六个阶段给出路线图，阶段间仅存少量硬依赖（如 R10→R09、R01→R30、R16→R36），其余可并行小步实施，每阶段附验证方式与回滚策略。全部 43 条发现复核状态均为 verified；本报告为静态审查，各条「验证方式」需在实施阶段实际执行。
 
 ## 2. 架构概览
 
@@ -153,7 +153,7 @@ UI 层由三部分组成：:app 的 com.hippo.ehviewer.ui 包（约 60 个 kt、
 - 5 个 core KMP 模块各自重复声明 jvm("desktop") 目标，hierarchy template 已把 android 编译并入 jvm 组（MultiplatformLibraryConventionPlugin.kt:31-38）
 - :desktop 是唯一不走约定插件的常规模块，手写 spotless（desktop/build.gradle.kts:12-22），且缺 configureKotlin 的 progressiveMode / optIn / -Xcollection-literals（Kotlin.kt:7-24）
 - 桌面 Rust 产物路径在 desktop/build.gradle.kts:24 与 GalleryListParser.kt:75-80 共 8 处硬编码；Android Rust 经 CMake 轨道内 corrosion v0.6.1 构建（app/src/main/cpp/CMakeLists.txt:141-156）
-- Renovate（renovate.json）管理 catalog / CMake GIT_TAG / rust nightly / NDK，AGP 组规则覆盖 com.android.settings（renovate.json:65-71），但 ignorePaths 排除 app/build.gradle.kts；CI 以带 Release 后缀的任务名构建（ci.yml:124），但自 ee9a51e58（2026-09-12）引入 buildNative 门控后 CI workflow 未同步，流水线产出 APK 缺原生库（见附录 A.1）
+- Renovate（renovate.json）管理 catalog / CMake GIT_TAG / rust nightly / NDK，AGP 组规则覆盖 com.android.settings（renovate.json:65-71），但 ignorePaths 排除 app/build.gradle.kts；CI 以带 Release 后缀的任务名构建（ci.yml:124），但自 ee9a51e58（2026-09-12）引入 buildNative 门控后 CI workflow 未同步，CI artifact 与干净 clone 产出 APK 缺原生库（实际发版走本地构建，见附录 A.1）
 
 #### 2.5.6 横切面
 
@@ -259,8 +259,8 @@ UI 层由三部分组成：:app 的 com.hippo.ehviewer.ui 包（约 60 个 kt、
 
 #### R06. [业务引擎] 无条件 System.loadLibrary 但原生构建被 -PbuildNative 门控且 .so 目录被 gitignore，标准命令产出的 APK 必崩
 
-- **优先级**：high ｜ **复核状态**：verified
-- **【2026-10-11 补充复核修正】**门控由本仓提交 `ee9a51e58`（2026-09-12）引入而 CI workflow 未同步修改，CI 与 releases 流水线自该日起构建的 APK 均缺 libehviewer.so，定性由「全新 clone 隐患」升级为「流水线现行缺陷」；最新 tag 1.15.0 晚于门控引入，其发布包是否缺库待联网核对 Actions 记录（详见附录 A.1）。修复建议改为恢复上游无条件构建语义或 CI 显式补属性。
+- **优先级**：high ｜ **复核状态**：verified ｜ **建议优先级调整：high → medium**
+- **【2026-10-11 补充复核修正】**门控由本仓提交 `ee9a51e58`（2026-09-12）引入（同提交将 jniLibs/ 加入 .gitignore），CI workflow 未同步——CI（ci.yml 两 job）与干净 clone 按 `./gradlew assembleDefaultRelease` 构建的 APK 均缺 libehviewer.so 且无告警。实测 1.15.0 发布 APK（release assets 下载）**含** libehviewer.so：实际发版为本地构建手动上传（本机 jniLibs 预置 .so），不受影响；受影响面为 CI artifact、releases.yml 潜在触发与贡献者/新环境（详见附录 A.1）。修复方向不变：恢复上游无条件构建语义或 CI 显式补属性。
 - **位置**：app/src/main/kotlin/com/hippo/ehviewer/EhApplication.kt:116; app/build.gradle.kts:92-98; .gitignore:13
 - **现状**：Application.onCreate 无条件执行 System.loadLibrary("ehviewer")（EhApplication.kt:116）；externalNativeBuild 仅在 hasProperty("buildNative") 时注册 CMake（app/build.gradle.kts:92-98）；预置 .so 目录 app/src/main/jniLibs/ 被 .gitignore:13 忽略——本机存在 arm64-v8a/libehviewer.so，git check-ignore -v 确认其为不入库的本地产物。CMake 侧经 FetchContent+Corrosion 集成 Rust（CMakeLists.txt:141-156），Windows 主机构建 nettle 依赖 WSL（CMakeLists.txt:43-50）。
 - **问题**：全新 clone 按仓库标准命令 ./gradlew assembleDefaultRelease（AGENTS.md 定义完成标准=编译通过）产出的 APK 内没有 libehviewer.so，首帧启动即 UnsatisfiedLinkError；『必须先手工放一个本地产物到 gitignored 目录或带 -PbuildNative 全量编译』这一隐式前提无任何构建期校验与文档提示，编译通过≠可运行。
@@ -960,7 +960,7 @@ UI 层由三部分组成：:app 的 com.hippo.ehviewer.ui 包（约 60 个 kt、
 |---|---|---|---|
 | 1 | R01（data-repo-missing） | desktop 端 GALLERIES 孤儿行累积的实际严重度取决于线上使用时长，未做数据统计 | 对存量 desktop 数据库做统计：GALLERIES 行数与 LOCAL_FAVORITES/HISTORY 可关联行的差集 |
 | 2 | R03（desktop-db-migration-drift） | 桌面端是否存在 version≤17 的存量数据文件（含用户从 Android 复制 eh.db 的场景）未能在代码中确认，崩溃触发面待人工评估 | 桌面端用户数据文件样本或反馈渠道统计；「desktop 打开 v≤17 库抛 IllegalStateException」属 Room 标准语义，reviewNote 注明未实跑复现，可补一个 v17 库文件的实机打开验证 |
-| 3 | R06（native-lib-load-build-gap） | 本机 jniLibs 中 .so 的确切产生方式（手工 CMake 还是历史构建遗留）；CI 是否始终带 -PbuildNative（发现标注仓内未见 CI 脚本核实） | **已闭环（附录 A.1）**：全部 workflow grep buildNative 零命中，均不带该属性；门控由本仓 ee9a51e58 引入且 CI 未同步，流水线缺库为现行缺陷。.so 产生方式仍未确认，但不影响结论 |
+| 3 | R06（native-lib-load-build-gap） | 本机 jniLibs 中 .so 的确切产生方式（手工 CMake 还是历史构建遗留）；CI 是否始终带 -PbuildNative（发现标注仓内未见 CI 脚本核实） | **已闭环（附录 A.1）**：全部 workflow 均无 -PbuildNative；门控与 jniLibs ignore 同在 ee9a51e58 引入且 CI 未同步。实测 1.15.0 发布 APK 含 libehviewer.so（发版为本地构建手动上传）；CI artifact 与干净 clone 缺库的结论不变。.so 产生方式仍未确认，不影响结论 |
 | 4 | R21（okhttp3-vendored-shim） | catalog 声明的 okhttp 5.5.0 工件本机缓存中不存在，无法验证该版本是否已内置 okhttp3.AsyncDns；shim 摘自上游 OkHttp 的具体 commit 未在文件内标注 | **已闭环（附录 A.3）**：Maven Central 实测 okhttp-jvm/okhttp-android 5.5.0 均无 AsyncDns/AndroidAsyncDns，无冲突；官方 AndroidDns 可作替换目标。shim 来源 commit 仍待对照上游 OkHttp 仓库 |
 | 5 | R26（window-layout-dual-track） | reviewNote 指出 WIDTH_DP_EXPANDED_LOWER_BOUND 为 androidx.window 公开常量（840dp），但依赖内源码未在本仓读取，此值未在本次会话直接验证 | 读取 androidx.window 依赖源码（或官方文档）确认该常量取值 |
 | 6 | R34（locale-filters-triple-maintenance） | "zh" 是否为父语言回退的刻意保留项待确认；「漏改 localeFilters 时新语言资源被静默剔除」为对 AGP localeFilters 语义的推断，本轮未实机构建验证 | 查上游 resConfigs 惯例确认 "zh" 用途；实机构建 diff locales_config.xml 与 APK 内资源语言档 |
@@ -987,8 +987,8 @@ UI 层由三部分组成：:app 的 com.hippo.ehviewer.ui 包（约 60 个 kt、
 - 上游历史提交（如 790ae51bb）的 `app/build.gradle.kts:87-91` 中 `externalNativeBuild` 为**无条件注册**，上游 CI 的 `./gradlew assembleRelease` 因此自动完成原生构建；本仓 ci.yml 的 "Install Rust Toolchain / Rust Cache / CMake Cache(app/.cxx)" 步骤即上游无条件原生构建的配套遗留。
 - 门控由本仓提交 `ee9a51e58`（137458，2026-09-12 "refactor(ui): 全面重构业务页面与组件至MIUIX设计系统"）引入，`git log --all -S 'buildNative' -- app/build.gradle.kts` 唯一命中；CI workflow 未同步修改，gradle.properties 无补偿属性。
 - 结论：自 2026-09-12 起，CI（ci.yml default/marshmallow 两个 job 的 artifact）与发布流水线（releases.yml，tag 触发）构建的 APK 均不含 libehviewer.so，安装即 UnsatisfiedLinkError；门控下 ci.yml 的 CMake Cache 与 rustup target 步骤已无实际作用。
-- 时间线与遗留矛盾：最新 tag 1.15.0（2026-09-19，83bf52c59）晚于门控引入。若其 release 由 releases.yml 产出则缺库；但该 workflow 的 "Generate Baseline Profile" 步骤需在模拟器上启动 app，缺库时理应失败——与发版成功存在矛盾，发版是否真由该 workflow 产出、Actions 运行记录如何，需联网核对（本次复核环境 GitHub 不可达），定案前按"流水线缺库"对待。
-- 修复方向（替代原建议的 fail-fast 校验，三选一）：1) 恢复上游语义——`externalNativeBuild` 默认注册，跳过原生构建时显式 `-PbuildNative=false`（CI 零改动即恢复，本地快速编译体验保留）；2) CI 构建前经 actions/cache 恢复预编译 .so 到 jniLibs；3) CI 命令显式加 `-PbuildNative`。同时需决策 ci.yml 中已失效的 CMake Cache / rustup target 步骤的去留。
+- 实测更正（2026-10-11 第二轮）：下载 1.15.0 发布 APK（`EhViewer-1.15.0-default-arm64-v8a.apk`）逐文件核对，**包内含 `lib/arm64-v8a/libehviewer.so`（1.1MB）**，不缺库。经仓库维护者确认：发版不走 CI，为本地构建后手动上传（本机 jniLibs 预置 .so）。旁证自洽：assets 无 native-debug-symbols.zip（该产物仅由 externalNativeBuild 产出，本地预置 .so 的构建不会生成）、仅含 arm64+universal 四包（isRelease 任务名形态，与本地 `assembleDefaultRelease` 产物一致）、assets 命名沿用 Rename 脚本惯例。此前「流水线现行缺陷、1.15.0 疑似缺库」的推断前提（1.15.0 由 releases.yml 产出）不成立，予以更正。
+- 最终影响面：1) 维护者本人的发版链路（本地构建+手动上传）无风险；2) CI artifact 与未来若真由 releases.yml 触发的 tag 发版产出缺库 APK——后者会被其 Generate Baseline Profile 步骤（需模拟器启动 app）失败所拦截，属隐性断流而非坏包外流；3) 贡献者/新环境按 AGENTS.md「编译生产包：./gradlew assembleDefaultRelease」产出编译通过但运行即崩的包，且无任何构建期告警。R06 建议优先级 high → medium；修复方向照旧（恢复上游无条件构建语义 / CI 显式补属性 / CI 构建前恢复预编译 .so，三选一），并顺手清理门控下已失效的 CMake Cache 与 rustup target 步骤。
 
 ### A.2 签名密钥（R13）——非泄露，改写为"沿袭上游公开钥"的决策项
 
