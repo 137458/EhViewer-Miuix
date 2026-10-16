@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -25,6 +24,7 @@ import com.ehviewer.core.model.GalleryTagGroup
 import com.ehviewer.core.model.PowerStatus
 import com.ehviewer.core.model.TagNamespace
 import com.ehviewer.core.model.VoteStatus
+import com.ehviewer.core.ui.component.SquircleShape
 import com.hippo.ehviewer.Settings
 import com.hippo.ehviewer.client.EhTagDatabase
 import com.hippo.ehviewer.collectAsState
@@ -120,4 +120,4 @@ private fun BaseRoundText(
     }
 }
 
-private val GalleryTagCorner = RoundedCornerShape(64.dp)
+private val GalleryTagCorner = SquircleShape(64.dp)

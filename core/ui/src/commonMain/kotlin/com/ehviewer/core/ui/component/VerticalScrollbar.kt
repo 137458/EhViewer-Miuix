@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.scrollbar.ScrollbarAdapter
 import androidx.compose.foundation.scrollbar.ScrollbarStyle
 import androidx.compose.foundation.scrollbar.VerticalScrollbar
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -78,7 +77,7 @@ fun scrollbarStyle(thumbColor: Color, hoverThumbColor: Color) = ScrollbarStyle(
 private val ThumbPadding = 8.dp
 private val ThumbLength = 48.dp
 private val ThumbThickness = 8.dp
-private val ThumbShape = RoundedCornerShape(ThumbThickness / 2)
+private val ThumbShape = SquircleShape(ThumbThickness / 2)
 private val FadeOutAnimationSpec = tween<Float>(
     durationMillis = SCROLL_BAR_FADE_DURATION,
     delayMillis = 2000,

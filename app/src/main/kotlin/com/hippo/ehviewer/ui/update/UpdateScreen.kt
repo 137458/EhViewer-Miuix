@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -43,6 +42,7 @@ import com.ehviewer.core.i18n.R
 import com.ehviewer.core.ui.component.BlurredBar
 import com.ehviewer.core.ui.component.blurBackdropSource
 import com.ehviewer.core.ui.component.rememberBlurBackdrop
+import com.ehviewer.core.ui.component.SquircleShape
 import com.ehviewer.core.ui.effect.BgEffectBackground
 import com.ehviewer.core.ui.effect.isRuntimeShaderSupported
 import com.ehviewer.core.ui.util.LocalBottomBarContentPadding
@@ -470,7 +470,7 @@ private fun UpdateHeroIcon(compact: Boolean, appIcon: ImageBitmap?, scrollProgre
             .graphicsLayer {
                 val iconProgress = ((scrollProgress - 0.35f) / 0.15f).coerceIn(0f, 1f)
                 clip = true
-                shape = RoundedCornerShape(if (compact) 16.dp else 24.dp)
+                shape = SquircleShape(if (compact) 16.dp else 24.dp)
                 alpha = 1 - iconProgress
                 scaleX = 1 - (iconProgress * 0.05f)
                 scaleY = 1 - (iconProgress * 0.05f)

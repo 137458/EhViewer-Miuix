@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -32,6 +31,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ehviewer.core.ui.component.SquircleShape
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -67,7 +67,7 @@ fun MarkdownText(
                                 modifier = Modifier
                                     .width(3.5.dp)
                                     .height(if (block.level == 1) 18.dp else 15.dp)
-                                    .clip(RoundedCornerShape(2.dp))
+                                    .clip(SquircleShape(2.dp))
                                     .background(MiuixTheme.colorScheme.primary),
                             )
                         }
@@ -95,7 +95,7 @@ fun MarkdownText(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(8.dp))
+                            .clip(SquircleShape(8.dp))
                             .background(MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.45f))
                             .padding(horizontal = 10.dp, vertical = 6.dp),
                         verticalAlignment = Alignment.CenterVertically,
@@ -104,7 +104,7 @@ fun MarkdownText(
                             modifier = Modifier
                                 .width(3.dp)
                                 .height(16.dp)
-                                .clip(RoundedCornerShape(1.5.dp))
+                                .clip(SquircleShape(1.5.dp))
                                 .background(MiuixTheme.colorScheme.primary.copy(alpha = 0.7f)),
                         )
                         Spacer(modifier = Modifier.width(8.dp))
@@ -217,7 +217,7 @@ fun MarkdownText(
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clip(RoundedCornerShape(8.dp))
+                                .clip(SquircleShape(8.dp))
                                 .background(MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.35f))
                                 .horizontalScroll(scrollState),
                         ) {
@@ -229,7 +229,7 @@ fun MarkdownText(
                                 // 表头
                                 Row(
                                     modifier = Modifier
-                                        .clip(RoundedCornerShape(6.dp))
+                                        .clip(SquircleShape(6.dp))
                                         .background(MiuixTheme.colorScheme.primary.copy(alpha = 0.12f))
                                         .padding(horizontal = TableRowHorizontalPadding, vertical = 8.dp),
                                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -257,7 +257,7 @@ fun MarkdownText(
                                     }
                                     Row(
                                         modifier = Modifier
-                                            .clip(RoundedCornerShape(6.dp))
+                                            .clip(SquircleShape(6.dp))
                                             .background(rowBg)
                                             .padding(horizontal = TableRowHorizontalPadding, vertical = 8.dp),
                                         horizontalArrangement = Arrangement.spacedBy(8.dp),

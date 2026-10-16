@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -38,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ehviewer.core.files.delete
 import com.ehviewer.core.i18n.R
+import com.ehviewer.core.ui.component.SquircleShape
 import com.ehviewer.core.ui.util.AdaptiveBreakpoints
 import com.ehviewer.core.ui.util.LocalWindowLayout
 import com.hippo.ehviewer.BuildConfig
@@ -118,7 +118,7 @@ fun UpdateDialog(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
+                    .clip(SquircleShape(12.dp))
                     .background(MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.35f))
                     .padding(horizontal = 12.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -151,7 +151,7 @@ fun UpdateDialog(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
                     modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
+                        .clip(SquircleShape(8.dp))
                         .background(MiuixTheme.colorScheme.primary.copy(alpha = 0.14f))
                         .padding(horizontal = 8.dp, vertical = 3.dp),
                 ) {
@@ -165,7 +165,7 @@ fun UpdateDialog(
                     )
                     Box(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(4.dp))
+                            .clip(SquircleShape(4.dp))
                             .background(MiuixTheme.colorScheme.primary)
                             .padding(horizontal = 4.dp, vertical = 1.dp),
                     ) {
@@ -192,7 +192,7 @@ fun UpdateDialog(
                 // 通道胶囊
                 Box(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(6.dp))
+                        .clip(SquircleShape(6.dp))
                         .background(MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.5f))
                         .padding(horizontal = 8.dp, vertical = 2.dp),
                 ) {
@@ -212,7 +212,7 @@ fun UpdateDialog(
                 if (release.apkSize > 0L) {
                     Box(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(6.dp))
+                            .clip(SquircleShape(6.dp))
                             .background(MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.5f))
                             .padding(horizontal = 8.dp, vertical = 2.dp),
                     ) {
@@ -251,9 +251,9 @@ fun UpdateDialog(
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(min = 60.dp, max = changelogMaxHeight)
-                    .clip(RoundedCornerShape(14.dp))
+                    .clip(SquircleShape(14.dp))
                     .background(MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.40f))
-                    .border(0.5.dp, MiuixTheme.colorScheme.dividerLine.copy(alpha = 0.25f), RoundedCornerShape(14.dp))
+                    .border(0.5.dp, MiuixTheme.colorScheme.dividerLine.copy(alpha = 0.25f), SquircleShape(14.dp))
                     .padding(horizontal = 14.dp, vertical = 12.dp)
                     .verticalScroll(rememberScrollState()),
             ) {
@@ -278,7 +278,7 @@ fun UpdateDialog(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
+                        .clip(SquircleShape(12.dp))
                         .background(MiuixTheme.colorScheme.primary.copy(alpha = 0.08f))
                         .padding(12.dp),
                 ) {
@@ -316,7 +316,7 @@ fun UpdateDialog(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
+                        .clip(SquircleShape(12.dp))
                         .background(MiuixTheme.colorScheme.primary.copy(alpha = 0.10f))
                         .padding(horizontal = 12.dp, vertical = 10.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -339,7 +339,7 @@ fun UpdateDialog(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
+                        .clip(SquircleShape(12.dp))
                         .background(MiuixTheme.colorScheme.error.copy(alpha = 0.10f))
                         .padding(12.dp),
                 ) {
@@ -463,7 +463,7 @@ fun UpdateDialog(
                 textAlign = TextAlign.Center,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(6.dp))
+                    .clip(SquircleShape(6.dp))
                     .clickable { with(context) { openBrowser(releasePageUrl) } }
                     .padding(vertical = 4.dp),
             )

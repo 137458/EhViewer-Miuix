@@ -24,7 +24,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.clearText
 import androidx.compose.foundation.text.input.rememberTextFieldState
@@ -912,7 +911,7 @@ private fun CheckableItem(text: String, checked: Boolean, modifier: Modifier = M
     }
 }
 
-private val IconWithTextCorner = RoundedCornerShape(8.dp)
+private val IconWithTextCorner = SquircleShape(8.dp)
 
 /**
  * 给当前弹窗所在的窗口加上 FLAG_SECURE，禁止截图与录屏。
