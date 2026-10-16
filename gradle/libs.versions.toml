@@ -20,7 +20,6 @@ compose-bom = "2026.08.00"
 compose-multiplatform = "1.12.1"
 compose-destinations = "2.3.0"
 miuix = "0.9.4"
-backdrop = "2.0.0"
 java = "21"
 kotlin = "2.4.20"
 kotlinx-coroutines = "1.11.0"
@@ -43,7 +42,6 @@ benchmark = "1.5.0-rc01"
 profileinstaller = "1.4.1"
 
 [libraries]
-backdrop = { module = "io.github.kyant0:backdrop", version.ref = "backdrop" }
 miuix-ui = { module = "top.yukonga.miuix.kmp:miuix-ui", version.ref = "miuix" }
 miuix-preference = { module = "top.yukonga.miuix.kmp:miuix-preference", version.ref = "miuix" }
 miuix-icons = { module = "top.yukonga.miuix.kmp:miuix-icons", version.ref = "miuix" }

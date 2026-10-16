@@ -5,7 +5,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -75,7 +74,7 @@ object DesktopGalleryVisuals {
 
     // 与移动端 getCategoryTextColor 同规则：L* > 70 的浅色 chip 配深字，深色 chip 配浅字
     @Composable
-    fun categoryTextColor(chipColor: Color): Color = if ((chipColor.luminance() > LSTAR_70_LUMINANCE) == isSystemInDarkTheme()) {
+    fun categoryTextColor(chipColor: Color): Color = if ((chipColor.luminance() > LSTAR_70_LUMINANCE) == (MiuixTheme.colorScheme.surface.luminance() < 0.5f)) {
         MiuixTheme.colorScheme.surface
     } else {
         MiuixTheme.colorScheme.onSurface

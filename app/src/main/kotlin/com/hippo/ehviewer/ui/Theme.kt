@@ -10,11 +10,15 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavBackStackEntry
 import com.ehviewer.core.ui.util.ProvideVectorPainterCache
+import com.hippo.ehviewer.Settings
+import com.hippo.ehviewer.collectAsState
 import com.hippo.ehviewer.ui.theme.EhTheme
+import com.hippo.ehviewer.ui.theme.resolveUseDarkTheme
 import com.hippo.ehviewer.ui.tools.DialogState
 import com.hippo.ehviewer.ui.tools.LocalGlobalDialogState
 import com.ramcosta.composedestinations.animations.NavHostAnimatedDestinationStyle
@@ -23,7 +27,10 @@ import soup.compose.material.motion.animation.materialSharedAxisXOut
 import soup.compose.material.motion.animation.rememberSlideDistance
 
 inline fun ComponentActivity.setMiuixContent(crossinline content: @Composable DialogState.() -> Unit) = setContent {
-    EhTheme(useDarkTheme = isSystemInDarkTheme()) {
+    // 应用内深色设置（theme_2：-1 跟随系统 / 1 浅色 / 2 深色）实时驱动主题，
+    // Android 12+ 不经 AppCompatDelegate，必须在此显式解析
+    val theme by Settings.theme.collectAsState()
+    EhTheme(useDarkTheme = resolveUseDarkTheme(theme, isSystemInDarkTheme())) {
         ProvideVectorPainterCache {
             val dialogState = remember { DialogState() }
             CompositionLocalProvider(LocalGlobalDialogState provides dialogState) {

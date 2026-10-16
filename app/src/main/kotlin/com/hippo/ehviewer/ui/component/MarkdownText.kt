@@ -96,7 +96,7 @@ fun MarkdownText(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(8.dp))
-                            .background(MiuixTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f))
+                            .background(MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.45f))
                             .padding(horizontal = 10.dp, vertical = 6.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
@@ -218,7 +218,7 @@ fun MarkdownText(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(8.dp))
-                                .background(MiuixTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
+                                .background(MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.35f))
                                 .horizontalScroll(scrollState),
                         ) {
                             Column(
@@ -251,7 +251,7 @@ fun MarkdownText(
                                 // 数据行
                                 block.rows.forEachIndexed { rowIndex, row ->
                                     val rowBg = if (rowIndex % 2 == 1) {
-                                        MiuixTheme.colorScheme.surfaceVariant.copy(alpha = 0.25f)
+                                        MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.25f)
                                     } else {
                                         Color.Transparent
                                     }

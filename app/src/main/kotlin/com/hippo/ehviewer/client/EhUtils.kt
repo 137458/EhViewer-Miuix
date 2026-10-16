@@ -20,7 +20,7 @@ import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.os.Environment
-import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.Stable
@@ -158,7 +158,7 @@ object EhUtils {
 
     @ReadOnlyComposable
     @Composable
-    fun getCategoryTextColor(color: Color) = if (isSystemInDarkTheme() == lstarFromArgb(color.toArgb()) > 70) {
+    fun getCategoryTextColor(color: Color) = if ((MiuixTheme.colorScheme.surface.luminance() < 0.5f) == lstarFromArgb(color.toArgb()) > 70) {
         MiuixTheme.colorScheme.surface
     } else {
         MiuixLocalContentColor.current

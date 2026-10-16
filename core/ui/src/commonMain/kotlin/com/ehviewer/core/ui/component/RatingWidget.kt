@@ -6,8 +6,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.remember
@@ -18,6 +16,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.ehviewer.core.ui.icons.EhIcons
+import com.ehviewer.core.ui.icons.filled.Star
 import com.ehviewer.core.ui.icons.filled.StarHalf
 import com.ehviewer.core.ui.icons.filled.StarOutline
 import com.ehviewer.core.ui.util.IconCached
@@ -28,7 +27,7 @@ private val colorYellow800 = Color(0xfff9a825)
 
 @Stable
 private fun getImageVector(index: Int, rating: Int) = when {
-    index * 2 + 1 < rating -> Icons.Default.Star
+    index * 2 + 1 < rating -> EhIcons.Default.Star
     index * 2 + 1 == rating -> EhIcons.Default.StarHalf
     else -> EhIcons.Default.StarOutline
 }

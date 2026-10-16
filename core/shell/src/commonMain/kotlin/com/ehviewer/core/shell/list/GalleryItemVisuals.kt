@@ -1,6 +1,5 @@
 package com.ehviewer.core.shell.list
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
@@ -58,7 +57,7 @@ object GalleryItemVisuals {
 
     // chip 文字取色（组合内）；规则见 useSurfaceForChipText
     @Composable
-    fun categoryTextColor(chipColor: Color): Color = if (useSurfaceForChipText(chipColor, isSystemInDarkTheme())) {
+    fun categoryTextColor(chipColor: Color): Color = if (useSurfaceForChipText(chipColor, MiuixTheme.colorScheme.surface.luminance() < 0.5f)) {
         MiuixTheme.colorScheme.surface
     } else {
         MiuixTheme.colorScheme.onSurface

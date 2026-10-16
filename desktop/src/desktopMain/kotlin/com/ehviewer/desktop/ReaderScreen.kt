@@ -19,8 +19,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
@@ -82,6 +80,7 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
+import top.yukonga.miuix.kmp.icon.extended.Close
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 // 阅读窗口：详情页链接提取 → 图片页解析 → 图片显示。
@@ -439,7 +438,7 @@ fun ReaderScreen(
                         .pointerHoverIcon(PointerIcon.Hand),
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Close,
+                        imageVector = MiuixIcons.Close,
                         contentDescription = stringResource(MR.strings.desktop_a11y_close),
                         tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     )

@@ -475,7 +475,7 @@ private fun UpdateHeroIcon(compact: Boolean, appIcon: ImageBitmap?, scrollProgre
                 scaleX = 1 - (iconProgress * 0.05f)
                 scaleY = 1 - (iconProgress * 0.05f)
             }
-            .background(MiuixTheme.colorScheme.surfaceVariant),
+            .background(MiuixTheme.colorScheme.surfaceContainer),
     ) {
         if (appIcon != null) {
             Image(

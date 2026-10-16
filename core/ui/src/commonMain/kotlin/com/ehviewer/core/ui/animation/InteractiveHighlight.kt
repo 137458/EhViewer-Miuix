@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.blur.RuntimeShader
 import top.yukonga.miuix.kmp.blur.asBrush
@@ -90,7 +91,8 @@ internal class InteractiveHighlight(
             onDragEnd = { release() },
             onDragCancel = { release() },
         ) { change, _ ->
-            animationScope.launch { positionAnimation.snapTo(change.position) }
+            // 拖拽逐帧调用：UNDISPATCHED 立即执行 snapTo，保证高光跟手
+            animationScope.launch(start = CoroutineStart.UNDISPATCHED) { positionAnimation.snapTo(change.position) }
         }
     }
 

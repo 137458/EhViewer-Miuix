@@ -119,7 +119,7 @@ fun UpdateDialog(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(12.dp))
-                    .background(MiuixTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
+                    .background(MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.35f))
                     .padding(horizontal = 12.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -193,7 +193,7 @@ fun UpdateDialog(
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(6.dp))
-                        .background(MiuixTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                        .background(MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.5f))
                         .padding(horizontal = 8.dp, vertical = 2.dp),
                 ) {
                     val channelText = when {
@@ -213,7 +213,7 @@ fun UpdateDialog(
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(6.dp))
-                            .background(MiuixTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                            .background(MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.5f))
                             .padding(horizontal = 8.dp, vertical = 2.dp),
                     ) {
                         Text(
@@ -252,7 +252,7 @@ fun UpdateDialog(
                     .fillMaxWidth()
                     .heightIn(min = 60.dp, max = changelogMaxHeight)
                     .clip(RoundedCornerShape(14.dp))
-                    .background(MiuixTheme.colorScheme.surfaceVariant.copy(alpha = 0.40f))
+                    .background(MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.40f))
                     .border(0.5.dp, MiuixTheme.colorScheme.dividerLine.copy(alpha = 0.25f), RoundedCornerShape(14.dp))
                     .padding(horizontal = 14.dp, vertical = 12.dp)
                     .verticalScroll(rememberScrollState()),

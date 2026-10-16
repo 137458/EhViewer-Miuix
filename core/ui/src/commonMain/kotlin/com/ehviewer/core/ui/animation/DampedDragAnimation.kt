@@ -126,7 +126,8 @@ internal class DampedDragAnimation(
 
     fun updateValue(value: Float) {
         val targetValue = value.coerceIn(valueRange)
-        animationScope.launch {
+        // 拖拽逐帧调用：UNDISPATCHED 立即执行 snapTo，避免 launch 调度延迟造成跟手滞后
+        animationScope.launch(start = CoroutineStart.UNDISPATCHED) {
             valueAnimation.snapTo(targetValue)
             updateVelocity()
         }

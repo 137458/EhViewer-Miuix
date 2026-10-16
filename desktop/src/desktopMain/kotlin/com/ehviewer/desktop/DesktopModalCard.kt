@@ -17,8 +17,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.scrollbar.rememberScrollbarAdapter
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Close
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -108,7 +108,7 @@ fun DesktopModalCard(
                         .pointerHoverIcon(PointerIcon.Hand),
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Close,
+                        imageVector = MiuixIcons.Close,
                         contentDescription = stringResource(MR.strings.desktop_a11y_close),
                         tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     )

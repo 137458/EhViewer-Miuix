@@ -100,6 +100,7 @@ import kotlin.math.cos
 import kotlin.math.roundToInt
 import kotlin.math.sign
 import kotlin.math.sin
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
@@ -337,9 +338,6 @@ fun FloatingBottomBar(
     }
 
     val holder = remember { DampedDragAnimationHolder() }
-    var totalDragPx by remember { mutableFloatStateOf(0f) }
-    val touchSlopPx = with(density) { 8.dp.toPx() }
-
     val dampedDragAnimation = remember(animationScope, tabsCount, density, isLtr) {
         DampedDragAnimation(
             animationScope = animationScope,
@@ -363,29 +361,27 @@ fun FloatingBottomBar(
                 globalTouchX in 0f..totalWidthPx
             },
             onDragStarted = {
-                totalDragPx = 0f
             },
             onDragStopped = {
                 val dropIndex = targetValue.fastRoundToInt().fastCoerceIn(0, tabsCount - 1)
-                val isTapOnSameTab = (dropIndex == currentSelectedIndex()) && (totalDragPx < touchSlopPx)
                 val isSwitched = dropIndex != currentSelectedIndex()
 
                 animateToValue(dropIndex.toFloat())
                 animationScope.launch {
                     offsetAnimation.animateTo(0f, spring(1f, 300f, 0.5f))
                 }
-                if (isSwitched || isTapOnSameTab) {
+                // 点击路径由 item onClick 派发，这里只在拖拽切换页签时触发，避免同拍双震动双路由
+                if (isSwitched) {
                     updatedOnSelected(dropIndex)
                 }
             },
             onDrag = { _, dragAmount ->
-                totalDragPx += abs(dragAmount.x)
                 if (tabWidthPx > 0f) {
                     updateValue(
                         (targetValue + dragAmount.x / tabWidthPx * if (isLtr) 1f else -1f)
                             .fastCoerceIn(0f, (tabsCount - 1).toFloat()),
                     )
-                    animationScope.launch {
+                    animationScope.launch(start = CoroutineStart.UNDISPATCHED) {
                         offsetAnimation.snapTo(offsetAnimation.value + dragAmount.x)
                     }
                 }
@@ -516,19 +512,6 @@ fun FloatingBottomBar(
                         .alpha(0f)
                         .layerBackdrop(tabsBackdrop)
                         .graphicsLayer { translationX = panelOffset }
-                        .drawBackdrop(
-                            backdrop = backdrop,
-                            shape = { pillShape },
-                            effects = {
-                                vibrancy()
-                                blur(4.dp.toPx(), 4.dp.toPx())
-                                lens(
-                                    refractionHeight = 24.dp.toPx(),
-                                    refractionAmount = 24.dp.toPx(),
-                                )
-                            },
-                            onDrawSurface = { drawRect(containerColor) },
-                        )
                         .then(interactiveHighlight?.modifier ?: Modifier)
                         .height(56.dp)
                         .padding(horizontal = 4.dp),

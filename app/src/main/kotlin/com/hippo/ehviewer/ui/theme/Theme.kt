@@ -3,7 +3,6 @@ package com.hippo.ehviewer.ui.theme
 import android.app.WallpaperManager
 import android.os.Build
 import androidx.annotation.RequiresApi
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.scrollbar.LocalScrollbarStyle
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.LocalContentColor
@@ -17,6 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
 import com.ehviewer.core.ui.component.scrollbarStyle
 import com.ehviewer.core.ui.theme.rememberMiuixThemeController
@@ -40,6 +40,14 @@ fun ColorScheme.amoled(amoled: Boolean) = if (amoled) {
     )
 } else {
     this
+}
+
+// Settings.theme 存的是 AppCompatDelegate night mode 值（arrays.xml night_mode_values = [-1, 1, 2]）
+@PublishedApi
+internal fun resolveUseDarkTheme(theme: Int, isSystemDarkTheme: Boolean) = when (theme) {
+    1 -> false
+    2 -> true
+    else -> isSystemDarkTheme
 }
 
 @Composable
@@ -77,8 +85,8 @@ fun EhTheme(useDarkTheme: Boolean, content: @Composable () -> Unit) {
         MaterialTheme(colorScheme = colors, motionScheme = CustomMotionScheme) {
             // 移动端滚动条沿用单一主色（静息与悬停同色，保持既有行为）
             val scrollbarStyle = scrollbarStyle(
-                thumbColor = MaterialTheme.colorScheme.primary,
-                hoverThumbColor = MaterialTheme.colorScheme.primary,
+                thumbColor = MiuixTheme.colorScheme.primary,
+                hoverThumbColor = MiuixTheme.colorScheme.primary,
             )
             CompositionLocalProvider(
                 LocalContentColor provides MaterialTheme.colorScheme.onBackground,
@@ -90,7 +98,7 @@ fun EhTheme(useDarkTheme: Boolean, content: @Composable () -> Unit) {
 }
 
 @Composable
-fun Color.scrim() = copy(alpha = if (isSystemInDarkTheme()) 0.5f else 0.9f)
+fun Color.scrim() = copy(alpha = if (MiuixTheme.colorScheme.surface.luminance() < 0.5f) 0.5f else 0.9f)
 
 typealias WallPaperPalette = Triple<Color, Color?, Color?>
 

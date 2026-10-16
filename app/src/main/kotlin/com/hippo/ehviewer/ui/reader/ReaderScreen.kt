@@ -267,11 +267,10 @@ fun ReaderScreen(pageLoader: PageLoader, info: BaseGalleryInfo?) {
             }
             syncState.Sync(isWebtoon) { appbarVisible = false }
             val readerBackground by collectReaderBackgroundAsState()
-            val isDarkTheme = isSystemInDarkTheme()
-            LaunchedEffect(isDarkTheme) {
+            LaunchedEffect(readerBackground) {
                 snapshotFlow { appbarVisible }.collect {
                     uiController.isSystemBarsVisible = it || !fullscreen
-                    uiController.statusBarDarkContentEnabled = if (it) !isDarkTheme else readerBackground.isLight
+                    uiController.statusBarDarkContentEnabled = readerBackground.isLight
                 }
             }
             var showNavigationOverlay by remember {
