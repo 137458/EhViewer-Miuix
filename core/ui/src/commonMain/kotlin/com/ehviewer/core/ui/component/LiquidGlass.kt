@@ -116,41 +116,48 @@ fun Modifier.backdropBlur(
     this.background(color.copy(alpha = tintAlpha), shape)
 }
 
+@Composable
 fun Modifier.liquidGlass(
     backdrop: Backdrop?,
     shape: Shape = SquircleShape(32.dp),
     blurRadius: Dp = 20.dp,
     tintColor: Color = Color.Unspecified,
     tintAlpha: Float = 0.45f,
-): Modifier = if (backdrop != null && isRuntimeShaderSupported()) {
-    this.drawBackdrop(
-        backdrop = backdrop,
-        shape = { shape },
-        effects = {
-            padding = maxOf(padding, 40.dp.toPx())
-            vibrancy()
-            blur(blurRadius.toPx(), blurRadius.toPx())
-            lens(16.dp.toPx(), 20.dp.toPx())
-        },
-        highlight = {
-            LiquidGlassHighlightLight
-        },
-        onDrawSurface = {
-            val color = if (tintColor != Color.Unspecified) tintColor else Color.White
-            drawRect(color.copy(alpha = tintAlpha))
-        },
-    )
-} else if (backdrop != null) {
-    this.backdropBlur(
-        backdrop = backdrop,
-        shape = shape,
-        blurRadius = blurRadius,
-        tintColor = tintColor,
-        tintAlpha = tintAlpha,
-    )
-} else {
-    val color = if (tintColor != Color.Unspecified) tintColor else Color.White
-    this.background(color.copy(alpha = tintAlpha), shape)
+): Modifier {
+    // 高光随当前主题取明/暗预设，与 LiquidGlass、LiquidGlassSurface 保持一致
+    val highlight = if (MiuixTheme.colorScheme.surface.luminance() < 0.5f) {
+        LiquidGlassHighlightDark
+    } else {
+        LiquidGlassHighlightLight
+    }
+    return if (backdrop != null && isRuntimeShaderSupported()) {
+        this.drawBackdrop(
+            backdrop = backdrop,
+            shape = { shape },
+            effects = {
+                padding = maxOf(padding, 40.dp.toPx())
+                vibrancy()
+                blur(blurRadius.toPx(), blurRadius.toPx())
+                lens(16.dp.toPx(), 20.dp.toPx())
+            },
+            highlight = { highlight },
+            onDrawSurface = {
+                val color = if (tintColor != Color.Unspecified) tintColor else Color.White
+                drawRect(color.copy(alpha = tintAlpha))
+            },
+        )
+    } else if (backdrop != null) {
+        this.backdropBlur(
+            backdrop = backdrop,
+            shape = shape,
+            blurRadius = blurRadius,
+            tintColor = tintColor,
+            tintAlpha = tintAlpha,
+        )
+    } else {
+        val color = if (tintColor != Color.Unspecified) tintColor else Color.White
+        this.background(color.copy(alpha = tintAlpha), shape)
+    }
 }
 
 @Composable

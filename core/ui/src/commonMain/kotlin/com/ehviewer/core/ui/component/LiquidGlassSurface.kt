@@ -5,7 +5,6 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -21,10 +20,6 @@ import com.ehviewer.core.ui.liquid.vibrancy
 import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.blur.blur
 import top.yukonga.miuix.kmp.blur.drawBackdrop
-import top.yukonga.miuix.kmp.blur.highlight.BloomStroke
-import top.yukonga.miuix.kmp.blur.highlight.Highlight
-import top.yukonga.miuix.kmp.blur.highlight.LightPosition
-import top.yukonga.miuix.kmp.blur.highlight.LightSource
 import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -47,27 +42,8 @@ fun LiquidGlassSurface(
     val isDark = MiuixTheme.colorScheme.surface.luminance() < 0.5f
     val shaderSupported = isRuntimeShaderSupported() && backdrop != null
 
-    val specularHighlight = remember {
-        Highlight(
-            width = 1.dp,
-            alpha = 0.8f,
-            style = BloomStroke(
-                color = Color.White.copy(alpha = 0.15f),
-                innerBlurRadius = 2.dp,
-                primaryLight = LightSource(
-                    position = LightPosition(0.5f, -0.3f, -0.05f),
-                    color = Color.White,
-                    intensity = 1f,
-                ),
-                secondaryLight = LightSource(
-                    position = LightPosition(0.5f, 0.8f, -0.5f),
-                    color = Color.White,
-                    intensity = 0.3f,
-                ),
-                dualPeak = true,
-            ),
-        )
-    }
+    // 高光随当前主题取明/暗预设，与 LiquidGlass、FloatingBottomBar 保持一致
+    val specularHighlight = if (isDark) LiquidGlassHighlightDark else LiquidGlassHighlightLight
 
     val finalContainerColor = if (shaderSupported) {
         containerColor.copy(alpha = if (isDark) 0.5f else 0.65f)
