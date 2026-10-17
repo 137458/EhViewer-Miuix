@@ -1,8 +1,16 @@
 package com.hippo.ehviewer.ui.main
 
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.NonRestartableComposable
@@ -26,6 +34,7 @@ import com.ehviewer.core.ui.util.thenIf
 import com.hippo.ehviewer.ktbuilder.imageRequest
 import com.hippo.ehviewer.ui.tools.shouldCrop
 import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 @NonRestartableComposable
@@ -75,14 +84,33 @@ fun EhThumbCard(
             },
         )
         val state by painter.state.collectAsState()
-        Image(
-            painter = painter,
-            contentDescription = null,
-            modifier = Modifier.thenIf(state !is AsyncImagePainter.State.Success) {
-                // Keep applying this when state is `Loading` to avoid cutting off the ripple
-                clickable { if (state is AsyncImagePainter.State.Error) painter.restart() }
-            }.fillMaxSize(),
-            contentScale = contentScale,
-        )
+        Box(modifier = Modifier.fillMaxSize()) {
+            if (state is AsyncImagePainter.State.Loading) {
+                val infiniteTransition = rememberInfiniteTransition(label = "thumb_shimmer")
+                val alpha by infiniteTransition.animateFloat(
+                    initialValue = 0.35f,
+                    targetValue = 0.75f,
+                    animationSpec = infiniteRepeatable(
+                        animation = tween(durationMillis = 900, easing = FastOutSlowInEasing),
+                        repeatMode = RepeatMode.Reverse,
+                    ),
+                    label = "pulseAlpha",
+                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(MiuixTheme.colorScheme.surfaceContainer.copy(alpha = alpha)),
+                )
+            }
+            Image(
+                painter = painter,
+                contentDescription = null,
+                modifier = Modifier.thenIf(state !is AsyncImagePainter.State.Success) {
+                    // Keep applying this when state is `Loading` to avoid cutting off the ripple
+                    clickable { if (state is AsyncImagePainter.State.Error) painter.restart() }
+                }.fillMaxSize(),
+                contentScale = contentScale,
+            )
+        }
     }
 }

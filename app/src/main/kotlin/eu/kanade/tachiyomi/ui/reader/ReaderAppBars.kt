@@ -26,7 +26,17 @@ import com.ehviewer.core.ui.util.AdaptiveBreakpoints
 import com.ehviewer.core.ui.util.LocalWindowLayout
 import com.hippo.ehviewer.ui.main.NavigationIcon
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
-import top.yukonga.miuix.kmp.basic.SmallTopAppBar
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.text.style.TextOverflow
+import com.ehviewer.core.ui.component.LiquidGlassSurface
+import com.ehviewer.core.ui.component.SquircleShape
+import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 private val animationSpec = tween<IntOffset>(200)
@@ -43,19 +53,59 @@ fun BoxScope.ReaderAppBars(
     onSliderValueChange: (Int) -> Unit,
     onClickSettings: () -> Unit,
 ) {
-    val backgroundColor = MiuixTheme.colorScheme.surface.copy(alpha = if (MiuixTheme.colorScheme.surface.luminance() < 0.5f) 0.9f else 0.95f)
-
     AnimatedVisibility(
         visible = visible,
-        modifier = Modifier.windowInsetsPadding(WindowInsets.systemBarsIgnoringVisibility.only(WindowInsetsSides.Horizontal)).align(Alignment.TopStart),
+        modifier = Modifier
+            .windowInsetsPadding(WindowInsets.systemBarsIgnoringVisibility.only(WindowInsetsSides.Horizontal))
+            .align(Alignment.TopCenter),
         enter = slideInVertically(initialOffsetY = { -it }, animationSpec = animationSpec),
         exit = slideOutVertically(targetOffsetY = { -it }, animationSpec = animationSpec),
     ) {
-        SmallTopAppBar(
-            title = title,
-            color = backgroundColor,
-            navigationIcon = { NavigationIcon() },
-        )
+        val windowLayout = LocalWindowLayout.current
+        val horizontalPadding = if (windowLayout.isWide) 32.dp else 16.dp
+        val verticalPadding = if (windowLayout.isShortLandscape) 6.dp else 12.dp
+        Box(
+            modifier = Modifier
+                .statusBarsPadding()
+                .padding(horizontal = horizontalPadding, vertical = verticalPadding)
+                .widthIn(max = AdaptiveBreakpoints.READER_BAR_MAX_WIDTH_DP.dp)
+                .fillMaxWidth(),
+        ) {
+            LiquidGlassSurface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp),
+                shape = SquircleShape(20.dp),
+                elevation = 8.dp,
+                containerColor = MiuixTheme.colorScheme.surfaceContainer,
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    NavigationIcon()
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = title,
+                        style = MiuixTheme.textStyles.title4,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f),
+                    )
+                    if (totalPages > 1) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "$currentPage/$totalPages",
+                            style = MiuixTheme.textStyles.footnote2,
+                            color = MiuixTheme.colorScheme.onSurfaceSecondary,
+                            modifier = Modifier.padding(end = 8.dp),
+                        )
+                    }
+                }
+            }
+        }
     }
 
     AnimatedVisibility(

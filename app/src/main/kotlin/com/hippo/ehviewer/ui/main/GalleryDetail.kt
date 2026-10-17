@@ -22,9 +22,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.dimensionResource
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.ehviewer.core.i18n.R
@@ -44,6 +46,7 @@ import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Blocklist
+import top.yukonga.miuix.kmp.icon.extended.Favorites
 import top.yukonga.miuix.kmp.icon.extended.Folder
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -53,42 +56,68 @@ fun GalleryDetailHeaderInfoCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) = detail.run {
-    Card(
-        onClick = onClick,
-        modifier = modifier.width(IntrinsicSize.Max),
+    Column(
+        modifier = modifier
+            .clip(SquircleShape(12.dp))
+            .background(MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.65f))
+            .clickable(role = Role.Button, onClick = onClick)
+            .padding(horizontal = 10.dp, vertical = 8.dp),
     ) {
-        Column(modifier = Modifier.padding(8.dp)) {
-            Row {
-                Text(
-                    text = language.orEmpty(),
-                    style = MiuixTheme.textStyles.footnote1,
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = language.orEmpty(),
+                style = MiuixTheme.textStyles.footnote1,
+                color = MiuixTheme.colorScheme.primary,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+            )
+            Text(
+                text = size.orEmpty(),
+                style = MiuixTheme.textStyles.footnote1,
+                color = MiuixTheme.colorScheme.onSurfaceSecondary,
+                maxLines = 1,
+            )
+        }
+        Spacer(modifier = Modifier.height(6.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = pluralStringResource(id = R.plurals.page_count, pages, pages),
+                style = MiuixTheme.textStyles.footnote1,
+                color = MiuixTheme.colorScheme.onSurface,
+                maxLines = 1,
+            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = MiuixIcons.Favorites,
+                    contentDescription = null,
+                    modifier = Modifier.size(12.dp),
+                    tint = MiuixTheme.colorScheme.onSurfaceSecondary,
                 )
-                Spacer(modifier = Modifier.width(16.dp).weight(1f))
+                Spacer(modifier = Modifier.width(3.dp))
                 Text(
-                    text = size.orEmpty(),
+                    text = favoriteCount.toString(),
                     style = MiuixTheme.textStyles.footnote1,
+                    color = MiuixTheme.colorScheme.onSurfaceSecondary,
+                    maxLines = 1,
                 )
             }
-            Spacer(modifier = Modifier.height(4.dp))
-            Row {
-                Text(
-                    text = stringResource(id = R.string.favored_times, favoriteCount),
-                    modifier = Modifier.alignByBaseline(),
-                    style = MiuixTheme.textStyles.footnote1,
-                )
-                Spacer(modifier = Modifier.width(16.dp).weight(1f))
-                Text(
-                    text = pluralStringResource(id = R.plurals.page_count, pages, pages),
-                    modifier = Modifier.alignByBaseline(),
-                    style = MiuixTheme.textStyles.footnote1,
-                )
-            }
+        }
+        if (!posted.isNullOrEmpty()) {
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = posted.orEmpty(),
-                modifier = Modifier.align(Alignment.CenterHorizontally),
+                modifier = Modifier.align(Alignment.End),
                 style = MiuixTheme.textStyles.footnote2,
                 color = MiuixTheme.colorScheme.onSurfaceSecondary,
+                maxLines = 1,
             )
         }
     }
@@ -105,7 +134,9 @@ fun GalleryDetailHeaderCard(
     modifier: Modifier = Modifier,
     onCoverClick: (() -> Unit)? = null,
 ) = Card(modifier = modifier) {
-    Row {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+    ) {
         with(detailThumbGenerator) {
             EhThumbCard(
                 key = remember(info.gid) { info },
@@ -117,95 +148,98 @@ fun GalleryDetailHeaderCard(
                 },
             )
         }
-        // 宽屏（横屏/平板）下用固定间距，避免弹性间隔把信息列推到最右侧留下大片空白
-        if (LocalWindowLayout.current.isWideContent) {
-            Spacer(modifier = Modifier.width(dimensionResource(id = com.hippo.ehviewer.R.dimen.keyline_margin)))
-        } else {
-            Spacer(modifier = Modifier.weight(0.5F))
-        }
+        val isWide = LocalWindowLayout.current.isWideContent
+        Spacer(modifier = Modifier.width(if (isWide) dimensionResource(id = com.hippo.ehviewer.R.dimen.keyline_margin) else 12.dp))
         Column(
-            modifier = Modifier.height(dimensionResource(id = com.hippo.ehviewer.R.dimen.gallery_detail_thumb_height)),
-            horizontalAlignment = Alignment.End,
+            modifier = Modifier
+                .weight(1f)
+                .height(dimensionResource(id = com.hippo.ehviewer.R.dimen.gallery_detail_thumb_height))
+                .padding(end = 8.dp, top = 6.dp, bottom = 6.dp),
+            verticalArrangement = Arrangement.SpaceBetween,
         ) {
             (info as? GalleryDetail)?.let {
                 GalleryDetailHeaderInfoCard(
                     detail = it,
                     onClick = onInfoCardClick,
-                    modifier = Modifier.padding(top = 8.dp, end = dimensionResource(id = com.hippo.ehviewer.R.dimen.keyline_margin)),
+                    modifier = Modifier.fillMaxWidth(),
                 )
-            }
-            Spacer(modifier = Modifier.weight(1F))
-            val categoryText = EhUtils.getCategory(info.category).uppercase()
-            Row(
-                modifier = Modifier
-                    .padding(horizontal = dimensionResource(id = com.hippo.ehviewer.R.dimen.keyline_margin), vertical = 3.dp)
-                    .clip(SquircleShape(8.dp))
-                    .background(MiuixTheme.colorScheme.surfaceContainer)
-                    .clickable(onClick = onCategoryChipClick)
-                    .padding(horizontal = 10.dp, vertical = 6.dp),
-                verticalAlignment = Alignment.CenterVertically,
+            } ?: Spacer(modifier = Modifier.weight(1f))
+
+            Column(
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+                horizontalAlignment = Alignment.End,
+                modifier = Modifier.fillMaxWidth(),
             ) {
-                Icon(
-                    imageVector = MiuixIcons.Folder,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp),
-                    tint = MiuixTheme.colorScheme.primary,
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = categoryText,
-                    overflow = TextOverflow.Visible,
-                    softWrap = false,
-                    maxLines = 1,
-                    style = MiuixTheme.textStyles.footnote1,
-                    color = MiuixTheme.colorScheme.primary,
-                )
-            }
-            info.uploader?.takeIf { it.isNotEmpty() }?.let { uploaderText ->
-                val canBlock = uploaderText != "(Disowned)"
+                val categoryText = EhUtils.getCategory(info.category).uppercase()
                 Row(
                     modifier = Modifier
-                        .padding(horizontal = dimensionResource(id = com.hippo.ehviewer.R.dimen.keyline_margin), vertical = 3.dp)
                         .clip(SquircleShape(8.dp))
-                        .background(MiuixTheme.colorScheme.surfaceContainer),
+                        .background(MiuixTheme.colorScheme.surfaceContainer)
+                        .clickable(role = Role.Button, onClick = onCategoryChipClick)
+                        .padding(horizontal = 10.dp, vertical = 5.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    if (canBlock) {
-                        IconButton(
-                            onClick = onBlockUploaderIconClick,
-                            modifier = Modifier.size(28.dp),
-                            cornerRadius = 8.dp,
-                            minHeight = 28.dp,
-                            minWidth = 28.dp,
+                    Icon(
+                        imageVector = MiuixIcons.Folder,
+                        contentDescription = null,
+                        modifier = Modifier.size(15.dp),
+                        tint = MiuixTheme.colorScheme.primary,
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = categoryText,
+                        overflow = TextOverflow.Visible,
+                        softWrap = false,
+                        maxLines = 1,
+                        style = MiuixTheme.textStyles.footnote1,
+                        color = MiuixTheme.colorScheme.primary,
+                    )
+                }
+                info.uploader?.takeIf { it.isNotEmpty() }?.let { uploaderText ->
+                    val canBlock = uploaderText != "(Disowned)"
+                    Row(
+                        modifier = Modifier
+                            .clip(SquircleShape(8.dp))
+                            .background(MiuixTheme.colorScheme.surfaceContainer),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        if (canBlock) {
+                            IconButton(
+                                onClick = onBlockUploaderIconClick,
+                                modifier = Modifier.size(28.dp),
+                                cornerRadius = 8.dp,
+                                minHeight = 28.dp,
+                                minWidth = 28.dp,
+                            ) {
+                                Icon(
+                                    imageVector = MiuixIcons.Blocklist,
+                                    contentDescription = stringResource(id = R.string.block_uploader),
+                                    modifier = Modifier.size(15.dp),
+                                    tint = MiuixTheme.colorScheme.onSurfaceSecondary,
+                                )
+                            }
+                        }
+                        Box(
+                            modifier = Modifier
+                                .defaultMinSize(minHeight = 28.dp)
+                                .clickable(role = Role.Button, onClick = onUploaderChipClick)
+                                .padding(
+                                    start = if (canBlock) 2.dp else 10.dp,
+                                    end = 10.dp,
+                                    top = 5.dp,
+                                    bottom = 5.dp,
+                                ),
+                            contentAlignment = Alignment.CenterStart,
                         ) {
-                            Icon(
-                                imageVector = MiuixIcons.Blocklist,
-                                contentDescription = stringResource(id = R.string.block_uploader),
-                                modifier = Modifier.size(16.dp),
-                                tint = MiuixTheme.colorScheme.onSurfaceSecondary,
+                            Text(
+                                text = uploaderText,
+                                overflow = TextOverflow.Ellipsis,
+                                softWrap = false,
+                                maxLines = 1,
+                                style = MiuixTheme.textStyles.footnote1,
+                                color = MiuixTheme.colorScheme.onSurface,
                             )
                         }
-                    }
-                    Box(
-                        modifier = Modifier
-                            .defaultMinSize(minHeight = 36.dp)
-                            .clickable(role = Role.Button, onClick = onUploaderChipClick)
-                            .padding(
-                                start = if (canBlock) 2.dp else 10.dp,
-                                end = 10.dp,
-                                top = 6.dp,
-                                bottom = 6.dp,
-                            ),
-                        contentAlignment = Alignment.CenterStart,
-                    ) {
-                        Text(
-                            text = uploaderText,
-                            overflow = TextOverflow.Ellipsis,
-                            softWrap = false,
-                            maxLines = 1,
-                            style = MiuixTheme.textStyles.footnote1,
-                            color = MiuixTheme.colorScheme.onSurface,
-                        )
                     }
                 }
             }

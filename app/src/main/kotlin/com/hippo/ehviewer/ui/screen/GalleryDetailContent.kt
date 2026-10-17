@@ -5,6 +5,11 @@ import android.content.Context
 import android.content.Intent
 import androidx.annotation.StringRes
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.input.pointer.pointerInput
+import com.ehviewer.core.ui.component.SquircleShape
 import androidx.compose.foundation.MutatorMutex
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -353,7 +358,7 @@ fun GalleryDetailContent(
     val useDualPane = when (detailLayoutMode) {
         GALLERY_DETAIL_LAYOUT_SINGLE_COLUMN -> false
         GALLERY_DETAIL_LAYOUT_DUAL_PANE -> true
-        else -> windowLayout.isLargeLandscape
+        else -> windowLayout.isLargeLandscape || (windowLayout.isWide && windowLayout.heightDp >= AdaptiveBreakpoints.RAIL_MIN_HEIGHT_DP)
     }
     when {
         useDualPane -> BoxWithConstraints(modifier = modifier.fillMaxSize()) {
@@ -375,6 +380,23 @@ fun GalleryDetailContent(
                 )
             }
             val paneFraction = splitFraction.coerceIn(minPaneFraction, 1f - minPaneFraction)
+            var isDraggingDivider by remember { mutableStateOf(false) }
+            val dividerWidth by animateDpAsState(
+                targetValue = if (isDraggingDivider) 6.dp else 4.dp,
+                label = "DividerWidth",
+            )
+            val dividerHeight by animateDpAsState(
+                targetValue = if (isDraggingDivider) 64.dp else 44.dp,
+                label = "DividerHeight",
+            )
+            val dividerColor by animateColorAsState(
+                targetValue = if (isDraggingDivider) {
+                    MiuixTheme.colorScheme.primary
+                } else {
+                    MiuixTheme.colorScheme.onSurface.copy(alpha = 0.2f)
+                },
+                label = "DividerColor",
+            )
             Row(modifier = Modifier.fillMaxSize()) {
                 // 信息栏不需要单栏分支那句 LocalPinnableContainer pin：pin 只在懒加载 item 作用域里存在
                 // （这里取 current 只会拿到 null），用途是阻止 item 滚出视口后被回收；信息栏是常驻组合的
@@ -430,8 +452,21 @@ fun GalleryDetailContent(
                     modifier = Modifier
                         .fillMaxHeight()
                         .width(AdaptiveBreakpoints.GALLERY_DETAIL_DIVIDER_WIDTH_DP.dp)
+                        .pointerInput(Unit) {
+                            detectTapGestures(
+                                onDoubleTap = {
+                                    splitFraction = 0.5f
+                                    Settings.galleryDetailSplitPercent.value = 50
+                                },
+                            )
+                        }
                         .draggable(
                             orientation = Orientation.Horizontal,
+                            onDragStarted = { isDraggingDivider = true },
+                            onDragStopped = {
+                                isDraggingDivider = false
+                                Settings.galleryDetailSplitPercent.value = (splitFraction * 100).roundToInt()
+                            },
                             state = rememberDraggableState { delta ->
                                 if (totalWidthPx > 0f) {
                                     // 缩略图栏在分隔条右侧：拖右 = 缩略图收窄，增量取反让分隔条跟手
@@ -441,33 +476,21 @@ fun GalleryDetailContent(
                                     )
                                 }
                             },
-                            onDragStopped = {
-                                // 存的是拖拽意图 splitFraction，而非被窗口宽度钳制过的 paneFraction：
-                                // 窄窗口下后者恒为 0.5，写回会把用户偏好的比例抹掉且窗口变宽后无法恢复。
-                                Settings.galleryDetailSplitPercent.value = (splitFraction * 100).roundToInt()
-                            },
                         ),
                     contentAlignment = Alignment.Center,
                 ) {
                     Box(
                         modifier = Modifier
-                            .width(4.dp)
-                            .height(48.dp)
-                            .clip(RoundedCornerShape(2.dp))
-                            .background(MiuixTheme.colorScheme.onSurface.copy(alpha = 0.2f)),
+                            .width(dividerWidth)
+                            .height(dividerHeight)
+                            .clip(SquircleShape(3.dp))
+                            .background(dividerColor),
                     )
                 }
                 BoxWithConstraints(modifier = Modifier.weight(paneFraction).fillMaxHeight()) {
-                    // 列数必须按网格自身的可用宽度算，否则会把两侧 keyline 内边距也算成可排布宽度、多补一列
-                    val gridWidthDp = (maxWidth - keylineMargin * 2).value.roundToInt().coerceAtLeast(1)
+                    // 预览条单元格恒宽：拖分隔条只加列、不拉伸单元格（Fixed 会在列数不变时把格子拉宽）
                     FastScrollLazyVerticalGrid(
-                        columns = GridCells.Fixed(
-                            WindowLayout.thumbGridColumns(
-                                gridWidthDp,
-                                thumbColumns,
-                                minColumnWidthDp = AdaptiveBreakpoints.PREVIEW_STRIP_MIN_COLUMN_WIDTH_DP,
-                            ),
-                        ),
+                        columns = GridCells.FixedSize(AdaptiveBreakpoints.PREVIEW_STRIP_MIN_COLUMN_WIDTH_DP.dp),
                         contentPadding = contentPadding,
                         modifier = Modifier.fillMaxSize().padding(horizontal = keylineMargin),
                         horizontalArrangement = Arrangement.spacedBy(stripSpacing),
