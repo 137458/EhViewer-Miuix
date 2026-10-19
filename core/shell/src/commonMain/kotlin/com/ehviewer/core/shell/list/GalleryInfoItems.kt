@@ -39,8 +39,7 @@ import com.ehviewer.core.ui.component.CrystalCard
 import com.ehviewer.core.ui.component.GalleryListCardRating
 import com.ehviewer.core.ui.component.SquircleShape
 import com.ehviewer.core.ui.util.thenIf
-import dev.icerock.moko.resources.desc.Resource
-import dev.icerock.moko.resources.desc.StringDesc
+import dev.icerock.moko.resources.compose.stringResource
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
@@ -308,4 +307,4 @@ private fun CategoryBadge(
 }
 
 @Composable
-private fun labelOf(category: Int): String = StringDesc.Resource(GalleryItemVisuals.categoryLabelRes(category)).localized().uppercase()
+private fun labelOf(category: Int): String = stringResource(GalleryItemVisuals.categoryLabelRes(category)).uppercase()

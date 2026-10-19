@@ -178,6 +178,7 @@ baselineProfile {
 dependencies {
     implementation(projects.core.data)
     implementation(projects.core.i18n)
+    implementation(projects.core.shell)
     implementation(projects.core.ui)
 
     // https://developer.android.com/jetpack/androidx/releases/activity

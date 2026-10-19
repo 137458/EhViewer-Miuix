@@ -78,10 +78,13 @@ import com.ehviewer.core.ui.icons.filled.FormatListNumbered
 import com.ehviewer.core.ui.icons.filled.GoTo
 import com.ehviewer.core.ui.icons.filled.LastPage
 import com.ehviewer.core.ui.icons.filled.Shuffle
+import com.ehviewer.core.shell.list.CategoryFilterStrip
+import com.ehviewer.core.shell.list.HomeFloatingActionCapsule
 import com.ehviewer.core.ui.util.Await
 import com.ehviewer.core.ui.util.HapticFeedbackType
 import com.ehviewer.core.ui.util.asyncState
 import com.ehviewer.core.ui.util.rememberHapticFeedback
+import com.ehviewer.core.ui.util.snackBarPadding
 import com.ehviewer.core.ui.util.thenIf
 import com.ehviewer.core.util.launch
 import com.ehviewer.core.util.launchIO
@@ -115,6 +118,7 @@ import com.hippo.ehviewer.ui.main.GalleryInfoGridItem
 import com.hippo.ehviewer.ui.main.GalleryInfoListItem
 import com.hippo.ehviewer.ui.main.GalleryList
 import com.hippo.ehviewer.ui.main.SearchFilter
+import com.hippo.ehviewer.ui.main.galleryCategoryChips
 import com.hippo.ehviewer.ui.tools.DialogState
 import com.hippo.ehviewer.ui.tools.awaitConfirmationOrCancel
 import com.hippo.ehviewer.ui.tools.awaitInputText
@@ -546,8 +550,10 @@ fun AnimatedVisibilityScope.GalleryListScreen(
         },
         subHeader = if (urlBuilder.mode == MODE_NORMAL) {
             {
-                GalleryCategoryFilterStrip(
+                CategoryFilterStrip(
+                    categories = galleryCategoryChips(),
                     selectedCategory = category,
+                    allLabel = stringResource(R.string.category_all),
                     onSelectCategory = { newCat ->
                         category = newCat
                         // Category changes start a new query; discard the previous paging cursor.
@@ -577,6 +583,8 @@ fun AnimatedVisibilityScope.GalleryListScreen(
 
             HomeFloatingActionCapsule(
                 visible = !fabHidden,
+                // 避让 snackbar 由宿主注入（共享组件不感知宿主布局）
+                modifier = Modifier.snackBarPadding(),
                 onRefresh = {
                     urlBuilder.setRange(0)
                     data.refresh()
