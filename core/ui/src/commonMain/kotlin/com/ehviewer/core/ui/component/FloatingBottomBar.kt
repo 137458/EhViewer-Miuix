@@ -11,6 +11,7 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.EaseOut
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.WindowInsets
@@ -22,7 +23,6 @@ import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
@@ -84,8 +84,9 @@ import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.blur.sensor.rememberDeviceTilt
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-private const val FLOATING_BAR_MIN_WIDTH_DP = 320
-private const val FLOATING_BAR_MAX_WIDTH_DP = 540
+// 单个 tab 的理想宽度（dp）：胶囊总宽 = tabsCount × 该值 + 左右各 4dp 内边距。
+// 可用宽度不足时整体等比压缩，而不是以固定最小宽度始终撑满。
+private const val FLOATING_BAR_ITEM_WIDTH_DP = 58
 
 val LocalTabGesturePosition = compositionLocalOf { mutableStateOf<Float?>(null) }
 
@@ -466,15 +467,10 @@ fun IosLiquidGlassNavigationBar(
             .padding(bottom = bottomPaddingValue, start = 24.dp, end = 24.dp),
         contentAlignment = Alignment.BottomCenter,
     ) {
-        Box(
-            modifier = Modifier
-                .widthIn(
-                    min = FLOATING_BAR_MIN_WIDTH_DP.dp,
-                    max = FLOATING_BAR_MAX_WIDTH_DP.dp,
-                )
-                .fillMaxWidth(),
-            contentAlignment = Alignment.Center,
-        ) {
+        BoxWithConstraints(contentAlignment = Alignment.Center) {
+            // 胶囊宽度随 tab 数收窄：理想宽度 = tabsCount × 58dp + 8dp；可用宽度不足时压缩到可用宽度。
+            val idealBarWidth = FLOATING_BAR_ITEM_WIDTH_DP.dp * items.size + 8.dp
+            val barWidth = minOf(idealBarWidth, maxWidth)
             FloatingBottomBar(
                 selectedIndex = { selectedIndex },
                 onSelected = { index ->
@@ -486,7 +482,7 @@ fun IosLiquidGlassNavigationBar(
                 mode = mode,
                 colors = colors,
                 directSelector = directSelector,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.width(barWidth),
             ) {
                 items.forEachIndexed { index, item ->
                     FloatingBottomBarItem(
