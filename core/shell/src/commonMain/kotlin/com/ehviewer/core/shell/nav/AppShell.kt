@@ -16,9 +16,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.only
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
@@ -27,21 +25,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.semantics.selected
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.ehviewer.core.ui.component.FloatingBottomBar
-import com.ehviewer.core.ui.component.FloatingBottomBarItem
+import com.ehviewer.core.ui.component.IosLiquidGlassNavigationBar
 import com.ehviewer.core.ui.component.blurBackdropSource
 import com.ehviewer.core.ui.util.BottomBarInsetsCalculator
 import com.ehviewer.core.ui.util.LocalBottomBarContentPadding
 import com.ehviewer.core.ui.util.NavigationChrome
-import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.NavigationItem
 import top.yukonga.miuix.kmp.basic.NavigationRail
 import top.yukonga.miuix.kmp.basic.NavigationRailItem
-import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
 
 // 单窗口自适应导航外壳（与 :app MainActivity 大屏形态同源）：
@@ -63,7 +54,6 @@ fun AppShell(
 ) {
     val hapticFeedback = LocalHapticFeedback.current
     val navBarBottomPadding = WindowInsets.navigationBars.only(WindowInsetsSides.Bottom).asPaddingValues().calculateBottomPadding()
-    val bottomBarEdgePadding = BottomBarInsetsCalculator.calculateBarBottomPadding(navBarBottomPadding)
     val mainContentBottomPadding = BottomBarInsetsCalculator.calculateMainContentBottomPadding(
         isPrimaryDestination = bottomBarVisible,
         navigationChrome = chrome,
@@ -117,41 +107,15 @@ fun AppShell(
                         visible = bottomBarVisible,
                         enter = slideInVertically { it } + fadeIn(),
                         exit = slideOutVertically { it } + fadeOut(),
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .padding(bottom = bottomBarEdgePadding, start = 24.dp, end = 24.dp),
+                        modifier = Modifier.align(Alignment.BottomCenter),
                     ) {
-                        FloatingBottomBar(
-                            modifier = Modifier,
-                            selectedIndex = { primarySelectedIndex.coerceAtLeast(0) },
-                            onSelected = { index ->
-                                hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                                onPrimarySelected(index)
-                            },
+                        IosLiquidGlassNavigationBar(
+                            items = primaryItems.map { NavigationItem(label = it.label, icon = it.icon) },
+                            selectedIndex = primarySelectedIndex.coerceAtLeast(0),
+                            onItemClick = onPrimarySelected,
                             backdrop = backdrop,
-                            tabsCount = primaryItems.size,
-                        ) {
-                            primaryItems.forEachIndexed { index, item ->
-                                FloatingBottomBarItem(
-                                    onClick = {
-                                        hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                                        onPrimarySelected(index)
-                                    },
-                                    modifier = Modifier.semantics { selected = primarySelectedIndex == index },
-                                ) {
-                                    Icon(
-                                        imageVector = item.icon,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(22.dp),
-                                    )
-                                    Text(
-                                        text = item.label,
-                                        fontSize = 11.sp,
-                                        fontWeight = if (primarySelectedIndex == index) FontWeight.SemiBold else FontWeight.Normal,
-                                    )
-                                }
-                            }
-                        }
+                            modifier = Modifier.fillMaxWidth(),
+                        )
                     }
                 }
             }

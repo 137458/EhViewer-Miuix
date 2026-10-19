@@ -91,11 +91,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.selected
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.core.net.toUri
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
@@ -104,8 +100,7 @@ import androidx.navigation.compose.rememberNavController
 import com.ehviewer.core.files.isDirectory
 import com.ehviewer.core.files.toOkioPath
 import com.ehviewer.core.i18n.R
-import com.ehviewer.core.ui.component.FloatingBottomBar
-import com.ehviewer.core.ui.component.FloatingBottomBarItem
+import com.ehviewer.core.ui.component.IosLiquidGlassNavigationBar
 import com.ehviewer.core.ui.component.LabeledCheckbox
 import com.ehviewer.core.ui.component.LocalSideSheetState
 import com.ehviewer.core.ui.component.MutableSideSheet
@@ -184,6 +179,7 @@ import splitties.systemservices.clipboardManager
 import splitties.systemservices.connectivityManager
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.NavigationRail
+import top.yukonga.miuix.kmp.basic.NavigationItem
 import top.yukonga.miuix.kmp.basic.NavigationRailItem
 import top.yukonga.miuix.kmp.basic.NavigationRailValue
 import top.yukonga.miuix.kmp.basic.rememberNavigationRailState
@@ -471,7 +467,6 @@ class MainActivity : AppCompatActivity() {
 
             val contentBackdrop = rememberBlurBackdrop()
             val navBarBottomPadding = WindowInsets.navigationBars.only(WindowInsetsSides.Bottom).asPaddingValues().calculateBottomPadding()
-            val bottomPaddingValue = BottomBarInsetsCalculator.calculateBarBottomPadding(navBarBottomPadding)
             val mainContentBottomPadding = BottomBarInsetsCalculator.calculateMainContentBottomPadding(
                 isPrimaryDestination = isPrimaryDestination,
                 navigationChrome = navigationChrome,
@@ -536,43 +531,17 @@ class MainActivity : AppCompatActivity() {
                                     visible = isPrimaryDestination,
                                     enter = slideInVertically { it } + fadeIn(),
                                     exit = slideOutVertically { it } + fadeOut(),
-                                    modifier = Modifier
-                                        .align(Alignment.BottomCenter)
-                                        .padding(bottom = bottomPaddingValue, start = 24.dp, end = 24.dp),
+                                    modifier = Modifier.align(Alignment.BottomCenter),
                                 ) {
-                                    FloatingBottomBar(
-                                        modifier = Modifier,
-                                        selectedIndex = { primaryIndex.coerceAtLeast(0) },
-                                        onSelected = { index ->
-                                            hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                                            navigateToTab(primaryNavItems[index].first)
+                                    IosLiquidGlassNavigationBar(
+                                        items = primaryNavItems.map { (_, stringId, icon) ->
+                                            NavigationItem(label = stringResource(id = stringId), icon = icon)
                                         },
+                                        selectedIndex = primaryIndex.coerceAtLeast(0),
+                                        onItemClick = { index -> navigateToTab(primaryNavItems[index].first) },
                                         backdrop = contentBackdrop,
-                                        tabsCount = primaryNavItems.size,
-                                    ) {
-                                        primaryNavItems.forEachIndexed { index, (_, stringId, icon) ->
-                                            FloatingBottomBarItem(
-                                                onClick = {
-                                                    hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                                                    navigateToTab(primaryNavItems[index].first)
-                                                },
-                                                modifier = Modifier.semantics {
-                                                    selected = primaryIndex == index
-                                                },
-                                            ) {
-                                                Icon(
-                                                    imageVector = icon,
-                                                    contentDescription = null,
-                                                    modifier = Modifier.size(22.dp),
-                                                )
-                                                Text(
-                                                    text = stringResource(id = stringId),
-                                                    fontSize = 11.sp,
-                                                    fontWeight = if (primaryIndex == index) FontWeight.SemiBold else FontWeight.Normal,
-                                                )
-                                            }
-                                        }
-                                    }
+                                        modifier = Modifier.fillMaxWidth(),
+                                    )
                                 }
                             }
                         }
