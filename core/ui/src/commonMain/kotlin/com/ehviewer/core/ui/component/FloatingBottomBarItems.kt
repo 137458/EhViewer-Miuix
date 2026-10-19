@@ -5,7 +5,7 @@
 // and compose-miuix-ui official example (component.liquid.LiquidGlassNavigationBar)
 // with core physics and shader pipeline from Kyant0/AndroidLiquidGlass (Apache 2.0).
 
-/**
+/*
  * [FloatingBottomBar] 的 Tab 项 DSL 组件（自 FloatingBottomBar.kt 拆分而来，纯代码搬运）。
  *
  * [FloatingBottomBarItem] 自动继承动态图层颜色（[LocalFloatingBottomBarContentColor]）与

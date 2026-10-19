@@ -5,7 +5,7 @@
 // and compose-miuix-ui official example (component.liquid.LiquidGlassNavigationBar)
 // with core physics and shader pipeline from Kyant0/AndroidLiquidGlass (Apache 2.0).
 
-/**
+/*
  * [FloatingBottomBar] 的三层渲染子组件（自 FloatingBottomBar.kt 拆分而来，纯代码搬运）：
  *
  * 1. [BottomBarBaseLayer]：未选中状态底层外壳，承载毛玻璃 / 实色 / 液态玻璃折射底衬与点击容器；
