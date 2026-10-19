@@ -92,6 +92,7 @@ import com.ehviewer.core.database.model.LocalFavoriteInfo
 import com.ehviewer.core.i18n.MR
 import com.ehviewer.core.model.BaseGalleryInfo
 import com.ehviewer.core.network.EhCookieStore
+import com.ehviewer.core.shell.list.CategoryFilterStrip
 import com.ehviewer.core.shell.list.GalleryInfoGridItem
 import com.ehviewer.core.shell.list.GalleryInfoListItem
 import com.ehviewer.core.shell.list.GalleryItemStatus
@@ -212,6 +213,17 @@ fun LibraryScreen(
     val searchHistoryList = remember(searchHistoryRaw) {
         DesktopSearchHistory.decode(searchHistoryRaw)
     }
+    // 在线搜索过滤条件与快速搜索（JSON 持久化，坏数据经 decode 容错回默认）
+    val searchFiltersRaw by DesktopSettings.searchFilters.valueFlow()
+        .collectAsState(DesktopSettings.searchFilters.value)
+    val searchFilters = remember(searchFiltersRaw) {
+        DesktopSearchFiltersCodec.decode(searchFiltersRaw)
+    }
+    val quickSearchRaw by DesktopSettings.quickSearch.valueFlow()
+        .collectAsState(DesktopSettings.quickSearch.value)
+    val quickSearchList = remember(quickSearchRaw) {
+        DesktopQuickSearch.decode(quickSearchRaw)
+    }
     var previewCoverUrl by remember { mutableStateOf<String?>(null) }
     var previewUrls by remember { mutableStateOf<List<String>>(emptyList()) }
     var notifications by remember { mutableStateOf<List<DesktopNotification>>(emptyList()) }
@@ -235,6 +247,8 @@ fun LibraryScreen(
     val removedFromHistoryText = stringResource(MR.strings.desktop_removed_from_history)
     val undoText = stringResource(MR.strings.desktop_notification_undo)
     val filterText = stringResource(MR.strings.desktop_filter)
+    val allCategoriesText = stringResource(MR.strings.category_all)
+    val saveSearchText = stringResource(MR.strings.action_save)
     val noBrowserText = stringResource(MR.strings.no_browser_installed)
     // 连接错误标签包：cleanErrorMessage 无组合语境，经注入走 i18n
     val connectionErrorLabels = DesktopConnectionErrorLabels(
@@ -260,11 +274,34 @@ fun LibraryScreen(
         DesktopSettings.searchHistory.value = DesktopSearchHistory.encode(updated)
     }
 
+    // 过滤条件持久化：面板与分类条共用入口（写设置后由 valueFlow 驱动重组）
+    fun updateSearchFilters(filters: DesktopSearchFilters) {
+        DesktopSettings.searchFilters.value = DesktopSearchFiltersCodec.encode(filters)
+    }
+
+    // 保存当前在线搜索为快速搜索条目：名称即查询串，重名/重复查询静默跳过
+    fun saveCurrentSearch() {
+        val query = remoteSearchQuery.trim()
+        if (query.isEmpty() || quickSearchList.any { it.query == query }) return
+        val updated = DesktopQuickSearch.add(quickSearchList, name = query, query = query)
+        DesktopSettings.quickSearch.value = DesktopQuickSearch.encode(updated)
+    }
+
+    fun removeQuickSearchByQuery(query: String) {
+        val item = quickSearchList.firstOrNull { it.query == query } ?: return
+        DesktopSettings.quickSearch.value = DesktopQuickSearch.encode(DesktopQuickSearch.remove(quickSearchList, item.id))
+    }
+
     // 远程搜索防重入：连按 Enter 时忽略后续触发，避免慢请求完成后覆盖新请求结果（数据错位）
     var remoteSearching by remember { mutableStateOf(false) }
-    fun remoteSearch(query: String, nextGid: Long? = null, pushCursor: Boolean = true) {
+    fun remoteSearch(
+        query: String,
+        nextGid: Long? = null,
+        pushCursor: Boolean = true,
+        filters: DesktopSearchFilters = searchFilters,
+    ) {
         if (remoteSearching) return
-        val url = DesktopSearchUrl.build(query, nextGid = nextGid) ?: return
+        val url = DesktopSearchUrl.build(query, nextGid = nextGid, filters = filters) ?: return
         remoteSearchQuery = query
         if (pushCursor) {
             // 新方向搜索：截断回退分支后压入本次游标
@@ -321,7 +358,7 @@ fun LibraryScreen(
     suspend fun loadMoreOnline() {
         if (!currentTab.isOnline || loadingMoreOnline || remoteSearching) return
         val lastGid = online.lastOrNull()?.gid ?: return
-        val url = DesktopSearchUrl.build(remoteSearchQuery, nextGid = lastGid) ?: return
+        val url = DesktopSearchUrl.build(remoteSearchQuery, nextGid = lastGid, filters = searchFilters) ?: return
         loadingMoreOnline = true
         loadMoreErrorText = null
         try {
@@ -357,13 +394,13 @@ fun LibraryScreen(
 
     // 刷新防重入：连按 F5/重试时忽略后续触发，避免并发 EH_HOME 请求交错污染连接状态
     var refreshing by remember { mutableStateOf(false) }
-    suspend fun refreshGalleries() {
+    suspend fun refreshGalleries(filters: DesktopSearchFilters = searchFilters) {
         if (refreshing) return
         refreshing = true
         try {
             connectionStatus = DesktopConnectionStatus.Checking
             val url = if (currentTab.isOnline) {
-                DesktopSearchUrl.buildForTab(currentTab, remoteSearchQuery)
+                DesktopSearchUrl.buildForTab(currentTab, remoteSearchQuery, filters = filters)
             } else {
                 "https://e-hentai.org/"
             }
@@ -636,14 +673,80 @@ fun LibraryScreen(
                 searchFieldHint = stringResource(MR.strings.search_hint),
                 searchFieldState = searchFieldState,
                 suggestionsProvider = { query ->
-                    DesktopSearchHistory.filterSuggestions(searchHistoryList, query, maxSuggestions = 20)
+                    // 快速搜索置前（MenuBook 图标行）：名称或查询串命中即显示；历史随后，按 keyword 去重防 items key 冲突
+                    val quick = quickSearchList
+                        .filter {
+                            query.isBlank() ||
+                                it.name.contains(query, ignoreCase = true) ||
+                                it.query.contains(query, ignoreCase = true)
+                        }
+                        .map {
+                            SearchSuggestion(
+                                keyword = it.query,
+                                hint = it.name,
+                                canDelete = true,
+                                canOpenDirectly = true,
+                            )
+                        }
+                    val history = DesktopSearchHistory.filterSuggestions(searchHistoryList, query, maxSuggestions = 20)
                         .map { SearchSuggestion(keyword = it, canDelete = true) }
+                    (quick + history).distinctBy { it.keyword }
                 },
                 onDeleteSuggestion = { keyword ->
-                    val updated = DesktopSearchHistory.removeQuery(searchHistoryList, keyword)
-                    DesktopSettings.searchHistory.value = DesktopSearchHistory.encode(updated)
+                    // 删除先匹配快速搜索（按查询串），未命中再删历史
+                    val quickItem = quickSearchList.firstOrNull { it.query == keyword }
+                    if (quickItem != null) {
+                        removeQuickSearchByQuery(keyword)
+                    } else {
+                        val updated = DesktopSearchHistory.removeQuery(searchHistoryList, keyword)
+                        DesktopSettings.searchHistory.value = DesktopSearchHistory.encode(updated)
+                    }
+                },
+                subHeader = if (currentTab.isOnline) {
+                    {
+                        CategoryFilterStrip(
+                            categories = DesktopCategoryChips.specs(),
+                            selectedCategory = searchFilters.category,
+                            allLabel = allCategoriesText,
+                            onSelectCategory = { flag ->
+                                val updated = searchFilters.copy(category = flag)
+                                updateSearchFilters(updated)
+                                if (remoteSearchQuery.isNotBlank()) {
+                                    remoteSearch(remoteSearchQuery, filters = updated)
+                                } else {
+                                    coroutineScope.launch { refreshGalleries(updated) }
+                                }
+                            },
+                        )
+                    }
+                } else {
+                    null
+                },
+                filter = if (currentTab.isOnline) {
+                    {
+                        DesktopSearchFilterPanel(
+                            filters = searchFilters,
+                            onFiltersChange = { updateSearchFilters(it) },
+                        )
+                    }
+                } else {
+                    null
                 },
                 trailingIcon = {
+                    // 保存当前搜索为快速搜索条目：仅在线 tab 且有查询串、未保存过时出现
+                    if (currentTab.isOnline && remoteSearchQuery.isNotBlank() && quickSearchList.none { it.query == remoteSearchQuery.trim() }) {
+                        DesktopHoverPill(
+                            onClick = { saveCurrentSearch() },
+                            containerColor = MiuixTheme.colorScheme.surfaceContainerHighest,
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                        ) {
+                            Text(
+                                text = saveSearchText,
+                                color = MiuixTheme.colorScheme.primary,
+                                fontSize = 12.sp,
+                            )
+                        }
+                    }
                     DesktopHoverPill(
                         onClick = {
                             sortConfig = sortConfig.cycle().also {
