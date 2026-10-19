@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
@@ -122,41 +121,34 @@ fun AppShell(
                             .align(Alignment.BottomCenter)
                             .padding(bottom = bottomBarEdgePadding, start = 24.dp, end = 24.dp),
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .widthIn(min = 320.dp, max = 540.dp)
-                                .fillMaxWidth(),
-                            contentAlignment = Alignment.Center,
+                        FloatingBottomBar(
+                            modifier = Modifier,
+                            selectedIndex = { primarySelectedIndex.coerceAtLeast(0) },
+                            onSelected = { index ->
+                                hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                                onPrimarySelected(index)
+                            },
+                            backdrop = backdrop,
+                            tabsCount = primaryItems.size,
                         ) {
-                            FloatingBottomBar(
-                                modifier = Modifier.fillMaxWidth(),
-                                selectedIndex = { primarySelectedIndex.coerceAtLeast(0) },
-                                onSelected = { index ->
-                                    hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    onPrimarySelected(index)
-                                },
-                                backdrop = backdrop,
-                                tabsCount = primaryItems.size,
-                            ) {
-                                primaryItems.forEachIndexed { index, item ->
-                                    FloatingBottomBarItem(
-                                        onClick = {
-                                            hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                                            onPrimarySelected(index)
-                                        },
-                                        modifier = Modifier.semantics { selected = primarySelectedIndex == index },
-                                    ) {
-                                        Icon(
-                                            imageVector = item.icon,
-                                            contentDescription = null,
-                                            modifier = Modifier.size(22.dp),
-                                        )
-                                        Text(
-                                            text = item.label,
-                                            fontSize = 11.sp,
-                                            fontWeight = if (primarySelectedIndex == index) FontWeight.SemiBold else FontWeight.Normal,
-                                        )
-                                    }
+                            primaryItems.forEachIndexed { index, item ->
+                                FloatingBottomBarItem(
+                                    onClick = {
+                                        hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                                        onPrimarySelected(index)
+                                    },
+                                    modifier = Modifier.semantics { selected = primarySelectedIndex == index },
+                                ) {
+                                    Icon(
+                                        imageVector = item.icon,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(22.dp),
+                                    )
+                                    Text(
+                                        text = item.label,
+                                        fontSize = 11.sp,
+                                        fontWeight = if (primarySelectedIndex == index) FontWeight.SemiBold else FontWeight.Normal,
+                                    )
                                 }
                             }
                         }

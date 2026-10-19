@@ -16,9 +16,9 @@ import androidx.compose.foundation.focusable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.WindowInsets
@@ -33,7 +33,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
@@ -122,8 +121,9 @@ import top.yukonga.miuix.kmp.blur.sensor.rememberDeviceTilt
 import top.yukonga.miuix.kmp.theme.LocalContentColor as MiuixLocalContentColor
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-private const val FLOATING_BAR_MIN_WIDTH_DP = 320
-private const val FLOATING_BAR_MAX_WIDTH_DP = 540
+// 单个 tab 的理想宽度（dp）：胶囊总宽 = tabsCount × 该值 + 左右各 4dp 内边距。
+// 可用宽度不足时整体等比压缩，而不是像旧实现那样以 320dp 为最小宽度始终撑满。
+private const val FLOATING_BAR_ITEM_WIDTH_DP = 58
 
 val LocalFloatingBottomBarContentColor = staticCompositionLocalOf { Color.Unspecified }
 val LocalFloatingBottomBarTabScale = staticCompositionLocalOf { { 1f } }
@@ -424,10 +424,14 @@ fun FloatingBottomBar(
 
     val combinedBackdrop = backdrop?.let { rememberCombinedBackdrop(it, tabsBackdrop) }
 
-    Box(
-        modifier = modifier.width(IntrinsicSize.Min),
+    BoxWithConstraints(
+        modifier = modifier,
         contentAlignment = Alignment.CenterStart,
     ) {
+        // 胶囊宽度随 tab 数收窄：理想宽度 = tabsCount × 58dp + 8dp；可用空间不足时压缩到可用宽度。
+        val idealBarWidth = FLOATING_BAR_ITEM_WIDTH_DP.dp * tabsCount + 8.dp
+        val barWidth = if (maxWidth == Dp.Infinity) idealBarWidth else minOf(idealBarWidth, maxWidth)
+
         // ── 1. Base Layer（未选中状态底层外壳） ──
         CompositionLocalProvider(LocalFloatingBottomBarContentColor provides colors.contentColor) {
             Row(
@@ -491,6 +495,7 @@ fun FloatingBottomBar(
                         },
                     )
                     .then(if (isLiquidGlassMode && interactiveHighlight != null) interactiveHighlight.modifier else Modifier)
+                    .width(barWidth)
                     .height(64.dp)
                     .padding(4.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -513,6 +518,7 @@ fun FloatingBottomBar(
                         .layerBackdrop(tabsBackdrop)
                         .graphicsLayer { translationX = panelOffset }
                         .then(interactiveHighlight?.modifier ?: Modifier)
+                        .width(barWidth)
                         .height(56.dp)
                         .padding(horizontal = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -633,16 +639,11 @@ fun IosLiquidGlassNavigationBar(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .padding(bottom = bottomPaddingValue, start = 24.dp, end = 24.dp),
+            .padding(bottom = bottomPaddingValue, start = 16.dp, end = 16.dp),
         contentAlignment = Alignment.BottomCenter,
     ) {
         Box(
-            modifier = Modifier
-                .widthIn(
-                    min = FLOATING_BAR_MIN_WIDTH_DP.dp,
-                    max = FLOATING_BAR_MAX_WIDTH_DP.dp,
-                )
-                .fillMaxWidth(),
+            modifier = Modifier.wrapContentWidth(),
             contentAlignment = Alignment.Center,
         ) {
             FloatingBottomBar(
@@ -655,7 +656,7 @@ fun IosLiquidGlassNavigationBar(
                 tabsCount = items.size,
                 mode = mode,
                 colors = colors,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier,
             ) {
                 items.forEachIndexed { index, item ->
                     FloatingBottomBarItem(

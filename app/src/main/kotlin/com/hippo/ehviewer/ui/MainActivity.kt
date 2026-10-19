@@ -58,7 +58,6 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -541,43 +540,36 @@ class MainActivity : AppCompatActivity() {
                                         .align(Alignment.BottomCenter)
                                         .padding(bottom = bottomPaddingValue, start = 24.dp, end = 24.dp),
                                 ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .widthIn(min = 320.dp, max = 540.dp)
-                                            .fillMaxWidth(),
-                                        contentAlignment = Alignment.Center,
+                                    FloatingBottomBar(
+                                        modifier = Modifier,
+                                        selectedIndex = { primaryIndex.coerceAtLeast(0) },
+                                        onSelected = { index ->
+                                            hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                                            navigateToTab(primaryNavItems[index].first)
+                                        },
+                                        backdrop = contentBackdrop,
+                                        tabsCount = primaryNavItems.size,
                                     ) {
-                                        FloatingBottomBar(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            selectedIndex = { primaryIndex.coerceAtLeast(0) },
-                                            onSelected = { index ->
-                                                hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                                                navigateToTab(primaryNavItems[index].first)
-                                            },
-                                            backdrop = contentBackdrop,
-                                            tabsCount = primaryNavItems.size,
-                                        ) {
-                                            primaryNavItems.forEachIndexed { index, (_, stringId, icon) ->
-                                                FloatingBottomBarItem(
-                                                    onClick = {
-                                                        hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                                                        navigateToTab(primaryNavItems[index].first)
-                                                    },
-                                                    modifier = Modifier.semantics {
-                                                        selected = primaryIndex == index
-                                                    },
-                                                ) {
-                                                    Icon(
-                                                        imageVector = icon,
-                                                        contentDescription = null,
-                                                        modifier = Modifier.size(22.dp),
-                                                    )
-                                                    Text(
-                                                        text = stringResource(id = stringId),
-                                                        fontSize = 11.sp,
-                                                        fontWeight = if (primaryIndex == index) FontWeight.SemiBold else FontWeight.Normal,
-                                                    )
-                                                }
+                                        primaryNavItems.forEachIndexed { index, (_, stringId, icon) ->
+                                            FloatingBottomBarItem(
+                                                onClick = {
+                                                    hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                                                    navigateToTab(primaryNavItems[index].first)
+                                                },
+                                                modifier = Modifier.semantics {
+                                                    selected = primaryIndex == index
+                                                },
+                                            ) {
+                                                Icon(
+                                                    imageVector = icon,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(22.dp),
+                                                )
+                                                Text(
+                                                    text = stringResource(id = stringId),
+                                                    fontSize = 11.sp,
+                                                    fontWeight = if (primaryIndex == index) FontWeight.SemiBold else FontWeight.Normal,
+                                                )
                                             }
                                         }
                                     }
