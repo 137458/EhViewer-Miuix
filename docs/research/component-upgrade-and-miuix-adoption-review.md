@@ -66,9 +66,9 @@ GitHub API 对 `repos/FooIbar/EhViewer` 返回（2026-10-23 查询）：
 | ksp | 2.3.9 | **2.3.12** | 与 Kotlin 2.4.21 对齐 |
 | agp | 9.3.1 | **9.4.1**（或保守 9.3.3） | 需过 build-logic convention 全量验证；Gradle wrapper 9.7.1 待兼容性复核 |
 | room | 2.8.4 | **2.8.5** | 补丁版 |
-| okhttp-bom | 5.5.0 | **5.5.1** | 升级后复检 vendored AsyncDns shim 是否仍必要（本地缓存 okhttp-jvm-5.5.0.jar 实测 0 个 AsyncDns 类，5.5.1 未验） |
+| okhttp-bom | 5.5.0 | **5.5.1** | 已升级并实测：okhttp-jvm-5.5.1.jar 仍不含 AsyncDns 类（仅有新回调式 Dns API），vendored shim 继续保留 |
 | kotlinx-serialization | 1.11.0 | **1.12.0** | 小版本 |
-| compose-bom-alpha | 2026.08.00 | **2026.10.01** | 本仓主动追 alpha BOM 的既有选择 |
+| compose-bom-alpha | 2026.08.00 | **不可再升**（2026-10-23 实测） | 2026.09.00 起全部 BOM 把 foundation 拉到 1.13.0-alpha03、2026.10.x 到 beta02，要求 compileSdk 37.1（本仓 37）直接构建失败；2026.08.00 实为 1.13.0-alpha01（未带 SDK 门槛故可编译）。BOM 升级须与 compileSdk 37.1 迁移捆绑 |
 | datastore | 1.2.1 | **1.3.0** | 小版本，消费方 `:app`/`:core:data` |
 | moko-resources | 0.26.4 | **0.27.1** | 涉及 `:core:i18n` 五 locale 生成链，升级后跑全量资源任务 |
 | webkit / work / paging | 1.17.0 / 2.11.2 / 3.5.1 | **1.18.0 / 2.12.0 / 3.5.3** | androidx 常规小版本 |
