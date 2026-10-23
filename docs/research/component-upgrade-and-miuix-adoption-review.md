@@ -150,6 +150,14 @@ Kotlin 2.5.0-Beta2、CMP 1.13.0-beta01（2026-10-23 当日发布）、JB materia
 
 ## 6. 与既有重构路线的衔接（行动排序）
 
+执行状态（2026-10-24 更新）：第 0/1 批已完成并验证（AGP 9.4.1、datastore 1.3.0 落地；compose-bom 升级被实测否决；moko 0.27 因生成形态破坏性变更推迟，见 3.2 表）；第 2 批（桌面 miuix-nav）已完成：DesktopPage 实现 NavKey、NavBackStack 承载、常驻 NavDisplay（movableContentOf 包裹跨 chrome 迁移保状态）、栈操作语义与测试同步改写，实跑冒烟通过。第 3 批（移动端 destinations 退场）尽调后存在三个硬阻断，暂缓待决策：
+
+1. 全部 23 个 Screen 均为 `AnimatedVisibilityScope` 扩展并深度绑定共享元素转场（`sharedBounds` 的 API 契约要求 AnimatedVisibilityScope 类型）；miuix-nav 的转场 scope（LocalNavTransitionScope/LiveNavTransitionScope）不是该类型，强迁会砍掉列表封面到详情页的连续过渡动画。
+2. `CommonOperations.nav` 全局导航单例与 `navigateToTab` 的 saveState/restoreState/popUpTo(root) 多 Tab 栈语义在 miuix-nav v1 单栈模型中无对应，需自建 multi-backstack 层。
+3. `MainNavItems`/`MainNavPolicy` 与动态 start 目的地（needSignIn/hasNetwork 三态）均基于 destinations Direction 类型，需重建为 NavKey 模型。
+
+可选路径：等待 miuix-nav 提供 AnimatedVisibilityScope 兼容层或多栈支持；或接受行为退化一次性切换；或维持 destinations 至 Kotlin 2.5 实际断点出现前。第 4 批（自绘收敛试点）不受影响可独立推进。
+
 叠加在架构报告六阶段路线图与 `:core:shell` M0-M7 之上，组件升级轴建议如下排序（每步独立可回滚，验证标准 = `assembleDefaultRelease` + `:desktop:compileKotlin` + `:desktop:desktopTest` 三件套）：
 
 1. **第 0 批（本周，零代码改动的版本对齐）**：CMP 1.12.2（顺带收获异形阴影闪烁修复）→ Kotlin 2.4.21 + KSP 2.3.12 → Room 2.8.5 / okhttp 5.5.1（升后复检 AsyncDns shim）/ serialization 1.12.0 / bom-alpha 2026.10.01 / webkit / work / paging。datastore 1.3.0 与 moko 0.27.1 涉及 `:core:i18n` 资源生成与偏好层，单独一批并跑五 locale 校验。

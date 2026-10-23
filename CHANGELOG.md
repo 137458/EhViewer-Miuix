@@ -6,6 +6,8 @@
 
 ### 优化
 
+- 桌面端页面导航迁移至 miuix-nav：库/设置/详情/阅读页切换获得与移动端一致的 HyperOS 滑入转场与视差效果，进入/退出阅读器时页面状态不再丢失；同步升级 Android Gradle Plugin 9.4.1 与 DataStore 1.3.0。
+
 - 升级 Compose Multiplatform 至 1.12.2：上游修复非矩形 graphicsLayer 阴影动画闪烁，Squircle 圆角与液态玻璃组件的阴影动效受益；同步对齐 Kotlin 2.4.21、KSP 2.3.12、Room 2.8.5、okhttp 5.5.1、kotlinx-serialization 1.12.0 及 webkit/work/paging 补丁版本。
 
 - 统一移动端与桌面端库页筛选组件：分类胶囊条、筛选面板与首页悬浮操作胶囊上移至 core/shell 共享层，移动端改为薄宿主仅注入平台数据面（标签翻译、页数编辑对话框、候选资源），双端交互语义与视觉表现保持一致。
