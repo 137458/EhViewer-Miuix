@@ -1,11 +1,11 @@
 package com.ehviewer.desktop
 
 import com.ehviewer.core.model.GalleryInfo
+import java.net.URLEncoder
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import java.net.URLEncoder
 
 // 高级搜索开关位（与移动端 AdvanceTable 同值；SH=有命中页/STO=有种子/SFL=排除语言/SFU=排除上传者/SFT=排除标签）
 object DesktopAdvanceSearchBits {
@@ -39,18 +39,17 @@ data class DesktopSearchFilters(
 object DesktopSearchFiltersCodec {
     private val json = Json { ignoreUnknownKeys = true }
 
-    fun decode(raw: String): DesktopSearchFilters =
-        if (raw.isBlank()) {
+    fun decode(raw: String): DesktopSearchFilters = if (raw.isBlank()) {
+        DesktopSearchFilters.DEFAULT
+    } else {
+        try {
+            json.decodeFromString<DesktopSearchFilters>(raw)
+        } catch (_: SerializationException) {
             DesktopSearchFilters.DEFAULT
-        } else {
-            try {
-                json.decodeFromString<DesktopSearchFilters>(raw)
-            } catch (_: SerializationException) {
-                DesktopSearchFilters.DEFAULT
-            } catch (_: IllegalArgumentException) {
-                DesktopSearchFilters.DEFAULT
-            }
+        } catch (_: IllegalArgumentException) {
+            DesktopSearchFilters.DEFAULT
         }
+    }
 
     fun encode(filters: DesktopSearchFilters): String = json.encodeToString(filters)
 }

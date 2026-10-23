@@ -33,16 +33,14 @@ object DesktopQuickSearch {
 
     fun encode(list: List<DesktopQuickSearchItem>): String = json.encodeToString(list)
 
-    fun add(list: List<DesktopQuickSearchItem>, name: String, query: String): List<DesktopQuickSearchItem> =
-        list + DesktopQuickSearchItem(
-            id = (list.maxOfOrNull { it.id } ?: 0L) + 1,
-            name = name,
-            query = query,
-            position = list.size,
-        )
+    fun add(list: List<DesktopQuickSearchItem>, name: String, query: String): List<DesktopQuickSearchItem> = list + DesktopQuickSearchItem(
+        id = (list.maxOfOrNull { it.id } ?: 0L) + 1,
+        name = name,
+        query = query,
+        position = list.size,
+    )
 
-    fun remove(list: List<DesktopQuickSearchItem>, id: Long): List<DesktopQuickSearchItem> =
-        list.filterNot { it.id == id }.mapIndexed { index, item -> item.copy(position = index) }
+    fun remove(list: List<DesktopQuickSearchItem>, id: Long): List<DesktopQuickSearchItem> = list.filterNot { it.id == id }.mapIndexed { index, item -> item.copy(position = index) }
 
     // 与移动端 reorderable 回调同语义：移除 from 再插入 to；非法下标原样返回
     fun move(list: List<DesktopQuickSearchItem>, fromIndex: Int, toIndex: Int): List<DesktopQuickSearchItem> {
