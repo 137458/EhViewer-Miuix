@@ -26,6 +26,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -112,6 +113,9 @@ import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.Download
 import top.yukonga.miuix.kmp.icon.extended.Recent
 import top.yukonga.miuix.kmp.icon.extended.Settings
+import top.yukonga.miuix.kmp.nav.core.NavDisplay
+import top.yukonga.miuix.kmp.nav.core.NavKey
+import top.yukonga.miuix.kmp.nav.core.navBackStackOf
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 // 桌面壳骨架：单窗口页面栈（库 → 详情 → 阅读；设置）+ Miuix 主题三态 + 菜单栏 + 托盘驻留 + 尺寸记忆 + 会话恢复
@@ -137,21 +141,18 @@ fun main() {
     }
     DesktopImageLoader.init()
     application {
-        // 页面栈：库页为根，详情/阅读/设置逐层推入（纯模型 DesktopPageStack 驱动）
-        var pages by remember {
-            mutableStateOf(
-                if (DesktopSettings.restoreSession.value) {
-                    DesktopPageStack.restorePages(
-                        DesktopPageStack.decodeSession(
-                            DesktopSettings.sessionGalleries.value,
-                            limit = DesktopPageStack.sanitizeRestoreLimit(DesktopSettings.restoreLimit.value),
-                        ),
-                    )
-                } else {
-                    DesktopPageStack.initial()
-                },
+        // 页面栈：库页为根，详情/阅读/设置逐层推入（miuix-nav NavBackStack 承载，NavDisplay 渲染转场）
+        val initialPages = if (DesktopSettings.restoreSession.value) {
+            DesktopPageStack.restorePages(
+                DesktopPageStack.decodeSession(
+                    DesktopSettings.sessionGalleries.value,
+                    limit = DesktopPageStack.sanitizeRestoreLimit(DesktopSettings.restoreLimit.value),
+                ),
             )
+        } else {
+            DesktopPageStack.initial()
         }
+        val pages = remember { navBackStackOf(*initialPages.toTypedArray()) }
         // 恢复尺寸钳入目标屏幕工作区（dp）：超屏尺寸会被 AWT 钳到最小值并使 windowState 与实际窗口脱钩
         val restoredPosition = rememberedWindowPosition()
         val restoredSize = run {
@@ -185,7 +186,7 @@ fun main() {
 
         // 会话保存：页面栈变化即持久化详情链（含 hydrate 回写的标题）
         LaunchedEffect(Unit) {
-            snapshotFlow { pages }
+            snapshotFlow { pages.toList() }
                 .drop(1)
                 .collect { stack ->
                     DesktopSettings.sessionGalleries.value = DesktopPageStack.encodeSession(
@@ -196,12 +197,12 @@ fun main() {
 
         val openGallery: (BaseGalleryInfo) -> Unit = { gallery ->
             showWindow()
-            pages = DesktopPageStack.push(pages, DesktopPage.GalleryDetail(gallery))
+            DesktopPageStack.pushPage(pages, DesktopPage.GalleryDetail(gallery))
         }
         val openReader: (BaseGalleryInfo) -> Unit = { gallery ->
-            pages = DesktopPageStack.push(pages, DesktopPage.Reader(gallery))
+            DesktopPageStack.pushPage(pages, DesktopPage.Reader(gallery))
         }
-        val popPage: () -> Unit = { pages = DesktopPageStack.pop(pages) }
+        val popPage: () -> Unit = { DesktopPageStack.popPage(pages) }
         // 主库 Tab 状态上提：左侧导航栏与库页共用同一选中态（大屏导航外壳）
         var libraryTab by remember { mutableStateOf(LibraryTab.fromName(DesktopSettings.lastTab.value)) }
         val selectTab: (LibraryTab) -> Unit = { tab ->
@@ -212,12 +213,12 @@ fun main() {
         val selectNavItem: (DesktopNavItem) -> Unit = { item ->
             val tab = item.toLibraryTab()
             if (tab != null) {
-                pages = DesktopPageStack.popToRoot(pages)
+                DesktopPageStack.popToRootPage(pages)
                 selectTab(tab)
             } else if (pages.last() is DesktopPage.Settings) {
                 popPage()
             } else {
-                pages = DesktopPageStack.push(pages, DesktopPage.Settings)
+                DesktopPageStack.pushPage(pages, DesktopPage.Settings)
             }
         }
 
@@ -238,7 +239,7 @@ fun main() {
                     Item(stringResource(MR.strings.tray_open_app), onClick = ::showWindow)
                     Item(stringResource(MR.strings.menu_settings), onClick = {
                         showWindow()
-                        pages = DesktopPageStack.push(pages, DesktopPage.Settings)
+                        DesktopPageStack.pushPage(pages, DesktopPage.Settings)
                     })
                     Separator()
                     Item(stringResource(MR.strings.menu_exit), onClick = { exitApplication() })
@@ -417,6 +418,64 @@ fun main() {
                                         .fillMaxSize()
                                         .blurBackdropSource(backdrop),
                                 ) {
+                                    // 常驻 NavDisplay：chrome 切换（进入/退出阅读器无外壳态）经 movableContent 迁移，
+                                    // 页面组合状态与转场连续性不受宿主位置变化影响
+                                    val pageContent = remember {
+                                        movableContentOf {
+                                            NavDisplay(backStack = pages) {
+                                                entry<DesktopPage.Library> {
+                                                    LibraryScreen(
+                                                        activeTab = libraryTab,
+                                                        onTabSelect = selectTab,
+                                                        openGalleryDialogVisible = showOpenGalleryDialog,
+                                                        onOpenGalleryDialogOpen = { showOpenGalleryDialog = true },
+                                                        onOpenGalleryDialogClose = { showOpenGalleryDialog = false },
+                                                        onOpenGallery = openGallery,
+                                                        onOpenReader = openReader,
+                                                        onOpenSettings = {
+                                                            if (pages.last() is DesktopPage.Settings) popPage() else DesktopPageStack.pushPage(pages, DesktopPage.Settings)
+                                                        },
+                                                        onShowShortcuts = { showShortcutsHelp = true },
+                                                        onShowAbout = { showAbout = true },
+                                                        onExit = { exitApplication() },
+                                                    )
+                                                }
+                                                entry<DesktopPage.Settings> {
+                                                    SettingsScreen(
+                                                        onBack = popPage,
+                                                        onShowShortcuts = { showShortcutsHelp = true },
+                                                        onShowAbout = { showAbout = true },
+                                                        onOpenNavItems = {
+                                                            DesktopPageStack.pushPage(pages, DesktopPage.NavItems)
+                                                        },
+                                                    )
+                                                }
+                                                entry<DesktopPage.NavItems> {
+                                                    NavItemsScreen(onBack = popPage)
+                                                }
+                                                entry<DesktopPage.GalleryDetail> { page ->
+                                                    GalleryDetailPageContent(
+                                                        gallery = page.gallery,
+                                                        onBack = popPage,
+                                                        onGalleryUpdated = { updated ->
+                                                            // hydrate 回写：栈顶详情页替换为真实元数据，窗口标题随之更新
+                                                            DesktopPageStack.updateTopGallery(pages, updated)
+                                                        },
+                                                        onOpenReader = openReader,
+                                                        onSearchTag = { tag ->
+                                                            // 标签搜索：回到库页后驱动主库即时搜索（页面栈语义下的窗口内联动）
+                                                            DesktopPageStack.popToRootPage(pages)
+                                                            DesktopSearchBus.request(tag)
+                                                            logcat("DetailPage", LogPriority.INFO) { "Tag search dispatched: $tag" }
+                                                        },
+                                                    )
+                                                }
+                                                entry<DesktopPage.Reader> { page ->
+                                                    ReaderScreen(gallery = page.gallery, onClose = popPage)
+                                                }
+                                            }
+                                        }
+                                    }
                                     val isReader = pages.last() is DesktopPage.Reader
                                     // 导航形态：设置强制优先，Auto 走共享宽高双门槛（矮窗口自动落回底栏）；阅读器全屏无外壳
                                     val chrome = when {
@@ -426,10 +485,7 @@ fun main() {
                                         else -> windowLayout.navigationChrome
                                     }
                                     if (chrome == null) {
-                                        when (val page = pages.last()) {
-                                            is DesktopPage.Reader -> ReaderScreen(gallery = page.gallery, onClose = popPage)
-                                            else -> {}
-                                        }
+                                        pageContent()
                                     } else {
                                         val shellDensity = LocalDensity.current.density
                                         LaunchedEffect(chrome, navBarStyle, windowLayout) {
@@ -499,51 +555,7 @@ fun main() {
                                                         },
                                                     ),
                                             ) {
-                                                when (val page = pages.last()) {
-                                                    DesktopPage.Library -> LibraryScreen(
-                                                        activeTab = libraryTab,
-                                                        onTabSelect = selectTab,
-                                                        openGalleryDialogVisible = showOpenGalleryDialog,
-                                                        onOpenGalleryDialogOpen = { showOpenGalleryDialog = true },
-                                                        onOpenGalleryDialogClose = { showOpenGalleryDialog = false },
-                                                        onOpenGallery = openGallery,
-                                                        onOpenReader = openReader,
-                                                        onOpenSettings = {
-                                                            if (pages.last() is DesktopPage.Settings) popPage() else pages = DesktopPageStack.push(pages, DesktopPage.Settings)
-                                                        },
-                                                        onShowShortcuts = { showShortcutsHelp = true },
-                                                        onShowAbout = { showAbout = true },
-                                                        onExit = { exitApplication() },
-                                                    )
-                                                    DesktopPage.Settings -> SettingsScreen(
-                                                        onBack = popPage,
-                                                        onShowShortcuts = { showShortcutsHelp = true },
-                                                        onShowAbout = { showAbout = true },
-                                                        onOpenNavItems = {
-                                                            pages = DesktopPageStack.push(pages, DesktopPage.NavItems)
-                                                        },
-                                                    )
-                                                    DesktopPage.NavItems -> NavItemsScreen(onBack = popPage)
-                                                    is DesktopPage.GalleryDetail -> GalleryDetailPageContent(
-                                                        gallery = page.gallery,
-                                                        onBack = popPage,
-                                                        onGalleryUpdated = { updated ->
-                                                            // hydrate 回写：栈顶详情页替换为真实元数据，窗口标题随之更新
-                                                            pages = DesktopPageStack.updateTopGallery(pages, updated)
-                                                        },
-                                                        onOpenReader = openReader,
-                                                        onSearchTag = { tag ->
-                                                            // 标签搜索：回到库页后驱动主库即时搜索（页面栈语义下的窗口内联动）
-                                                            pages = DesktopPageStack.popToRoot(pages)
-                                                            DesktopSearchBus.request(tag)
-                                                            logcat("DetailPage", LogPriority.INFO) { "Tag search dispatched: $tag" }
-                                                        },
-                                                    )
-                                                    is DesktopPage.Reader -> ReaderScreen(
-                                                        gallery = page.gallery,
-                                                        onClose = popPage,
-                                                    )
-                                                }
+                                                pageContent()
                                             }
                                         }
                                     }

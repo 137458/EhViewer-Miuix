@@ -44,6 +44,7 @@ kotlin {
                 implementation(libs.ktor.client.cio)
                 implementation(libs.ktor.client.okhttp)
                 implementation(libs.moko.resources.compose)
+                implementation(libs.miuix.nav)
                 implementation(projects.core.common)
                 implementation(projects.core.data)
                 implementation(projects.core.i18n)
