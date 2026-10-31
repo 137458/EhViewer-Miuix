@@ -26,3 +26,6 @@ desktop/src/desktopMain/resources/native/
 app/src/main/rust/target-desk/
 app/src/main/rust/target-gnudesktop/
 .goal/
+
+# 内部调研与过程文档不入库（遵循 AGENTS.md 规范）
+docs/research/
