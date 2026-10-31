@@ -29,11 +29,9 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.State
-import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
@@ -88,7 +86,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 // 可用宽度不足时整体等比压缩，而不是以固定最小宽度始终撑满。
 private const val FLOATING_BAR_ITEM_WIDTH_DP = 58
 
-val LocalTabGesturePosition = compositionLocalOf { mutableStateOf<Float?>(null) }
+val LocalTabGesturePosition = staticCompositionLocalOf<State<Float?>?> { null }
 
 val LocalFloatingBottomBarContentColor = staticCompositionLocalOf { Color.Unspecified }
 val LocalFloatingBottomBarTabScale = staticCompositionLocalOf { { 1f } }
@@ -336,12 +334,14 @@ fun FloatingBottomBar(
         }
     }
 
-    // 手势翻页期间把 pager 连续位置同步进 damped 动画基准：松手落位切回 spring 值时无跳变
-    // （snap 会打断进行中的 animateToValue，落位后二者目标一致，行为正确）。
-    LaunchedEffect(dampedDragAnimation, gesturePosition) {
-        snapshotFlow { gesturePosition.value }.collectLatest { position ->
-            if (position != null) {
-                dampedDragAnimation.updateValue(position)
+    if (gesturePosition != null) {
+        // 手势翻页期间把 pager 连续位置同步进 damped 动画基准：松手落位切回 spring 值时无跳变
+        // （snap 会打断进行中的 animateToValue，落位后二者目标一致，行为正确）。
+        LaunchedEffect(dampedDragAnimation, gesturePosition) {
+            snapshotFlow { gesturePosition.value }.collectLatest { position ->
+                if (position != null) {
+                    dampedDragAnimation.updateValue(position)
+                }
             }
         }
     }
@@ -352,7 +352,7 @@ fun FloatingBottomBar(
                 InteractiveHighlight(
                     animationScope = animationScope,
                     position = { size, _ ->
-                        val progress = gesturePosition.value ?: dampedDragAnimation.value
+                        val progress = gesturePosition?.value ?: dampedDragAnimation.value
                         Offset(
                             if (isLtr) {
                                 (progress + 0.5f) * tabWidthPx + panelOffsetState.value

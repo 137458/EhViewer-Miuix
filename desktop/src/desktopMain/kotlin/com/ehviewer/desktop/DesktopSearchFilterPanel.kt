@@ -81,7 +81,10 @@ fun DesktopSearchFilterPanel(
             FilterDropdownSpec(
                 label = minRatingLabel,
                 items = ratingItems,
-                selectedIndex = (filters.minRating - 1).coerceIn(0, ratingItems.lastIndex),
+                selectedIndex = when (filters.minRating) {
+                    in 2..5 -> (filters.minRating - 1).coerceIn(0, ratingItems.lastIndex)
+                    else -> 0
+                },
                 onSelectIndex = { onFiltersChange(filters.copy(minRating = if (it == 0) 0 else it + 1)) },
             ),
         ),

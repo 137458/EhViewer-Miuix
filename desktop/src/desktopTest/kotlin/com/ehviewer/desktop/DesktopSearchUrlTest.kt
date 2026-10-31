@@ -165,6 +165,15 @@ class DesktopSearchUrlTest {
     }
 
     @Test
+    fun buildBlankQueryWithLanguageFilterAppendsLanguageIntoSearch() {
+        // 空查询 + 语言过滤 = 应该生成带 f_search=language:chinese 的搜索 URL
+        assertEquals(
+            "https://e-hentai.org/?f_search=language%3Achinese",
+            DesktopSearchUrl.build("", filters = DesktopSearchFilters(language = 1)),
+        )
+    }
+
+    @Test
     fun buildBlankQueryWithActiveFiltersStillReturnsUrl() {
         // 空查询 + 分类过滤 = 站点分类浏览（无 f_search 段）
         assertEquals(

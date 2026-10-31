@@ -113,8 +113,9 @@ object DesktopSearchUrl {
             // f_cats 为排除位掩码：站点语义是「排除勾选之外的分类」
             params.add("f_cats" to (category.inv() and DesktopSearchFilters.CATEGORY_ALL).toString())
         }
-        if (trimmed.isNotEmpty()) {
-            params.add("f_search" to URLEncoder.encode(buildKeyword(trimmed, filters), "UTF-8"))
+        val keyword = buildKeyword(trimmed, filters)
+        if (keyword.isNotEmpty()) {
+            params.add("f_search" to URLEncoder.encode(keyword, "UTF-8"))
         }
         when {
             nextGid == null || nextGid < 0 -> Unit
@@ -135,7 +136,8 @@ object DesktopSearchUrl {
         ) {
             return trimmed
         }
-        return "${GalleryInfo.S_LANG_TAGS[language]} $trimmed"
+        val langTag = GalleryInfo.S_LANG_TAGS[language]
+        return if (trimmed.isEmpty()) langTag else "$langTag $trimmed"
     }
 
     private fun appendAdvanced(params: MutableList<Pair<String, String>>, filters: DesktopSearchFilters) {
