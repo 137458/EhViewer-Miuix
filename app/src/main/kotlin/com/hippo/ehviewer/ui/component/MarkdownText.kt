@@ -24,10 +24,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -427,6 +431,34 @@ fun buildAnnotatedContent(rawText: String): AnnotatedString = buildAnnotatedStri
     val len = text.length
 
     while (i < len) {
+        // [标签](链接)：链接必须保留可点击的 URL 注解
+        if (text[i] == '[') {
+            val labelEnd = text.indexOf("](", i + 1)
+            if (labelEnd != -1) {
+                val urlEnd = text.indexOf(')', labelEnd + 2)
+                if (urlEnd != -1) {
+                    val label = text.substring(i + 1, labelEnd)
+                    val url = text.substring(labelEnd + 2, urlEnd).trim()
+                    if (label.isNotEmpty() && url.isNotEmpty()) {
+                        withLink(
+                            LinkAnnotation.Url(
+                                url = url,
+                                styles = TextLinkStyles(
+                                    style = SpanStyle(
+                                        textDecoration = TextDecoration.Underline,
+                                    ),
+                                ),
+                            ),
+                        ) {
+                            appendInlineStyles(label)
+                        }
+                        i = urlEnd + 1
+                        continue
+                    }
+                }
+            }
+        }
+
         // **加粗**
         if (text.startsWith("**", i)) {
             val end = text.indexOf("**", i + 2)
@@ -456,6 +488,40 @@ fun buildAnnotatedContent(rawText: String): AnnotatedString = buildAnnotatedStri
             }
         }
 
+        append(text[i])
+        i++
+    }
+}
+
+/** 链接标签内的行内样式（加粗/代码），不再递归解析链接，避免异常嵌套。 */
+private fun AnnotatedString.Builder.appendInlineStyles(text: String) {
+    var i = 0
+    while (i < text.length) {
+        if (text.startsWith("**", i)) {
+            val end = text.indexOf("**", i + 2)
+            if (end != -1) {
+                withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
+                    append(text.substring(i + 2, end))
+                }
+                i = end + 2
+                continue
+            }
+        }
+        if (text.startsWith("`", i)) {
+            val end = text.indexOf("`", i + 1)
+            if (end != -1) {
+                withStyle(
+                    SpanStyle(
+                        fontFamily = FontFamily.Monospace,
+                        fontWeight = FontWeight.Medium,
+                    ),
+                ) {
+                    append(text.substring(i + 1, end))
+                }
+                i = end + 1
+                continue
+            }
+        }
         append(text[i])
         i++
     }

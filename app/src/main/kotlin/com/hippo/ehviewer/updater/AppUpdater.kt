@@ -18,8 +18,6 @@ import io.ktor.http.ContentType
 import io.ktor.utils.io.jvm.javaio.toInputStream
 import java.util.zip.ZipInputStream
 import kotlin.time.Clock
-import kotlin.time.Duration.Companion.days
-import kotlin.time.Instant
 import kotlinx.io.asSource
 import moe.tarsin.coroutines.runSuspendCatching
 import okio.Path
@@ -38,9 +36,8 @@ object AppUpdater {
         returnLatestIfNoUpdate: Boolean = false,
     ): Release? {
         val now = Clock.System.now()
-        val last = Instant.fromEpochSeconds(Settings.lastUpdateTime)
         val interval = Settings.updateIntervalDays.value
-        if (forceCheck || interval != 0 && now > last + interval.days) {
+        if (UpdateCheckGate.shouldCheck(forceCheck, Settings.lastUpdateTime, interval, now.epochSeconds)) {
             if (Settings.useCIUpdateChannel.value) {
                 val curSha = BuildConfig.COMMIT_SHA
                 val branch = runSuspendCatching {
@@ -113,6 +110,7 @@ object AppUpdater {
         val hasUpdate = compareVersions(latestVersion, curVersion) > 0
         if (!hasUpdate && !returnLatestIfNoUpdate) return null
         val downloadLink = release.getDownloadLink()
+        val matchedAsset = release.getMatchedAsset()
         // 没有可用安装包时不能宣称有更新，否则用户点下载会拿到一个空 URL
         if (hasUpdate && downloadLink.isBlank()) return null
         return Release(
@@ -121,7 +119,8 @@ object AppUpdater {
             downloadLink = downloadLink,
             releaseTitle = release.name ?: latestVersion,
             releaseUrl = release.releaseLink,
-            apkSize = release.getMatchedAsset()?.size ?: 0L,
+            apkSize = matchedAsset?.size ?: 0L,
+            apkDigest = matchedAsset?.digest,
             publishedAt = release.publishedAt?.take(10).orEmpty(),
             isCI = false,
             hasUpdate = hasUpdate,
@@ -253,6 +252,7 @@ data class Release(
     val releaseTitle: String = "",
     val releaseUrl: String = "",
     val apkSize: Long = 0L,
+    val apkDigest: String? = null,
     val publishedAt: String = "",
     val isCI: Boolean = false,
     val hasUpdate: Boolean,

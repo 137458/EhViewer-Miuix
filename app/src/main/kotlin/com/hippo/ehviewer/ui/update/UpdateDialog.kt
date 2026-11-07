@@ -1,9 +1,6 @@
 package com.hippo.ehviewer.ui.update
 
-import android.widget.Toast
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,15 +10,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -29,444 +23,399 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.ehviewer.core.files.delete
 import com.ehviewer.core.i18n.R
-import com.ehviewer.core.ui.component.SquircleShape
-import com.ehviewer.core.ui.util.AdaptiveBreakpoints
-import com.ehviewer.core.ui.util.LocalWindowLayout
 import com.hippo.ehviewer.BuildConfig
-import com.hippo.ehviewer.EhDB
-import com.hippo.ehviewer.Settings
-import com.hippo.ehviewer.download.downloadLocation
 import com.hippo.ehviewer.ui.component.MarkdownText
 import com.hippo.ehviewer.ui.openBrowser
-import com.hippo.ehviewer.updater.AppUpdater
 import com.hippo.ehviewer.updater.Release
-import com.hippo.ehviewer.util.AppConfig
 import com.hippo.ehviewer.util.FileUtils
-import com.hippo.ehviewer.util.ReadableTime
 import com.hippo.ehviewer.util.installPackage
-import java.io.File
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.LinearProgressIndicator
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.window.WindowDialog
 
-/**
- * Xiaomi HyperOS 3.0 / Miuix 旗舰级规范版本更新弹窗。
- * 具备版本跃迁横幅、三联元信息胶囊、带左侧重音与引用块的高级 Markdown 日志排版、
- * 流式实时速率计算、安装包拉起安装、浏览器降级下载，以及沙盒全链路动态模拟能力。
- */
+private val DialogNotesMaxHeight = 240.dp
+private val DialogNotesFade = 40.dp
+private val DialogSectionSpacing = 10.dp
+
 @Composable
 fun UpdateDialog(
     show: Boolean,
     release: Release,
     onDismiss: () -> Unit,
-    onUpdate: (url: String) -> Unit = {},
     onIgnore: ((version: String) -> Unit)? = null,
     isSimulated: Boolean = false,
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
-    // 回调期使用的文案须组合期提升：context.getString 不随配置变化更新（lint LocalContextGetResourceValueCall）
-    val sandboxDoneText = stringResource(R.string.update_msg_sandbox_done)
 
-    val isDownloading = UpdateDownloadManager.isDownloading
-    val downloadProgress = UpdateDownloadManager.downloadProgress
-    val downloadedBytes = UpdateDownloadManager.downloadedBytes
-    val totalBytes = UpdateDownloadManager.totalBytes
-    val downloadSpeed = UpdateDownloadManager.downloadSpeed
-    val downloadedFile = UpdateDownloadManager.downloadedFile
-    val downloadError = UpdateDownloadManager.downloadError
+    val plan = buildUpdateDialogPlan(
+        currentVersion = BuildConfig.RAW_VERSION_NAME,
+        release = release,
+        download = UpdateDownloadSnapshot(
+            isDownloading = UpdateDownloadManager.isDownloading,
+            progress = UpdateDownloadManager.downloadProgress,
+            downloadedBytes = UpdateDownloadManager.downloadedBytes,
+            totalBytes = UpdateDownloadManager.totalBytes,
+            speedBytesPerSec = UpdateDownloadManager.downloadSpeed,
+            doneFile = UpdateDownloadManager.downloadedFile,
+            error = UpdateDownloadManager.downloadError,
+        ),
+        canIgnore = onIgnore != null,
+        isSimulated = isSimulated,
+    )
 
-    fun cancelDownload() {
-        UpdateDownloadManager.cancel()
-    }
-
-    fun startDownload() {
-        UpdateDownloadManager.startDownload(release, isSimulated, context)
+    val summaryText = if (plan.summary.publishedAt.isNotBlank()) {
+        stringResource(
+            R.string.update_dialog_summary_dated,
+            plan.summary.currentVersion,
+            plan.summary.latestVersion,
+            plan.summary.publishedAt,
+        )
+    } else {
+        stringResource(
+            R.string.update_dialog_summary,
+            plan.summary.currentVersion,
+            plan.summary.latestVersion,
+        )
     }
 
     WindowDialog(
         show = show,
         title = stringResource(R.string.update_dialog_title),
-        onDismissRequest = {
-            if (!isDownloading) {
-                onDismiss()
-            }
-        },
+        summary = summaryText,
+        onDismissRequest = onDismiss,
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                // 横屏矮视口下弹层内容总高会超过窗口，整体可滚动避免被裁切
-                .verticalScroll(rememberScrollState()),
-        ) {
-            // ── 顶部：版本跃迁横幅 ──
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(SquircleShape(12.dp))
-                    .background(MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.35f))
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                // 当前版本
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                ) {
-                    Text(
-                        text = "v${BuildConfig.RAW_VERSION_NAME}",
-                        style = MiuixTheme.textStyles.body2.copy(
-                            fontWeight = FontWeight.Medium,
-                            fontSize = 13.sp,
-                        ),
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    )
-                }
-
-                // 跃迁动态箭头
-                Text(
-                    text = "➔",
-                    style = MiuixTheme.textStyles.body1.copy(fontWeight = FontWeight.Bold),
-                    color = MiuixTheme.colorScheme.primary,
-                )
-
-                // 目标新版本高亮胶囊
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    modifier = Modifier
-                        .clip(SquircleShape(8.dp))
-                        .background(MiuixTheme.colorScheme.primary.copy(alpha = 0.14f))
-                        .padding(horizontal = 8.dp, vertical = 3.dp),
-                ) {
-                    Text(
-                        text = release.version,
-                        style = MiuixTheme.textStyles.body2.copy(
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 13.sp,
-                        ),
-                        color = MiuixTheme.colorScheme.primary,
-                    )
-                    Box(
-                        modifier = Modifier
-                            .clip(SquircleShape(4.dp))
-                            .background(MiuixTheme.colorScheme.primary)
-                            .padding(horizontal = 4.dp, vertical = 1.dp),
-                    ) {
-                        Text(
-                            text = stringResource(R.string.update_badge_new),
-                            style = MiuixTheme.textStyles.body2.copy(
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 9.sp,
-                            ),
-                            color = MiuixTheme.colorScheme.onPrimary,
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // ── 三联元信息胶囊栏 ──
+        Column(modifier = Modifier.fillMaxWidth()) {
+            // 轻量通道标识：正式 / CI / 沙盒仍是用户判断来源的保留信息
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                // 通道胶囊
-                Box(
-                    modifier = Modifier
-                        .clip(SquircleShape(6.dp))
-                        .background(MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.5f))
-                        .padding(horizontal = 8.dp, vertical = 2.dp),
-                ) {
-                    val channelText = when {
-                        isSimulated -> stringResource(R.string.update_channel_simulated)
-                        release.isCI -> stringResource(R.string.update_channel_ci)
-                        else -> stringResource(R.string.update_channel_official)
-                    }
-                    Text(
-                        text = channelText,
-                        style = MiuixTheme.textStyles.body2.copy(fontSize = 11.sp),
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    )
-                }
-
-                // 体积胶囊
+                ChannelChip(
+                    text = when (plan.channel) {
+                        UpdateChannel.Simulated -> stringResource(R.string.update_channel_simulated)
+                        UpdateChannel.Ci -> stringResource(R.string.update_channel_ci)
+                        UpdateChannel.Official -> stringResource(R.string.update_channel_official)
+                    },
+                )
                 if (release.apkSize > 0L) {
-                    Box(
-                        modifier = Modifier
-                            .clip(SquircleShape(6.dp))
-                            .background(MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.5f))
-                            .padding(horizontal = 8.dp, vertical = 2.dp),
-                    ) {
-                        Text(
-                            text = FileUtils.humanReadableByteCount(release.apkSize),
-                            style = MiuixTheme.textStyles.body2.copy(fontSize = 11.sp),
-                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.weight(1f))
-
-                // 发布日期
-                if (release.publishedAt.isNotBlank()) {
                     Text(
-                        text = release.publishedAt,
-                        style = MiuixTheme.textStyles.body2.copy(fontSize = 11.sp),
+                        text = FileUtils.humanReadableByteCount(release.apkSize),
+                        style = MiuixTheme.textStyles.footnote2,
                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     )
                 }
+            }
+
+            Spacer(modifier = Modifier.height(DialogSectionSpacing))
+
+            NotesSection(
+                plan = plan,
+                release = release,
+            )
+
+            if (plan.showIgnore && onIgnore != null) {
+                TextButton(
+                    text = stringResource(R.string.update_dialog_btn_ignore),
+                    onClick = { onIgnore(release.version) },
+                    colors = ButtonDefaults.textButtonColorsPrimary(),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+
+            if (plan.showProgress) {
+                DownloadProgress(plan = plan)
+            }
+
+            if (plan.showBrowserFallback && plan.errorText != null) {
+                Spacer(modifier = Modifier.height(DialogSectionSpacing))
+                Text(
+                    text = plan.errorText,
+                    style = MiuixTheme.textStyles.footnote2,
+                    color = MiuixTheme.colorScheme.error,
+                )
+            }
+
+            if (plan.primary == UpdatePrimaryAction.Install) {
+                Spacer(modifier = Modifier.height(DialogSectionSpacing))
+                Text(
+                    text = stringResource(R.string.update_dialog_ready_install),
+                    style = MiuixTheme.textStyles.footnote2,
+                    color = MiuixTheme.colorScheme.primary,
+                )
             }
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // ── 更新日志展示视口 ──
-            val windowLayout = LocalWindowLayout.current
-            // 矮视口下弹层整体要挤进窗口，日志视口收紧后操作按钮才能留在首屏；
-            // 两档高度与其余弹层阈值同源，收敛到 AdaptiveBreakpoints。
-            val changelogMaxHeight = if (windowLayout.isLandscape || windowLayout.isCompactHeight) {
-                AdaptiveBreakpoints.UPDATE_CHANGELOG_MAX_HEIGHT_COMPACT_DP.dp
-            } else {
-                AdaptiveBreakpoints.UPDATE_CHANGELOG_MAX_HEIGHT_DP.dp
-            }
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = 60.dp, max = changelogMaxHeight)
-                    .clip(SquircleShape(14.dp))
-                    .background(MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.40f))
-                    .border(0.5.dp, MiuixTheme.colorScheme.dividerLine.copy(alpha = 0.25f), SquircleShape(14.dp))
-                    .padding(horizontal = 14.dp, vertical = 12.dp)
-                    .verticalScroll(rememberScrollState()),
-            ) {
-                if (release.changelog.isNotBlank()) {
-                    MarkdownText(
-                        markdown = release.changelog,
-                        modifier = Modifier.fillMaxWidth(),
-                        baseFontSize = 13,
-                    )
-                } else {
-                    Text(
-                        text = stringResource(R.string.update_dialog_no_changelog),
-                        style = MiuixTheme.textStyles.body2.copy(fontSize = 13.sp, lineHeight = 18.sp),
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    )
-                }
-            }
-
-            // ── 动态状态反馈区 ──
-            if (isDownloading) {
-                Spacer(modifier = Modifier.height(12.dp))
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(SquircleShape(12.dp))
-                        .background(MiuixTheme.colorScheme.primary.copy(alpha = 0.08f))
-                        .padding(12.dp),
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        val speedText = if (downloadSpeed > 0L) " · ${FileUtils.humanReadableByteCount(downloadSpeed)}/s" else ""
-                        Text(
-                            text = stringResource(R.string.update_dialog_downloading, speedText),
-                            style = MiuixTheme.textStyles.body2.copy(fontSize = 12.sp, fontWeight = FontWeight.SemiBold),
-                            color = MiuixTheme.colorScheme.primary,
-                        )
-                        val percent = if (downloadProgress >= 0f) "${(downloadProgress * 100).toInt()}%" else ""
-                        val sizeText = if (totalBytes > 0L) {
-                            "${FileUtils.humanReadableByteCount(downloadedBytes)} / ${FileUtils.humanReadableByteCount(totalBytes)}"
-                        } else {
-                            FileUtils.humanReadableByteCount(downloadedBytes)
-                        }
-                        Text(
-                            text = if (percent.isNotEmpty()) "$sizeText ($percent)" else sizeText,
-                            style = MiuixTheme.textStyles.body2.copy(fontSize = 11.sp),
-                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        )
+            DialogActions(
+                plan = plan,
+                onDismiss = onDismiss,
+                onInstall = {
+                    UpdateDownloadManager.downloadedFile?.let { file ->
+                        coroutineScope.launch { with(context) { installPackage(file) } }
                     }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    LinearProgressIndicator(
-                        progress = downloadProgress,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
-            } else if (downloadedFile != null) {
-                Spacer(modifier = Modifier.height(12.dp))
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(SquircleShape(12.dp))
-                        .background(MiuixTheme.colorScheme.primary.copy(alpha = 0.10f))
-                        .padding(horizontal = 12.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(8.dp)
-                            .clip(CircleShape)
-                            .background(MiuixTheme.colorScheme.primary),
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = stringResource(R.string.update_dialog_ready_install),
-                        style = MiuixTheme.textStyles.body2.copy(fontSize = 12.sp, fontWeight = FontWeight.Medium),
-                        color = MiuixTheme.colorScheme.primary,
-                    )
-                }
-            } else if (downloadError != null) {
-                Spacer(modifier = Modifier.height(12.dp))
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(SquircleShape(12.dp))
-                        .background(MiuixTheme.colorScheme.error.copy(alpha = 0.10f))
-                        .padding(12.dp),
-                ) {
-                    Text(
-                        text = stringResource(R.string.update_dialog_download_failed, downloadError),
-                        style = MiuixTheme.textStyles.body2.copy(fontSize = 12.sp, fontWeight = FontWeight.Medium),
-                        color = MiuixTheme.colorScheme.error,
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = stringResource(R.string.update_dialog_network_hint),
-                        style = MiuixTheme.textStyles.body2.copy(fontSize = 11.sp),
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // ── 底部操作按钮栏 ──
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                when {
-                    isDownloading -> {
-                        Button(
-                            onClick = { cancelDownload() },
-                            colors = ButtonDefaults.buttonColors(),
-                            modifier = Modifier.weight(1f),
-                        ) {
-                            Text(stringResource(R.string.update_dialog_btn_cancel_download))
-                        }
-                        Button(
-                            onClick = onDismiss,
-                            colors = ButtonDefaults.buttonColorsPrimary(),
-                            modifier = Modifier.weight(1f),
-                        ) {
-                            Text(stringResource(R.string.update_dialog_btn_background_download))
-                        }
-                    }
-                    downloadedFile != null -> {
-                        Button(
-                            onClick = { startDownload() },
-                            colors = ButtonDefaults.buttonColors(),
-                            modifier = Modifier.weight(1f),
-                        ) {
-                            Text(stringResource(R.string.update_dialog_btn_redownload))
-                        }
-                        Button(
-                            onClick = {
-                                if (isSimulated) {
-                                    Toast.makeText(context, sandboxDoneText, Toast.LENGTH_SHORT).show()
-                                } else {
-                                    coroutineScope.launch {
-                                        with(context) { installPackage(downloadedFile) }
-                                    }
-                                }
-                            },
-                            colors = ButtonDefaults.buttonColorsPrimary(),
-                            modifier = Modifier.weight(1.3f),
-                        ) {
-                            Text(stringResource(R.string.update_dialog_btn_install))
-                        }
-                    }
-                    downloadError != null -> {
-                        Button(
-                            onClick = {
-                                val url = release.releaseUrl.ifBlank { "https://github.com/${BuildConfig.REPO_NAME}/releases" }
-                                with(context) { openBrowser(url) }
-                            },
-                            colors = ButtonDefaults.buttonColors(),
-                            modifier = Modifier.weight(1f),
-                        ) {
-                            Text(stringResource(R.string.update_dialog_btn_browser))
-                        }
-                        Button(
-                            onClick = { startDownload() },
-                            colors = ButtonDefaults.buttonColorsPrimary(),
-                            modifier = Modifier.weight(1.2f),
-                        ) {
-                            Text(stringResource(R.string.update_dialog_btn_retry))
-                        }
-                    }
-                    else -> {
-                        if (onIgnore != null) {
-                            Button(
-                                onClick = { onIgnore(release.version) },
-                                colors = ButtonDefaults.buttonColors(),
-                                modifier = Modifier.weight(1f),
-                            ) {
-                                Text(stringResource(R.string.update_dialog_btn_ignore))
-                            }
-                        }
-                        Button(
-                            onClick = onDismiss,
-                            colors = ButtonDefaults.buttonColors(),
-                            modifier = Modifier.weight(1f),
-                        ) {
-                            Text(stringResource(R.string.update_dialog_btn_later))
-                        }
-                        Button(
-                            onClick = { startDownload() },
-                            colors = ButtonDefaults.buttonColorsPrimary(),
-                            modifier = Modifier.weight(1.3f),
-                        ) {
-                            Text(stringResource(R.string.update_dialog_btn_update_now))
-                        }
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // ── GitHub 发布详情外链 ──
-            val releasePageUrl = release.releaseUrl.ifBlank { "https://github.com/${BuildConfig.REPO_NAME}/releases" }
-            Text(
-                text = stringResource(R.string.update_dialog_github_release_note),
-                style = MiuixTheme.textStyles.body2.copy(fontSize = 11.sp),
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(SquircleShape(6.dp))
-                    .clickable { with(context) { openBrowser(releasePageUrl) } }
-                    .padding(vertical = 4.dp),
+                },
+                onStartDownload = {
+                    UpdateDownloadManager.startDownload(release, isSimulated, context)
+                },
+                onOpenBrowser = {
+                    with(context) { openBrowser(updateBrowserFallbackUrl(release)) }
+                },
             )
         }
     }
 }
+
+@Composable
+private fun NotesSection(
+    plan: UpdateDialogPlan,
+    release: Release,
+) {
+    if (!plan.hasNotes) {
+        Text(
+            text = stringResource(R.string.update_dialog_no_changelog),
+            style = MiuixTheme.textStyles.footnote2,
+            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+        )
+        return
+    }
+
+    var expanded by remember(release.version) { mutableStateOf(false) }
+    val notes = updateDialogNotesState(release.changelog, expanded)
+    val scrollState = rememberScrollState()
+    val hasContentAbove by remember { derivedStateOf { scrollState.value > 0 } }
+    val hasContentBelow by remember { derivedStateOf { scrollState.maxValue > scrollState.value } }
+
+    Text(
+        text = stringResource(R.string.update_dialog_notes_title),
+        style = MiuixTheme.textStyles.body1,
+        fontWeight = FontWeight.SemiBold,
+        color = MiuixTheme.colorScheme.onSurface,
+    )
+    Spacer(modifier = Modifier.height(6.dp))
+
+    // 唯一滚动容器：羽化层必须在外侧，否则量到的是内容总高，遮罩会落在滚出视口的位置。
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.3f))
+            .padding(12.dp),
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(max = DialogNotesMaxHeight)
+                .verticalEdgeFade(
+                    top = hasContentAbove,
+                    bottom = hasContentBelow,
+                    fade = DialogNotesFade,
+                )
+                .verticalScroll(scrollState),
+        ) {
+            MarkdownText(
+                markdown = notes.visibleMarkdown,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+    }
+
+    if (expanded || notes.hiddenLineCount > 0) {
+        TextButton(
+            text = stringResource(
+                if (expanded) R.string.update_dialog_collapse_notes else R.string.update_dialog_expand_notes,
+            ),
+            onClick = { expanded = !expanded },
+            colors = ButtonDefaults.textButtonColorsPrimary(),
+            modifier = Modifier.fillMaxWidth(),
+        )
+    }
+}
+
+@Composable
+private fun DownloadProgress(plan: UpdateDialogPlan) {
+    val numbers = plan.progress ?: return
+    val downloaded = FileUtils.humanReadableByteCount(numbers.downloadedBytes)
+    val speedText = if (numbers.speedBytesPerSec > 0L) {
+        "${FileUtils.humanReadableByteCount(numbers.speedBytesPerSec)}/s"
+    } else {
+        null
+    }
+    val detail = when {
+        numbers.totalBytes > 0L -> {
+            val total = FileUtils.humanReadableByteCount(numbers.totalBytes)
+            "$downloaded / $total" + (speedText?.let { " · $it" }.orEmpty())
+        }
+        speedText != null -> stringResource(R.string.update_dialog_progress_unknown, downloaded, speedText)
+        else -> stringResource(R.string.update_dialog_progress_unknown_no_speed, downloaded)
+    }
+
+    Spacer(modifier = Modifier.height(DialogSectionSpacing))
+    LinearProgressIndicator(
+        progress = plan.progressFraction ?: 0f,
+        modifier = Modifier.fillMaxWidth(),
+    )
+    Spacer(modifier = Modifier.height(4.dp))
+    Text(
+        text = detail,
+        style = MiuixTheme.textStyles.footnote2,
+        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+    )
+}
+
+@Composable
+private fun DialogActions(
+    plan: UpdateDialogPlan,
+    onDismiss: () -> Unit,
+    onInstall: () -> Unit,
+    onStartDownload: () -> Unit,
+    onOpenBrowser: () -> Unit,
+) {
+    when (plan.primary) {
+        UpdatePrimaryAction.Downloading -> {
+            Button(
+                onClick = {},
+                enabled = false,
+                colors = ButtonDefaults.buttonColorsPrimary(),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(
+                    text = stringResource(R.string.update_dialog_btn_downloading, plan.downloadPercent),
+                    style = MiuixTheme.textStyles.button,
+                )
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                TextButton(
+                    text = stringResource(R.string.update_dialog_btn_cancel_download),
+                    onClick = { UpdateDownloadManager.cancel() },
+                    colors = ButtonDefaults.textButtonColors(textColor = MiuixTheme.colorScheme.error),
+                    modifier = Modifier.weight(1f),
+                )
+                TextButton(
+                    text = stringResource(R.string.update_dialog_btn_background_download),
+                    onClick = onDismiss,
+                    colors = ButtonDefaults.textButtonColorsPrimary(),
+                    modifier = Modifier.weight(1f),
+                )
+            }
+        }
+
+        UpdatePrimaryAction.Retry -> {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Button(
+                    onClick = onStartDownload,
+                    colors = ButtonDefaults.buttonColorsPrimary(),
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text(
+                        text = stringResource(R.string.update_dialog_btn_retry),
+                        style = MiuixTheme.textStyles.button,
+                    )
+                }
+                TextButton(
+                    text = stringResource(R.string.update_dialog_btn_browser),
+                    onClick = onOpenBrowser,
+                    modifier = Modifier.weight(1f),
+                )
+            }
+            TextButton(
+                text = stringResource(R.string.update_dialog_btn_later),
+                onClick = onDismiss,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+
+        else -> {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Button(
+                    onClick = when (plan.primary) {
+                        UpdatePrimaryAction.Install -> onInstall
+                        UpdatePrimaryAction.OpenRelease -> onOpenBrowser
+                        else -> onStartDownload
+                    },
+                    colors = ButtonDefaults.buttonColorsPrimary(),
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text(
+                        text = when (plan.primary) {
+                            UpdatePrimaryAction.Install -> stringResource(R.string.update_dialog_btn_install)
+                            UpdatePrimaryAction.OpenRelease -> stringResource(R.string.update_dialog_btn_open_release)
+                            else -> stringResource(R.string.update_dialog_btn_update_now)
+                        },
+                        style = MiuixTheme.textStyles.button,
+                    )
+                }
+                TextButton(
+                    text = stringResource(R.string.update_dialog_btn_later),
+                    onClick = onDismiss,
+                    modifier = Modifier.weight(1f),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ChannelChip(text: String) {
+    Text(
+        text = text,
+        style = MiuixTheme.textStyles.footnote2,
+        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+        modifier = Modifier
+            .clip(RoundedCornerShape(6.dp))
+            .background(MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.5f))
+            .padding(horizontal = 8.dp, vertical = 2.dp),
+    )
+}
+
+/**
+ * 上下边缘羽化。只有在对应方向还有内容时才渐隐，滚到顶/底后恢复实心，避免"永远有雾"。
+ */
+private fun Modifier.verticalEdgeFade(
+    top: Boolean,
+    bottom: Boolean,
+    fade: Dp,
+): Modifier = graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+    .drawWithContent {
+        drawContent()
+        val fadePx = fade.toPx()
+        if (fadePx <= 0f || size.height <= fadePx * 2) return@drawWithContent
+        val edge = (fadePx / size.height).coerceIn(0f, 0.5f)
+        val stops = buildList {
+            add(0f to if (top) Color.Transparent else Color.Black)
+            if (top) add(edge to Color.Black)
+            if (bottom) add((1f - edge) to Color.Black)
+            add(1f to if (bottom) Color.Transparent else Color.Black)
+        }
+        drawRect(
+            brush = Brush.verticalGradient(*stops.toTypedArray()),
+            blendMode = BlendMode.DstIn,
+        )
+    }

@@ -42,4 +42,5 @@ data class GitHubAssets(
     val name: String,
     val size: Long = 0L,
     @SerialName("browser_download_url") val browserDownloadUrl: String? = null,
+    @SerialName("digest") val digest: String? = null,
 )

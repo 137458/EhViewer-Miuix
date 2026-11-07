@@ -153,6 +153,8 @@ import com.hippo.ehviewer.ui.tools.DialogState
 import com.hippo.ehviewer.ui.tools.awaitConfirmationOrCancel
 import com.hippo.ehviewer.ui.tools.awaitInputText
 import com.hippo.ehviewer.ui.update.UpdateDialog
+import com.hippo.ehviewer.ui.update.UpdatePromptTracker
+import com.hippo.ehviewer.ui.update.shouldPromptUpdate
 import com.hippo.ehviewer.updater.AppUpdater
 import com.hippo.ehviewer.updater.Release
 import com.hippo.ehviewer.util.AppConfig
@@ -281,7 +283,16 @@ class MainActivity : AppCompatActivity() {
                         runSuspendCatching {
                             withIOContext {
                                 val release = AppUpdater.checkForUpdate()
-                                if (release != null && release.version != Settings.ignoredUpdateVersion.value) {
+                                if (
+                                    release != null &&
+                                    shouldPromptUpdate(
+                                        version = release.version,
+                                        ignoredVersion = Settings.ignoredUpdateVersion.value,
+                                        promptedVersion = UpdatePromptTracker.promptedVersion,
+                                        userInitiated = false,
+                                    )
+                                ) {
+                                    UpdatePromptTracker.markPrompted(release.version)
                                     startupRelease = release
                                     showStartupDialog = true
                                 }
@@ -620,13 +631,22 @@ class MainActivity : AppCompatActivity() {
             }
 
             if (showStartupDialog && startupRelease != null) {
+                val ignoreAlertText = stringResource(R.string.update_msg_ignore_alert, startupRelease!!.version)
+                val undoText = stringResource(R.string.update_msg_undo_ignore)
                 UpdateDialog(
                     show = showStartupDialog,
                     release = startupRelease!!,
                     onDismiss = { showStartupDialog = false },
                     onIgnore = { version ->
+                        val previous = Settings.ignoredUpdateVersion.value
                         Settings.ignoredUpdateVersion.value = version
                         showStartupDialog = false
+                        scope.launch {
+                            val result = snackbarState.showSnackbar(ignoreAlertText, undoText, true)
+                            if (result == SnackbarResult.ActionPerformed) {
+                                Settings.ignoredUpdateVersion.value = previous
+                            }
+                        }
                     },
                 )
             }

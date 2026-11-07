@@ -12,9 +12,13 @@ import com.ehviewer.core.i18n.R
 import com.hippo.ehviewer.EhDB
 import com.hippo.ehviewer.Settings
 import com.hippo.ehviewer.download.downloadLocation
+import com.hippo.ehviewer.updater.ApkDigest
 import com.hippo.ehviewer.updater.AppUpdater
+import com.hippo.ehviewer.updater.DigestCheck
 import com.hippo.ehviewer.updater.Release
+import com.hippo.ehviewer.updater.updateFailureMessage
 import com.hippo.ehviewer.util.AppConfig
+import com.hippo.ehviewer.util.FileUtils
 import com.hippo.ehviewer.util.ReadableTime
 import com.hippo.ehviewer.util.installPackage
 import java.io.File
@@ -81,6 +85,7 @@ object UpdateDownloadManager {
         isDownloading = false
         downloadProgress = 0f
         downloadedBytes = 0L
+        totalBytes = 0L
         downloadSpeed = 0L
     }
 
@@ -154,6 +159,39 @@ object UpdateDownloadManager {
                     },
                 )
                 val file = targetPath.toFile()
+                // CI 下载的是 zip 构件，回调里的总长是压缩包体积，解压后的 APK 不能按它核对。
+                val isArchive = release.downloadLink.endsWith("zip")
+                if (!isArchive && totalBytes > 0L && file.length() != totalBytes) {
+                    val actualSize = file.length()
+                    val expectedSize = totalBytes
+                    targetPath.delete()
+                    ifFresh(downloadGeneration) {
+                        isDownloading = false
+                        downloadJob = null
+                        downloadError = context.getString(
+                            R.string.update_error_incomplete,
+                            FileUtils.humanReadableByteCount(actualSize),
+                            FileUtils.humanReadableByteCount(expectedSize),
+                        )
+                    }
+                    return@launch
+                }
+                when (val digestCheck = ApkDigest.verify(file, release.apkDigest)) {
+                    is DigestCheck.Mismatched -> {
+                        targetPath.delete()
+                        ifFresh(downloadGeneration) {
+                            isDownloading = false
+                            downloadJob = null
+                            downloadError = context.getString(
+                                R.string.update_error_digest,
+                                digestCheck.expected.take(12),
+                                digestCheck.actual.take(12),
+                            )
+                        }
+                        return@launch
+                    }
+                    DigestCheck.Skipped, DigestCheck.Verified -> Unit
+                }
                 ifFresh(downloadGeneration) {
                     downloadedFile = file
                     isDownloading = false
@@ -165,7 +203,7 @@ object UpdateDownloadManager {
                     isDownloading = false
                     downloadJob = null
                     if (e !is CancellationException) {
-                        downloadError = e.localizedMessage ?: context.getString(R.string.update_download_failed)
+                        downloadError = updateFailureMessage(context, e)
                     }
                 }
             }

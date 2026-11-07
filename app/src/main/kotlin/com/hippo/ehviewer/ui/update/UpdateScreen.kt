@@ -79,6 +79,7 @@ import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTitle
+import top.yukonga.miuix.kmp.basic.SnackbarResult
 import top.yukonga.miuix.kmp.basic.SmallTopAppBar
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
@@ -122,7 +123,15 @@ fun AnimatedVisibilityScope.UpdateScreen(navigator: DestinationsNavigator) = Scr
                 updateRelease = release
                 if (release != null && release.hasUpdate) {
                     val ignored = Settings.ignoredUpdateVersion.value
-                    if (userInitiated || release.version != ignored) {
+                    if (
+                        shouldPromptUpdate(
+                            version = release.version,
+                            ignoredVersion = ignored,
+                            promptedVersion = UpdatePromptTracker.promptedVersion,
+                            userInitiated = userInitiated,
+                        )
+                    ) {
+                        UpdatePromptTracker.markPrompted(release.version)
                         dialogRelease = release
                         showDialog = true
                     }
@@ -446,14 +455,21 @@ fun AnimatedVisibilityScope.UpdateScreen(navigator: DestinationsNavigator) = Scr
             val currentRelease = dialogRelease!!
             // onIgnore 的 version 恒为当前弹窗 release.version，文案可组合期提升
             val ignoreAlertText = stringResource(R.string.update_msg_ignore_alert, currentRelease.version)
+            val undoText = stringResource(R.string.update_msg_undo_ignore)
             UpdateDialog(
                 show = showDialog,
                 release = currentRelease,
                 onDismiss = { showDialog = false },
                 onIgnore = { ver ->
+                    val previous = Settings.ignoredUpdateVersion.value
                     Settings.ignoredUpdateVersion.value = ver
                     showDialog = false
-                    launchSnackbar(ignoreAlertText)
+                    launch {
+                        val result = snackbar(ignoreAlertText, undoText, true)
+                        if (result == SnackbarResult.ActionPerformed) {
+                            Settings.ignoredUpdateVersion.value = previous
+                        }
+                    }
                 },
             )
         }
