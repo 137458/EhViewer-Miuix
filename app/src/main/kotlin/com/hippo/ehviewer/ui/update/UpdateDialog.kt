@@ -1,5 +1,6 @@
 package com.hippo.ehviewer.ui.update
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,6 +15,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -35,12 +37,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.ehviewer.core.i18n.R
+import com.ehviewer.core.util.isAtLeastO
 import com.hippo.ehviewer.BuildConfig
 import com.hippo.ehviewer.ui.component.MarkdownText
 import com.hippo.ehviewer.ui.openBrowser
 import com.hippo.ehviewer.updater.Release
 import com.hippo.ehviewer.util.FileUtils
-import com.hippo.ehviewer.util.installPackage
+import com.hippo.ehviewer.util.requestInstallPermission
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
@@ -60,15 +63,20 @@ fun UpdateDialog(
     release: Release,
     onDismiss: () -> Unit,
     onIgnore: ((version: String) -> Unit)? = null,
-    isSimulated: Boolean = false,
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
+
+    // 切到新版本时清掉旧版本遗留的安装包与错误，避免出现"可安装"的假象。
+    LaunchedEffect(release.version) {
+        UpdateDownloadManager.discardStaleResult(release.version)
+    }
 
     val plan = buildUpdateDialogPlan(
         currentVersion = BuildConfig.RAW_VERSION_NAME,
         release = release,
         download = UpdateDownloadSnapshot(
+            releaseVersion = UpdateDownloadManager.releaseVersion,
             isDownloading = UpdateDownloadManager.isDownloading,
             progress = UpdateDownloadManager.downloadProgress,
             downloadedBytes = UpdateDownloadManager.downloadedBytes,
@@ -78,7 +86,6 @@ fun UpdateDialog(
             error = UpdateDownloadManager.downloadError,
         ),
         canIgnore = onIgnore != null,
-        isSimulated = isSimulated,
     )
 
     val summaryText = if (plan.summary.publishedAt.isNotBlank()) {
@@ -111,7 +118,6 @@ fun UpdateDialog(
             ) {
                 ChannelChip(
                     text = when (plan.channel) {
-                        UpdateChannel.Simulated -> stringResource(R.string.update_channel_simulated)
                         UpdateChannel.Ci -> stringResource(R.string.update_channel_ci)
                         UpdateChannel.Official -> stringResource(R.string.update_channel_official)
                     },
@@ -169,12 +175,27 @@ fun UpdateDialog(
                 plan = plan,
                 onDismiss = onDismiss,
                 onInstall = {
-                    UpdateDownloadManager.downloadedFile?.let { file ->
-                        coroutineScope.launch { with(context) { installPackage(file) } }
+                    val file = UpdateDownloadManager.installableFile(release.version)
+                    if (file != null) {
+                        coroutineScope.launch { installUpdatePackage(context, file) }
+                    } else {
+                        Toast.makeText(context, R.string.update_package_missing, Toast.LENGTH_LONG).show()
                     }
                 },
                 onStartDownload = {
-                    UpdateDownloadManager.startDownload(release, isSimulated, context)
+                    // 先确认安装权限再下载，避免"下载成功却装不上"。
+                    coroutineScope.launch {
+                        val permitted = if (isAtLeastO) {
+                            runCatching { with(context) { requestInstallPermission() } }.getOrDefault(false)
+                        } else {
+                            true
+                        }
+                        if (permitted) {
+                            UpdateDownloadManager.startDownload(release, context)
+                        } else {
+                            Toast.makeText(context, R.string.permission_denied, Toast.LENGTH_LONG).show()
+                        }
+                    }
                 },
                 onOpenBrowser = {
                     with(context) { openBrowser(updateBrowserFallbackUrl(release)) }
@@ -199,7 +220,9 @@ private fun NotesSection(
     }
 
     var expanded by remember(release.version) { mutableStateOf(false) }
-    val notes = updateDialogNotesState(release.changelog, expanded)
+    val notes = remember(release.changelog, expanded) {
+        updateDialogNotesState(release.changelog, expanded)
+    }
     val scrollState = rememberScrollState()
     val hasContentAbove by remember { derivedStateOf { scrollState.value > 0 } }
     val hasContentBelow by remember { derivedStateOf { scrollState.maxValue > scrollState.value } }
@@ -270,7 +293,8 @@ private fun DownloadProgress(plan: UpdateDialogPlan) {
 
     Spacer(modifier = Modifier.height(DialogSectionSpacing))
     LinearProgressIndicator(
-        progress = plan.progressFraction ?: 0f,
+        // 总长未知时传 null 走不确定进度，而不是钉死在 0%。
+        progress = plan.progressFraction,
         modifier = Modifier.fillMaxWidth(),
     )
     Spacer(modifier = Modifier.height(4.dp))
