@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
@@ -24,6 +25,7 @@ import com.hippo.ehviewer.Settings
 import com.hippo.ehviewer.asMutableState
 import eu.kanade.tachiyomi.ui.reader.setting.OrientationType
 import eu.kanade.tachiyomi.ui.reader.setting.ReadingModeType
+import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -32,24 +34,38 @@ fun ReaderModeSetting(isWebtoon: Boolean) = Column(
     // 只消费底部 inset：横向 inset 由外层 sheet 统一处理，否则横屏三键导航时每页左右不对称
     modifier = Modifier.verticalScroll(rememberScrollState()).windowInsetsPadding(WindowInsets.navigationBars.only(WindowInsetsSides.Bottom)),
 ) {
-    SpinnerChoice(
-        title = stringResource(id = R.string.pref_category_reading_mode),
-        entries = stringArrayResource(id = com.hippo.ehviewer.R.array.viewers_selector),
-        values = ReadingModeType.entries.map { it.prefValue },
-        field = Settings.readingMode.asMutableState(),
-    )
-    SpinnerChoice(
-        title = stringResource(id = R.string.rotation_type),
-        entries = stringArrayResource(id = com.hippo.ehviewer.R.array.rotation_type),
-        values = OrientationType.entries.map { it.prefValue },
-        field = Settings.orientationMode.asMutableState(),
-    )
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 4.dp),
+    ) {
+        Column {
+            SpinnerChoice(
+                title = stringResource(id = R.string.pref_category_reading_mode),
+                entries = stringArrayResource(id = com.hippo.ehviewer.R.array.viewers_selector),
+                values = ReadingModeType.entries.map { it.prefValue },
+                field = Settings.readingMode.asMutableState(),
+            )
+            SpinnerChoice(
+                title = stringResource(id = R.string.rotation_type),
+                entries = stringArrayResource(id = com.hippo.ehviewer.R.array.rotation_type),
+                values = OrientationType.entries.map { it.prefValue },
+                field = Settings.orientationMode.asMutableState(),
+            )
+        }
+    }
     Spacer(modifier = Modifier.size(16.dp))
     Crossfade(targetState = isWebtoon, label = "Setting") { webtoon ->
-        if (webtoon) {
-            WebtoonSetting()
-        } else {
-            PagerSetting()
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 4.dp),
+        ) {
+            if (webtoon) {
+                WebtoonSetting()
+            } else {
+                PagerSetting()
+            }
         }
     }
 }
