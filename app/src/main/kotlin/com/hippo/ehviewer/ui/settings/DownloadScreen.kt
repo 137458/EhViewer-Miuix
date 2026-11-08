@@ -94,6 +94,7 @@ import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TopAppBar
+import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 private const val URI_FLAGS = FLAG_GRANT_READ_URI_PERMISSION or FLAG_GRANT_WRITE_URI_PERMISSION
@@ -167,56 +168,57 @@ fun AnimatedVisibilityScope.DownloadScreen(navigator: DestinationsNavigator) = S
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 4.dp),
                 ) {
-                    Preference(
+                    ArrowPreference(
                         title = stringResource(id = R.string.settings_download_download_location),
                         summary = downloadLocationState.toUri().displayPath,
-                    ) {
-                        launchIO {
-                            val defaultDownloadDir = AppConfig.defaultDownloadDir
-                            if (defaultDownloadDir != null && defaultDownloadDir.isDirectory && defaultDownloadDir.listFiles()?.isNotEmpty() == true) {
-                                val path = defaultDownloadDir.toOkioPath()
-                                awaitConfirmationOrCancel(
-                                    confirmText = R.string.pick_new_download_location,
-                                    dismissText = if (downloadLocationState != path) {
-                                        R.string.reset_download_location
-                                    } else {
-                                        android.R.string.cancel
-                                    },
-                                    title = R.string.warning,
-                                    onCancelButtonClick = {
-                                        if (downloadLocationState != path) {
-                                            val currentUri = downloadLocationState.toUri()
-                                            contextOf<Context>().contentResolver.run {
-                                                persistedUriPermissions.find { it.uri == currentUri }?.let {
-                                                    releasePersistableUriPermission(it.uri, URI_FLAGS)
+                        onClick = {
+                            launchIO {
+                                val defaultDownloadDir = AppConfig.defaultDownloadDir
+                                if (defaultDownloadDir != null && defaultDownloadDir.isDirectory && defaultDownloadDir.listFiles()?.isNotEmpty() == true) {
+                                    val path = defaultDownloadDir.toOkioPath()
+                                    awaitConfirmationOrCancel(
+                                        confirmText = R.string.pick_new_download_location,
+                                        dismissText = if (downloadLocationState != path) {
+                                            R.string.reset_download_location
+                                        } else {
+                                            android.R.string.cancel
+                                        },
+                                        title = R.string.warning,
+                                        onCancelButtonClick = {
+                                            if (downloadLocationState != path) {
+                                                val currentUri = downloadLocationState.toUri()
+                                                contextOf<Context>().contentResolver.run {
+                                                    persistedUriPermissions.find { it.uri == currentUri }?.let {
+                                                        releasePersistableUriPermission(it.uri, URI_FLAGS)
+                                                    }
                                                 }
+                                                downloadLocationState = path
                                             }
-                                            downloadLocationState = path
-                                        }
-                                    },
-                                ) {
-                                    Text(stringResource(id = R.string.default_download_dir_not_empty))
-                                }
-                            }
-                            try {
-                                selectDownloadDirLauncher.launch(null)
-                            } catch (_: ActivityNotFoundException) {
-                                if (!isAtLeastQ && requestPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
-                                    runCatching {
-                                        val path = Environment.getExternalStorageDirectory().toOkioPath() / AppConfig.APP_DIRNAME
-                                        path.mkdirs()
-                                        check(path.isDirectory) { "$path is not a directory" }
-                                        keepNoMediaFileStatus(path)
-                                        downloadLocationState = path
-                                        return@launchIO
-                                    }.onFailure {
-                                        logcat(it)
+                                        },
+                                    ) {
+                                        Text(stringResource(id = R.string.default_download_dir_not_empty))
                                     }
                                 }
-                                launchSnackbar(cannotGetDownloadLocation)
+                                try {
+                                    selectDownloadDirLauncher.launch(null)
+                                } catch (_: ActivityNotFoundException) {
+                                    if (!isAtLeastQ && requestPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+                                        runCatching {
+                                            val path = Environment.getExternalStorageDirectory().toOkioPath() / AppConfig.APP_DIRNAME
+                                            path.mkdirs()
+                                            check(path.isDirectory) { "$path is not a directory" }
+                                            keepNoMediaFileStatus(path)
+                                            downloadLocationState = path
+                                            return@launchIO
+                                        }.onFailure {
+                                            logcat(it)
+                                        }
+                                    }
+                                    launchSnackbar(cannotGetDownloadLocation)
+                                }
                             }
-                        }
-                    }
+                        },
+                    )
                     val mediaScan = Settings.mediaScan.asMutableState()
                     SwitchPreference(
                         title = stringResource(id = R.string.settings_download_media_scan),
