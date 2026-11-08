@@ -27,6 +27,11 @@ class UpdateDialogPlanTest {
         hasUpdate = true,
     )
 
+    private fun doneSnapshot(version: String?) = UpdateDownloadSnapshot(
+        releaseVersion = version,
+        doneFile = File("update.apk"),
+    )
+
     @Test
     fun `summary carries current latest and date`() {
         val summary = updateDialogSummary("1.1.0", release())
@@ -44,18 +49,15 @@ class UpdateDialogPlanTest {
     }
 
     @Test
-    fun `idle offers download later and ignore link`() {
+    fun `idle offers download and ignore link`() {
         val plan = buildUpdateDialogPlan(
             currentVersion = "1.1.0",
             release = release(),
             download = UpdateDownloadSnapshot(),
             canIgnore = true,
-            isSimulated = false,
         )
 
         assertEquals(UpdatePrimaryAction.Download, plan.primary)
-        assertEquals(UpdateDismissAction.Later, plan.dismiss)
-        assertFalse(plan.showCancelDownload)
         assertFalse(plan.showBrowserFallback)
         assertTrue(plan.showIgnore)
         assertFalse(plan.showProgress)
@@ -66,8 +68,9 @@ class UpdateDialogPlanTest {
     }
 
     @Test
-    fun `downloading swaps to progress cancel and background`() {
+    fun `downloading swaps to progress and hides ignore`() {
         val snapshot = UpdateDownloadSnapshot(
+            releaseVersion = "1.2.3",
             isDownloading = true,
             progress = 0.87f,
             downloadedBytes = 8_700L,
@@ -75,12 +78,10 @@ class UpdateDialogPlanTest {
             speedBytesPerSec = 1_024L,
         )
 
-        val plan = buildUpdateDialogPlan("1.1.0", release(), snapshot, canIgnore = true, isSimulated = false)
+        val plan = buildUpdateDialogPlan("1.1.0", release(), snapshot, canIgnore = true)
 
         assertEquals(UpdatePrimaryAction.Downloading, plan.primary)
         assertEquals(87, plan.downloadPercent)
-        assertEquals(UpdateDismissAction.Background, plan.dismiss)
-        assertTrue(plan.showCancelDownload)
         assertTrue(plan.showProgress)
         assertFalse(plan.showIgnore)
         assertFalse(plan.showBrowserFallback)
@@ -90,29 +91,52 @@ class UpdateDialogPlanTest {
 
     @Test
     fun `failure offers retry and direct browser fallback`() {
-        val snapshot = UpdateDownloadSnapshot(error = "network down")
+        val snapshot = UpdateDownloadSnapshot(releaseVersion = "1.2.3", error = "network down")
 
-        val plan = buildUpdateDialogPlan("1.1.0", release(isCI = true), snapshot, canIgnore = true, isSimulated = false)
+        val plan = buildUpdateDialogPlan("1.1.0", release(isCI = true), snapshot, canIgnore = true)
 
         assertEquals(UpdatePrimaryAction.Retry, plan.primary)
-        assertEquals(UpdateDismissAction.Later, plan.dismiss)
         assertTrue(plan.showBrowserFallback)
-        assertFalse(plan.showCancelDownload)
         assertFalse(plan.showProgress)
         assertTrue(plan.showIgnore)
+        assertEquals("network down", plan.errorText)
         assertEquals(UpdateChannel.Ci, plan.channel)
     }
 
     @Test
     fun `downloaded package offers install`() {
-        val snapshot = UpdateDownloadSnapshot(doneFile = File("update.apk"))
-
-        val plan = buildUpdateDialogPlan("1.1.0", release(), snapshot, canIgnore = true, isSimulated = false)
+        val plan = buildUpdateDialogPlan("1.1.0", release(), doneSnapshot("1.2.3"), canIgnore = true)
 
         assertEquals(UpdatePrimaryAction.Install, plan.primary)
-        assertEquals(UpdateDismissAction.Later, plan.dismiss)
         assertFalse(plan.showBrowserFallback)
         assertFalse(plan.showProgress)
+    }
+
+    @Test
+    fun `downloaded package from another version cannot be installed`() {
+        val plan = buildUpdateDialogPlan("1.1.0", release(), doneSnapshot("1.1.0"), canIgnore = true)
+
+        assertEquals(UpdatePrimaryAction.Download, plan.primary)
+        assertNull(plan.errorText)
+        assertFalse(plan.showBrowserFallback)
+    }
+
+    @Test
+    fun `downloaded package without a recorded version cannot be installed`() {
+        val plan = buildUpdateDialogPlan("1.1.0", release(), doneSnapshot(null), canIgnore = true)
+
+        assertEquals(UpdatePrimaryAction.Download, plan.primary)
+    }
+
+    @Test
+    fun `failure from another version offers download instead of retry`() {
+        val snapshot = UpdateDownloadSnapshot(releaseVersion = "1.1.0", error = "network down")
+
+        val plan = buildUpdateDialogPlan("1.1.0", release(version = "1.2.3"), snapshot, canIgnore = true)
+
+        assertEquals(UpdatePrimaryAction.Download, plan.primary)
+        assertNull(plan.errorText)
+        assertFalse(plan.showBrowserFallback)
     }
 
     @Test
@@ -122,7 +146,6 @@ class UpdateDialogPlanTest {
             release(downloadLink = ""),
             UpdateDownloadSnapshot(),
             canIgnore = false,
-            isSimulated = false,
         )
 
         assertEquals(UpdatePrimaryAction.OpenRelease, plan.primary)
@@ -135,23 +158,9 @@ class UpdateDialogPlanTest {
             release(changelog = "  "),
             UpdateDownloadSnapshot(),
             canIgnore = false,
-            isSimulated = false,
         )
 
         assertFalse(plan.hasNotes)
-    }
-
-    @Test
-    fun `simulated channel wins over ci`() {
-        val plan = buildUpdateDialogPlan(
-            "1.1.0",
-            release(isCI = true),
-            UpdateDownloadSnapshot(),
-            canIgnore = false,
-            isSimulated = true,
-        )
-
-        assertEquals(UpdateChannel.Simulated, plan.channel)
     }
 
     @Test
@@ -163,6 +172,24 @@ class UpdateDialogPlanTest {
         assertEquals(8, state.hiddenLineCount)
         assertEquals(13, state.visibleMarkdown.lines().size)
         assertTrue(state.visibleMarkdown.startsWith("line 1\n"))
+        assertTrue(state.visibleMarkdown.endsWith("…"))
+    }
+
+    @Test
+    fun `notes truncation never splits a table`() {
+        val markdown = buildList {
+            repeat(7) { add("line ${it + 1}") }
+            add("| a | b |")
+            add("|---|---|")
+            repeat(6) { add("| r$it | v |") }
+            add("tail")
+        }.joinToString("\n")
+
+        val state = updateDialogNotesState(markdown, expanded = false)
+
+        assertEquals(9, state.hiddenLineCount)
+        assertFalse(state.visibleMarkdown.contains("|"))
+        assertTrue(state.visibleMarkdown.startsWith("line 1\nline 2"))
         assertTrue(state.visibleMarkdown.endsWith("…"))
     }
 
@@ -229,6 +256,24 @@ class UpdateDialogPlanTest {
     }
 
     @Test
+    fun `browser fallback uses the actions run page for ci builds`() {
+        assertEquals(
+            "https://github.com/owner/repo/actions/runs/1",
+            updateBrowserFallbackUrl(
+                release(
+                    downloadLink = "https://api.github.com/repos/owner/repo/actions/artifacts/1/zip",
+                    releaseUrl = "https://github.com/owner/repo/actions/runs/1",
+                    isCI = true,
+                ),
+            ),
+        )
+        assertEquals(
+            "https://github.com/${BuildConfig.REPO_NAME}/actions",
+            updateBrowserFallbackUrl(release(downloadLink = "", releaseUrl = "", isCI = true)),
+        )
+    }
+
+    @Test
     fun `ignore and prompted suppress automatic prompts but never user action`() {
         assertTrue(shouldPromptUpdate("1.2.3", ignoredVersion = null, promptedVersion = null, userInitiated = false))
         assertFalse(shouldPromptUpdate("1.2.3", ignoredVersion = "1.2.3", promptedVersion = null, userInitiated = false))
@@ -242,5 +287,33 @@ class UpdateDialogPlanTest {
                 userInitiated = true,
             ),
         )
+    }
+
+    @Test
+    fun `undoing ignore restores prompting`() {
+        try {
+            UpdatePromptTracker.markPrompted("1.2.3")
+            assertFalse(
+                shouldPromptUpdate(
+                    "1.2.3",
+                    ignoredVersion = null,
+                    promptedVersion = UpdatePromptTracker.promptedVersion,
+                    userInitiated = false,
+                ),
+            )
+
+            UpdatePromptTracker.forget("1.2.3")
+
+            assertTrue(
+                shouldPromptUpdate(
+                    "1.2.3",
+                    ignoredVersion = null,
+                    promptedVersion = UpdatePromptTracker.promptedVersion,
+                    userInitiated = false,
+                ),
+            )
+        } finally {
+            UpdatePromptTracker.forget("1.2.3")
+        }
     }
 }

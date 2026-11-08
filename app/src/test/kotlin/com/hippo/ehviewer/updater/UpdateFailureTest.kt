@@ -1,5 +1,6 @@
 package com.hippo.ehviewer.updater
 
+import com.ehviewer.core.i18n.R
 import java.io.IOException
 import java.net.ConnectException
 import java.net.SocketTimeoutException
@@ -47,5 +48,21 @@ class UpdateFailureTest {
     @Test
     fun `falls back to unknown`() {
         assertEquals(UpdateFailureKind.Unknown, UpdateFailureClassifier.kind(IllegalStateException("boom")))
+    }
+
+    @Test
+    fun `maps http failures to the http message with status`() {
+        val text = updateFailureText(IOException("Server returned HTTP 503"))
+
+        assertEquals(R.string.update_error_http, text.resId)
+        assertEquals(listOf("503"), text.args)
+    }
+
+    @Test
+    fun `maps digest mismatches to the digest message with short hashes`() {
+        val text = updateDigestFailureText("0".repeat(64), "a".repeat(64))
+
+        assertEquals(R.string.update_error_digest, text.resId)
+        assertEquals(listOf("000000000000", "aaaaaaaaaaaa"), text.args)
     }
 }

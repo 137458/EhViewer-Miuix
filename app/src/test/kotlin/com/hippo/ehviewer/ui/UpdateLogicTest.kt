@@ -153,7 +153,7 @@ class UpdateLogicTest {
     }
 
     @Test
-    fun resolveReleaseSkipsUpdateWhenReleaseHasNoApkAsset() {
+    fun resolveReleaseKeepsUpdateWhenReleaseHasNoApkAsset() {
         val release = tachiyomi.data.release.GithubRelease(
             version = "1.16.0",
             info = "无安装包的发布",
@@ -165,10 +165,11 @@ class UpdateLogicTest {
                 ),
             ),
         )
-        assertNull(
-            "没有可用安装包时不能宣称有更新，否则点下载会拿到空 URL",
-            AppUpdater.resolveRelease(release, curVersion = "1.15.0", returnLatestIfNoUpdate = false),
-        )
+        val resolved = AppUpdater.resolveRelease(release, curVersion = "1.15.0", returnLatestIfNoUpdate = false)
+        assertNotNull("有更新但缺少安装包时仍应提示，由弹窗引导到发布页", resolved)
+        assertTrue("仍需标记为有更新", resolved!!.hasUpdate)
+        assertEquals("没有安装包时下载链接为空，由弹窗走发布页", "", resolved.downloadLink)
+        assertEquals("https://github.com/releases/1.16.0", resolved.releaseUrl)
     }
 
     @Test
