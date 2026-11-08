@@ -221,7 +221,7 @@ fun AnimatedVisibilityScope.FilterScreen(navigator: DestinationsNavigator) = Scr
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(MiuixTheme.colorScheme.background)
+                .background(MiuixTheme.colorScheme.surface)
                 .blurBackdropSource(backdrop),
             contentAlignment = Alignment.TopCenter,
         ) {

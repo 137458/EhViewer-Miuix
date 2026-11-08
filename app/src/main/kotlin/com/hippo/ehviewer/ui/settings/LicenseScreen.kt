@@ -69,7 +69,7 @@ fun AnimatedVisibilityScope.LicenseScreen(navigator: DestinationsNavigator) = Sc
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(MiuixTheme.colorScheme.background)
+                .background(MiuixTheme.colorScheme.surface)
                 .blurBackdropSource(backdrop),
         ) {
             val libraries by produceLibraries(com.hippo.ehviewer.R.raw.aboutlibraries)

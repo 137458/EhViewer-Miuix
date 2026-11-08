@@ -93,7 +93,7 @@ fun AnimatedVisibilityScope.EhScreen(navigator: DestinationsNavigator) = Screen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(MiuixTheme.colorScheme.background)
+                .background(MiuixTheme.colorScheme.surface)
                 .blurBackdropSource(backdrop),
             contentAlignment = Alignment.TopCenter,
         ) {
