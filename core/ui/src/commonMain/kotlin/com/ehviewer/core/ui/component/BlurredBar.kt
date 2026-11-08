@@ -41,7 +41,7 @@ fun rememberBlurBackdrop(enableBlur: Boolean = true): LayerBackdrop? {
  * 采用组合包装机制包裹官方原生 TopAppBar 或 SmallTopAppBar：
  * 1. 动态尺寸自适应：使用 matchParentSize() 自动适应顶栏展开（大标题）与折叠（小标题）时的实时高度；
  * 2. 动态滚动涌现：初始停靠在页面顶部时透明度为 0，随着页面滚动在 48dp 阈值内平滑淡入毛玻璃；
- * 3. 渐进式纹理过渡：顶部状态栏区域 100% 满额模糊，沿 Y 轴向下柔和衰减至 0（底部边缘 100% 像素级清晰），无任何硬切断；
+ * 3. 渐进式纹理过渡：顶部状态栏区域满额模糊，沿 Y 轴按 Miuix 默认曲线线性衰减至 0（底部边缘像素级清晰）；
  * 4. 优雅降级：在不支持模糊的环境或 backdrop 为 null 时，自动降级为普通实色顶栏。
  *
  * @param backdrop 跨图层采样的 Backdrop，若为 null 则自动降级不显示毛玻璃
@@ -72,9 +72,10 @@ fun BlurredBar(
                     .progressiveTextureBlur(
                         backdrop = backdrop,
                         shape = RectangleShape,
-                        // 顶部状态栏满额模糊向底部平滑渐隐至 0，curve = 2.2f 柔和过渡，绝无硬切割边缘
-                        gradient = ProgressiveBlur.Top.copy(curve = 2.2f),
-                        blurRadius = 10f,
+                        // 使用 Miuix 官方默认曲线：模糊权重沿 Y 轴线性衰减，避免高 curve 造成底部权重骤降的硬边
+                        gradient = ProgressiveBlur.Top,
+                        // 与 Miuix 默认半径 20f 对齐，过小会导致模糊不足、文字轮廓穿透
+                        blurRadius = 20f,
                         colors = BlurDefaults.blurColors(
                             blendColors = listOf(
                                 BlendColorEntry(color = MiuixTheme.colorScheme.surface.copy(alpha = 0.3f)),
