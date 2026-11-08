@@ -344,7 +344,7 @@ fun SearchBarScreen(
                         .thenIf(expanded) { fillMaxSize() },
                     inputField = {
                         val inputFieldModifier = Modifier
-                            .widthIn(max = (maxWidth - SearchBarHorizontalPadding * 2).coerceAtMost(M3SearchBarMaxWidth))
+                            .widthIn(max = (maxWidth - SearchBarHorizontalPadding * 2).coerceAtMost(SearchBarMaxWidth))
                             .fillMaxWidth()
 
                         val inputContent = @Composable {
@@ -616,4 +616,4 @@ fun wrapTagKeyword(keyword: String, translate: Boolean = false): String = run {
 private val TagTerminators = charArrayOf('"', '$')
 private val WhitespaceRegex = Regex("\\s+")
 private val SearchBarHorizontalPadding = 16.dp
-private val M3SearchBarMaxWidth = 720.dp
+private val SearchBarMaxWidth = 720.dp

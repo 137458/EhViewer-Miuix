@@ -178,6 +178,7 @@ fun AnimatedVisibilityScope.AdvancedScreen(navigator: DestinationsNavigator) = S
                         title = stringResource(id = R.string.settings_advanced_app_language_title),
                         items = languageValues,
                         selectedIndex = selectedLangIndex,
+                        showValue = true,
                         onSelectedIndexChange = { index ->
                             if (index in languageKeys.indices) {
                                 val key = languageKeys[index]
