@@ -15,6 +15,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RenderEffect
 import androidx.compose.ui.graphics.asComposeRenderEffect
@@ -136,10 +137,16 @@ fun WebViewScaffold(
 
     Scaffold(modifier = modifier, topBar = {
         Box {
+            // 提亮层按同一渐变轴衰减，避免整块 30% 实色在顶栏下缘形成水平硬边
             Box(
                 modifier = Modifier
                     .matchParentSize()
-                    .background(surface.copy(alpha = WEBVIEW_TOP_TINT_ALPHA)),
+                    .background(
+                        Brush.verticalGradient(
+                            0f to surface.copy(alpha = WEBVIEW_TOP_TINT_ALPHA),
+                            1f to Color.Transparent,
+                        ),
+                    ),
             )
             TopAppBar(
                 title = title,
