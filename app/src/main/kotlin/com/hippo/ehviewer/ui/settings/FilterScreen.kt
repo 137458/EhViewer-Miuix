@@ -253,7 +253,7 @@ fun AnimatedVisibilityScope.FilterScreen(navigator: DestinationsNavigator) = Scr
                             item(key = "card_$filterMode") {
                                 Card(
                                     modifier = Modifier
-                                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                                        .padding(horizontal = 12.dp, vertical = 4.dp)
                                         .thenIf(animateItems) { animateItem() },
                                 ) {
                                     filterList.forEach { filter ->

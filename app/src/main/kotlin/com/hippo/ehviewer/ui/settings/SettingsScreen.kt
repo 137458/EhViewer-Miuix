@@ -104,7 +104,7 @@ fun AnimatedVisibilityScope.SettingsScreen(navigator: DestinationsNavigator) = S
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 4.dp),
+                        .padding(horizontal = 12.dp, vertical = 4.dp),
                 ) {
                     PreferenceHeader(
                         icon = EhIcons.Default.SadPanda,
@@ -147,7 +147,7 @@ fun AnimatedVisibilityScope.SettingsScreen(navigator: DestinationsNavigator) = S
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 4.dp),
+                        .padding(horizontal = 12.dp, vertical = 4.dp),
                 ) {
                     SimpleMenuPreferenceInt(
                         title = stringResource(id = R.string.desktop_nav_bar_style),
@@ -166,12 +166,12 @@ fun AnimatedVisibilityScope.SettingsScreen(navigator: DestinationsNavigator) = S
                 if (hiddenNavItems.isNotEmpty()) {
                     SmallTitle(
                         text = stringResource(id = R.string.settings_hidden_pages),
-                        modifier = Modifier.padding(start = 24.dp, top = 8.dp, bottom = 4.dp),
+                        modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
                     )
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 4.dp),
+                            .padding(horizontal = 12.dp, vertical = 4.dp),
                     ) {
                         hiddenNavItems.forEach { item ->
                             ArrowPreference(

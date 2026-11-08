@@ -117,12 +117,12 @@ fun SettingsScreen(
                 item {
                     SmallTitle(
                         text = stringResource(MR.strings.settings_theme),
-                        modifier = Modifier.padding(start = 24.dp, top = 8.dp, bottom = 4.dp),
+                        modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
                     )
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 4.dp),
+                            .padding(horizontal = 12.dp, vertical = 4.dp),
                     ) {
                         // 三态显式选择替代循环点击：目标状态可见可直达，选中行以 ✓ 标识
                         SelectionRow(
@@ -176,12 +176,12 @@ fun SettingsScreen(
                 item {
                     SmallTitle(
                         text = stringResource(MR.strings.desktop_nav_bar_style),
-                        modifier = Modifier.padding(start = 24.dp, top = 16.dp, bottom = 4.dp),
+                        modifier = Modifier.padding(top = 16.dp, bottom = 4.dp),
                     )
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 4.dp),
+                            .padding(horizontal = 12.dp, vertical = 4.dp),
                     ) {
                         SelectionRow(
                             title = stringResource(MR.strings.desktop_nav_bar_style_auto),
@@ -214,12 +214,12 @@ fun SettingsScreen(
                 item {
                     SmallTitle(
                         text = stringResource(MR.strings.desktop_ui_scale),
-                        modifier = Modifier.padding(start = 24.dp, top = 16.dp, bottom = 4.dp),
+                        modifier = Modifier.padding(top = 16.dp, bottom = 4.dp),
                     )
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 4.dp),
+                            .padding(horizontal = 12.dp, vertical = 4.dp),
                     ) {
                         Text(
                             text = stringResource(MR.strings.desktop_ui_scale_summary),
@@ -241,12 +241,12 @@ fun SettingsScreen(
                 item {
                     SmallTitle(
                         text = stringResource(MR.strings.settings_reading_direction),
-                        modifier = Modifier.padding(start = 24.dp, top = 16.dp, bottom = 4.dp),
+                        modifier = Modifier.padding(top = 16.dp, bottom = 4.dp),
                     )
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 4.dp),
+                            .padding(horizontal = 12.dp, vertical = 4.dp),
                     ) {
                         // 两态显式选择替代点击翻转，与主题/关闭行为交互范式一致
                         SelectionRow(
@@ -266,12 +266,12 @@ fun SettingsScreen(
                 item {
                     SmallTitle(
                         text = stringResource(MR.strings.settings_advanced),
-                        modifier = Modifier.padding(start = 24.dp, top = 16.dp, bottom = 4.dp),
+                        modifier = Modifier.padding(top = 16.dp, bottom = 4.dp),
                     )
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 4.dp),
+                            .padding(horizontal = 12.dp, vertical = 4.dp),
                     ) {
                         ProxySettingField()
                         ImageSaveDirField()
@@ -283,12 +283,12 @@ fun SettingsScreen(
                     item {
                         SmallTitle(
                             text = stringResource(MR.strings.settings_about),
-                            modifier = Modifier.padding(start = 24.dp, top = 16.dp, bottom = 4.dp),
+                            modifier = Modifier.padding(top = 16.dp, bottom = 4.dp),
                         )
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 4.dp),
+                                .padding(horizontal = 12.dp, vertical = 4.dp),
                         ) {
                             if (onShowShortcuts != null) {
                                 ArrowPreference(

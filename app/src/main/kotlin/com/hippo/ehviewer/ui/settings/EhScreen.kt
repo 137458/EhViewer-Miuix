@@ -108,7 +108,7 @@ fun AnimatedVisibilityScope.EhScreen(navigator: DestinationsNavigator) = Screen(
                 if (hasSignedIn) {
                     val displayName by Settings.displayName.collectAsState()
                     SmallTitle(text = stringResource(id = R.string.account_name))
-                    Card(modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)) {
+                    Card(modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)) {
                         Preference(
                             title = stringResource(id = R.string.account_name),
                             summary = displayName,
@@ -166,7 +166,7 @@ fun AnimatedVisibilityScope.EhScreen(navigator: DestinationsNavigator) = Screen(
                 }
 
                 SmallTitle(text = stringResource(id = R.string.settings_eh_list_mode))
-                Card(modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)) {
+                Card(modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)) {
                     var defaultFavSlot by Settings.defaultFavSlot.asMutableState()
                     val disabled = stringResource(id = R.string.disabled_nav)
                     val localFav = stringResource(id = R.string.local_favorites)
@@ -261,7 +261,7 @@ fun AnimatedVisibilityScope.EhScreen(navigator: DestinationsNavigator) = Screen(
                 }
 
                 SmallTitle(text = stringResource(id = R.string.dark_theme))
-                Card(modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)) {
+                Card(modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)) {
                     SimpleMenuPreferenceInt(
                         title = stringResource(id = R.string.dark_theme),
                         entry = com.hippo.ehviewer.R.array.night_mode_entries,
@@ -279,7 +279,7 @@ fun AnimatedVisibilityScope.EhScreen(navigator: DestinationsNavigator) = Screen(
                 }
 
                 SmallTitle(text = stringResource(id = R.string.settings_eh_show_gallery_comments))
-                Card(modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)) {
+                Card(modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)) {
                     val showComments = Settings.showComments.asMutableState()
                     SwitchPreference(
                         title = stringResource(id = R.string.settings_eh_show_gallery_comments),
@@ -324,7 +324,7 @@ fun AnimatedVisibilityScope.EhScreen(navigator: DestinationsNavigator) = Screen(
                 }
 
                 SmallTitle(text = stringResource(id = R.string.settings_eh_filter))
-                Card(modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)) {
+                Card(modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)) {
                     if (EhTagDatabase.translatable) {
                         SwitchPreference(
                             title = stringResource(id = R.string.settings_eh_show_tag_translations),

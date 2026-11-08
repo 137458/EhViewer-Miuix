@@ -133,12 +133,12 @@ fun AnimatedVisibilityScope.BottomNavItemsScreen(navigator: DestinationsNavigato
         ) {
             SmallTitle(
                 text = stringResource(id = R.string.desktop_nav_items_title),
-                modifier = Modifier.padding(start = 24.dp, top = 8.dp, bottom = 4.dp),
+                modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
             )
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                    .padding(horizontal = 12.dp, vertical = 4.dp),
             ) {
                 config.order.forEachIndexed { index, item ->
                     val isDragging = draggingIndex == index
@@ -189,7 +189,7 @@ fun AnimatedVisibilityScope.BottomNavItemsScreen(navigator: DestinationsNavigato
                 onClick = { persist(MainNavItems.defaultConfig()) },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                    .padding(horizontal = 12.dp, vertical = 4.dp),
             )
         }
     }

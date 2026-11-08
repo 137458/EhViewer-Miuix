@@ -78,7 +78,7 @@ fun AnimatedVisibilityScope.PrivacyScreen(navigator: DestinationsNavigator) = Sc
                     .padding(paddingValues),
             ) {
                 SmallTitle(text = stringResource(id = R.string.settings_privacy))
-                Card(modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)) {
+                Card(modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)) {
                     val security = Settings.security.asMutableState()
                     SwitchPreference(
                         title = stringResource(id = R.string.settings_privacy_require_unlock),
@@ -108,7 +108,7 @@ fun AnimatedVisibilityScope.PrivacyScreen(navigator: DestinationsNavigator) = Sc
                 }
 
                 SmallTitle(text = stringResource(id = R.string.clear_search_history))
-                Card(modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)) {
+                Card(modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)) {
                     val searchHistoryCleared = stringResource(id = R.string.search_history_cleared)
                     Preference(
                         title = stringResource(id = R.string.clear_search_history),
