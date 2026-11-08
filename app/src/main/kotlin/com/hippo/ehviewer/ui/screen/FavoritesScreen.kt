@@ -159,6 +159,8 @@ fun AnimatedVisibilityScope.FavouritesScreen(navigator: DestinationsNavigator, v
         Column(
             modifier = Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 4.dp),
         ) {
+            // 有意的设计差异：收藏分类是单选列表，不是设置项分组，因此不套 Card，
+            // 选中态由行底色表达；与设置页的 Card 分组是两套语义，不要按"缺 Card"处理。
             faves.forEachIndexed { index, (name, count) ->
                 val isSelected = urlBuilder.favCat == index - 2
                 val bgColor = if (isSelected) MiuixTheme.colorScheme.primaryContainer else Color.Transparent

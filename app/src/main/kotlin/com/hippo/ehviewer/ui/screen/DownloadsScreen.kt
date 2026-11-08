@@ -334,6 +334,8 @@ fun AnimatedVisibilityScope.DownloadsScreen(navigator: DestinationsNavigator) = 
             }
         }
         var fromIndex by remember { mutableIntStateOf(-1) }
+        // 有意的设计差异：下载标签是可拖拽排序的单选列表，不是设置项分组，因此不套 Card，
+        // 选中态由行底色表达；与设置页的 Card 分组是两套语义，不要按"缺 Card"处理。
         FastScrollLazyColumn(
             modifier = Modifier.fillMaxSize().padding(horizontal = 4.dp),
             state = labelsListState,

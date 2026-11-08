@@ -232,6 +232,8 @@ fun AnimatedVisibilityScope.GalleryListScreen(
                 color = MiuixTheme.colorScheme.surface,
                 defaultWindowInsetsPadding = false,
             )
+            // 有意的设计差异：榜单选择是单选列表，不是设置项分组，因此不套 Card，
+            // 选中态由行底色表达；与设置页的 Card 分组是两套语义，不要按"缺 Card"处理。
             toplists.forEach { (name, keyword) ->
                 val isSelected = urlBuilder.keyword == keyword
                 val bgColor = if (isSelected) MiuixTheme.colorScheme.primaryContainer else Color.Transparent
