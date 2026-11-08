@@ -84,7 +84,7 @@ fun DownloadCard(
         val stateFailed = stringResource(R.string.download_state_failed)
         val stateFailed2 = stringResource(R.string.download_state_failed_2, info.legacy)
         val downloadState by DownloadManager.collectDownloadState(info.gid)
-        Column(modifier = Modifier.padding(start = 8.dp, top = 2.dp, end = 4.dp)) {
+        Column(modifier = Modifier.padding(12.dp)) {
             Text(
                 text = EhUtils.getSuitableTitle(info),
                 maxLines = 2,
@@ -137,9 +137,9 @@ fun DownloadCard(
                     LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
                 } else {
                     Row {
-                        Text(text = "$finished/$total", style = MiuixTheme.textStyles.footnote1)
+                        Text(text = "$finished/${total}P", style = MiuixTheme.textStyles.footnote1)
                         Spacer(modifier = Modifier.weight(1f))
-                        Text(text = FileUtils.humanReadableByteCount(speed.coerceAtLeast(0)) + "/S", style = MiuixTheme.textStyles.footnote1)
+                        Text(text = FileUtils.humanReadableByteCount(speed.coerceAtLeast(0)) + "/s", style = MiuixTheme.textStyles.footnote1)
                     }
                     LinearProgressIndicator(
                         progress = finished.toFloat() / total.toFloat(),
@@ -150,7 +150,7 @@ fun DownloadCard(
             Row {
                 Column {
                     // Place the rating near the uploader text as there's more visual space
-                    GalleryListCardRating(rating = info.rating, modifier = Modifier.padding(top = 1.dp, bottom = 3.dp))
+                    GalleryListCardRating(rating = info.rating, modifier = Modifier.padding(vertical = 2.dp))
                     val categoryColor = EhUtils.getCategoryColor(info.category)
                     val categoryText = EhUtils.getCategory(info.category).uppercase()
                     Text(
