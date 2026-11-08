@@ -11,7 +11,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.ehviewer.core.i18n.R
 import kotlinx.coroutines.launch
-import top.yukonga.miuix.kmp.basic.TabRow
+import top.yukonga.miuix.kmp.basic.TabRowWithContour
+import top.yukonga.miuix.kmp.utils.springAnimateToPage
 
 private val tabs = intArrayOf(
     R.string.pref_category_reading_mode,
@@ -29,11 +30,11 @@ fun SettingsPager(isWebtoon: Boolean, modifier: Modifier = Modifier, onPageSelec
     }
     val scope = rememberCoroutineScope()
     val tabTitles = tabs.map { stringResource(id = it) }
-    TabRow(
+    TabRowWithContour(
         tabs = tabTitles,
         selectedTabIndex = pagerState.currentPage,
         onTabSelected = { index ->
-            scope.launch { pagerState.animateScrollToPage(index) }
+            scope.launch { pagerState.springAnimateToPage(index) }
         },
     )
     HorizontalPager(
