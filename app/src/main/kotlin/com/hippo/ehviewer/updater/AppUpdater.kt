@@ -111,8 +111,7 @@ object AppUpdater {
         if (!hasUpdate && !returnLatestIfNoUpdate) return null
         val downloadLink = release.getDownloadLink()
         val matchedAsset = release.getMatchedAsset()
-        // 没有可用安装包时不能宣称有更新，否则用户点下载会拿到一个空 URL
-        if (hasUpdate && downloadLink.isBlank()) return null
+        // 有更新但缺少安装包时仍然返回，由弹窗引导用户去发布页，而不是把更新整个吞掉。
         return Release(
             version = latestVersion,
             changelog = release.info,
@@ -153,38 +152,6 @@ object AppUpdater {
 
         return clean1.compareTo(clean2)
     }
-
-    fun generateMockRelease(): Release = Release(
-        version = "v2.0.0",
-        changelog = """
-                # 🚀 HyperOS 3.0 全面视觉进化
-                
-                EhViewer-Miuix 迎来了划时代的视觉重构与流畅度飞跃！
-                
-                ## ✨ 核心亮点
-                - **物理流光背景**：支持 HyperOS 3.0 增强动态着色器流光，冷暖色彩柔和呼吸
-                - **极致排版系统**：全场景重构排版规范，引入杂志感 Markdown 竖向重音与胶囊代码块
-                - **双层毛玻璃窗景**：全弹窗升级为独立悬浮 WindowDialog，边缘加入平滑淡出遮罩
-                - **微质感触控反馈**：列表项与操作按钮全面适配物理回弹阻尼与无级压感
-                
-                ## 🛠️ 细节优化与修复
-                - 优化大画廊元数据解析性能，内存占用降低约 **35%**
-                - 修复深色模式下部分界面边缘溢出与高斯模糊边缘杂色问题
-                - 全面升级 Kotlin 2.4 与 Compose Multiplatform 1.11 最新运行时
-                
-                ### 💡 升级须知
-                - 建议在更新前在设置中开启“更新前备份数据库”选项
-                
-                > 感谢所有社区贡献者与开发者的大力支持！
-        """.trimIndent(),
-        downloadLink = "https://github.com/${BuildConfig.REPO_NAME}/releases/download/v2.0.0/EhViewer-v2.0.0.apk",
-        releaseTitle = "v2.0.0 HyperOS 3.0 旗舰视觉重构版",
-        releaseUrl = "https://github.com/${BuildConfig.REPO_NAME}/releases",
-        apkSize = 44256789L,
-        publishedAt = "2026-09-16",
-        isCI = false,
-        hasUpdate = true,
-    )
 
     suspend fun downloadUpdate(
         url: String,

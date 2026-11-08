@@ -56,16 +56,25 @@ internal object UpdateFailureClassifier {
     }
 }
 
-internal fun updateFailureMessage(context: Context, error: Throwable): String =
+internal data class UpdateFailureText(val resId: Int, val args: List<String>)
+
+/** 文案与 Context 解耦，纯逻辑可单测；格式化交给调用方。 */
+internal fun updateFailureText(error: Throwable): UpdateFailureText =
     when (UpdateFailureClassifier.kind(error)) {
-        UpdateFailureKind.Network -> context.getString(R.string.update_error_network)
-        UpdateFailureKind.Http -> context.getString(
+        UpdateFailureKind.Network -> UpdateFailureText(R.string.update_error_network, emptyList())
+        UpdateFailureKind.Http -> UpdateFailureText(
             R.string.update_error_http,
-            UpdateFailureClassifier.httpStatus(error)?.toString().orEmpty(),
+            listOf(UpdateFailureClassifier.httpStatus(error)?.toString().orEmpty()),
         )
-        UpdateFailureKind.Storage -> context.getString(R.string.update_error_storage)
-        UpdateFailureKind.Unknown -> context.getString(
+        UpdateFailureKind.Storage -> UpdateFailureText(R.string.update_error_storage, emptyList())
+        UpdateFailureKind.Unknown -> UpdateFailureText(
             R.string.update_error_unknown,
-            error.localizedMessage ?: error.javaClass.simpleName,
+            listOf(error.localizedMessage ?: error.javaClass.simpleName),
         )
     }
+
+internal fun updateDigestFailureText(expected: String, actual: String): UpdateFailureText =
+    UpdateFailureText(R.string.update_error_digest, listOf(expected.take(12), actual.take(12)))
+
+internal fun updateFailureMessage(context: Context, error: Throwable): String =
+    with(updateFailureText(error)) { context.getString(resId, *args.toTypedArray()) }
