@@ -256,32 +256,35 @@ fun SearchBarScreen(
             Scaffold(
                 topBar = {
                     Box(modifier = Modifier.fillMaxWidth()) {
-                        val dynamicBlurHeight = statusBarPadding + fullBarHeight + (compactBarHeight - fullBarHeight) * collapseProgress
-                        if (backdrop != null && isRuntimeShaderSupported()) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(dynamicBlurHeight)
-                                    .progressiveTextureBlur(
-                                        backdrop = backdrop,
-                                        shape = RectangleShape,
-                                        gradient = ProgressiveBlur.Top.copy(curve = 2.2f),
-                                        blurRadius = 10f,
-                                        colors = BlurDefaults.blurColors(
-                                            blendColors = listOf(
-                                                BlendColorEntry(color = MiuixTheme.colorScheme.surface.copy(alpha = 0.35f)),
+                        // 只对状态栏条带做渐进模糊：搜索胶囊自身已是玻璃材质，若整条顶栏再模糊一次，
+                        // 胶囊与其周边会出现双层模糊和模糊强度断层。
+                        if (!expanded) {
+                            if (backdrop != null && isRuntimeShaderSupported()) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(statusBarPadding)
+                                        .progressiveTextureBlur(
+                                            backdrop = backdrop,
+                                            shape = RectangleShape,
+                                            gradient = ProgressiveBlur.Top,
+                                            blurRadius = 20f,
+                                            colors = BlurDefaults.blurColors(
+                                                blendColors = listOf(
+                                                    BlendColorEntry(color = MiuixTheme.colorScheme.surface.copy(alpha = 0.3f)),
+                                                ),
                                             ),
                                         ),
-                                    ),
-                            )
-                        } else {
-                            val scrim = MiuixTheme.colorScheme.background.scrim()
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(dynamicBlurHeight)
-                                    .background(scrim),
-                            )
+                                )
+                            } else {
+                                val scrim = MiuixTheme.colorScheme.background.scrim()
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(statusBarPadding)
+                                        .background(scrim),
+                                )
+                            }
                         }
                         Column {
                             Spacer(modifier = Modifier.windowInsetsTopHeight(WindowInsets.statusBars))
