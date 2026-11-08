@@ -110,7 +110,9 @@ fun DownloadCard(
                 Row {
                     Text(
                         text = info.uploader.orEmpty(),
-                        modifier = Modifier.alignByBaseline().alpha(if (info.disowned) 0.5f else 1f),
+                        modifier = Modifier.alignByBaseline().weight(1f, fill = false).alpha(if (info.disowned) 0.5f else 1f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                         style = MiuixTheme.textStyles.body2,
                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     )
