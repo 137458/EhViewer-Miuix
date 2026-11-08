@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.plus
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
@@ -768,8 +769,8 @@ fun AnimatedVisibilityScope.DownloadsScreen(navigator: DestinationsNavigator) = 
                 Icon(
                     imageVector = EhIcons.Big.Default.Download,
                     contentDescription = null,
-                    modifier = Modifier.padding(16.dp),
-                    tint = MiuixTheme.colorScheme.primary,
+                    modifier = Modifier.padding(16.dp).size(120.dp),
+                    tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 )
                 Text(
                     text = stringResource(id = R.string.no_download_info),

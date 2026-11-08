@@ -36,6 +36,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.paging.LoadState
@@ -61,8 +62,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
 import top.yukonga.miuix.kmp.basic.Button
-import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
 import top.yukonga.miuix.kmp.basic.PullToRefresh
 import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.Text
@@ -210,7 +211,7 @@ fun GalleryList(
                             modifier = Modifier.fillMaxSize(),
                             contentAlignment = Alignment.Center,
                         ) {
-                            CircularProgressIndicator()
+                            InfiniteProgressIndicator()
                         }
                     }
                 }
@@ -238,34 +239,62 @@ fun ErrorTip(
     text: String,
     enabled: Boolean = true,
     onRetry: (() -> Unit)? = null,
+    compact: Boolean = false,
 ) {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(
-            modifier = modifier,
-            horizontalAlignment = Alignment.CenterHorizontally,
+    if (compact) {
+        ErrorTipContent(
+            modifier = modifier.padding(vertical = 16.dp),
+            text = text,
+            enabled = enabled,
+            onRetry = onRetry,
+            iconSize = 48.dp,
+        )
+    } else {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center,
         ) {
-            Icon(
-                imageVector = EhIcons.Big.Default.SadAndroid,
-                contentDescription = null,
-                modifier = Modifier.padding(16.dp).size(120.dp),
-                tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-            )
-            Text(
+            ErrorTipContent(
+                modifier = modifier,
                 text = text,
-                style = MiuixTheme.textStyles.body1,
-                textAlign = TextAlign.Center,
+                enabled = enabled,
+                onRetry = onRetry,
+                iconSize = 120.dp,
             )
-            if (onRetry != null) {
-                Spacer(modifier = Modifier.height(16.dp))
-                Button(
-                    enabled = enabled,
-                    onClick = onRetry,
-                ) {
-                    Text(text = stringResource(id = R.string.action_retry))
-                }
+        }
+    }
+}
+
+@Composable
+private fun ErrorTipContent(
+    modifier: Modifier,
+    text: String,
+    enabled: Boolean,
+    onRetry: (() -> Unit)?,
+    iconSize: Dp,
+) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Icon(
+            imageVector = EhIcons.Big.Default.SadAndroid,
+            contentDescription = null,
+            modifier = Modifier.padding(16.dp).size(iconSize),
+            tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+        )
+        Text(
+            text = text,
+            style = MiuixTheme.textStyles.body1,
+            textAlign = TextAlign.Center,
+        )
+        if (onRetry != null) {
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(
+                enabled = enabled,
+                onClick = onRetry,
+            ) {
+                Text(text = stringResource(id = R.string.action_retry))
             }
         }
     }
