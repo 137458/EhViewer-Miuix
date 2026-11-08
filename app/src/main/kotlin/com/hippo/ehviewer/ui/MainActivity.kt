@@ -152,11 +152,15 @@ import com.hippo.ehviewer.ui.settings.icon
 import com.hippo.ehviewer.ui.tools.DialogState
 import com.hippo.ehviewer.ui.tools.awaitConfirmationOrCancel
 import com.hippo.ehviewer.ui.tools.awaitInputText
+import com.hippo.ehviewer.ui.update.AppForegroundTracker
 import com.hippo.ehviewer.ui.update.UpdateDialog
+import com.hippo.ehviewer.ui.update.UpdateDownloadManager
+import com.hippo.ehviewer.ui.update.UpdateNotifications
 import com.hippo.ehviewer.ui.update.UpdatePromptTracker
+import com.hippo.ehviewer.ui.update.UpdateStartupPrompt
+import com.hippo.ehviewer.ui.update.installUpdatePackage
 import com.hippo.ehviewer.ui.update.shouldPromptUpdate
 import com.hippo.ehviewer.updater.AppUpdater
-import com.hippo.ehviewer.updater.Release
 import com.hippo.ehviewer.util.AppConfig
 import com.hippo.ehviewer.util.addTextToClipboard
 import com.hippo.ehviewer.util.calculateFraction
@@ -169,6 +173,7 @@ import com.ramcosta.composedestinations.spec.Direction
 import com.ramcosta.composedestinations.utils.currentDestinationAsState
 import com.ramcosta.composedestinations.utils.rememberDestinationsNavigator
 import eu.kanade.tachiyomi.util.view.setSecureScreen
+import java.io.File
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
@@ -270,8 +275,7 @@ class MainActivity : AppCompatActivity() {
                 }
             }
 
-            var startupRelease by remember { mutableStateOf<Release?>(null) }
-            var showStartupDialog by remember { mutableStateOf(false) }
+            val startupRelease = UpdateStartupPrompt.release
 
             val hasNetwork = remember { connectivityManager.activeNetwork != null }
             if (!AppConfig.isBenchmark) {
@@ -293,8 +297,7 @@ class MainActivity : AppCompatActivity() {
                                     )
                                 ) {
                                     UpdatePromptTracker.markPrompted(release.version)
-                                    startupRelease = release
-                                    showStartupDialog = true
+                                    UpdateStartupPrompt.release = release
                                 }
                             }
                         }.onFailure {
@@ -351,6 +354,14 @@ class MainActivity : AppCompatActivity() {
                                         ).asDst(),
                                     )
                                 }
+                            }
+                        }
+                        UpdateNotifications.ACTION_INSTALL_UPDATE -> {
+                            // 通知里的安装动作落到前台 Activity 处理，不在后台直接 startActivity。
+                            val file = UpdateDownloadManager.downloadedFile
+                                ?: File(AppConfig.tempDir.toFile(), "update.apk")
+                            if (file.exists()) {
+                                scope.launch { installUpdatePackage(this@MainActivity, file) }
                             }
                         }
                         DownloadService.ACTION_START_DOWNLOADSCENE -> {
@@ -630,21 +641,24 @@ class MainActivity : AppCompatActivity() {
                 }
             }
 
-            if (showStartupDialog && startupRelease != null) {
-                val ignoreAlertText = stringResource(R.string.update_msg_ignore_alert, startupRelease!!.version)
+            if (startupRelease != null) {
+                val release = startupRelease
+                val ignoreAlertText = stringResource(R.string.update_msg_ignore_alert, release.version)
                 val undoText = stringResource(R.string.update_msg_undo_ignore)
                 UpdateDialog(
-                    show = showStartupDialog,
-                    release = startupRelease!!,
-                    onDismiss = { showStartupDialog = false },
+                    show = true,
+                    release = release,
+                    onDismiss = { UpdateStartupPrompt.release = null },
                     onIgnore = { version ->
                         val previous = Settings.ignoredUpdateVersion.value
                         Settings.ignoredUpdateVersion.value = version
-                        showStartupDialog = false
+                        UpdateStartupPrompt.release = null
                         scope.launch {
                             val result = snackbarState.showSnackbar(ignoreAlertText, undoText, true)
                             if (result == SnackbarResult.ActionPerformed) {
                                 Settings.ignoredUpdateVersion.value = previous
+                                // 撤销忽略后解除本版本的提示压制，否则同版本仍然不会再提示。
+                                UpdatePromptTracker.forget(version)
                             }
                         }
                     },
@@ -657,6 +671,16 @@ class MainActivity : AppCompatActivity() {
                 onNewIntent(intent)
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        AppForegroundTracker.isForeground = true
+    }
+
+    override fun onPause() {
+        AppForegroundTracker.isForeground = false
+        super.onPause()
     }
 
     private suspend fun DialogState.checkAppLinkVerify() {

@@ -371,6 +371,8 @@ fun AnimatedVisibilityScope.UpdateScreen(navigator: DestinationsNavigator) = Scr
                                     summary = stringResource(R.string.update_pref_ignore_ignored, ignored) + stringResource(R.string.update_pref_restore_summary),
                                     onClick = {
                                         Settings.ignoredUpdateVersion.value = null
+                                        // 恢复提醒时同时解除提示压制，否则同版本仍不会再提示。
+                                        UpdatePromptTracker.forget(ignored)
                                         launchSnackbar(restoreAlertText)
                                     },
                                 )
@@ -468,6 +470,7 @@ fun AnimatedVisibilityScope.UpdateScreen(navigator: DestinationsNavigator) = Scr
                         val result = snackbar(ignoreAlertText, undoText, true)
                         if (result == SnackbarResult.ActionPerformed) {
                             Settings.ignoredUpdateVersion.value = previous
+                            UpdatePromptTracker.forget(ver)
                         }
                     }
                 },
