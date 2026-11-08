@@ -487,7 +487,7 @@ fun GalleryDetailContent(
                             .background(dividerColor),
                     )
                 }
-                BoxWithConstraints(modifier = Modifier.weight(paneFraction).fillMaxHeight()) {
+                Box(modifier = Modifier.weight(paneFraction).fillMaxHeight()) {
                     // 预览条单元格恒宽：拖分隔条只加列、不拉伸单元格（Fixed 会在列数不变时把格子拉宽）
                     FastScrollLazyVerticalGrid(
                         columns = GridCells.FixedSize(AdaptiveBreakpoints.PREVIEW_STRIP_MIN_COLUMN_WIDTH_DP.dp),
