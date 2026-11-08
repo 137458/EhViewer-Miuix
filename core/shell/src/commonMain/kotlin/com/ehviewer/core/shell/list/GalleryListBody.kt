@@ -268,11 +268,11 @@ fun ErrorTip(
 ) {
     if (compact) {
         ErrorTipContent(
-            modifier = modifier.padding(vertical = 16.dp),
+            modifier = modifier.padding(vertical = 12.dp),
             text = text,
             enabled = enabled,
             onRetry = onRetry,
-            iconSize = 48.dp,
+            compact = true,
         )
     } else {
         Box(
@@ -284,7 +284,7 @@ fun ErrorTip(
                 text = text,
                 enabled = enabled,
                 onRetry = onRetry,
-                iconSize = 120.dp,
+                compact = false,
             )
         }
     }
@@ -296,8 +296,12 @@ private fun ErrorTipContent(
     text: String,
     enabled: Boolean,
     onRetry: (() -> Unit)?,
-    iconSize: Dp,
+    compact: Boolean,
 ) {
+    // 紧凑态真正收紧图标与间距，避免页脚错误提示占据接近一整屏的高度。
+    val iconSize = if (compact) 24.dp else 120.dp
+    val iconPadding = if (compact) 4.dp else 16.dp
+    val actionSpacing = if (compact) 8.dp else 16.dp
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -305,16 +309,16 @@ private fun ErrorTipContent(
         Icon(
             imageVector = EhIcons.Big.Default.SadAndroid,
             contentDescription = null,
-            modifier = Modifier.padding(16.dp).size(iconSize),
+            modifier = Modifier.padding(iconPadding).size(iconSize),
             tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
         )
         Text(
             text = text,
-            style = MiuixTheme.textStyles.body1,
+            style = if (compact) MiuixTheme.textStyles.footnote1 else MiuixTheme.textStyles.body1,
             textAlign = TextAlign.Center,
         )
         if (onRetry != null) {
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(actionSpacing))
             Button(
                 enabled = enabled,
                 onClick = onRetry,

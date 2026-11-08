@@ -99,7 +99,7 @@ fun DownloadCard(
                     DownloadInfo.STATE_FAILED -> if (info.legacy <= 0) stateFailed else stateFailed2
                     DownloadInfo.STATE_FINISH -> {
                         if (showProgress) {
-                            val readProgress by remember { EhDB.getReadProgressFlow(info.gid) }.collectAsState(0)
+                            val readProgress by remember(info.gid) { EhDB.getReadProgressFlow(info.gid) }.collectAsState(0)
                             if (readProgress > 0) "${readProgress + 1}/${info.pages}P" else "${info.pages}P"
                         } else {
                             "${info.pages}P"
@@ -110,13 +110,13 @@ fun DownloadCard(
                 Row {
                     Text(
                         text = info.uploader.orEmpty(),
-                        modifier = Modifier.alignByBaseline().weight(1f, fill = false).alpha(if (info.disowned) 0.5f else 1f),
+                        // 单独占满剩余宽度；不要再叠加 Spacer(weight(1f))，否则上传者名会被提前挤成省略号。
+                        modifier = Modifier.alignByBaseline().weight(1f).alpha(if (info.disowned) 0.5f else 1f),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         style = MiuixTheme.textStyles.body2,
                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     )
-                    Spacer(modifier = Modifier.weight(1f))
                     Text(
                         text = stateText.orEmpty(),
                         modifier = Modifier.alignByBaseline(),
@@ -142,7 +142,7 @@ fun DownloadCard(
                         Text(text = FileUtils.humanReadableByteCount(speed.coerceAtLeast(0)) + "/s", style = MiuixTheme.textStyles.footnote1)
                     }
                     LinearProgressIndicator(
-                        progress = finished.toFloat() / total.toFloat(),
+                        progress = (finished.toFloat() / total.toFloat()).coerceIn(0f, 1f),
                         modifier = Modifier.fillMaxWidth(),
                     )
                 }

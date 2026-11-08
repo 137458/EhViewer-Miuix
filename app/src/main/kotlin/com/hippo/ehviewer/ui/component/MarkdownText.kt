@@ -418,6 +418,11 @@ private val TABLE_DIVIDER_REGEX = Regex("""^\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)+\
 
 private fun isTableDivider(line: String): Boolean = line.matches(TABLE_DIVIDER_REGEX)
 
+/** 仅绝对 http(s) 地址可点击；相对路径或其它 scheme 交给 UriHandler 会抛 ActivityNotFoundException。 */
+internal fun linkifiableUrl(url: String): String? = url.takeIf {
+    it.startsWith("http://", ignoreCase = true) || it.startsWith("https://", ignoreCase = true)
+}
+
 private fun splitTableRow(line: String): List<String> {
     var trimmed = line.trim()
     if (trimmed.startsWith('|')) trimmed = trimmed.substring(1)
@@ -438,18 +443,24 @@ fun buildAnnotatedContent(rawText: String): AnnotatedString = buildAnnotatedStri
                 val urlEnd = text.indexOf(')', labelEnd + 2)
                 if (urlEnd != -1) {
                     val label = text.substring(i + 1, labelEnd)
-                    val url = text.substring(labelEnd + 2, urlEnd).trim()
-                    if (label.isNotEmpty() && url.isNotEmpty()) {
-                        withLink(
-                            LinkAnnotation.Url(
-                                url = url,
-                                styles = TextLinkStyles(
-                                    style = SpanStyle(
-                                        textDecoration = TextDecoration.Underline,
+                    val rawUrl = text.substring(labelEnd + 2, urlEnd).trim()
+                    if (label.isNotEmpty() && rawUrl.isNotEmpty()) {
+                        val url = linkifiableUrl(rawUrl)
+                        if (url != null) {
+                            withLink(
+                                LinkAnnotation.Url(
+                                    url = url,
+                                    styles = TextLinkStyles(
+                                        style = SpanStyle(
+                                            textDecoration = TextDecoration.Underline,
+                                        ),
                                     ),
                                 ),
-                            ),
-                        ) {
+                            ) {
+                                appendInlineStyles(label)
+                            }
+                        } else {
+                            // 相对路径或未知 scheme 无法交给 UriHandler，退化成纯文本避免崩溃。
                             appendInlineStyles(label)
                         }
                         i = urlEnd + 1
