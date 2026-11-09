@@ -236,10 +236,8 @@ fun LibrarySearchBarScaffold(
                         .thenIf(!expanded) {
                             offset { androidx.compose.ui.unit.IntOffset(0, searchBarOffsetY()) }
                                 .graphicsLayer {
+                                    // alpha 在 collapseProgress 2/3 时已归零，无需再用位移瞬移隐藏
                                     alpha = (1f - collapseProgress * 1.5f).coerceIn(0f, 1f)
-                                    if (collapseProgress >= 0.8f) {
-                                        translationY = -10000f
-                                    }
                                 }
                         }
                         .thenIf(expanded) { fillMaxSize() },
@@ -362,10 +360,8 @@ fun LibrarySearchBarScaffold(
                             androidx.compose.ui.unit.IntOffset(0, searchBarOffsetY() + inputFieldOffset)
                         }
                         .graphicsLayer {
+                            // alpha 在 collapseProgress 2/3 时已归零，无需再用位移瞬移隐藏
                             alpha = (1f - collapseProgress * 1.5f).coerceIn(0f, 1f)
-                            if (collapseProgress >= 0.8f) {
-                                translationY = -10000f
-                            }
                         }
                         .fillMaxWidth(),
                 ) {
