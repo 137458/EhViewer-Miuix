@@ -19,7 +19,7 @@
     <dimen name="signinscreen_landscape_caption_frame_width">480dp</dimen>
     <dimen name="gallery_detail_card_landscape_width">480dp</dimen>
 
-    <dimen name="keyline_margin">16dp</dimen>
+    <dimen name="keyline_margin">12dp</dimen>
     <dimen name="single_max_width">260dp</dimen>
 
     <dimen name="strip_item_padding">8dp</dimen>
