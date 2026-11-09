@@ -35,6 +35,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -66,7 +67,7 @@ import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
-import top.yukonga.miuix.kmp.basic.SmallTitle
+import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TopAppBar
@@ -132,10 +133,6 @@ fun AnimatedVisibilityScope.BottomNavItemsScreen(navigator: DestinationsNavigato
                 .verticalScroll(rememberScrollState())
                 .padding(paddingValues),
         ) {
-            SmallTitle(
-                text = stringResource(id = R.string.desktop_nav_items_title),
-                modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
-            )
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -212,9 +209,10 @@ private fun NavItemConfigRow(
 ) {
     val hapticFeedback = LocalHapticFeedback.current
     val interactionSource = remember { MutableInteractionSource() }
-    val background = when {
-        dragging -> MiuixTheme.colorScheme.primary.copy(alpha = 0.16f)
-        else -> MiuixTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0f)
+    val background = if (dragging) {
+        MiuixTheme.colorScheme.primary.copy(alpha = 0.16f)
+    } else {
+        Color.Transparent
     }
     Row(
         modifier = modifier
@@ -225,6 +223,7 @@ private fun NavItemConfigRow(
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,
+                role = Role.Switch,
                 onClick = onToggle,
             )
             .padding(horizontal = 12.dp),
@@ -271,24 +270,10 @@ private fun NavItemConfigRow(
             fontSize = 15.sp,
             modifier = Modifier.weight(1f),
         )
-        Box(
-            modifier = Modifier
-                .clip(SquircleShape(6.dp))
-                .background(
-                    if (visible) {
-                        MiuixTheme.colorScheme.primary.copy(alpha = 0.15f)
-                    } else {
-                        MiuixTheme.colorScheme.surfaceContainerHighest
-                    },
-                )
-                .padding(horizontal = 10.dp, vertical = 3.dp),
-        ) {
-            Text(
-                text = if (visible) "✓" else "○",
-                color = if (visible) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Bold,
-            )
-        }
+        // 显隐状态交给 Miuix Switch，不再自绘 ✓/○ 徽标；行点击与开关点击都走同一个回调
+        Switch(
+            checked = visible,
+            onCheckedChange = { onToggle() },
+        )
     }
 }
