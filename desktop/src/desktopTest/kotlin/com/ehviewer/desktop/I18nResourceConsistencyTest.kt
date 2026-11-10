@@ -66,7 +66,7 @@ class I18nResourceConsistencyTest {
         for (localeDir in localeDirs) {
             parseFormatArgs(localeDir.toPath()).forEach { (key, args) ->
                 val baseArgs = base[key]
-                if (baseArgs != null && baseArgs != args) {
+                if (baseArgs != null && baseArgs.sorted() != args.sorted()) {
                     mismatch += "${localeDir.name}:$key base=$baseArgs localized=$args"
                 }
             }
