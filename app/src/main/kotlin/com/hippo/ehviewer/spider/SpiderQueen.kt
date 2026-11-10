@@ -49,6 +49,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
@@ -213,7 +214,7 @@ class SpiderQueen private constructor(val galleryInfo: GalleryInfo) : CoroutineS
         check(!(mReadReference < 0 || mDownloadReference < 0)) { "Mode reference < 0" }
     }
 
-    private val prepareScope = CoroutineScope(coroutineContext + SupervisorJob())
+    private val prepareScope = CoroutineScope(coroutineContext + SupervisorJob(coroutineContext.job))
     private val prepareJob = prepareScope.async { doPrepare() }
     private val archiveJob = launch(start = CoroutineStart.LAZY) {
         val failed = spiderDen.archive()

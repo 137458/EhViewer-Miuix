@@ -7,11 +7,10 @@ import com.hippo.ehviewer.Settings
 import com.hippo.ehviewer.client.EhEngine
 import com.hippo.ehviewer.client.EhUrl
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 suspend fun CoroutineScope.refreshAccountInfo() = catch {
     with(EhEngine.getProfile()) {
@@ -22,39 +21,40 @@ suspend fun CoroutineScope.refreshAccountInfo() = catch {
     logcat(it)
 }
 
-@OptIn(DelicateCoroutinesApi::class)
-fun postLogin() = GlobalScope.async(Dispatchers.IO) {
+suspend fun postLogin() = withContext(Dispatchers.IO) {
     // 登录成功后立即把身份 Cookie 同步到 exhentai
     EhCookieStore.syncExCookies()
 
-    launch { refreshAccountInfo() }
+    coroutineScope {
+        launch { refreshAccountInfo() }
 
-    // For the `star` cookie
-    catch {
-        EhEngine.getNews(false)
-    }.onLeft {
-        logcat(it)
-    }
-
-    // Get cookies for image limits
-    launch {
+        // For the `star` cookie
         catch {
-            EhEngine.getUConfig(EhUrl.SITE_E)
-            EhCookieStore.flush()
+            EhEngine.getNews(false)
         }.onLeft {
             logcat(it)
         }
-    }
 
-    // Sad panda check
-    catch {
-        EhEngine.getUConfig(EhUrl.SITE_EX)
-        EhCookieStore.flush()
-        Settings.gallerySite.value = EhUrl.SITE_EX
-    }.onLeft {
-        Settings.gallerySite.value = EhUrl.SITE_E
-    }
+        // Get cookies for image limits
+        launch {
+            catch {
+                EhEngine.getUConfig(EhUrl.SITE_E)
+                EhCookieStore.flush()
+            }.onLeft {
+                logcat(it)
+            }
+        }
 
-    Settings.hasSignedIn.value = true
-    Settings.needSignIn.value = false
+        // Sad panda check
+        catch {
+            EhEngine.getUConfig(EhUrl.SITE_EX)
+            EhCookieStore.flush()
+            Settings.gallerySite.value = EhUrl.SITE_EX
+        }.onLeft {
+            Settings.gallerySite.value = EhUrl.SITE_E
+        }
+
+        Settings.hasSignedIn.value = true
+        Settings.needSignIn.value = false
+    }
 }

@@ -137,7 +137,7 @@ fun AnimatedVisibilityScope.WebViewSignInScreen(navigator: DestinationsNavigator
                 if (EhCookieStore.hasSignedIn()) {
                     isHandlingLogin = true
                     EhCookieStore.flush()
-                    postLogin().await()
+                    postLogin()
                     navigator.popBackStack()
                 }
             }

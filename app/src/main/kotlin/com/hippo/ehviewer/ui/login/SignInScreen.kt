@@ -106,7 +106,7 @@ fun AnimatedVisibilityScope.SignInScreen(navigator: DestinationsNavigator) = Scr
                 runCatching {
                     EhCookieStore.setIdentityCookies(memberId, passHash, igneous)
                     EhCookieStore.flush()
-                    postLogin().await()
+                    postLogin()
                 }.onFailure {
                     withUIContext {
                         isProgressIndicatorVisible = false
