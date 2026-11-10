@@ -96,8 +96,7 @@ object UpdateDownloadManager {
     }
 
     /** 仅当结果确实属于 [version] 时才返回可安装文件，版本不符视为不可安装。 */
-    fun installableFile(version: String): File? =
-        downloadedFile?.takeIf { releaseVersion == version && it.exists() }
+    fun installableFile(version: String): File? = downloadedFile?.takeIf { releaseVersion == version && it.exists() }
 
     /**
      * 丢弃不属于 [version] 的旧结果：删除旧文件并清空错误，

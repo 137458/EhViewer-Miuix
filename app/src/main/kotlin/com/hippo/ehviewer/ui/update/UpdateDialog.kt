@@ -344,7 +344,6 @@ private fun DialogActions(
                 )
             }
         }
-
         UpdatePrimaryAction.Retry -> {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -372,7 +371,6 @@ private fun DialogActions(
                 modifier = Modifier.fillMaxWidth(),
             )
         }
-
         else -> {
             Row(
                 modifier = Modifier.fillMaxWidth(),

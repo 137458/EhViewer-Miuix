@@ -55,12 +55,11 @@ internal data class UpdateDialogNotesState(
     val hiddenLineCount: Int,
 )
 
-internal fun updateDialogSummary(currentVersion: String, release: Release): UpdateDialogSummary =
-    UpdateDialogSummary(
-        currentVersion = currentVersion,
-        latestVersion = release.version,
-        publishedAt = release.publishedAt,
-    )
+internal fun updateDialogSummary(currentVersion: String, release: Release): UpdateDialogSummary = UpdateDialogSummary(
+    currentVersion = currentVersion,
+    latestVersion = release.version,
+    publishedAt = release.publishedAt,
+)
 
 internal fun updateDialogNotesState(
     markdown: String,
@@ -84,8 +83,7 @@ internal fun updateDialogNotesState(
 
 private fun isTableRow(line: String): Boolean = line.trimStart().startsWith("|")
 
-internal fun updateDownloadPercent(progress: Float): Int =
-    (progress.coerceIn(0f, 1f) * 100).toInt()
+internal fun updateDownloadPercent(progress: Float): Int = (progress.coerceIn(0f, 1f) * 100).toInt()
 
 internal fun updateDialogProgressFraction(snapshot: UpdateDownloadSnapshot): Float? {
     if (snapshot.totalBytes <= 0L) return null

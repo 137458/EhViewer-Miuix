@@ -53,8 +53,8 @@ import com.ehviewer.core.ui.icons.filled.Subscriptions
 import com.ehviewer.core.ui.icons.filled.Whatshot
 import com.hippo.ehviewer.Settings
 import com.hippo.ehviewer.collectAsState
-import com.hippo.ehviewer.ui.MainNavItem
 import com.hippo.ehviewer.ui.MainNavConfig
+import com.hippo.ehviewer.ui.MainNavItem
 import com.hippo.ehviewer.ui.MainNavItems
 import com.hippo.ehviewer.ui.Screen
 import com.hippo.ehviewer.ui.main.NavigationIcon
@@ -78,17 +78,16 @@ import top.yukonga.miuix.kmp.icon.extended.Recent
 import top.yukonga.miuix.kmp.icon.extended.Settings
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-internal fun MainNavItem.icon(): ImageVector =
-    when (this) {
-        MainNavItem.Home -> EhIcons.Default.Home
-        MainNavItem.Subscription -> EhIcons.Default.Subscriptions
-        MainNavItem.Whatshot -> EhIcons.Default.Whatshot
-        MainNavItem.Toplist -> EhIcons.Default.FormatListNumbered
-        MainNavItem.Favorites -> MiuixIcons.Favorites
-        MainNavItem.History -> MiuixIcons.Recent
-        MainNavItem.Downloads -> MiuixIcons.Download
-        MainNavItem.Settings -> MiuixIcons.Settings
-    }
+internal fun MainNavItem.icon(): ImageVector = when (this) {
+    MainNavItem.Home -> EhIcons.Default.Home
+    MainNavItem.Subscription -> EhIcons.Default.Subscriptions
+    MainNavItem.Whatshot -> EhIcons.Default.Whatshot
+    MainNavItem.Toplist -> EhIcons.Default.FormatListNumbered
+    MainNavItem.Favorites -> MiuixIcons.Favorites
+    MainNavItem.History -> MiuixIcons.Recent
+    MainNavItem.Downloads -> MiuixIcons.Download
+    MainNavItem.Settings -> MiuixIcons.Settings
+}
 
 // 底栏导航项自定义页：点击行切换显隐、拖拽 ≡ 排序，配置驱动移动端底栏渲染。
 // Settings 项不允许隐藏：移动端没有其他设置入口，藏掉会连本页一起锁死。

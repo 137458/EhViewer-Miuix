@@ -292,7 +292,7 @@ if (!project.hasProperty("buildNative") && !project.hasProperty("skipNativeCheck
                     "缺少原生库 libehviewer.so（ABI: $missing），此 APK 可编译但启动即崩。\n" +
                         "  1) 带 -PbuildNative 执行原生构建（Windows 主机需 WSL，见 app/src/main/cpp/CMakeLists.txt）；\n" +
                         "  2) 或将预编译的 libehviewer.so 放入 app/src/main/jniLibs/<abi>/；\n" +
-                        "  仅编译验证 UI 可追加 -PskipNativeCheck 豁免本校验。"
+                        "  仅编译验证 UI 可追加 -PskipNativeCheck 豁免本校验。",
                 )
             }
         }

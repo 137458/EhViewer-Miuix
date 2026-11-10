@@ -64,6 +64,8 @@ import arrow.core.raise.ensure
 import arrow.core.raise.ensureNotNull
 import com.ehviewer.core.database.model.QuickSearch
 import com.ehviewer.core.i18n.R
+import com.ehviewer.core.shell.list.CategoryFilterStrip
+import com.ehviewer.core.shell.list.HomeFloatingActionCapsule
 import com.ehviewer.core.ui.component.DismissDeleteBackground
 import com.ehviewer.core.ui.component.FAB_ANIMATE_TIME
 import com.ehviewer.core.ui.component.FabLayout
@@ -78,8 +80,6 @@ import com.ehviewer.core.ui.icons.filled.FormatListNumbered
 import com.ehviewer.core.ui.icons.filled.GoTo
 import com.ehviewer.core.ui.icons.filled.LastPage
 import com.ehviewer.core.ui.icons.filled.Shuffle
-import com.ehviewer.core.shell.list.CategoryFilterStrip
-import com.ehviewer.core.shell.list.HomeFloatingActionCapsule
 import com.ehviewer.core.ui.util.Await
 import com.ehviewer.core.ui.util.HapticFeedbackType
 import com.ehviewer.core.ui.util.asyncState

@@ -20,10 +20,9 @@ internal object UpdateFailureClassifier {
         RegexOption.IGNORE_CASE,
     )
 
-    fun httpStatus(error: Throwable): Int? =
-        messages(error).firstNotNullOfOrNull { message ->
-            HTTP_PATTERN.find(message)?.groupValues?.get(1)?.toIntOrNull()
-        }
+    fun httpStatus(error: Throwable): Int? = messages(error).firstNotNullOfOrNull { message ->
+        HTTP_PATTERN.find(message)?.groupValues?.get(1)?.toIntOrNull()
+    }
 
     fun kind(error: Throwable): UpdateFailureKind {
         val messages = messages(error)
@@ -59,22 +58,19 @@ internal object UpdateFailureClassifier {
 internal data class UpdateFailureText(val resId: Int, val args: List<String>)
 
 /** 文案与 Context 解耦，纯逻辑可单测；格式化交给调用方。 */
-internal fun updateFailureText(error: Throwable): UpdateFailureText =
-    when (UpdateFailureClassifier.kind(error)) {
-        UpdateFailureKind.Network -> UpdateFailureText(R.string.update_error_network, emptyList())
-        UpdateFailureKind.Http -> UpdateFailureText(
-            R.string.update_error_http,
-            listOf(UpdateFailureClassifier.httpStatus(error)?.toString().orEmpty()),
-        )
-        UpdateFailureKind.Storage -> UpdateFailureText(R.string.update_error_storage, emptyList())
-        UpdateFailureKind.Unknown -> UpdateFailureText(
-            R.string.update_error_unknown,
-            listOf(error.localizedMessage ?: error.javaClass.simpleName),
-        )
-    }
+internal fun updateFailureText(error: Throwable): UpdateFailureText = when (UpdateFailureClassifier.kind(error)) {
+    UpdateFailureKind.Network -> UpdateFailureText(R.string.update_error_network, emptyList())
+    UpdateFailureKind.Http -> UpdateFailureText(
+        R.string.update_error_http,
+        listOf(UpdateFailureClassifier.httpStatus(error)?.toString().orEmpty()),
+    )
+    UpdateFailureKind.Storage -> UpdateFailureText(R.string.update_error_storage, emptyList())
+    UpdateFailureKind.Unknown -> UpdateFailureText(
+        R.string.update_error_unknown,
+        listOf(error.localizedMessage ?: error.javaClass.simpleName),
+    )
+}
 
-internal fun updateDigestFailureText(expected: String, actual: String): UpdateFailureText =
-    UpdateFailureText(R.string.update_error_digest, listOf(expected.take(12), actual.take(12)))
+internal fun updateDigestFailureText(expected: String, actual: String): UpdateFailureText = UpdateFailureText(R.string.update_error_digest, listOf(expected.take(12), actual.take(12)))
 
-internal fun updateFailureMessage(context: Context, error: Throwable): String =
-    with(updateFailureText(error)) { context.getString(resId, *args.toTypedArray()) }
+internal fun updateFailureMessage(context: Context, error: Throwable): String = with(updateFailureText(error)) { context.getString(resId, *args.toTypedArray()) }
