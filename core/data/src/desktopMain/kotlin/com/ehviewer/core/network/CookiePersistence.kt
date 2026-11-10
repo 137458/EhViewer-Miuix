@@ -4,6 +4,7 @@ import com.sun.jna.Platform
 import com.sun.jna.platform.win32.Crypt32Util
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
+import java.io.ObjectInputFilter
 import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
 import java.io.Serializable
@@ -70,7 +71,10 @@ internal class CookiePersistence(private val path: Path) {
             .getOrElse { emptyMap() }
     }
 
+    private val filter = ObjectInputFilter.Config.createFilter("com.ehviewer.core.network.CookieRecord;java.net.URI;java.lang.*;java.util.*;!*")
+
     private fun deserialize(bytes: ByteArray): Map<URI, List<HttpCookie>> = ObjectInputStream(ByteArrayInputStream(bytes)).use { input ->
+        input.setObjectInputFilter(filter)
         val records = input.readObject() as List<CookieRecord>
         records.groupBy({ it.uri }, { it.toHttpCookie() })
     }
