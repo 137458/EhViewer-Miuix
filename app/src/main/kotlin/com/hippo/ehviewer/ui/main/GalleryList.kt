@@ -6,13 +6,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.plus
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
@@ -35,8 +32,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.paging.LoadState
@@ -45,10 +40,9 @@ import androidx.paging.compose.itemContentType
 import androidx.paging.compose.itemKey
 import com.ehviewer.core.i18n.R
 import com.ehviewer.core.model.BaseGalleryInfo
+import com.ehviewer.core.ui.component.ErrorTip
 import com.ehviewer.core.ui.component.FastScrollLazyVerticalGrid
 import com.ehviewer.core.ui.component.FastScrollLazyVerticalStaggeredGrid
-import com.ehviewer.core.ui.icons.EhIcons
-import com.ehviewer.core.ui.icons.big.SadAndroid
 import com.ehviewer.core.ui.util.WindowLayout
 import com.ehviewer.core.util.launch
 import com.hippo.ehviewer.client.exception.NoHitsFoundException
@@ -220,6 +214,7 @@ fun GalleryList(
                         ErrorTip(
                             modifier = Modifier.widthIn(max = 228.dp),
                             text = state.error.displayString(),
+                            retryText = stringResource(id = R.string.action_retry),
                             onRetry = { data.retry() },
                         )
                     }
@@ -228,73 +223,6 @@ fun GalleryList(
                     // Only for local favorites as empty gallery lists from network are treated as error
                     ErrorTip(modifier = Modifier.widthIn(max = 228.dp), text = stringResource(id = R.string.gallery_list_empty_hit))
                 }
-            }
-        }
-    }
-}
-
-@Composable
-fun ErrorTip(
-    modifier: Modifier = Modifier,
-    text: String,
-    enabled: Boolean = true,
-    onRetry: (() -> Unit)? = null,
-    compact: Boolean = false,
-) {
-    if (compact) {
-        ErrorTipContent(
-            modifier = modifier.padding(vertical = 16.dp),
-            text = text,
-            enabled = enabled,
-            onRetry = onRetry,
-            iconSize = 48.dp,
-        )
-    } else {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center,
-        ) {
-            ErrorTipContent(
-                modifier = modifier,
-                text = text,
-                enabled = enabled,
-                onRetry = onRetry,
-                iconSize = 120.dp,
-            )
-        }
-    }
-}
-
-@Composable
-private fun ErrorTipContent(
-    modifier: Modifier,
-    text: String,
-    enabled: Boolean,
-    onRetry: (() -> Unit)?,
-    iconSize: Dp,
-) {
-    Column(
-        modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Icon(
-            imageVector = EhIcons.Big.Default.SadAndroid,
-            contentDescription = null,
-            modifier = Modifier.padding(16.dp).size(iconSize),
-            tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-        )
-        Text(
-            text = text,
-            style = MiuixTheme.textStyles.body1,
-            textAlign = TextAlign.Center,
-        )
-        if (onRetry != null) {
-            Spacer(modifier = Modifier.height(16.dp))
-            Button(
-                enabled = enabled,
-                onClick = onRetry,
-            ) {
-                Text(text = stringResource(id = R.string.action_retry))
             }
         }
     }

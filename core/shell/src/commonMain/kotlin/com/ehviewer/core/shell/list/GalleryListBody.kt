@@ -3,14 +3,9 @@ package com.ehviewer.core.shell.list
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.plus
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
@@ -31,27 +26,20 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.ehviewer.core.i18n.MR
 import com.ehviewer.core.model.BaseGalleryInfo
+import com.ehviewer.core.ui.component.ErrorTip
 import com.ehviewer.core.ui.component.FastScrollLazyVerticalGrid
 import com.ehviewer.core.ui.component.FastScrollLazyVerticalStaggeredGrid
-import com.ehviewer.core.ui.icons.EhIcons
-import com.ehviewer.core.ui.icons.big.SadAndroid
 import com.ehviewer.core.ui.util.WindowLayout
 import dev.icerock.moko.resources.compose.stringResource
 import kotlin.math.roundToInt
-import top.yukonga.miuix.kmp.basic.Button
-import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
 import top.yukonga.miuix.kmp.basic.LinearProgressIndicator
 import top.yukonga.miuix.kmp.basic.PullToRefresh
 import top.yukonga.miuix.kmp.basic.Surface
-import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.rememberPullToRefreshState
-import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 // 与 :app dimens 同值的布局常量（shared 无法读 app 资源，对应 gallery_list_margin_h 等）
 private val GALLERY_LIST_MARGIN_H = 12.dp
@@ -251,80 +239,9 @@ fun LoadMoreIndicator(
         error != null -> ErrorTip(
             modifier = modifier,
             text = error,
+            retryText = stringResource(MR.strings.action_retry),
             onRetry = onRetry,
             compact = true,
         )
-    }
-}
-
-// 空态/错误提示（移动端 ErrorTip 同构）
-@Composable
-fun ErrorTip(
-    modifier: Modifier = Modifier,
-    text: String,
-    enabled: Boolean = true,
-    onRetry: (() -> Unit)? = null,
-    compact: Boolean = false,
-) {
-    if (compact) {
-        ErrorTipContent(
-            modifier = modifier.padding(vertical = 12.dp),
-            text = text,
-            enabled = enabled,
-            onRetry = onRetry,
-            compact = true,
-        )
-    } else {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center,
-        ) {
-            ErrorTipContent(
-                modifier = modifier,
-                text = text,
-                enabled = enabled,
-                onRetry = onRetry,
-                compact = false,
-            )
-        }
-    }
-}
-
-@Composable
-private fun ErrorTipContent(
-    modifier: Modifier,
-    text: String,
-    enabled: Boolean,
-    onRetry: (() -> Unit)?,
-    compact: Boolean,
-) {
-    // 紧凑态真正收紧图标与间距，避免页脚错误提示占据接近一整屏的高度。
-    val iconSize = if (compact) 24.dp else 120.dp
-    val iconPadding = if (compact) 4.dp else 16.dp
-    val actionSpacing = if (compact) 8.dp else 16.dp
-    Column(
-        modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Icon(
-            imageVector = EhIcons.Big.Default.SadAndroid,
-            contentDescription = null,
-            modifier = Modifier.padding(iconPadding).size(iconSize),
-            tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-        )
-        Text(
-            text = text,
-            style = if (compact) MiuixTheme.textStyles.footnote1 else MiuixTheme.textStyles.body1,
-            textAlign = TextAlign.Center,
-        )
-        if (onRetry != null) {
-            Spacer(modifier = Modifier.height(actionSpacing))
-            Button(
-                enabled = enabled,
-                onClick = onRetry,
-            ) {
-                Text(text = stringResource(MR.strings.action_retry))
-            }
-        }
     }
 }
