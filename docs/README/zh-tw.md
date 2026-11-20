@@ -233,7 +233,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 ```
 
-完整協議內容請參閱倉庫根目錄下的 [LICENSE](LICENSE) 檔案。
+完整協議內容請參閱倉庫根目錄下的 [LICENSE](/LICENSE) 檔案。
 
 ---
 
@@ -242,7 +242,7 @@ GNU General Public License for more details.
 如果你是一名 Android 開發者並希望從原始碼編譯建置本專案，請遵循以下流程：
 
 ### 前置環境要求
-- **JDK**：21（各模組統一 `jvmToolchain(21)`）
+- **JDK**：21（各模組統一 `jvmToolchain(21)`）；倉庫根 `.java-version` 為 25，僅決定版本管理器執行 Gradle 所用的 JVM，編譯目標仍為 21
 - **Android SDK**：API Level 37（`compileSdk = 37`、`targetSdk = 37`、Build-tools 37.0.0）
 - **NDK**：29.0.14206865（僅 `-PbuildNative` 觸發原生建置時需要）
 - **建置工具**：Gradle 9.7.1 + Android Gradle Plugin 9.4.1

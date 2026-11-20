@@ -242,7 +242,7 @@ GNU General Public License for more details.
 如果你是一名 Android 开发者并希望从源码编译构建本项目，请遵循以下流程：
 
 ### 前置环境要求
-- **JDK**：21（各模块统一 `jvmToolchain(21)`）
+- **JDK**：21（各模块统一 `jvmToolchain(21)`）；仓库根 `.java-version` 为 25，仅决定版本管理器运行 Gradle 所用的 JVM，编译目标仍为 21
 - **Android SDK**：API Level 37（`compileSdk = 37`、`targetSdk = 37`、Build-tools 37.0.0）
 - **NDK**：29.0.14206865（仅 `-PbuildNative` 触发原生构建时需要）
 - **构建工具**：Gradle 9.7.1 + Android Gradle Plugin 9.4.1

@@ -233,7 +233,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 ```
 
-For the complete license text, refer to the [LICENSE](LICENSE) file in the repository root.
+For the complete license text, refer to the [LICENSE](/LICENSE) file in the repository root.
 
 ---
 
@@ -242,7 +242,7 @@ For the complete license text, refer to the [LICENSE](LICENSE) file in the repos
 To compile the application from source, prepare your development environment as follows:
 
 ### Prerequisites
-- **JDK**: Version 21 (all modules use `jvmToolchain(21)`)
+- **JDK**: Version 21 (all modules use `jvmToolchain(21)`); the repository-root `.java-version` is 25, which only selects the JVM that version managers use to run Gradle, while compilation still targets 21
 - **Android SDK**: API Level 37 (`compileSdk = 37`, `targetSdk = 37`, Build-tools 37.0.0)
 - **NDK**: 29.0.14206865 (only needed for native builds behind `-PbuildNative`)
 - **Build System**: Gradle 9.7.1 + Android Gradle Plugin 9.4.1

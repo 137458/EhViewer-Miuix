@@ -233,7 +233,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 ```
 
-完全なライセンステキストは、リポジトリのルートにある [LICENSE](LICENSE) ファイルをご参照ください。
+完全なライセンステキストは、リポジトリのルートにある [LICENSE](/LICENSE) ファイルをご参照ください。
 
 ---
 
@@ -242,7 +242,7 @@ GNU General Public License for more details.
 ソースコードからアプリケーションをコンパイルする場合の手順は以下の通りです：
 
 ### 事前環境要件
-- **JDK**：21（全モジュールで `jvmToolchain(21)` を使用）
+- **JDK**：21（全モジュールで `jvmToolchain(21)` を使用）。リポジトリ直下の `.java-version` は 25 で、バージョンマネージャが Gradle を実行する JVM の指定にのみ影響し、コンパイル対象は 21 のままです
 - **Android SDK**：API Level 37（`compileSdk = 37`、`targetSdk = 37`、Build-tools 37.0.0）
 - **NDK**：29.0.14206865（`-PbuildNative` によるネイティブビルド時のみ必要）
 - **ビルドツール**：Gradle 9.7.1 + Android Gradle Plugin 9.4.1

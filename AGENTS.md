@@ -4,7 +4,7 @@ EhViewer（E-Hentai 阅读器）的 Miuix/HyperOS 风格定制 fork，基于 Kot
 
 ## 构建与验证
 
-- 环境：JDK 21（各模块 `jvmToolchain(21)`）、Android SDK API 37（`compileSdk = 37`、`targetSdk = 37`、Build-tools 37.0.0）、Gradle 9.7.1 + AGP 9.4.1；NDK 29.0.14206865（仅 `-PbuildNative` 原生构建需要）
+- 环境：JDK 21（各模块 `jvmToolchain(21)`；仓库根 `.java-version` 为 25，仅决定版本管理器运行 Gradle 所用的 JVM）、Android SDK API 37（`compileSdk = 37`、`targetSdk = 37`、Build-tools 37.0.0）、Gradle 9.7.1 + AGP 9.4.1；NDK 29.0.14206865（仅 `-PbuildNative` 原生构建需要）
 - 编译生产包：`./gradlew assembleDefaultRelease`
 - 产物：`app/build/outputs/apk/default/release/app-default-*-release.apk`
 - 完成标准 = 编译通过。
