@@ -110,23 +110,25 @@
 
 | 产物文件 | 适用系统 | 架构类型 | 说明与选择建议 |
 |:---|:---|:---|:---|
-| `EhViewer-*-default-arm64-v8a.apk` | Android 8.0+ (API 26+) | 64 位 ARM | **主流机型推荐**。包名后缀 `.miuix`，原生优化无冗余兼容垫片 |
-| `EhViewer-*-default-universal.apk` | Android 8.0+ (API 26+) | 通用架构 | 通用兜底包，当前工程下与 arm64-v8a 二进制及体积完全一致 |
-| `EhViewer-*-marshmallow-arm64-v8a.apk` | Android 6.0 ~ 7.1 (API 23+) | 64 位 ARM | **老旧机型兼容版**。包名后缀 `.m`，内建脱糖支持与向后兼容层 |
-| `EhViewer-*-marshmallow-universal.apk` | Android 6.0 ~ 7.1 (API 23+) | 通用架构 | 老旧系统通用兜底包 |
+| `EhViewer-*-default-arm64-v8a.apk` | Android 8.0+ (API 26+) | 64 位 ARM | **主流机型推荐**。完整包名 `moe.tarsin.ehviewer.miuix`，原生优化无冗余兼容垫片 |
+| `EhViewer-*-default-universal.apk` | Android 8.0+ (API 26+) | 通用架构 | 通用兜底包，当前工程仅编入 arm64-v8a，包内二进制与 arm64-v8a 产物一致 |
+| `EhViewer-*-marshmallow-arm64-v8a.apk` | Android 7.0 ~ 7.1 (API 24+) | 64 位 ARM | **老旧机型兼容版**。完整包名 `moe.tarsin.ehviewer.m`，内建脱糖支持与向后兼容层 |
+| `EhViewer-*-marshmallow-universal.apk` | Android 7.0 ~ 7.1 (API 24+) | 通用架构 | 老旧系统通用兜底包 |
 | `EhViewer-*-mapping.txt` | 全平台通用 | 符号表 | **非安装包**。R8 混淆映射表，仅供开发者排查崩溃堆栈，用户无需下载 |
+
+> 上表为 GitHub Release 页面上的资产命名；本地构建产物直接生成在 `app/build/outputs/apk/<变体>/release/`。
 
 ### Windows 桌面端（源码运行）
 
-暂未发布预构建桌面产物，可用 JDK 21+ 从源码构建运行：
+暂未发布预构建桌面产物，可用 JDK 21 从源码构建运行：
 
 ```bash
 ./gradlew :desktop:run            # 直接运行
-./gradlew :desktop:desktopFatJar  # 构建单个可执行胖 jar（约 83MB）
+./gradlew :desktop:desktopFatJar  # 构建单个可执行胖 jar
 java -jar desktop/build/libs/desktop-all.jar
 ```
 
-胖 jar 已内置全部依赖与 Rust 解析库，运行时无需 MinGW 工具链与 jpackage。
+桌面端的画廊列表解析依赖 Rust JNI 库 `ehviewer_rust`（源码位于 `app/src/main/rust`，`jvm` feature 提供桌面端符号）。该 dll 未入库，运行前需先构建并放到 `desktop/src/desktopMain/resources/native/`（用 `./gradlew :desktop:copyRustDll` 从 `app/src/main/rust/target-desk/` 拷贝），或用系统属性 / 环境变量 `EHVIEWER_RUST_DLL` 指定 dll 路径；缺失时列表解析会直接抛出 `Rust bindings unavailable`。跨平台编译该 dll 需为工具链追加 `x86_64-pc-windows-gnu` 目标，`rust-toolchain.toml` 只声明了 Android 目标。胖 jar 打包完成后无需额外工具链即可运行。
 
 ### 安装与配置建议
 
@@ -141,7 +143,9 @@ java -jar desktop/build/libs/desktop-all.jar
 
 ## 系统要求
 
-- **最低运行要求**：Android 8.0 (API 26) 及以上。
+- **最低运行要求**：
+  - `default` 变体：Android 8.0 (API 26) 及以上（`minSdk = 26`）。
+  - `marshmallow` 变体：Android 7.0 (API 24) 及以上（`minSdk = 24`）。
 - **推荐运行环境**：
   - Android 13 (API 33) 或更高版本。
   - Xiaomi HyperOS / MIUI 运行环境。
@@ -240,10 +244,25 @@ GNU General Public License for more details.
 如果你是一名 Android 开发者并希望从源码编译构建本项目，请遵循以下流程：
 
 ### 前置环境要求
-- **JDK**：21 及以上
-- **Android SDK**：API Level 35 (Build-tools 35.0.0+)
-- **构建工具**：Gradle 9.x + Android Gradle Plugin 9.x
-- **推荐 IDE**：Android Studio Ladybug (2024.2.1) 或更高版本
+- **JDK**：21（各模块统一 `jvmToolchain(21)`）
+- **Android SDK**：API Level 37（`compileSdk = 37`、`targetSdk = 37`、Build-tools 37.0.0）
+- **NDK**：29.0.14206865（仅 `-PbuildNative` 触发原生构建时需要）
+- **构建工具**：Gradle 9.7.1 + Android Gradle Plugin 9.4.1
+- **推荐 IDE**：支持 AGP 9.x 的 Android Studio，或直接使用命令行构建
+
+### 模块结构
+
+| 模块 | 类型 | 职责 |
+|---|---|---|
+| `:app` | Android 应用 | `namespace` 为 `com.hippo.ehviewer`，含 `default` 与 `marshmallow` 两个变体 |
+| `:core:common` | 多平台库 | 通用基础设施：`files`、`model`、`util` |
+| `:core:data` | 多平台库 | 数据层：`data`、`database`、`mainthread`、`network`、`preferences` |
+| `:core:i18n` | 多平台库 | `moko-resources` 多语言字符串资源（12 个语言目录） |
+| `:core:shell` | 多平台库 | 页面壳与导航抽象：`list`、`nav` |
+| `:core:ui` | 多平台库 | Compose 主题与通用组件：`animation`、`component`、`effect`、`icons`、`liquid`、`theme`、`util` |
+| `:desktop` | Compose Desktop（JVM） | 桌面端入口 `com.ehviewer.desktop.MainKt` |
+| `:benchmark` | `com.android.test` | Macrobenchmark 与 Baseline Profile，`targetProjectPath = ":app"` |
+| `build-logic` | 复合构建 | `includeBuild` 引入的约定插件，统一 toolchain 与静态检查 |
 
 ### 编译步骤
 
@@ -258,3 +277,6 @@ cd EhViewer-Miuix
 # 3. 产物输出位置位于
 # app/build/outputs/apk/default/release/app-default-*-release.apk
 ```
+
+- 原生库已预置：`app/src/main/jniLibs/arm64-v8a/libehviewer.so` 已入库，标准命令可直接产出可运行包。修改 `app/src/main/rust/` 或 `app/src/main/cpp/` 后需带 `-PbuildNative` 重新构建原生库（Windows 主机需 WSL），否则仓库二进制与源码脱钩。
+- 版本号在 `app/build.gradle.kts` 维护：`versionName = "1.16.0"`、`versionCode = 180065`；不带 `-Prelease` 时版本名追加 `-SNAPSHOT`。

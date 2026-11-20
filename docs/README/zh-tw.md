@@ -108,23 +108,25 @@
 
 | 產物檔案 | 適用系統 | 架構類型 | 說明與選擇建議 |
 |:---|:---|:---|:---|
-| `EhViewer-*-default-arm64-v8a.apk` | Android 8.0+ (API 26+) | 64 位元 ARM | **主流機型推薦**。套件名稱後綴 `.miuix`，原生最佳化無多餘相容墊片 |
-| `EhViewer-*-default-universal.apk` | Android 8.0+ (API 26+) | 通用架構 | 通用兜底包，當前工程下與 arm64-v8a 二進位及體積完全一致 |
-| `EhViewer-*-marshmallow-arm64-v8a.apk` | Android 6.0 ~ 7.1 (API 23+) | 64 位元 ARM | **老舊機型相容版**。套件名稱後綴 `.m`，內建脫糖支援與向下相容層 |
-| `EhViewer-*-marshmallow-universal.apk` | Android 6.0 ~ 7.1 (API 23+) | 通用架構 | 老舊系統通用兜底包 |
+| `EhViewer-*-default-arm64-v8a.apk` | Android 8.0+ (API 26+) | 64 位元 ARM | **主流機型推薦**。完整套件名稱 `moe.tarsin.ehviewer.miuix`，原生最佳化無多餘相容墊片 |
+| `EhViewer-*-default-universal.apk` | Android 8.0+ (API 26+) | 通用架構 | 通用兜底包，當前工程僅編入 arm64-v8a，包內二進位與 arm64-v8a 產物一致 |
+| `EhViewer-*-marshmallow-arm64-v8a.apk` | Android 7.0 ~ 7.1 (API 24+) | 64 位元 ARM | **老舊機型相容版**。完整套件名稱 `moe.tarsin.ehviewer.m`，內建脫糖支援與向下相容層 |
+| `EhViewer-*-marshmallow-universal.apk` | Android 7.0 ~ 7.1 (API 24+) | 通用架構 | 老舊系統通用兜底包 |
 | `EhViewer-*-mapping.txt` | 全平台通用 | 符號表 | **非安裝包**。R8 混淆對應表，僅供開發者排查崩潰堆疊，使用者無需下載 |
+
+> 上表為 GitHub Release 頁面上的資產命名；本機建置產物直接產生在 `app/build/outputs/apk/<變體>/release/`。
 
 ### Windows 桌面版（原始碼執行）
 
-尚未發布桌面預先建置產物，可用 JDK 21+ 從原始碼建置執行：
+尚未發布桌面預先建置產物，可用 JDK 21 從原始碼建置執行：
 
 ```bash
 ./gradlew :desktop:run            # 直接執行
-./gradlew :desktop:desktopFatJar  # 建置單一可執行胖 jar（約 83MB）
+./gradlew :desktop:desktopFatJar  # 建置單一可執行胖 jar
 java -jar desktop/build/libs/desktop-all.jar
 ```
 
-胖 jar 已內建全部相依與 Rust 解析庫，執行時無需 MinGW 工具鏈與 jpackage。
+桌面版的畫廊清單解析依賴 Rust JNI 函式庫 `ehviewer_rust`（原始碼位於 `app/src/main/rust`，`jvm` feature 提供桌面版符號）。該 dll 未入庫，執行前需先建置並放到 `desktop/src/desktopMain/resources/native/`（用 `./gradlew :desktop:copyRustDll` 從 `app/src/main/rust/target-desk/` 複製），或用系統屬性 / 環境變數 `EHVIEWER_RUST_DLL` 指定 dll 路徑；缺少時清單解析會直接拋出 `Rust bindings unavailable`。跨平台編譯該 dll 需為工具鏈追加 `x86_64-pc-windows-gnu` 目標，`rust-toolchain.toml` 只宣告了 Android 目標。胖 jar 打包完成後無需額外工具鏈即可執行。
 
 ### 安裝與配置建議
 
@@ -139,7 +141,9 @@ java -jar desktop/build/libs/desktop-all.jar
 
 ## 系統要求
 
-- **最低運作要求**：Android 8.0 (API 26) 及以上。
+- **最低運作要求**：
+  - `default` 變體：Android 8.0 (API 26) 及以上（`minSdk = 26`）。
+  - `marshmallow` 變體：Android 7.0 (API 24) 及以上（`minSdk = 24`）。
 - **推薦運作環境**：
   - Android 13 (API 33) 或更高版本。
   - Xiaomi HyperOS / MIUI 運作環境。
@@ -238,10 +242,25 @@ GNU General Public License for more details.
 如果你是一名 Android 開發者並希望從原始碼編譯建置本專案，請遵循以下流程：
 
 ### 前置環境要求
-- **JDK**：21 及以上
-- **Android SDK**：API Level 35 (Build-tools 35.0.0+)
-- **建置工具**：Gradle 9.x + Android Gradle Plugin 9.x
-- **推薦 IDE**：Android Studio Ladybug (2024.2.1) 或更高版本
+- **JDK**：21（各模組統一 `jvmToolchain(21)`）
+- **Android SDK**：API Level 37（`compileSdk = 37`、`targetSdk = 37`、Build-tools 37.0.0）
+- **NDK**：29.0.14206865（僅 `-PbuildNative` 觸發原生建置時需要）
+- **建置工具**：Gradle 9.7.1 + Android Gradle Plugin 9.4.1
+- **推薦 IDE**：支援 AGP 9.x 的 Android Studio，或直接使用命令列建置
+
+### 模組結構
+
+| 模組 | 類型 | 職責 |
+|---|---|---|
+| `:app` | Android 應用程式 | `namespace` 為 `com.hippo.ehviewer`，含 `default` 與 `marshmallow` 兩個變體 |
+| `:core:common` | 多平台函式庫 | 通用基礎設施：`files`、`model`、`util` |
+| `:core:data` | 多平台函式庫 | 資料層：`data`、`database`、`mainthread`、`network`、`preferences` |
+| `:core:i18n` | 多平台函式庫 | `moko-resources` 多語言字串資源（12 個語言目錄） |
+| `:core:shell` | 多平台函式庫 | 頁面殼與導覽抽象：`list`、`nav` |
+| `:core:ui` | 多平台函式庫 | Compose 主題與通用元件：`animation`、`component`、`effect`、`icons`、`liquid`、`theme`、`util` |
+| `:desktop` | Compose Desktop（JVM） | 桌面版入口 `com.ehviewer.desktop.MainKt` |
+| `:benchmark` | `com.android.test` | Macrobenchmark 與 Baseline Profile，`targetProjectPath = ":app"` |
+| `build-logic` | 複合建置 | `includeBuild` 引入的約定外掛，統一 toolchain 與靜態檢查 |
 
 ### 編譯步驟
 
@@ -256,3 +275,6 @@ cd EhViewer-Miuix
 # 3. 產物輸出位置位於
 # app/build/outputs/apk/default/release/app-default-*-release.apk
 ```
+
+- 原生函式庫已預置：`app/src/main/jniLibs/arm64-v8a/libehviewer.so` 已入庫，標準命令可直接產出可執行包。修改 `app/src/main/rust/` 或 `app/src/main/cpp/` 後需帶 `-PbuildNative` 重新建置原生函式庫（Windows 主機需 WSL），否則倉庫二進位與原始碼脫鉤。
+- 版本號在 `app/build.gradle.kts` 維護：`versionName = "1.16.0"`、`versionCode = 180065`；不帶 `-Prelease` 時版本名追加 `-SNAPSHOT`。

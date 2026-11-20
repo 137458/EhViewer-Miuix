@@ -108,23 +108,25 @@ Download the latest distribution package from [GitHub Releases](https://github.c
 
 | Artifact File | OS Target | Architecture | Notes & Guidance |
 |:---|:---|:---|:---|
-| `EhViewer-*-default-arm64-v8a.apk` | Android 8.0+ (API 26+) | 64-bit ARM | **Recommended for modern devices**. Package suffix `.miuix`, streamlined without legacy compat layers |
-| `EhViewer-*-default-universal.apk` | Android 8.0+ (API 26+) | Universal | Universal fallback package, binary-identical to arm64-v8a in this project |
-| `EhViewer-*-marshmallow-arm64-v8a.apk` | Android 6.0 ~ 7.1 (API 23+) | 64-bit ARM | **Legacy fallback build**. Package suffix `.m`, bundles desugaring and backward compat support |
-| `EhViewer-*-marshmallow-universal.apk` | Android 6.0 ~ 7.1 (API 23+) | Universal | Legacy universal fallback package |
+| `EhViewer-*-default-arm64-v8a.apk` | Android 8.0+ (API 26+) | 64-bit ARM | **Recommended for modern devices**. Full package name `moe.tarsin.ehviewer.miuix`, streamlined without legacy compat layers |
+| `EhViewer-*-default-universal.apk` | Android 8.0+ (API 26+) | Universal | Universal fallback package; this project only bundles arm64-v8a, so its binaries match the arm64-v8a artifact |
+| `EhViewer-*-marshmallow-arm64-v8a.apk` | Android 7.0 ~ 7.1 (API 24+) | 64-bit ARM | **Legacy fallback build**. Full package name `moe.tarsin.ehviewer.m`, bundles desugaring and backward compat support |
+| `EhViewer-*-marshmallow-universal.apk` | Android 7.0 ~ 7.1 (API 24+) | Universal | Legacy universal fallback package |
 | `EhViewer-*-mapping.txt` | Universal | Symbols | **Not an APK**. R8 ProGuard de-obfuscation mapping table for developers to analyze crash stacks |
+
+> Artifact names above are how they are published on GitHub Releases; local builds write to `app/build/outputs/apk/<variant>/release/`.
 
 ### Windows Desktop (from source)
 
-No prebuilt desktop artifact is published yet; build and run from source with JDK 21+:
+No prebuilt desktop artifact is published yet; build and run from source with JDK 21:
 
 ```bash
 ./gradlew :desktop:run          # run directly
-./gradlew :desktop:desktopFatJar # build a single runnable jar (~83MB)
+./gradlew :desktop:desktopFatJar # build a single runnable fat jar
 java -jar desktop/build/libs/desktop-all.jar
 ```
 
-The fat jar bundles all dependencies and the Rust parsing library — no MinGW toolchain or jpackage needed at runtime.
+Gallery list parsing on desktop depends on the Rust JNI library `ehviewer_rust` (sources in `app/src/main/rust`, desktop symbols behind the `jvm` feature). That dll is not committed; build it and place it in `desktop/src/desktopMain/resources/native/` (use `./gradlew :desktop:copyRustDll` to copy it from `app/src/main/rust/target-desk/`), or point `EHVIEWER_RUST_DLL` (system property or environment variable) at the dll. Without it list parsing throws `Rust bindings unavailable`. Cross-compiling that dll requires adding the `x86_64-pc-windows-gnu` target to the toolchain, since `rust-toolchain.toml` declares Android targets only. Once the fat jar is built, no extra toolchain is needed at runtime.
 
 ### Installation Tips
 
@@ -139,7 +141,9 @@ The fat jar bundles all dependencies and the Rust parsing library — no MinGW t
 
 ## System Requirements
 
-- **Minimum Version**: Android 8.0 (API 26) or higher.
+- **Minimum Version**:
+  - `default` variant: Android 8.0 (API 26) or higher (`minSdk = 26`).
+  - `marshmallow` variant: Android 7.0 (API 24) or higher (`minSdk = 24`).
 - **Recommended Environment**:
   - Android 13 (API 33) or higher.
   - Xiaomi HyperOS / MIUI platform.
@@ -238,10 +242,25 @@ For the complete license text, refer to the [LICENSE](LICENSE) file in the repos
 To compile the application from source, prepare your development environment as follows:
 
 ### Prerequisites
-- **JDK**: Version 21 or higher
-- **Android SDK**: API Level 35 (Build-tools 35.0.0+)
-- **Build System**: Gradle 9.x + Android Gradle Plugin 9.x
-- **Recommended IDE**: Android Studio Ladybug (2024.2.1) or later
+- **JDK**: Version 21 (all modules use `jvmToolchain(21)`)
+- **Android SDK**: API Level 37 (`compileSdk = 37`, `targetSdk = 37`, Build-tools 37.0.0)
+- **NDK**: 29.0.14206865 (only needed for native builds behind `-PbuildNative`)
+- **Build System**: Gradle 9.7.1 + Android Gradle Plugin 9.4.1
+- **Recommended IDE**: Any Android Studio release that supports AGP 9.x, or plain command-line builds
+
+### Module Layout
+
+| Module | Type | Responsibility |
+|---|---|---|
+| `:app` | Android application | `namespace` is `com.hippo.ehviewer`, with `default` and `marshmallow` variants |
+| `:core:common` | Multiplatform library | Shared infrastructure: `files`, `model`, `util` |
+| `:core:data` | Multiplatform library | Data layer: `data`, `database`, `mainthread`, `network`, `preferences` |
+| `:core:i18n` | Multiplatform library | `moko-resources` translations (12 locale directories) |
+| `:core:shell` | Multiplatform library | Page shell and navigation abstractions: `list`, `nav` |
+| `:core:ui` | Multiplatform library | Compose theme and shared components: `animation`, `component`, `effect`, `icons`, `liquid`, `theme`, `util` |
+| `:desktop` | Compose Desktop (JVM) | Desktop entry point `com.ehviewer.desktop.MainKt` |
+| `:benchmark` | `com.android.test` | Macrobenchmark and Baseline Profiles, `targetProjectPath = ":app"` |
+| `build-logic` | Composite build | Convention plugins included via `includeBuild`, sharing toolchain and static analysis setup |
 
 ### Build Instructions
 
@@ -256,3 +275,6 @@ cd EhViewer-Miuix
 # 3. Output APK location
 # app/build/outputs/apk/default/release/app-default-*-release.apk
 ```
+
+- The native library is prebuilt: `app/src/main/jniLibs/arm64-v8a/libehviewer.so` is committed, so the standard command already yields a runnable APK. After changing `app/src/main/rust/` or `app/src/main/cpp/`, rebuild the native library with `-PbuildNative` (needs WSL on Windows hosts), otherwise the committed binary drifts from the sources.
+- Version values live in `app/build.gradle.kts`: `versionName = "1.16.0"`, `versionCode = 180065`; without `-Prelease` the version name gets a `-SNAPSHOT` suffix.

@@ -108,23 +108,25 @@ Kotlin Multiplatform と Jetpack Compose を基盤とし、`top.yukonga.miuix.km
 
 | 配布ファイル | 対応システム | アーキテクチャ | 説明と推奨 |
 |:---|:---|:---|:---|
-| `EhViewer-*-default-arm64-v8a.apk` | Android 8.0+ (API 26+) | 64-bit ARM | **主流端末推奨**。パッケージ末尾 `.miuix`、不要な互換層を含まない最適化ビルド |
-| `EhViewer-*-default-universal.apk` | Android 8.0+ (API 26+) | 汎用アーキテクチャ | 汎用フォールバックパッケージ。本プロジェクトでは arm64-v8a とバイナリ同一 |
-| `EhViewer-*-marshmallow-arm64-v8a.apk` | Android 6.0 ~ 7.1 (API 23+) | 64-bit ARM | **旧端末互換版**。パッケージ末尾 `.m`、脱糖および下位互換ランタイムを同梱 |
-| `EhViewer-*-marshmallow-universal.apk` | Android 6.0 ~ 7.1 (API 23+) | 汎用アーキテクチャ | 旧端末用汎用フォールバックパッケージ |
+| `EhViewer-*-default-arm64-v8a.apk` | Android 8.0+ (API 26+) | 64-bit ARM | **主流端末推奨**。パッケージ名 `moe.tarsin.ehviewer.miuix`、不要な互換層を含まない最適化ビルド |
+| `EhViewer-*-default-universal.apk` | Android 8.0+ (API 26+) | 汎用アーキテクチャ | 汎用フォールバックパッケージ。本プロジェクトは arm64-v8a のみを同梱するため、バイナリは arm64-v8a 版と同一 |
+| `EhViewer-*-marshmallow-arm64-v8a.apk` | Android 7.0 ~ 7.1 (API 24+) | 64-bit ARM | **旧端末互換版**。パッケージ名 `moe.tarsin.ehviewer.m`、脱糖および下位互換ランタイムを同梱 |
+| `EhViewer-*-marshmallow-universal.apk` | Android 7.0 ~ 7.1 (API 24+) | 汎用アーキテクチャ | 旧端末用汎用フォールバックパッケージ |
 | `EhViewer-*-mapping.txt` | 全環境共通 | シンボル表 | **インストール不可**。クラッシュログ解析用の R8 難読化マッピングファイル |
+
+> 上表は GitHub Releases での配布名です。ローカルビルドの成果物は `app/build/outputs/apk/<variant>/release/` に出力されます。
 
 ### Windows デスクトップ版（ソースから実行）
 
-デスクトップのビルド済み成果物はまだ公開されていません。JDK 21+ があればソースからビルドして実行できます：
+デスクトップのビルド済み成果物はまだ公開されていません。JDK 21 があればソースからビルドして実行できます：
 
 ```bash
 ./gradlew :desktop:run            # 直接実行
-./gradlew :desktop:desktopFatJar  # 単一実行可能 jar のビルド（約 83MB）
+./gradlew :desktop:desktopFatJar  # 単一実行可能ファット jar のビルド
 java -jar desktop/build/libs/desktop-all.jar
 ```
 
-ファット jar には依存関係と Rust 解析ライブラリが同梱されており、実行時に MinGW ツールチェーンや jpackage は不要です。
+デスクトップ版のギャラリー一覧解析は Rust JNI ライブラリ `ehviewer_rust` に依存します（ソースは `app/src/main/rust`、デスクトップ向けシンボルは `jvm` feature で有効化）。この dll はリポジトリに含まれないため、事前にビルドして `desktop/src/desktopMain/resources/native/` に配置するか（`./gradlew :desktop:copyRustDll` で `app/src/main/rust/target-desk/` からコピーできます）、システムプロパティまたは環境変数 `EHVIEWER_RUST_DLL` で dll のパスを指定してください。存在しない場合、一覧解析は `Rust bindings unavailable` で失敗します。この dll のクロスコンパイルには `x86_64-pc-windows-gnu` ターゲットをツールチェーンに追加する必要があります（`rust-toolchain.toml` は Android ターゲットのみを宣言しています）。ファット jar をビルドした後は追加のツールチェーンは不要です。
 
 ### インストールと設定のアドバイス
 
@@ -139,7 +141,9 @@ java -jar desktop/build/libs/desktop-all.jar
 
 ## システム要件
 
-- **最小動作要件**：Android 8.0 (API 26) 以上。
+- **最小動作要件**：
+  - `default` バリアント：Android 8.0 (API 26) 以上（`minSdk = 26`）。
+  - `marshmallow` バリアント：Android 7.0 (API 24) 以上（`minSdk = 24`）。
 - **推奨動作環境**：
   - Android 13 (API 33) 以上。
   - Xiaomi HyperOS / MIUI 動作環境。
@@ -238,10 +242,25 @@ GNU General Public License for more details.
 ソースコードからアプリケーションをコンパイルする場合の手順は以下の通りです：
 
 ### 事前環境要件
-- **JDK**：21 以上
-- **Android SDK**：API Level 35 (Build-tools 35.0.0+)
-- **ビルドツール**：Gradle 9.x + Android Gradle Plugin 9.x
-- **推奨 IDE**：Android Studio Ladybug (2024.2.1) 以降
+- **JDK**：21（全モジュールで `jvmToolchain(21)` を使用）
+- **Android SDK**：API Level 37（`compileSdk = 37`、`targetSdk = 37`、Build-tools 37.0.0）
+- **NDK**：29.0.14206865（`-PbuildNative` によるネイティブビルド時のみ必要）
+- **ビルドツール**：Gradle 9.7.1 + Android Gradle Plugin 9.4.1
+- **推奨 IDE**：AGP 9.x に対応した Android Studio、またはコマンドラインでのビルド
+
+### モジュール構成
+
+| モジュール | 種別 | 役割 |
+|---|---|---|
+| `:app` | Android アプリケーション | `namespace` は `com.hippo.ehviewer`、`default` と `marshmallow` の 2 バリアント |
+| `:core:common` | マルチプラットフォームライブラリ | 共通基盤：`files`、`model`、`util` |
+| `:core:data` | マルチプラットフォームライブラリ | データ層：`data`、`database`、`mainthread`、`network`、`preferences` |
+| `:core:i18n` | マルチプラットフォームライブラリ | `moko-resources` の多言語文字列リソース（12 ロケール） |
+| `:core:shell` | マルチプラットフォームライブラリ | ページシェルとナビゲーション抽象：`list`、`nav` |
+| `:core:ui` | マルチプラットフォームライブラリ | Compose テーマと共通コンポーネント：`animation`、`component`、`effect`、`icons`、`liquid`、`theme`、`util` |
+| `:desktop` | Compose Desktop（JVM） | デスクトップ版エントリ `com.ehviewer.desktop.MainKt` |
+| `:benchmark` | `com.android.test` | Macrobenchmark と Baseline Profile、`targetProjectPath = ":app"` |
+| `build-logic` | 複合ビルド | `includeBuild` で読み込む規約プラグイン。toolchain と静的解析を統一 |
 
 ### コンパイル手順
 
@@ -256,3 +275,6 @@ cd EhViewer-Miuix
 # 3. ビルド成果物の出力先
 # app/build/outputs/apk/default/release/app-default-*-release.apk
 ```
+
+- ネイティブライブラリは同梱済みです：`app/src/main/jniLibs/arm64-v8a/libehviewer.so` がリポジトリに含まれるため、標準コマンドでそのまま実行可能な APK が生成されます。`app/src/main/rust/` または `app/src/main/cpp/` を変更した場合は `-PbuildNative` 付きで再ビルドが必要です（Windows ホストでは WSL が必要）。そうしないとリポジトリ内のバイナリとソースが乖離します。
+- バージョンは `app/build.gradle.kts` で管理します：`versionName = "1.16.0"`、`versionCode = 180065`。`-Prelease` を付けない場合はバージョン名に `-SNAPSHOT` が付与されます。
