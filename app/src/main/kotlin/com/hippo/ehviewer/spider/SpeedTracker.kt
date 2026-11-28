@@ -17,11 +17,11 @@ import io.ktor.client.statement.HttpStatement
 import kotlin.concurrent.atomics.AtomicReference
 import kotlin.math.pow
 import kotlin.math.roundToInt
-import kotlin.time.Clock
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.nanoseconds
 import kotlin.time.Duration.Companion.seconds
-import kotlin.time.Instant
+import kotlin.time.TimeSource
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.mapNotNull
@@ -32,30 +32,42 @@ import kotlinx.io.IOException
 
 class SpeedTracker(val window: Duration = 1.seconds) {
     private val mutex = Mutex()
-    private val received = mutableObjectIntMapOf<Instant>()
-    private var start: Instant? = null
+
+    // 采样时间点用单调时钟，墙钟被修改/回拨不会把窗口算成负数或把旧样本当成新样本
+    private val origin = TimeSource.Monotonic.markNow()
+    private val received = mutableMapOf<Long, Long>()
+    private var startNanos: Long? = null
+
+    private fun elapsedNanos() = origin.elapsedNow().inWholeNanoseconds
 
     suspend fun reset() = mutex.withLock {
         received.clear()
-        start = null
+        startNanos = null
     }
 
-    suspend fun track(bytes: Int) = Clock.System.now().let { now ->
-        mutex.withLock {
-            start = start ?: now
-            received[now] = bytes
+    suspend fun track(bytes: Int) = mutex.withLock {
+        if (bytes > 0) {
+            val now = elapsedNanos()
+            startNanos = startNanos ?: now
+            // 同一采样时刻可能先后到达多个 chunk，必须累加而不是覆盖
+            received[now] = (received[now] ?: 0L) + bytes
         }
     }
 
     fun speedFlow(sample: Duration = 1.seconds) = fixedRate(sample).mapNotNull {
         mutex.withLock {
-            start?.let { start ->
-                val now = Clock.System.now()
-                val passed = now - start
+            startNanos?.let { start ->
+                val now = elapsedNanos()
+                val passed = (now - start).nanoseconds
                 val window = passed.coerceIn(10.milliseconds, window)
-                val cutoff = now - window
-                received.removeIf { time, _ -> time < cutoff }
-                (received.fold(0) { total, _, v -> total + v } / (window / 1.seconds)).toLong()
+                val cutoff = now - window.inWholeNanoseconds
+                val iterator = received.keys.iterator()
+                while (iterator.hasNext()) {
+                    if (iterator.next() < cutoff) iterator.remove()
+                }
+                // 用 Long 求和，避免累计字节超过 Int 上限后溢出成负数
+                val total = received.values.fold(0L) { acc, v -> acc + v }
+                (total / (window / 1.seconds)).toLong()
             }
         }
     }
@@ -80,14 +92,16 @@ suspend inline fun <R> timeoutBySpeed(
     request {
         var prev = 0L
         onDownload { done, total ->
-            val bytesRead = (done - prev).toInt()
+            // 进度回调可能乱序/重放，增量必须非负；转 Int 前先夹到安全范围
+            val delta = (done - prev).coerceAtLeast(0L)
+            prev = done
+            val bytesRead = delta.coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
             if (total != null && done == total) {
                 tracker.reset()
             } else {
                 tracker.track(bytesRead)
             }
             l(total ?: -1L, done, bytesRead)
-            prev = done
         }
         timeout { reset() }
     }.executeSafely { resp ->

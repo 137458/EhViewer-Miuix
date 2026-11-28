@@ -41,6 +41,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -78,6 +79,7 @@ import com.ehviewer.core.ui.util.LocalBottomBarContentPadding
 import com.ehviewer.core.ui.util.ifNotNullThen
 import com.ehviewer.core.ui.util.ifTrueThen
 import com.ehviewer.core.ui.util.thenIf
+import com.ehviewer.core.util.withIOContext
 import com.hippo.ehviewer.EhApplication.Companion.searchDatabase
 import com.hippo.ehviewer.Settings
 import com.hippo.ehviewer.client.EhTagDatabase
@@ -201,7 +203,10 @@ fun SearchBarScreen(
     }
 
     suspend fun updateSuggestions() {
-        mSuggestionList = mergedSuggestionFlow().toList()
+        // 历史查询与标签库匹配都是阻塞调用，必须在 IO 上执行，否则展开搜索框时卡主线程
+        // 同一 keyword 可能同时来自历史记录与标签建议，按 (keyword, 类型) 去重，避免 LazyColumn 重复 key
+        mSuggestionList = withIOContext { mergedSuggestionFlow().toList() }
+            .distinctBy { it.keyword to it.javaClass }
     }
 
     if (expanded) {
@@ -251,7 +256,15 @@ fun SearchBarScreen(
             val fullBarHeight = SearchBarDefaults.InputFieldMinHeight + 16.dp + subHeaderHeight
             // 折叠阈值必须与顶栏完整高度同口径，否则带分类条时折叠进度永远到不了终态
             val collapseThresholdPx = with(density) { fullBarHeight.toPx() }
-            val collapseProgress = if (expanded) 0f else (-searchBarOffsetY().toFloat() / collapseThresholdPx).coerceIn(0f, 1f)
+            // 折叠进度依赖滚动偏移（每像素变化），必须以 lambda 形式在 graphicsLayer 绘制阶段读取，
+            // 否则每次滚动都会触发整棵搜索栏重组
+            val collapseProgress: () -> Float = {
+                if (expanded) 0f else (-searchBarOffsetY().toFloat() / collapseThresholdPx).coerceIn(0f, 1f)
+            }
+            // 只有跨越阈值的离散可见性才允许参与重组
+            val collapsedActionVisible by remember(expanded, collapseThresholdPx) {
+                derivedStateOf { collapseProgress() > 0.2f }
+            }
 
             Scaffold(
                 topBar = {
@@ -339,7 +352,7 @@ fun SearchBarScreen(
                             offset { IntOffset(0, searchBarOffsetY()) }
                                 .graphicsLayer {
                                     // alpha 在 collapseProgress 2/3 时已归零，无需再用位移瞬移隐藏
-                                    alpha = (1f - collapseProgress * 1.5f).coerceIn(0f, 1f)
+                                    alpha = (1f - collapseProgress() * 1.5f).coerceIn(0f, 1f)
                                 }
                         }
                         .thenIf(expanded) { fillMaxSize() },
@@ -435,7 +448,7 @@ fun SearchBarScreen(
                                 filter()
                             }
                         }
-                        items(mSuggestionList, key = { it.keyword.hashCode() * 31 + it.canDelete.hashCode() }) {
+                        items(mSuggestionList, key = { it.keyword to it.javaClass }) {
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -507,8 +520,9 @@ fun SearchBarScreen(
                             IntOffset(0, searchBarOffsetY() + inputFieldOffset)
                         }
                         .graphicsLayer {
-                            alpha = (1f - collapseProgress * 1.5f).coerceIn(0f, 1f)
-                            if (collapseProgress >= 0.8f) {
+                            val progress = collapseProgress()
+                            alpha = (1f - progress * 1.5f).coerceIn(0f, 1f)
+                            if (progress >= 0.8f) {
                                 translationY = -10000f
                             }
                         }
@@ -536,7 +550,7 @@ fun SearchBarScreen(
                                 .align(Alignment.CenterStart)
                                 .padding(start = 24.dp)
                                 .graphicsLayer {
-                                    alpha = ((collapseProgress - 0.3f) / 0.7f).coerceIn(0f, 1f)
+                                    alpha = ((collapseProgress() - 0.3f) / 0.7f).coerceIn(0f, 1f)
                                 },
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
@@ -547,13 +561,14 @@ fun SearchBarScreen(
                             .align(Alignment.CenterEnd)
                             .padding(end = 12.dp)
                             .graphicsLayer {
-                                alpha = ((collapseProgress - 0.2f) / 0.8f).coerceIn(0f, 1f)
-                                scaleX = 0.85f + 0.15f * collapseProgress
-                                scaleY = 0.85f + 0.15f * collapseProgress
+                                val progress = collapseProgress()
+                                alpha = ((progress - 0.2f) / 0.8f).coerceIn(0f, 1f)
+                                scaleX = 0.85f + 0.15f * progress
+                                scaleY = 0.85f + 0.15f * progress
                             },
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        if (collapseProgress > 0.2f) {
+                        if (collapsedActionVisible) {
                             IconButton(
                                 onClick = { onExpandedChange(true) },
                             ) {
@@ -600,6 +615,9 @@ fun SearchBarScreen(
 }
 
 fun wrapTagKeyword(keyword: String, translate: Boolean = false): String = run {
+    // 无命名空间的裸关键词不能被包装：substringAfter(':') 会把整个关键词当成 tag，
+    // 生成 “：xxx” 这类畸形查询
+    if (':' !in keyword) return@run keyword
     val tag = keyword.substringAfter(':')
     val prefix = keyword.dropLast(tag.length + 1)
     if (translate) {

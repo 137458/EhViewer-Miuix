@@ -1,7 +1,6 @@
 plugins {
     alias(libs.plugins.android.application) apply false
     alias(libs.plugins.android.kotlin.multiplatform.library) apply false
-    alias(libs.plugins.android.library) apply false
     alias(libs.plugins.android.lint) apply false
     alias(libs.plugins.compose.compiler) apply false
     alias(libs.plugins.compose.multiplatform) apply false
@@ -10,10 +9,19 @@ plugins {
     alias(libs.plugins.ksp) apply false
     alias(libs.plugins.moko.resources) apply false
     alias(libs.plugins.room) apply false
-    alias(libs.plugins.spotless) apply false
+    alias(libs.plugins.spotless)
     alias(libs.plugins.aboutlibraries) apply false
     alias(libs.plugins.aboutlibrariesAndroid) apply false
     alias(libs.plugins.composeCompilerReportGenerator) apply false
     alias(libs.plugins.android.test) apply false
     alias(libs.plugins.baselineprofile) apply false
+}
+
+// 根级 Gradle 脚本此前没有任何格式门禁，这里补齐（模块级 kotlin/kotlinGradle 由各自脚本或约定插件配置）
+spotless {
+    val ktlintVersion = libs.ktlint.get().version
+    kotlinGradle {
+        target("*.gradle.kts")
+        ktlint(ktlintVersion)
+    }
 }

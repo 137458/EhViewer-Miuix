@@ -25,25 +25,30 @@ import androidx.paging.compose.LazyPagingItems
 import com.ehviewer.core.model.GalleryInfo
 import com.ehviewer.core.ui.util.launchInVM
 import com.ehviewer.core.ui.util.rememberUpdatedStateInVM
+import com.ehviewer.core.util.logcat
 import com.hippo.ehviewer.EhDB
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.transform
 import kotlinx.coroutines.launch
+import moe.tarsin.coroutines.runSuspendCatching
 
 object FavouriteStatusRouter {
     fun notify(galleryInfo: GalleryInfo) {
         globalFlow.tryEmit(galleryInfo)
     }
 
-    private val listenerScope = CoroutineScope(Dispatchers.IO)
+    // 单次写库失败不应该终止整个监听作用域
+    private val listenerScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
-    val globalFlow = MutableSharedFlow<GalleryInfo>(extraBufferCapacity = 1).apply {
+    // 缓冲要能吸收一次批量刷新（列表页一次可能改几十项），否则 tryEmit 会把通知丢掉
+    val globalFlow = MutableSharedFlow<GalleryInfo>(extraBufferCapacity = 64).apply {
         listenerScope.launch {
             collect { info ->
-                EhDB.updateFavoriteSlot(info.gid, info.favoriteSlot)
+                runSuspendCatching { EhDB.updateFavoriteSlot(info.gid, info.favoriteSlot) }.onFailure { logcat(it) }
             }
         }
     }

@@ -12,10 +12,37 @@ object GalleryMultiPageViewerPTokenParser {
     private val json = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
 
     fun parse(body: String?): List<String>? = runCatching {
-        val index = body!!.indexOf(IMAGE_LIST_STRING)
-        val imagelist = body.substring(index + IMAGE_LIST_STRING.length, body.indexOf(";", index))
+        val text = body ?: return@runCatching null
+        val markerStart = text.indexOf(IMAGE_LIST_STRING)
+        require(markerStart >= 0) { "imagelist marker missing" }
+        val arrayStart = text.indexOf('[', markerStart + IMAGE_LIST_STRING.length)
+        require(arrayStart >= 0) { "imagelist array missing" }
+        val arrayEnd = findArrayEnd(text, arrayStart)
+        val imagelist = text.substring(arrayStart, arrayEnd + 1)
         json.decodeFromString(ListSerializer(Item.serializer()), imagelist).map(Item::token)
     }.getOrNull()
+
+    // 按括号配对定位数组结尾：不依赖尾随分号，也不被字符串值里的分号/括号干扰
+    private fun findArrayEnd(text: String, arrayStart: Int): Int {
+        var depth = 0
+        var inString = false
+        var escaped = false
+        for (i in arrayStart until text.length) {
+            val c = text[i]
+            when {
+                escaped -> escaped = false
+                c == '\\' && inString -> escaped = true
+                c == '"' -> inString = !inString
+                inString -> Unit
+                c == '[' -> depth++
+                c == ']' -> {
+                    depth--
+                    if (depth == 0) return i
+                }
+            }
+        }
+        throw IllegalArgumentException("unbalanced imagelist array")
+    }
 
     @Serializable
     data class Item(@SerialName("k") val token: String)

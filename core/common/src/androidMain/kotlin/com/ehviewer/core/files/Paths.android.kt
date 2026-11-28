@@ -24,20 +24,17 @@ fun Path.toUri(): Uri {
     val uri = str.replaceFirst("content:/", "content://").toUri()
     val path = requireNotNull(uri.encodedPath) { "Invalid path: $str" }
     val paths = path.split('/').dropWhile { it.isEmpty() }
-    return if (paths.size > 4 && paths[0] == "tree") {
-        uri.buildUpon().apply {
-            path(null)
-            repeat(3) { i ->
-                appendEncodedPath(paths[i])
-            }
-            val root = Uri.decode(paths[3])
-            val prefix = if (root.endsWith(':')) root else "$root/"
-            val suffix = uri.encodedFragment?.let { "#$it" }.orEmpty()
-            appendPath(paths.subList(4, paths.size).joinToString("/", prefix, suffix))
-        }.build()
-    } else {
-        uri
-    }
+    val documentId = rebuildTreeDocumentId(paths) { Uri.decode(it) } ?: return uri
+    return uri.buildUpon().apply {
+        path(null)
+        // 原 URI 的查询串/片段属于原 document，重建后的目标文档不该继承，否则会被当成路径文本编码
+        query(null)
+        fragment(null)
+        repeat(3) { i ->
+            appendEncodedPath(paths[i])
+        }
+        appendPath(documentId)
+    }.build()
 }
 
 fun Uri.toOkioPath() = if (scheme == ContentResolver.SCHEME_FILE) {

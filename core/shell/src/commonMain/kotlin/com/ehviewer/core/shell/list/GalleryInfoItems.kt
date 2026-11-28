@@ -225,7 +225,11 @@ fun GalleryInfoGridItem(
                     contentDescription = null,
                     modifier = Modifier.aspectRatio(ratio),
                     onSuccess = {
-                        ratio = (it.result.image.width.toFloat() / it.result.image.height).coerceIn(MIN_RATIO, MAX_RATIO)
+                        val image = it.result.image
+                        // 解码占位/失败帧可能给出 0 尺寸：直接相除会得到 Infinity/NaN
+                        if (image.width > 0 && image.height > 0) {
+                            ratio = (image.width.toFloat() / image.height).coerceIn(MIN_RATIO, MAX_RATIO)
+                        }
                     },
                 )
             }

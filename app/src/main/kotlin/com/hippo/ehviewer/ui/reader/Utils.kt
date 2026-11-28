@@ -14,6 +14,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.FixedScale
 import com.hippo.ehviewer.Settings
 import eu.kanade.tachiyomi.ui.reader.setting.OrientationType
+import eu.kanade.tachiyomi.ui.reader.setting.TappingInvertMode
 
 /**
  * Forces the user preferred [orientation] on the activity.
@@ -40,6 +41,11 @@ fun Activity.setCustomBrightnessValue(value: Int) {
 
     window.attributes = window.attributes.apply { screenBrightness = readerBrightness }
 }
+
+/**
+ * 偏好值来自持久化设置，可能因枚举缩减或手改配置越界，越界时回落到 [TappingInvertMode.NONE]。
+ */
+fun tappingInvertModeFromPreference(value: Int) = TappingInvertMode.entries.getOrElse(value) { TappingInvertMode.NONE }
 
 @Stable
 fun Alignment.Companion.fromPreferences(value: Int, isRtl: Boolean, isVertical: Boolean) = when (value) {

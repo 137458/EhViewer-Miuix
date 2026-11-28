@@ -23,6 +23,13 @@ class GalleryMultiPageViewerPTokenParserTest {
         assertEquals(emptyList(), GalleryMultiPageViewerPTokenParser.parse("""var imagelist = [];"""))
     }
 
+    // 数组结尾按括号配对识别：没有尾分号、或字符串值里含分号时也要能解析
+    @Test
+    fun parseHandlesMissingSemicolonAndSemicolonInsideString() {
+        assertEquals(listOf("af19"), GalleryMultiPageViewerPTokenParser.parse("""var imagelist = [{"k":"af19"}]"""))
+        assertEquals(listOf("af19"), GalleryMultiPageViewerPTokenParser.parse("""var imagelist = [{"k":"af19","x":"a;b"}];"""))
+    }
+
     @Test
     fun parseMalformedOrMissingReturnsNull() {
         assertNull(GalleryMultiPageViewerPTokenParser.parse("<html>no imagelist here</html>"))

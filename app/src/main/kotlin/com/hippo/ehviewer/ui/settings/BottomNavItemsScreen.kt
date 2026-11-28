@@ -22,6 +22,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -208,6 +209,13 @@ private fun NavItemConfigRow(
 ) {
     val hapticFeedback = LocalHapticFeedback.current
     val interactionSource = remember { MutableInteractionSource() }
+    // pointerInput 只在 item 变化时重建，回调必须走 rememberUpdatedState 才能拿到当前 index/config/dragOffset，
+    // 否则一次排序后继续拖动会按旧 index 计算落点。
+    val currentOnToggle by rememberUpdatedState(onToggle)
+    val currentOnDragStart by rememberUpdatedState(onDragStart)
+    val currentOnDrag by rememberUpdatedState(onDrag)
+    val currentOnDragEnd by rememberUpdatedState(onDragEnd)
+    val currentOnDragCancel by rememberUpdatedState(onDragCancel)
     val background = if (dragging) {
         MiuixTheme.colorScheme.primary.copy(alpha = 0.16f)
     } else {
@@ -223,7 +231,7 @@ private fun NavItemConfigRow(
                 interactionSource = interactionSource,
                 indication = null,
                 role = Role.Switch,
-                onClick = onToggle,
+                onClick = { currentOnToggle() },
             )
             .padding(horizontal = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -238,13 +246,13 @@ private fun NavItemConfigRow(
                     detectDragGestures(
                         onDragStart = {
                             hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                            onDragStart()
+                            currentOnDragStart()
                         },
-                        onDragEnd = { onDragEnd() },
-                        onDragCancel = { onDragCancel() },
+                        onDragEnd = { currentOnDragEnd() },
+                        onDragCancel = { currentOnDragCancel() },
                         onDrag = { change, dragAmount ->
                             change.consume()
-                            onDrag(dragAmount.y)
+                            currentOnDrag(dragAmount.y)
                         },
                     )
                 },

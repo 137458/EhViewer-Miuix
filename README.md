@@ -109,9 +109,7 @@
 | 产物文件 | 适用系统 | 架构类型 | 说明与选择建议 |
 |:---|:---|:---|:---|
 | `EhViewer-*-default-arm64-v8a.apk` | Android 8.0+ (API 26+) | 64 位 ARM | **主流机型推荐**。完整包名 `moe.tarsin.ehviewer.miuix`，原生优化无冗余兼容垫片 |
-| `EhViewer-*-default-universal.apk` | Android 8.0+ (API 26+) | 通用架构 | 通用兜底包，当前工程仅编入 arm64-v8a，包内二进制与 arm64-v8a 产物一致 |
 | `EhViewer-*-marshmallow-arm64-v8a.apk` | Android 7.0 ~ 7.1 (API 24+) | 64 位 ARM | **老旧机型兼容版**。完整包名 `moe.tarsin.ehviewer.m`，内建脱糖支持与向后兼容层 |
-| `EhViewer-*-marshmallow-universal.apk` | Android 7.0 ~ 7.1 (API 24+) | 通用架构 | 老旧系统通用兜底包 |
 | `EhViewer-*-mapping.txt` | 全平台通用 | 符号表 | **非安装包**。R8 混淆映射表，仅供开发者排查崩溃堆栈，用户无需下载 |
 
 > 上表为 GitHub Release 页面上的资产命名；本地构建产物直接生成在 `app/build/outputs/apk/<变体>/release/`。
@@ -276,5 +274,6 @@ cd EhViewer-Miuix
 # app/build/outputs/apk/default/release/app-default-*-release.apk
 ```
 
-- 原生库已预置：`app/src/main/jniLibs/arm64-v8a/libehviewer.so` 已入库，标准命令可直接产出可运行包。修改 `app/src/main/rust/` 或 `app/src/main/cpp/` 后需带 `-PbuildNative` 重新构建原生库（Windows 主机需 WSL），否则仓库二进制与源码脱钩。
-- 版本号在 `app/build.gradle.kts` 维护：`versionName = "1.16.0"`、`versionCode = 180065`；不带 `-Prelease` 时版本名追加 `-SNAPSHOT`。
+- 原生库已预置：`app/src/main/jniLibs/arm64-v8a/libehviewer.so` 已入库，标准命令可直接产出可运行包。修改 `app/src/main/rust/` 或 `app/src/main/cpp/` 后需带 `-PbuildNative` 重新构建原生库（Windows 主机需 WSL），否则仓库二进制与源码脱钩。`checkNativeLibs` 会解析该 `.so` 的动态符号表，核对 Kotlin 侧声明的每个 `external fun` 是否真有对应 `Java_*` 导出：缺符号即 assemble 失败（仅编译验证可加 `-PskipNativeCheck` 跳过）。
+- 版本号唯一来源是仓库根 `gradle.properties` 的 `ehviewer.versionName` / `ehviewer.versionCode`：`:app` 的 `versionName`/`versionCode` 与 `:desktop` 的 `packageVersion`、生成的 `BuildVersion.kt` 都从这里取。不带 `-Prelease` 时 `:app` 版本名追加 `-SNAPSHOT`。`BuildConfig.RAW_VERSION_NAME` 记录的是 DSL 期版本名，**不含**后续叠加的 flavor 后缀（`default` 加 `-miuix`、`marshmallow` 加 `-M`）；需要展示给用户的完整版本请用 `BuildConfig.VERSION_NAME`。
+- 发布签名只从 Gradle 属性或同名环境变量读取（`RELEASE_STORE_FILE`、`RELEASE_STORE_PASSWORD`、`RELEASE_KEY_ALIAS`、`RELEASE_KEY_PASSWORD`），四项全缺时 release 产出未签名 APK，仓库内不再保存任何密钥库。

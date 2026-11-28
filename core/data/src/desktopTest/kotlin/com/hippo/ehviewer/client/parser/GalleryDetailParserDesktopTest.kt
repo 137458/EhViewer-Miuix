@@ -2,6 +2,7 @@ package com.hippo.ehviewer.client.parser
 
 import java.nio.ByteBuffer
 import kotlin.test.Test
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import org.junit.Assume
@@ -28,6 +29,17 @@ class GalleryDetailParserDesktopTest {
         assertNotNull(result.detail.galleryInfo)
         // 真实样本：标题必然非空（详情页核心字段）
         assertTrue(result.detail.galleryInfo.title?.isNotEmpty() == true)
+    }
+
+    // 绑定不可用时必须抛受控 IllegalStateException（而不是 UnsatisfiedLinkError 等 Error），
+    // 否则调用方无法按「解析器不可用」处理
+    @Test
+    fun unavailableBindingsThrowControlledIllegalStateException() {
+        Assume.assumeFalse(rustGalleryBindingsAvailable)
+        val failure = assertFailsWith<IllegalStateException> {
+            GalleryDetailParser.parse(ByteBuffer.allocateDirect(16))
+        }
+        assertTrue(failure.message?.contains("Rust bindings unavailable") == true)
     }
 
     @Test

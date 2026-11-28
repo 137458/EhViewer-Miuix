@@ -5,19 +5,19 @@ import java.io.File
 import kotlin.io.path.createTempDirectory
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class DesktopImageLoaderTest {
-
     @Test
-    fun testDefaultCacheDirectory() {
-        val base = System.getProperty("ehviewer.data.dir")?.takeIf { it.isNotBlank() }
-            ?: System.getenv("APPDATA")
-            ?: (System.getProperty("user.home") + File.separator + ".ehviewer")
-        val expected = File(base, "EhViewer" + File.separator + "cache" + File.separator + "image_cache")
-        val actual = DesktopImageLoader.defaultCacheDirectory()
-        assertEquals(expected.canonicalPath, actual.canonicalPath)
+    fun defaultCacheDirectoryLivesUnderCacheRoot() {
+        val cacheRoot = DesktopDirs.cacheRoot
+        // 图片缓存落在桌面端缓存根下（Windows: %APPDATA%/EhViewer/cache，Linux: XDG_CACHE_HOME）
+        assertEquals(
+            File(cacheRoot, "image_cache").absolutePath,
+            DesktopImageLoader.defaultCacheDirectory().absolutePath,
+        )
     }
 
     @Test
@@ -36,7 +36,37 @@ class DesktopImageLoaderTest {
     }
 
     @Test
-    fun testDiskCacheBuilder() {
+    fun cacheSizeForCreatesDirectoryBeforeMeasuring() {
+        val root = createTempDirectory("coil-size").toFile()
+        try {
+            val cacheDir = File(root, "nested/image_cache")
+            assertFalse(cacheDir.exists())
+            val size = DesktopImageLoader.cacheSizeFor(cacheDir)
+            // 先 mkdirs 再取 usableSpace：目录不存在时 usableSpace 返回 0 会把配额压到最小档
+            assertTrue(cacheDir.isDirectory)
+            val mb = 1024L * 1024
+            assertTrue(
+                size == 128 * mb || size == 256 * mb || size == 512 * mb,
+                "配额必须落在既有三档之内，实际: $size",
+            )
+        } finally {
+            root.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun nearestExistingWalksUpToExistingAncestor() {
+        val root = createTempDirectory("coil-nearest").toFile()
+        try {
+            val deep = File(root, "a/b/c")
+            assertEquals(root.canonicalPath, DesktopImageLoader.nearestExisting(deep)?.canonicalPath)
+        } finally {
+            root.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun diskCacheBuilderHonoursSizeAndDirectory() {
         val tempDir = createTempDirectory("coil-test-cache").toFile()
         try {
             val diskCache = DesktopImageLoader.buildDiskCache(tempDir, maxSizeBytes = 10 * 1024 * 1024)
@@ -48,7 +78,7 @@ class DesktopImageLoaderTest {
     }
 
     @Test
-    fun testNewImageLoaderConfig() {
+    fun newImageLoaderUsesInjectedCacheDirectory() {
         val tempDir = createTempDirectory("coil-loader-test").toFile()
         try {
             val loader = DesktopImageLoader.newImageLoader(

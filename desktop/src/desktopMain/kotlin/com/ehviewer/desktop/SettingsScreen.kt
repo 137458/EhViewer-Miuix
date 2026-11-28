@@ -39,6 +39,8 @@ import com.ehviewer.core.ui.component.SquircleShape
 import com.ehviewer.core.ui.util.readableWidth
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.drop
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
@@ -320,9 +322,17 @@ fun SettingsScreen(
 private fun ProxySettingField() {
     val proxyState = rememberTextFieldState(DesktopSettings.proxy.value.orEmpty())
     LaunchedEffect(Unit) {
+        // 逐键直写会让每个字符都触发一次代理重建；去抖后再落盘，且只在值真正变化时才重建
         snapshotFlow { proxyState.text }
+            .drop(1)
+            .debounce(300)
             .collect { text ->
-                DesktopSettings.proxy.value = text.toString().trim().takeIf { v -> v.isNotEmpty() }
+                val value = text.toString().trim().takeIf { v -> v.isNotEmpty() }
+                if (value != DesktopSettings.proxy.value) {
+                    DesktopSettings.proxy.value = value
+                    // Coil 的网络客户端在 factory 内惰性只建一次，无法就地换代理，只能重建 loader
+                    DesktopImageLoader.refreshNetworkIfProxyChanged()
+                }
             }
     }
     val proxyInvalid = remember(proxyState.text) {
@@ -354,6 +364,7 @@ private fun ProxySettingField() {
                     onClick = {
                         proxyState.setTextAndPlaceCursorAtEnd("")
                         DesktopSettings.proxy.value = null
+                        DesktopImageLoader.refreshNetworkIfProxyChanged()
                     },
                 )
             }
@@ -375,12 +386,15 @@ private fun ProxySettingField() {
 private fun ImageSaveDirField() {
     val saveDirState = rememberTextFieldState(DesktopSettings.imageSaveDir.value.orEmpty())
     LaunchedEffect(Unit) {
+        // 组合期只做纯字符串计算，不碰磁盘：默认目录建不建得出来由保存时再探
         snapshotFlow { saveDirState.text }
+            .drop(1)
+            .debounce(300)
             .collect { text ->
                 DesktopSettings.imageSaveDir.value = text.toString().trim().takeIf { v -> v.isNotEmpty() }
             }
     }
-    val defaultDir = remember { DesktopImageSaver.resolveSaveDir(null, System.getProperty("user.home")).toString() }
+    val defaultDir = remember { DesktopImageSaver.defaultSaveDirPath(System.getProperty("user.home")) }
     val chooserTitle = stringResource(MR.strings.desktop_select_download_directory)
     Column(
         modifier = Modifier
@@ -414,7 +428,7 @@ private fun ImageSaveDirField() {
                             currentDirectory = java.io.File(current)
                         }
                     }
-                    if (chooser.showOpenDialog(null) == javax.swing.JFileChooser.APPROVE_OPTION) {
+                    if (chooser.showOpenDialog(activeAwtWindowOrNull()) == javax.swing.JFileChooser.APPROVE_OPTION) {
                         val selected = chooser.selectedFile.absolutePath
                         saveDirState.setTextAndPlaceCursorAtEnd(selected)
                         DesktopSettings.imageSaveDir.value = selected
@@ -422,7 +436,8 @@ private fun ImageSaveDirField() {
                 },
             )
         }
-        if (DesktopSettings.imageSaveDir.value.isNullOrBlank()) {
+        // 用输入框自身状态判定：直接读 DesktopSettings.value 不是可观察状态，清空后提示不会回来
+        if (saveDirState.text.isBlank()) {
             Text(
                 text = stringResource(MR.strings.desktop_download_dir_default, defaultDir),
                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
@@ -431,6 +446,12 @@ private fun ImageSaveDirField() {
             )
         }
     }
+}
+
+// Swing 模态对话框挂到当前活动窗口：无父窗口时对话框会脱离应用 Z 序（可能被主窗口盖住）
+private fun activeAwtWindowOrNull(): java.awt.Window? {
+    val focusManager = java.awt.KeyboardFocusManager.getCurrentKeyboardFocusManager()
+    return focusManager.activeWindow ?: focusManager.focusedWindow
 }
 
 // 设置字段行内操作胶囊（代理清空 / 目录选择）：悬停 primary 半透明衬底，与全局操作按钮 token 一致

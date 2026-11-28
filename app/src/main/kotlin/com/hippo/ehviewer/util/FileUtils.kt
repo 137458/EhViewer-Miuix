@@ -80,8 +80,9 @@ object FileUtils {
     // From https://cs.android.com/android/platform/superproject/main/+/main:frameworks/base/core/java/android/os/FileUtils.java;l=1142;drc=7b647e4ea0e92f33c19b315eaed364ee067ba0aa
     fun sanitizeFilename(name: String): String {
         // Windows does not support filenames ending with a space or a period
-        val name = name.trimEnd(' ', '.')
-        check(name.isNotEmpty()) { "Invalid filename" }
+        val trimmed = name.trimEnd(' ', '.')
+        // 只有空格和点的名字（包括空串）清洗后什么都不剩，退回占位名而不是抛异常打断下载
+        val name = trimmed.ifEmpty { "_" }
         return buildString(name.length) {
             name.forEach {
                 if (isValidFatFilenameChar(it)) {
@@ -92,11 +93,19 @@ object FileUtils {
             }
             if (sizeInBytes > MAX_FILENAME_BYTES) {
                 while (sizeInBytes > MAX_FILENAME_BYTES - 3) {
-                    deleteCharAt(length / 2)
+                    deleteCodePointAt(length / 2)
                 }
                 insert(length / 2, "...")
             }
         }
+    }
+
+    // 从中间截断时必须整码点删除，否则代理对会被劈成孤立的高/低代理字符
+    private fun StringBuilder.deleteCodePointAt(index: Int) {
+        if (isEmpty()) return
+        val i = if (index > 0 && this[index] in '\uDC00'..'\uDFFF' && this[index - 1] in '\uD800'..'\uDBFF') index - 1 else index.coerceIn(0, length - 1)
+        val count = if (this[i] in '\uD800'..'\uDBFF' && i + 1 < length && this[i + 1] in '\uDC00'..'\uDFFF') 2 else 1
+        delete(i, i + count)
     }
 
     private val StringBuilder.sizeInBytes

@@ -34,11 +34,18 @@ import com.hippo.ehviewer.jni.releaseByteBuffer
 import com.hippo.ehviewer.util.FileUtils
 import com.hippo.ehviewer.util.displayName
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import moe.tarsin.kt.install
 import okio.Path
 
 typealias PasswdInvalidator = (String) -> Boolean
 typealias PasswdProvider = suspend (PasswdInvalidator) -> String
+
+// native 侧 archive 是全局状态（openArchive/closeArchive 都不带句柄），两个 gallery 同时打开会互相踩掉，
+// 因此整个 archive 生命周期用一把全局 Mutex 串行化。
+@PublishedApi
+internal val archiveLifecycleMutex = Mutex()
 
 suspend inline fun <T> useArchivePageLoader(
     file: Path,
@@ -47,52 +54,55 @@ suspend inline fun <T> useArchivePageLoader(
     hasAds: Boolean = false,
     crossinline passwdProvider: PasswdProvider,
     crossinline block: suspend (PageLoader) -> T,
-) = autoCloseScope {
-    coroutineScope {
-        val pfd = install(file.openFileDescriptor("r"))
-        val size = install(
-            { openArchive(pfd.fd, pfd.statSize, info == null || file.name.endsWith(".zip")) },
-            { _, _ -> closeArchive() },
-        )
-        check(size > 0) { "Archive have no content!" }
-        if (needPassword() && archivePasswds.none(::providePassword)) {
-            archivePasswds += passwdProvider(::providePassword)
+) = archiveLifecycleMutex.withLock {
+    autoCloseScope {
+        coroutineScope {
+            val pfd = install(file.openFileDescriptor("r"))
+            val size = install(
+                { openArchive(pfd.fd, pfd.statSize, info == null || file.name.endsWith(".zip")) },
+                { _, _ -> closeArchive() },
+            )
+            check(size > 0) { "Archive have no content!" }
+            if (needPassword() && archivePasswds.none(::providePassword)) {
+                archivePasswds += passwdProvider(::providePassword)
+            }
+            val loader = install(
+                object : PageLoader(this, info, startPage, size, hasAds) {
+                    override val title by lazy {
+                        if (info != null) {
+                            EhUtils.getSuitableTitle(info)
+                        } else {
+                            // dotfile 之类解析不出名字时退回原始文件名，别对用户抛 NPE
+                            FileUtils.getNameFromFilename(file.displayName) ?: file.displayName
+                        }
+                    }
+
+                    override fun getImageExtension(index: Int) = getExtension(index)
+
+                    override fun save(index: Int, file: Path) = runCatching {
+                        file.openFileDescriptor("w").use {
+                            extractToFd(index, it.fd)
+                        }
+                    }.getOrElse {
+                        logcat(it)
+                        false
+                    }
+
+                    override fun openSource(index: Int): ImageSource {
+                        val buffer = extractToByteBuffer(index)
+                        checkNotNull(buffer) { "Extract archive content $index failed!" }
+                        check(buffer.isDirect)
+                        return byteBufferSource(buffer) { releaseByteBuffer(buffer) }
+                    }
+
+                    override fun isSourceAvailable(index: Int) = true
+
+                    override fun prefetchPages(pages: List<Int>, bounds: IntRange) = Unit
+
+                    override fun onRequest(index: Int, force: Boolean, orgImg: Boolean) = notifySourceReady(index)
+                },
+            )
+            block(loader)
         }
-        val loader = install(
-            object : PageLoader(this, info, startPage, size, hasAds) {
-                override val title by lazy {
-                    if (info != null) {
-                        EhUtils.getSuitableTitle(info)
-                    } else {
-                        FileUtils.getNameFromFilename(file.displayName)!!
-                    }
-                }
-
-                override fun getImageExtension(index: Int) = getExtension(index)
-
-                override fun save(index: Int, file: Path) = runCatching {
-                    file.openFileDescriptor("w").use {
-                        extractToFd(index, it.fd)
-                    }
-                }.getOrElse {
-                    logcat(it)
-                    false
-                }
-
-                override fun openSource(index: Int): ImageSource {
-                    val buffer = extractToByteBuffer(index)
-                    checkNotNull(buffer) { "Extract archive content $index failed!" }
-                    check(buffer.isDirect)
-                    return byteBufferSource(buffer) { releaseByteBuffer(buffer) }
-                }
-
-                override fun isSourceAvailable(index: Int) = true
-
-                override fun prefetchPages(pages: List<Int>, bounds: IntRange) = Unit
-
-                override fun onRequest(index: Int, force: Boolean, orgImg: Boolean) = notifySourceReady(index)
-            },
-        )
-        block(loader)
     }
 }

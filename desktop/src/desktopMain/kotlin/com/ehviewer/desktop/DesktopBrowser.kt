@@ -5,15 +5,24 @@ import com.ehviewer.core.util.logcat
 import java.awt.Desktop
 import java.lang.ProcessBuilder
 import java.net.URI
+import java.net.URISyntaxException
 
 object DesktopBrowser {
+    // URL 合法性：只放行带非空 host 的 http/https。
+    // 空白、引号、尖括号与控制字符一律拒绝——回退路径会把 URL 作为进程参数交给 rundll32，
+    // 畸形串可能被 shell 协议处理器切成额外参数。
     fun isValidHttpUrl(url: String): Boolean {
         val trimmed = url.trim()
-        val isHttp = trimmed.startsWith("http://", ignoreCase = true)
-        val isHttps = trimmed.startsWith("https://", ignoreCase = true)
-        if (!isHttp && !isHttps) return false
-        val prefixLen = if (isHttps) 8 else 7
-        return trimmed.length > prefixLen
+        if (trimmed.isEmpty()) return false
+        if (trimmed.any { it.isISOControl() || it.isWhitespace() || it == '"' || it == '\'' || it == '<' || it == '>' }) return false
+        val uri = try {
+            URI(trimmed)
+        } catch (e: URISyntaxException) {
+            return false
+        }
+        val scheme = uri.scheme?.lowercase() ?: return false
+        if (scheme != "http" && scheme != "https") return false
+        return !uri.host.isNullOrBlank()
     }
 
     fun openUrl(
@@ -42,9 +51,13 @@ object DesktopBrowser {
     }
 
     // Windows shell 兜底：rundll32 url.dll 协议处理器不依赖 AWT 关联；非 Windows 无兜底
-    fun fallbackCommand(url: String, osName: String = System.getProperty("os.name", "")): List<String>? = if (osName.contains("windows", ignoreCase = true)) {
-        listOf("rundll32", "url.dll,FileProtocolHandler", url.trim())
-    } else {
-        null
+    fun fallbackCommand(url: String, osName: String = System.getProperty("os.name", "")): List<String>? {
+        // 畸形 URL 绝不进 shell 协议处理器
+        if (!isValidHttpUrl(url)) return null
+        return if (osName.contains("windows", ignoreCase = true)) {
+            listOf("rundll32", "url.dll,FileProtocolHandler", url.trim())
+        } else {
+            null
+        }
     }
 }

@@ -31,6 +31,8 @@ import com.hippo.ehviewer.util.requestPermission
 import com.hippo.ehviewer.util.sha1
 import java.io.File
 import kotlin.time.Clock
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import moe.tarsin.coroutines.runSuspendCatching
 import moe.tarsin.snackbar
 import moe.tarsin.string
@@ -80,7 +82,10 @@ suspend fun copy(page: Page) {
         return
     }
     val clipData = ClipData.newUri(ctx.contentResolver, "ehviewer", uri)
-    clipboardManager.setPrimaryClip(clipData)
+    // 剪贴板服务的写入必须在主线程，本函数跑在 IO 线程上（launchIO）
+    withContext(Dispatchers.Main) {
+        clipboardManager.setPrimaryClip(clipData)
+    }
     if (!isAtLeastT) {
         snackbar(copied)
     }
@@ -126,7 +131,10 @@ suspend fun save(page: Page) {
                     logcat("SavePage", e)
                 }
                 snackbar(cannotSave)
-            } else if (isAtLeastQ) {
+                // 写入失败必须直接返回，否则会继续弹出“已保存”误导用户
+                return
+            }
+            if (isAtLeastQ) {
                 val contentValues = ContentValues()
                 contentValues.put(MediaStore.MediaColumns.IS_PENDING, 0)
                 ctx.contentResolver.update(imageUri, contentValues, null, null)
@@ -152,8 +160,11 @@ suspend fun saveTo(page: Page) {
     page.runSuspendCatching {
         val uri = awaitActivityResult(ActivityResultContracts.CreateDocument(mimeType), filename)
         if (uri != null) {
-            loader.save(index, uri.toOkioPath())
-            snackbar(string(R.string.image_saved, uri.displayPath))
+            if (loader.save(index, uri.toOkioPath())) {
+                snackbar(string(R.string.image_saved, uri.displayPath))
+            } else {
+                snackbar(string(R.string.error_cant_save_image))
+            }
         }
     }.onFailure {
         it.logcat(it)

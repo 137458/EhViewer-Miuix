@@ -56,12 +56,11 @@ fun GalleryPager(
     val invertMode = if (isPagerType) pagerInvertMode else webtoonInvertMode
     var firstLaunch by remember { mutableStateOf(true) }
     val regions = remember(navigation, invertMode) {
-        if (firstLaunch) {
-            firstLaunch = false
-        } else {
-            onNavigationModeChange()
-        }
-        navigation.regions(TappingInvertMode.entries[invertMode])
+        navigation.regions(tappingInvertModeFromPreference(invertMode))
+    }
+    // 组合期不得写状态：首次组合不回调，之后导航模式变化才通知宿主
+    LaunchedEffect(navigation, invertMode) {
+        if (firstLaunch) firstLaunch = false else onNavigationModeChange()
     }
     val navigator by rememberUpdatedState(regions)
     if (isPagerType) {

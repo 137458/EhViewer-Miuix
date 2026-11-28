@@ -9,9 +9,10 @@ import coil3.memory.MemoryCache
 import coil3.request.ImageResult
 import coil3.request.SuccessResult
 import kotlinx.coroutines.CancellableContinuation
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.SharingStarted
@@ -24,15 +25,25 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import moe.tarsin.coroutines.Counter
 import moe.tarsin.coroutines.Tracker
 import moe.tarsin.coroutines.counter
-import moe.tarsin.coroutines.runSuspendCatching
 import moe.tarsin.coroutines.use
 
 typealias F = suspend () -> Unit
 
-suspend inline fun <T> CancellableContinuation<T>.evalAndResume(f: suspend () -> T) = runSuspendCatching { f() }.takeIf { isActive }?.let(::resumeWith)
+suspend inline fun <T> CancellableContinuation<T>.evalAndResume(f: suspend () -> T) {
+    try {
+        val value = f()
+        if (isActive) resumeWith(Result.success(value))
+    } catch (e: CancellationException) {
+        // 取消属于发起这次请求的协程，不能顺着共享的 TightRope 作用域扩散，否则会连带取消其它等待者
+        if (isActive) cancel(e)
+    } catch (t: Throwable) {
+        if (isActive) resumeWith(Result.failure(t))
+    }
+}
 
 class TightRope : CoroutineScope, Counter by counter() {
-    override val coroutineContext = Dispatchers.IO + Job()
+    // 单个 action 失败不应该连带取消整条绳索上的其它请求
+    override val coroutineContext = Dispatchers.IO + SupervisorJob()
     val actions = Channel<F>()
     val flow = actions.receiveAsFlow().map(F::invoke).buffer(0).shareIn(this, SharingStarted.WhileSubscribed(stopTimeoutMillis = 200))
     suspend inline fun <R> sendAndAwait(crossinline block: suspend () -> R) = raceN(
@@ -52,7 +63,7 @@ object MergeInterceptor : Interceptor {
         val key = req.memoryCacheKey
         return if (key != null) {
             val cacheKey = MemoryCache.Key(key, req.memoryCacheKeyExtras)
-            val cached = req.context.imageLoader.memoryCache!![cacheKey] != null
+            val cached = req.context.imageLoader.memoryCache?.get(cacheKey) != null
             val result = TightRopeTracker.use(key) { sendAndAwait { chain.proceed() } }
             when (result) {
                 is SuccessResult if !cached && result.dataSource == DataSource.MEMORY_CACHE -> {

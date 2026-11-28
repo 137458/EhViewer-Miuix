@@ -37,6 +37,35 @@ class GalleryDetailPageLinksParserTest {
         assertEquals(1, links[0].page)
     }
 
+    // 只接受官方域：第三方页面伪装成 /s/ 的链接不得进入阅读队列
+    @Test
+    fun parseIgnoresLinksOnForeignHosts() {
+        val body = """
+            <a href="https://evil.example/s/abc1234567/123456-1/">1</a>
+            <a href="https://e-hentai.org.evil.example/s/def4567890/123456-2/">2</a>
+            <a href="https://e-hentai.org/s/bbb2223333/123456-3/">3</a>
+        """.trimIndent()
+        assertEquals(listOf(3), GalleryDetailPageLinksParser.parse(body).map { it.page })
+    }
+
+    // 页码必须为正：-0 或 0 会把阅读器导向不存在的页
+    @Test
+    fun parseRejectsNonPositivePageNumbers() {
+        val body = """
+            <a href="https://e-hentai.org/s/abc1234567/123456-0/">0</a>
+            <a href="https://e-hentai.org/s/def4567890/123456-2/">2</a>
+        """.trimIndent()
+        assertEquals(listOf(2), GalleryDetailPageLinksParser.parse(body).map { it.page })
+    }
+
+    // 调用方已知 gid 时，其他画廊的链接必须被过滤掉
+    @Test
+    fun parseFiltersByExpectedGid() {
+        val body = """<a href="https://e-hentai.org/s/abc1234567/123456-1/">1</a>"""
+        assertEquals(1, GalleryDetailPageLinksParser.parse(body, expectedGid = 123456L).size)
+        assertTrue(GalleryDetailPageLinksParser.parse(body, expectedGid = 654321L).isEmpty())
+    }
+
     @Test
     fun parseEmptyOrNoLinksReturnsEmpty() {
         assertTrue(GalleryDetailPageLinksParser.parse("").isEmpty())

@@ -16,18 +16,26 @@ object GalleryDetailParser {
     class Result(val detail: GalleryDetail, val event: String?)
 
     fun parse(body: ByteBuffer): Result {
-        ensureRustLoaded()
+        ensureRustBindings()
         return unmarshalParsingAs(body, ::nativeParse)
     }
 
     fun parseComments(body: ByteBuffer): GalleryCommentList {
-        ensureRustLoaded()
+        ensureRustBindings()
         return unmarshalParsingAs(body, ::nativeParseComments)
     }
 
     fun parsePreviews(body: ByteBuffer): GalleryPreviewList {
-        ensureRustLoaded()
+        ensureRustBindings()
         return unmarshalParsingAs(body, ::nativeParsePreviews)
+    }
+
+    // 绑定不可用时抛受控异常：调用方按「解析器不可用」处理，
+    // 不能让 UnsatisfiedLinkError 之类的 Error 逃逸到上层
+    private fun ensureRustBindings() {
+        if (!ensureRustLoaded()) {
+            throw IllegalStateException("Rust bindings unavailable: ${rustLoadError() ?: "unknown error"}")
+        }
     }
 
     private external fun nativeParse(body: ByteBuffer, size: Int = body.limit()): Int

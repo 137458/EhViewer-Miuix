@@ -7,7 +7,8 @@ inline fun DiskCache.edit(key: String, crossinline block: DiskCache.Editor.() ->
     editor.runCatching {
         block(this)
     }.onFailure {
-        editor.abort()
+        // abort 自身可能抛 IO 异常，不能让它覆盖掉真正的失败原因
+        runCatching { editor.abort() }
         throw it
     }.onSuccess {
         editor.commit()
@@ -20,7 +21,8 @@ suspend inline fun DiskCache.suspendEdit(key: String, crossinline block: suspend
     editor.runCatching {
         block(this)
     }.onFailure {
-        editor.abort()
+        // abort 自身可能抛 IO 异常，不能让它覆盖掉真正的失败原因
+        runCatching { editor.abort() }
         throw it
     }.onSuccess {
         editor.commit()

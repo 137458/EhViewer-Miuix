@@ -37,7 +37,8 @@ object HardwareBitmapInterceptor : Interceptor {
                 // All we know is that it's less than the maximum texture size.
                 if (!isHardware && maxOf(bitmap.width, bitmap.height) <= request.hardwareThreshold) {
                     bitmap.copy(Bitmap.Config.HARDWARE, false)?.let { hwBitmap ->
-                        bitmap.recycle()
+                        // 位图还会进内存缓存时不能回收，硬转出来的副本不能替调用方释放原图
+                        if (!request.memoryCachePolicy.writeEnabled) bitmap.recycle()
                         return result.copy(image = image.copy(image = hwBitmap.asImage()))
                     }
                 }

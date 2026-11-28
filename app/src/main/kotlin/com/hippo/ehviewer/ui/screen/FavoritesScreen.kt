@@ -16,7 +16,6 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.currentRecomposeScope
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -39,6 +38,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.ehviewer.core.i18n.R
@@ -115,9 +115,13 @@ fun AnimatedVisibilityScope.FavouritesScreen(navigator: DestinationsNavigator, v
     val favCatName = remember(urlBuilder) {
         when (val favCat = urlBuilder.favCat) {
             in 0..9 -> Settings.favCat[favCat]
-            FavListUrlBuilder.FAV_CAT_LOCAL -> localFavName.also { searchBarOffsetY = 0 }
+            FavListUrlBuilder.FAV_CAT_LOCAL -> localFavName
             else -> cloudFavName
         }
+    }
+    // 进入本地收藏时复位搜索栏偏移（原实现写在 remember 里，属于组合期副作用）
+    LaunchedEffect(urlBuilder.isLocal) {
+        if (urlBuilder.isLocal) searchBarOffsetY = 0
     }
     val title = if (keyword.isNullOrBlank()) {
         stringResource(R.string.favorites_title, favCatName)
@@ -134,7 +138,7 @@ fun AnimatedVisibilityScope.FavouritesScreen(navigator: DestinationsNavigator, v
     }
 
     ProvideSideSheetContent { sheetState ->
-        val localFavCount by viewModel.localFavCount.collectAsState(0)
+        val localFavCount by viewModel.localFavCount.collectAsStateWithLifecycle(0)
         SmallTopAppBar(
             title = stringResource(id = R.string.collections),
             color = MiuixTheme.colorScheme.surface,
@@ -345,15 +349,20 @@ fun AnimatedVisibilityScope.FavouritesScreen(navigator: DestinationsNavigator, v
                     }
                 }
             }
-            onClick(EhIcons.Default.GoTo) {
-                val date = awaitSelectDate()
-                refresh(urlBuilder.copy(jumpTo = date, prev = null, next = "2"))
+            // 本地收藏是完整列表，没有分页语义，GoTo/LastPage 无意义
+            if (!urlBuilder.isLocal) {
+                onClick(EhIcons.Default.GoTo) {
+                    val date = awaitSelectDate()
+                    refresh(urlBuilder.copy(jumpTo = date, prev = null, next = "2"))
+                }
             }
             onClick(MiuixIcons.Refresh) {
                 refresh()
             }
-            onClick(EhIcons.Default.LastPage) {
-                refresh(urlBuilder.copy(jumpTo = null, prev = "1-0", next = null))
+            if (!urlBuilder.isLocal) {
+                onClick(EhIcons.Default.LastPage) {
+                    refresh(urlBuilder.copy(jumpTo = null, prev = "1-0", next = null))
+                }
             }
         } else {
             onClick(MiuixIcons.SelectAll, autoClose = false) {

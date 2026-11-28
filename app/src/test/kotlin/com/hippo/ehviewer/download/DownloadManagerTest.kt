@@ -3,7 +3,9 @@ package com.hippo.ehviewer.download
 import com.ehviewer.core.database.model.DownloadLabel
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class DownloadManagerTest {
 
@@ -48,5 +50,18 @@ class DownloadManagerTest {
         assertEquals(1, list[1].position)
         assertEquals("D", list[2].label)
         assertEquals(2, list[2].position)
+    }
+
+    @Test
+    fun isSafeDownloadDirname_rejectsPathsEscapingDownloadDir() {
+        assertTrue(isSafeDownloadDirname("123456-abcd"))
+        assertTrue(isSafeDownloadDirname(".hidden"))
+        assertFalse(isSafeDownloadDirname(null))
+        assertFalse(isSafeDownloadDirname(""))
+        assertFalse(isSafeDownloadDirname(".."))
+        assertFalse(isSafeDownloadDirname("."))
+        assertFalse(isSafeDownloadDirname("../other"))
+        assertFalse(isSafeDownloadDirname("a/b"))
+        assertFalse(isSafeDownloadDirname("a\\b"))
     }
 }

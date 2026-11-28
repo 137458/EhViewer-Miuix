@@ -25,15 +25,19 @@ import androidx.biometric.AuthenticationResult
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricManager.Authenticators.DEVICE_CREDENTIAL
 import androidx.biometric.compose.rememberAuthenticationLauncher
+import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.LifecycleResumeEffect
@@ -53,7 +57,8 @@ fun isAuthenticationSupported(): Boolean {
 @Composable
 fun SecurityScreen(onError: () -> Unit, modifier: Modifier) {
     val security by Settings.security.collectAsState()
-    var locked by remember { mutableStateOf(security) }
+    // 配置变更（旋转/深色切换）后必须保持“已解锁”状态，否则每次重建都重新要求解锁
+    var locked by rememberSaveable { mutableStateOf(security) }
     var isAuthenticating by remember { mutableStateOf(false) }
     val title = stringResource(R.string.settings_privacy_require_unlock)
     val launcher = rememberAuthenticationLauncher { result ->
@@ -74,8 +79,11 @@ fun SecurityScreen(onError: () -> Unit, modifier: Modifier) {
 
     val securityDelay by Settings.securityDelay.collectAsState { it.minutes }
     var leaveTime by remember { mutableStateOf(TimeSource.Monotonic.markNow()) }
+    // key 固定为 Unit，闭包会捕获首帧的 security/securityDelay，必须通过 rememberUpdatedState 读最新值
+    val currentSecurity by rememberUpdatedState(security)
+    val currentSecurityDelay by rememberUpdatedState(securityDelay)
     LifecycleResumeEffect(Unit) {
-        if (security && leaveTime.elapsedNow() > securityDelay) {
+        if (currentSecurity && leaveTime.elapsedNow() > currentSecurityDelay) {
             locked = true
         }
         onPauseOrDispose {
@@ -92,6 +100,18 @@ fun SecurityScreen(onError: () -> Unit, modifier: Modifier) {
                 if (it) startAuthentication()
             }
         }
-        Surface(modifier = modifier.fillMaxSize()) {}
+        Surface(
+            modifier = modifier
+                .fillMaxSize()
+                // 遮罩必须吃掉全部指针事件，否则点击会穿透到被锁住的界面
+                .pointerInput(Unit) {
+                    awaitEachGesture {
+                        do {
+                            val event = awaitPointerEvent()
+                            event.changes.forEach { it.consume() }
+                        } while (event.changes.any { it.pressed })
+                    }
+                },
+        ) {}
     }
 }

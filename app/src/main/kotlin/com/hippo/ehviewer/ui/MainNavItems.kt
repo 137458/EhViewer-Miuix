@@ -21,19 +21,32 @@ data class MainNavConfig(
 object MainNavItems {
     private const val HIDDEN_PREFIX = "!"
 
+    // 设置页是重配底栏与多数开关的唯一入口，一旦被隐藏就再没有界面能把它调回来，故永不参与隐藏
+    private val alwaysVisible = MainNavItem.Settings
+
+    fun canHide(item: MainNavItem): Boolean = item != alwaysVisible
+
+    private fun sanitize(config: MainNavConfig): MainNavConfig = if (config.hidden.isEmpty()) config else config.copy(hidden = config.hidden - alwaysVisible)
+
     // 手机底栏默认沿用历史行为：排行榜/历史不在底栏（经设置页「未显示页面」入口可达）
     fun defaultConfig(): MainNavConfig = MainNavConfig(
         order = MainNavItem.entries.toList(),
         hidden = setOf(MainNavItem.Toplist, MainNavItem.History),
     )
 
-    fun visible(config: MainNavConfig): List<MainNavItem> = config.order.filterNot { it in config.hidden }
+    fun visible(config: MainNavConfig): List<MainNavItem> = sanitize(config).let { clean ->
+        clean.order.filterNot { it in clean.hidden }
+    }
 
-    // 显隐切换；拒绝隐藏最后一个可见项（底栏导航整体消失会锁死入口）
-    fun toggleHidden(config: MainNavConfig, item: MainNavItem): MainNavConfig = when {
-        item in config.hidden -> config.copy(hidden = config.hidden - item)
-        visible(config).size <= 1 -> config
-        else -> config.copy(hidden = config.hidden + item)
+    // 显隐切换；拒绝隐藏最后一个可见项（底栏导航整体消失会锁死入口）与固定项
+    fun toggleHidden(config: MainNavConfig, item: MainNavItem): MainNavConfig {
+        val clean = sanitize(config)
+        return when {
+            item in clean.hidden -> clean.copy(hidden = clean.hidden - item)
+            !canHide(item) -> clean
+            visible(clean).size <= 1 -> clean
+            else -> clean.copy(hidden = clean.hidden + item)
+        }
     }
 
     // 拖拽排序：把 item 移动到 toIndex（越界钳制到首/末位），显隐集合保持不变
@@ -48,8 +61,10 @@ object MainNavItems {
         return config.copy(order = mutable)
     }
 
-    fun encode(config: MainNavConfig): String = config.order.joinToString(",") { item ->
-        if (item in config.hidden) "$HIDDEN_PREFIX${item.name}" else item.name
+    fun encode(config: MainNavConfig): String = sanitize(config).let { clean ->
+        clean.order.joinToString(",") { item ->
+            if (item in clean.hidden) "$HIDDEN_PREFIX${item.name}" else item.name
+        }
     }
 
     // 解码对未知/重复/缺失 token 容错，保证新增导航项时旧配置仍可用
@@ -63,8 +78,8 @@ object MainNavItems {
             val isHidden = trimmed.startsWith(HIDDEN_PREFIX)
             val name = trimmed.removePrefix(HIDDEN_PREFIX)
             val item = MainNavItem.entries.firstOrNull { it.name == name } ?: return@forEach
-            // 重复 token 保留首次出现的显隐语义
-            if (seen.add(item) && isHidden) hidden += item
+            // 重复 token 保留首次出现的显隐语义；固定项忽略隐藏标记
+            if (seen.add(item) && isHidden && canHide(item)) hidden += item
         }
         MainNavItem.entries.forEach { if (it !in seen) seen += it }
         return MainNavConfig(seen.toList(), hidden)

@@ -16,15 +16,16 @@
 
 <path>
 
+    <!-- Only the shared temp/copy directories are exposed, not the whole cache root. -->
     <external-cache-path
-        name="temp"
-        path="." />
+        name="external_temp"
+        path="temp" />
 
     <cache-path
         name="temp"
-        path="." />
+        path="temp" />
 
     <external-cache-path
         name="copy"
-        path="." />
+        path="copy" />
 </path>

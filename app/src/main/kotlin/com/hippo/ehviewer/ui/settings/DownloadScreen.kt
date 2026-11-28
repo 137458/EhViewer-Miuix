@@ -53,6 +53,7 @@ import com.ehviewer.core.util.isAtLeastQ
 import com.ehviewer.core.util.launch
 import com.ehviewer.core.util.launchIO
 import com.ehviewer.core.util.logcat
+import com.ehviewer.core.util.withUIContext
 import com.hippo.ehviewer.EhDB
 import com.hippo.ehviewer.Settings
 import com.hippo.ehviewer.asMutableState
@@ -82,12 +83,13 @@ import com.hippo.ehviewer.util.requestPermission
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
+import kotlin.concurrent.atomics.AtomicInt
+import kotlin.concurrent.atomics.fetchAndIncrement
 import moe.tarsin.coroutines.runSuspendCatching
 import moe.tarsin.snackbar
 import moe.tarsin.string
 import okio.Path
 import okio.Path.Companion.toOkioPath
-import splitties.init.appCtx
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -200,7 +202,8 @@ fun AnimatedVisibilityScope.DownloadScreen(navigator: DestinationsNavigator) = S
                                     }
                                 }
                                 try {
-                                    selectDownloadDirLauncher.launch(null)
+                                    // ActivityResultLauncher 必须在主线程发起
+                                    withUIContext { selectDownloadDirLauncher.launch(null) }
                                 } catch (_: ActivityNotFoundException) {
                                     if (!isAtLeastQ && requestPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
                                         runCatching {
@@ -317,7 +320,8 @@ fun AnimatedVisibilityScope.DownloadScreen(navigator: DestinationsNavigator) = S
                         title = stringResource(id = R.string.settings_download_restore_download_items),
                         summary = stringResource(id = R.string.settings_download_restore_download_items_summary),
                     ) {
-                        var restoreDirCount = 0
+                        // getRestoreItem 在 parMapNotNull 中并发执行，计数器必须原子
+                        val restoreDirCount = AtomicInt(0)
                         suspend fun getRestoreItem(file: Path): RestoreItem? {
                             if (!file.isDirectory) return null
                             return runSuspendCatching {
@@ -335,7 +339,7 @@ fun AnimatedVisibilityScope.DownloadScreen(navigator: DestinationsNavigator) = S
                                     val dbdirname = EhDB.getDownloadDirname(gid)
                                     if (null == dbdirname || dirname != dbdirname) {
                                         EhDB.putDownloadDirname(gid, dirname)
-                                        restoreDirCount++
+                                        restoreDirCount.fetchAndIncrement()
                                     }
                                     return null
                                 }
@@ -349,16 +353,20 @@ fun AnimatedVisibilityScope.DownloadScreen(navigator: DestinationsNavigator) = S
                                 fillGalleryListByApi(it, EhUrl.referer)
                             }
                             if (result.isEmpty()) {
-                                launchSnackbar(RESTORE_COUNT_MSG(restoreDirCount))
+                                launchSnackbar(restoreCountMessage(restoreDirCount.load()))
                             } else {
-                                val count = result.parMap {
+                                // 只统计真正被恢复的条目（pages == 0 的目录没有被恢复）
+                                val count = result.parMapNotNull {
                                     if (it.pages != 0) {
                                         EhDB.putDownloadDirname(it.gid, it.dirname)
                                         DownloadManager.restoreDownload(it.galleryInfo, it.dirname)
                                         SpiderDen(it.galleryInfo, it.dirname).writeComicInfo(false)
+                                        it
+                                    } else {
+                                        null
                                     }
                                 }.size
-                                launchSnackbar(RESTORE_COUNT_MSG(count + restoreDirCount))
+                                launchSnackbar(restoreCountMessage(count + restoreDirCount.load()))
                             }
                         }.onFailure {
                             logcat(it)
@@ -389,7 +397,7 @@ fun AnimatedVisibilityScope.DownloadScreen(navigator: DestinationsNavigator) = S
                             }
                         }
                         val cnt = list.count { runCatching { it.delete() }.getOrNull() != null }
-                        launchSnackbar(FINAL_CLEAR_REDUNDANCY_MSG(cnt))
+                        launchSnackbar(finalClearRedundancyMessage(cnt))
                     }
                 }
             }
@@ -403,8 +411,18 @@ private class RestoreItem(
     token: String,
     val galleryInfo: BaseGalleryInfo = BaseGalleryInfo(gid, token),
 ) : GalleryInfo by galleryInfo
-private val RESTORE_NOT_FOUND = appCtx.getString(R.string.settings_download_restore_not_found)
-private val RESTORE_COUNT_MSG = { cnt: Int -> if (cnt == 0) RESTORE_NOT_FOUND else appCtx.getString(R.string.settings_download_restore_successfully, cnt) }
-private val NO_REDUNDANCY = appCtx.getString(R.string.settings_download_clean_redundancy_no_redundancy)
-private val CLEAR_REDUNDANCY_DONE = { cnt: Int -> appCtx.getString(R.string.settings_download_clean_redundancy_done, cnt) }
-private val FINAL_CLEAR_REDUNDANCY_MSG = { cnt: Int -> if (cnt == 0) NO_REDUNDANCY else CLEAR_REDUNDANCY_DONE(cnt) }
+
+// 文案必须在调用时解析，静态 top-level val 会把首次进程语言永久固化
+context(ctx: Context)
+private fun restoreCountMessage(cnt: Int) = if (cnt == 0) {
+    string(R.string.settings_download_restore_not_found)
+} else {
+    string(R.string.settings_download_restore_successfully, cnt)
+}
+
+context(ctx: Context)
+private fun finalClearRedundancyMessage(cnt: Int) = if (cnt == 0) {
+    string(R.string.settings_download_clean_redundancy_no_redundancy)
+} else {
+    string(R.string.settings_download_clean_redundancy_done, cnt)
+}

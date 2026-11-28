@@ -6,6 +6,7 @@ import com.hippo.ehviewer.ui.destinations.SettingsScreenDestination
 import com.hippo.ehviewer.ui.destinations.ToplistScreenDestination
 import com.hippo.ehviewer.ui.destinations.WhatshotScreenDestination
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -61,11 +62,37 @@ class MainNavItemsTest {
 
     @Test
     fun `toggle hidden guards the last visible item`() {
-        val config = MainNavItems.decode(MainNavItems.encode(MainNavConfig(MainNavItem.entries.toList(), MainNavItem.entries.toSet() - MainNavItem.Home)))
+        // 设置页固定可见后，底栏只剩一项只可能发生在其被移出 order 的情形，守卫仍需生效
+        val config = MainNavConfig(order = listOf(MainNavItem.Home, MainNavItem.Downloads), hidden = setOf(MainNavItem.Downloads))
         val guarded = MainNavItems.toggleHidden(config, MainNavItem.Home)
         assertEquals(config, guarded)
-        val unhidden = MainNavItems.toggleHidden(config, MainNavItem.Toplist)
-        assertTrue(MainNavItem.Toplist !in unhidden.hidden)
+        val unhidden = MainNavItems.toggleHidden(config, MainNavItem.Downloads)
+        assertTrue(MainNavItem.Downloads !in unhidden.hidden)
+    }
+
+    @Test
+    fun `settings can never be hidden`() {
+        val config = MainNavItems.defaultConfig()
+        assertEquals(config, MainNavItems.toggleHidden(config, MainNavItem.Settings))
+        assertFalse(MainNavItems.canHide(MainNavItem.Settings))
+        assertTrue(MainNavItems.canHide(MainNavItem.Home))
+    }
+
+    @Test
+    fun `visible keeps settings even when config marks it hidden`() {
+        val broken = MainNavConfig(MainNavItem.entries.toList(), MainNavItem.entries.toSet())
+        assertEquals(listOf(MainNavItem.Settings), MainNavItems.visible(broken))
+    }
+
+    @Test
+    fun `decode and encode ignore hidden marker on settings`() {
+        val decoded = MainNavItems.decode("!Settings,Home,!Downloads")
+        assertTrue(MainNavItem.Settings !in decoded.hidden)
+        assertTrue(MainNavItem.Downloads in decoded.hidden)
+        val encoded = MainNavItems.encode(MainNavConfig(MainNavItem.entries.toList(), setOf(MainNavItem.Settings)))
+        assertFalse("!Settings" in encoded)
+        // 即便强制写入隐藏集合，序列化结果也不得带 !Settings 标记
+        assertEquals("Home,Subscription,Whatshot,Toplist,Favorites,History,Downloads,Settings", encoded)
     }
 
     @Test

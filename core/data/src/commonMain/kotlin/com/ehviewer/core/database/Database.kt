@@ -35,7 +35,7 @@ import com.ehviewer.core.database.model.Search
         Filter::class, HistoryInfo::class, LocalFavoriteInfo::class, ProgressInfo::class, QuickSearch::class,
         GalleryFtsEntity::class,
     ],
-    version = 23,
+    version = 24,
     exportSchema = true,
     autoMigrations = [
         AutoMigration(from = 4, to = 5, spec = Schema4to5::class),
@@ -56,6 +56,7 @@ import com.ehviewer.core.database.model.Search
         AutoMigration(from = 20, to = 21, spec = Schema20to21::class),
         AutoMigration(from = 21, to = 22, spec = Schema21to22::class),
         AutoMigration(from = 22, to = 23),
+        AutoMigration(from = 23, to = 24, spec = Schema23to24::class),
     ],
 )
 @TypeConverters(FilterModeConverter::class)

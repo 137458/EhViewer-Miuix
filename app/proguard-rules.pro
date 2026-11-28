@@ -26,7 +26,7 @@
 -dontwarn androidx.window.extensions.**
 -dontwarn androidx.window.sidecar.Sidecar*
 
--keepattributes LineNumberTable
+-keepattributes SourceFile,LineNumberTable
 
 -allowaccessmodification
 -repackageclasses

@@ -96,6 +96,7 @@ import androidx.compose.ui.zIndex
 import androidx.core.net.toUri
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.LifecycleResumeEffect
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.rememberNavController
 import com.ehviewer.core.files.isDirectory
 import com.ehviewer.core.files.toOkioPath
@@ -150,6 +151,7 @@ import com.hippo.ehviewer.ui.screen.asDstWith
 import com.hippo.ehviewer.ui.screen.navWithUrl
 import com.hippo.ehviewer.ui.settings.icon
 import com.hippo.ehviewer.ui.tools.DialogState
+import com.hippo.ehviewer.ui.tools.IntentPolicy
 import com.hippo.ehviewer.ui.tools.awaitConfirmationOrCancel
 import com.hippo.ehviewer.ui.tools.awaitInputText
 import com.hippo.ehviewer.ui.update.AppForegroundTracker
@@ -162,6 +164,7 @@ import com.hippo.ehviewer.ui.update.installUpdatePackage
 import com.hippo.ehviewer.ui.update.shouldPromptUpdate
 import com.hippo.ehviewer.updater.AppUpdater
 import com.hippo.ehviewer.util.AppConfig
+import com.hippo.ehviewer.util.InternalIntentGuard
 import com.hippo.ehviewer.util.addTextToClipboard
 import com.hippo.ehviewer.util.calculateFraction
 import com.hippo.ehviewer.util.displayString
@@ -314,62 +317,106 @@ class MainActivity : AppCompatActivity() {
                     window.setSecureScreen(it)
                 }
             }
-            if (isAuthenticationSupported()) {
+            val authenticationSupported = remember { isAuthenticationSupported() }
+            if (authenticationSupported) {
                 SecurityScreen(onError = { moveTaskToBack(true) }, modifier = Modifier.zIndex(1f))
             }
 
             val cannotParse = stringResource(R.string.error_cannot_parse_the_url)
+            // 只有本进程自建的 intent 才能触发这些内部动作（下载页跳转、安装更新）
+            val restrictedInternalActions = remember {
+                setOf(
+                    DownloadService.ACTION_START_DOWNLOADSCENE,
+                    UpdateNotifications.ACTION_INSTALL_UPDATE,
+                )
+            }
+            // 外部 file:// 传入不得指向应用私有目录，否则借阅读器即可读走私有数据
+            val protectedDirs = remember {
+                val app = applicationContext
+                listOfNotNull(app.dataDir?.absolutePath, app.filesDir?.absolutePath, app.cacheDir?.absolutePath)
+            }
             LaunchedEffect(Unit) {
                 intentFlow.collect { intent ->
-                    when (intent.action) {
-                        Intent.ACTION_VIEW -> with(navigator) {
-                            val uri = intent.data ?: return@collect
-                            when (uri.scheme) {
-                                SCHEME_FILE -> navToReader(uri.path!!)
-                                SCHEME_CONTENT -> navToReader(uri.toString())
-                                else -> {
-                                    val url = uri.toString()
-                                    if (!navWithUrl(url)) {
-                                        val new = awaitInputText(initial = url, title = cannotParse)
-                                        addTextToClipboard(new)
+                    // 每条 intent 独立协程：单条失败（含弹窗取消抛出的 CancellationException）
+                    // 不再终结整个收集器，后续 intent 仍能处理
+                    scope.launch {
+                        runSuspendCatching {
+                            when (intent.action) {
+                                Intent.ACTION_VIEW -> with(navigator) {
+                                    val uri = intent.data ?: return@runSuspendCatching
+                                    when (uri.scheme) {
+                                        SCHEME_FILE -> {
+                                            val path = uri.path ?: return@runSuspendCatching
+                                            if (IntentPolicy.isInsideAnyDir(path, protectedDirs)) {
+                                                return@runSuspendCatching
+                                            }
+                                            navToReader(path)
+                                        }
+                                        SCHEME_CONTENT -> navToReader(uri.toString())
+                                        else -> {
+                                            val url = uri.toString()
+                                            if (!navWithUrl(url)) {
+                                                val new = awaitInputText(initial = url, title = cannotParse)
+                                                addTextToClipboard(new)
+                                            }
+                                        }
                                     }
                                 }
-                            }
-                        }
-                        Intent.ACTION_SEND -> with(navigator) {
-                            val type = intent.type
-                            if ("text/plain" == type) {
-                                val keyword = intent.getStringExtra(Intent.EXTRA_TEXT)
-                                if (keyword != null && !navWithUrl(keyword)) {
-                                    navigate(ListUrlBuilder(keyword = keyword).asDst())
+                                Intent.ACTION_SEND -> with(navigator) {
+                                    val type = intent.type
+                                    if ("text/plain" == type) {
+                                        val keyword = intent.getStringExtra(Intent.EXTRA_TEXT)
+                                        if (keyword != null && !navWithUrl(keyword)) {
+                                            navigate(ListUrlBuilder(keyword = keyword).asDst())
+                                        }
+                                    } else if (type != null && type.startsWith("image/")) {
+                                        val uri = intent.getParcelableExtraCompat<Uri>(Intent.EXTRA_STREAM)
+                                        if (null != uri) {
+                                            val hash = withIOContext { uri.toOkioPath().sha1() }
+                                            navigate(
+                                                ListUrlBuilder(
+                                                    mode = ListUrlBuilder.MODE_IMAGE_SEARCH,
+                                                    hash = hash,
+                                                ).asDst(),
+                                            )
+                                        }
+                                    }
                                 }
-                            } else if (type != null && type.startsWith("image/")) {
-                                val uri = intent.getParcelableExtraCompat<Uri>(Intent.EXTRA_STREAM)
-                                if (null != uri) {
-                                    val hash = withIOContext { uri.toOkioPath().sha1() }
-                                    navigate(
-                                        ListUrlBuilder(
-                                            mode = ListUrlBuilder.MODE_IMAGE_SEARCH,
-                                            hash = hash,
-                                        ).asDst(),
-                                    )
+                                UpdateNotifications.ACTION_INSTALL_UPDATE -> {
+                                    if (!IntentPolicy.isInternalIntentTrusted(
+                                            intent.action,
+                                            intent.getStringExtra(InternalIntentGuard.EXTRA_TOKEN),
+                                            InternalIntentGuard.token,
+                                            restrictedInternalActions,
+                                        )
+                                    ) {
+                                        return@runSuspendCatching
+                                    }
+                                    // 通知里的安装动作落到前台 Activity 处理，不在后台直接 startActivity。
+                                    val file = UpdateDownloadManager.snapshot.value.doneFile
+                                        ?: File(AppConfig.tempDir.toFile(), "update.apk")
+                                    if (file.exists()) {
+                                        installUpdatePackage(applicationContext, file)
+                                    }
+                                }
+                                DownloadService.ACTION_START_DOWNLOADSCENE -> {
+                                    if (!IntentPolicy.isInternalIntentTrusted(
+                                            intent.action,
+                                            intent.getStringExtra(InternalIntentGuard.EXTRA_TOKEN),
+                                            InternalIntentGuard.token,
+                                            restrictedInternalActions,
+                                        )
+                                    ) {
+                                        return@runSuspendCatching
+                                    }
+                                    val args = intent.getBundleExtra(DownloadService.ACTION_START_DOWNLOADSCENE_ARGS)
+                                        ?: return@runSuspendCatching
+                                    if (args.getString(DownloadService.KEY_ACTION) == DownloadService.ACTION_CLEAR_DOWNLOAD_SERVICE) {
+                                        DownloadService.clear()
+                                    }
+                                    navigator.navigate(DownloadsScreenDestination)
                                 }
                             }
-                        }
-                        UpdateNotifications.ACTION_INSTALL_UPDATE -> {
-                            // 通知里的安装动作落到前台 Activity 处理，不在后台直接 startActivity。
-                            val file = UpdateDownloadManager.downloadedFile
-                                ?: File(AppConfig.tempDir.toFile(), "update.apk")
-                            if (file.exists()) {
-                                scope.launch { installUpdatePackage(this@MainActivity, file) }
-                            }
-                        }
-                        DownloadService.ACTION_START_DOWNLOADSCENE -> {
-                            val args = intent.getBundleExtra(DownloadService.ACTION_START_DOWNLOADSCENE_ARGS)!!
-                            if (args.getString(DownloadService.KEY_ACTION) == DownloadService.ACTION_CLEAR_DOWNLOAD_SERVICE) {
-                                DownloadService.clear()
-                            }
-                            navigator.navigate(DownloadsScreenDestination)
                         }
                     }
                 }
@@ -469,8 +516,10 @@ class MainActivity : AppCompatActivity() {
                     return
                 }
                 lastNavTime = now
-                navigator.navigate(direction) {
-                    popUpTo(NavGraphs.root.startRoute) {
+                // destinations 的 navOptions DSL 只暴露 RouteOrDirection 版本的 popUpTo，
+                // 这里直接走 NavController，才能按 controller 实际的图起点（而非写死的路由常量）弹栈
+                navController.navigate(direction.route) {
+                    popUpTo(navController.graph.findStartDestination().id) {
                         saveState = true
                     }
                     launchSingleTop = true

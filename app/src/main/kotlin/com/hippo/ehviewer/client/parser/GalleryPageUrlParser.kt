@@ -22,7 +22,7 @@ import com.hippo.ehviewer.client.EhUrl
  */
 object GalleryPageUrlParser {
     private val URL_STRICT_PATTERN = Regex(
-        "https?://(?:${EhUrl.DOMAIN_EX}|${EhUrl.DOMAIN_E}(?:/lofi)?)/s/([0-9a-f]{10})/(\\d+)-(\\d+)",
+        "https?://(?:${Regex.escape(EhUrl.DOMAIN_EX)}|${Regex.escape(EhUrl.DOMAIN_E)}(?:/lofi)?)/s/([0-9a-f]{10})/(\\d+)-(\\d+)",
     )
     private val URL_PATTERN = Regex("([0-9a-f]{10})/(\\d+)-(\\d+)")
 
@@ -30,7 +30,10 @@ object GalleryPageUrlParser {
         url ?: return null
         val pattern = if (strict) URL_STRICT_PATTERN else URL_PATTERN
         return pattern.find(url)?.destructured?.let { (pToken, gid, page) ->
-            Result(gid.toLong(), pToken, page.toInt() - 1)
+            // A ten character token followed by a non numeric or zero gid/page is not a page url;
+            // report it as unparsable instead of throwing NumberFormatException.
+            val pageIndex = page.toIntOrNull()?.minus(1)?.takeIf { it >= 0 } ?: return null
+            Result(gid.toLongOrNull() ?: return null, pToken, pageIndex)
         }
     }
 

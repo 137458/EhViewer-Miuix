@@ -17,15 +17,16 @@ object EhCookieStore : CookiesStorage {
         containsKey(KEY_IPB_MEMBER_ID) && containsKey(KEY_IPB_PASS_HASH)
     } == true
 
+    // 身份 cookie 一律标记 Secure：明文 HTTP 请求不得携带登录凭据
     fun setIdentityCookies(memberId: String, passHash: String, igneous: String? = null) {
         val eDomain = ".e-hentai.org"
         val exDomain = ".exhentai.org"
-        manager.setCookie(urlE, Cookie(KEY_IPB_MEMBER_ID, memberId, domain = eDomain, path = "/"))
-        manager.setCookie(urlE, Cookie(KEY_IPB_PASS_HASH, passHash, domain = eDomain, path = "/"))
-        manager.setCookie(urlEx, Cookie(KEY_IPB_MEMBER_ID, memberId, domain = exDomain, path = "/"))
-        manager.setCookie(urlEx, Cookie(KEY_IPB_PASS_HASH, passHash, domain = exDomain, path = "/"))
+        manager.setCookie(urlE, Cookie(KEY_IPB_MEMBER_ID, memberId, domain = eDomain, path = "/", secure = true))
+        manager.setCookie(urlE, Cookie(KEY_IPB_PASS_HASH, passHash, domain = eDomain, path = "/", secure = true))
+        manager.setCookie(urlEx, Cookie(KEY_IPB_MEMBER_ID, memberId, domain = exDomain, path = "/", secure = true))
+        manager.setCookie(urlEx, Cookie(KEY_IPB_PASS_HASH, passHash, domain = exDomain, path = "/", secure = true))
         if (!igneous.isNullOrBlank()) {
-            manager.setCookie(urlEx, Cookie(KEY_IGNEOUS, igneous, domain = exDomain, path = "/"))
+            manager.setCookie(urlEx, Cookie(KEY_IGNEOUS, igneous, domain = exDomain, path = "/", secure = true))
         }
         manager.flush()
     }
@@ -35,8 +36,8 @@ object EhCookieStore : CookiesStorage {
         val memberId = eCookies[KEY_IPB_MEMBER_ID] ?: return
         val passHash = eCookies[KEY_IPB_PASS_HASH] ?: return
         val exDomain = ".exhentai.org"
-        manager.setCookie(urlEx, Cookie(KEY_IPB_MEMBER_ID, memberId, domain = exDomain, path = "/"))
-        manager.setCookie(urlEx, Cookie(KEY_IPB_PASS_HASH, passHash, domain = exDomain, path = "/"))
+        manager.setCookie(urlEx, Cookie(KEY_IPB_MEMBER_ID, memberId, domain = exDomain, path = "/", secure = true))
+        manager.setCookie(urlEx, Cookie(KEY_IPB_PASS_HASH, passHash, domain = exDomain, path = "/", secure = true))
         manager.flush()
     }
 

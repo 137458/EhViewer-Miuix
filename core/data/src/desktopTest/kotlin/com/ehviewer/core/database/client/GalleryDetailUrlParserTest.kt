@@ -55,6 +55,20 @@ class GalleryDetailUrlParserTest {
         assertEquals("abcdef0123", lenientResult.token)
     }
 
+    // 严格模式必须逐字匹配域：未转义的 . 会把 e-hentaiXorg 之类的主机名当成官方域
+    @Test
+    fun strictModeRejectsLookAlikeHosts() {
+        assertNull(GalleryDetailUrlParser.parse("https://e-hentaiXorg/g/1234567/8b3c7e4a21/"))
+        assertNull(GalleryDetailUrlParser.parse("https://exhentaiXorg/g/9876543/1234567890/"))
+    }
+
+    // 超出 Long 范围的 gid 必须返回 null，而不是抛 NumberFormatException
+    @Test
+    fun oversizedGidReturnsNull() {
+        assertNull(GalleryDetailUrlParser.parse("https://e-hentai.org/g/99999999999999999999/8b3c7e4a21/"))
+        assertNull(GalleryDetailUrlParser.parse("99999999999999999999/8b3c7e4a21", strict = false))
+    }
+
     @Test
     fun parseInvalidUrlReturnsNull() {
         assertNull(GalleryDetailUrlParser.parse(null))

@@ -2,13 +2,28 @@ package com.ehviewer.desktop
 
 import com.ehviewer.core.database.client.GalleryMetadataParser
 import com.ehviewer.core.model.BaseGalleryInfo
+import kotlinx.serialization.json.add
+import kotlinx.serialization.json.addJsonArray
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+import kotlinx.serialization.json.putJsonArray
 
 // Ctrl+O 快捷打开仅有 gid/token，开窗时是占位信息（无缩略图/分类/页数等真实元数据）。
 // 该对象经官方 gdata API 拉取真实元数据回填，避免占位对象经收藏/历史路径把假数据写入数据库。
 object DesktopGalleryHydrator {
     const val GDATA_URL = "https://api.e-hentai.org/api.php"
 
-    fun gdataRequestBody(gid: Long, token: String): String = """{"method":"gdata","gidlist":[[$gid,"$token"]],"namespace":1}"""
+    // 请求体经序列化器构造：token 来自用户输入/剪贴板，字符串拼接会被引号、反斜杠与控制字符破坏 JSON 结构
+    fun gdataRequestBody(gid: Long, token: String): String = buildJsonObject {
+        put("method", "gdata")
+        putJsonArray("gidlist") {
+            addJsonArray {
+                add(gid)
+                add(token)
+            }
+        }
+        put("namespace", 1)
+    }.toString()
 
     // 占位信息唯一可靠特征：从未接触真实元数据时 thumbKey 必为 null（gdata 命中必然回填缩略图键）
     fun needsHydration(info: BaseGalleryInfo): Boolean = info.thumbKey == null

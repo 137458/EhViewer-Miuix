@@ -61,6 +61,30 @@ class StorageCleanerTest {
     }
 
     @Test
+    fun isDeadDownload_whenStateIsNotFinished_returnsFalse() {
+        val info = createDownloadInfo(6L, "gallery_6", state = DownloadInfo.STATE_DOWNLOAD)
+        assertFalse(StorageCleaner.isDeadDownload(info, dirExists = { false }, archiveExists = { false }))
+    }
+
+    @Test
+    fun isDeadDownload_whenWaitingInQueue_returnsFalse() {
+        val info = createDownloadInfo(7L, null, state = DownloadInfo.STATE_WAIT)
+        assertFalse(StorageCleaner.isDeadDownload(info))
+    }
+
+    @Test
+    fun isDeadDownload_whenFileProbeThrows_returnsFalse() {
+        val info = createDownloadInfo(8L, "gallery_8")
+        assertFalse(
+            StorageCleaner.isDeadDownload(
+                info,
+                dirExists = { throw IllegalStateException("storage unavailable") },
+                archiveExists = { throw IllegalStateException("storage unavailable") },
+            ),
+        )
+    }
+
+    @Test
     fun filterDeadDownloads_filtersAccurately_withMixedList() {
         val deadNull = createDownloadInfo(10L, null)
         val aliveDir = createDownloadInfo(11L, "gallery_11")

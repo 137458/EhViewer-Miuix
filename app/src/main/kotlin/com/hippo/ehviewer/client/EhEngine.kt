@@ -62,7 +62,6 @@ import com.hippo.ehviewer.client.parser.VoteCommentResult
 import com.hippo.ehviewer.client.parser.VoteTagParser
 import com.hippo.ehviewer.dailycheck.showEventNotification
 import com.hippo.ehviewer.dailycheck.today
-import com.hippo.ehviewer.util.AppConfig
 import com.hippo.ehviewer.util.ReadableTime
 import com.hippo.ehviewer.util.bodyAsUtf8Text
 import com.hippo.ehviewer.util.ensureSuccess
@@ -70,6 +69,8 @@ import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.HttpStatement
 import io.ktor.client.statement.bodyAsChannel
 import io.ktor.client.statement.request
+import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
 import io.ktor.http.Url
 import io.ktor.util.moveToByteArray
 import io.ktor.utils.io.ByteReadChannel
@@ -101,8 +102,18 @@ private const val REQUEST_INTERVAL = 5000L
 
 private val Url.isLogin get() = segments.firstOrNull() == "bounce_login.php"
 
-private fun Either<String, ByteBuffer>.saveParseError(e: Throwable) {
-    val dir = AppConfig.externalParseErrorDir ?: return
+private val SENSITIVE_PARSE_ERROR_PATHS = setOf("home.php", "uconfig.php", "favorites.php")
+
+// Parse error dumps can contain account specific page content, so they are kept in the app private
+// cache directory instead of external storage.
+private val parseErrorDir: File? by lazy {
+    File(appCtx.cacheDir, "parse-error").apply { mkdirs() }.takeIf { it.isDirectory }
+}
+
+private fun Either<String, ByteBuffer>.saveParseError(e: Throwable, url: Url) {
+    // Never dump pages that render signed-in data.
+    if (url.segments.lastOrNull() in SENSITIVE_PARSE_ERROR_PATHS) return
+    val dir = parseErrorDir ?: return
     val file = File(dir, ReadableTime.getFilenamableTime() + ".txt")
     file.sink().buffer().use { sink ->
         with(sink) {
@@ -159,7 +170,7 @@ private fun rethrowExactly(response: HttpResponse, body: Either<String, ByteBuff
 
     if (e is ParseException || e is SerializationException) {
         body.onLeft { if ("<" !in it) throw IpBannedException(it) }
-        if (Settings.saveParseErrorBody.value) body.saveParseError(e)
+        if (Settings.saveParseErrorBody.value) body.saveParseError(e, response.request.url)
         throw EhException(appCtx.getString(R.string.error_parse_error), e)
     }
 
@@ -169,6 +180,10 @@ private fun rethrowExactly(response: HttpResponse, body: Either<String, ByteBuff
 
 internal const val INITIAL_BUFFER_SIZE = 0x80000 // 512KB
 internal const val MAX_BUFFER_SIZE = 16 * 1024 * 1024 // 16MB
+
+// Rust parsers over-read a little past the payload when scanning for terminators, so the buffer
+// handed over must keep some spare capacity behind its content.
+internal const val PARSER_HEADROOM = 64
 
 private val httpContentPool = DirectByteBufferPool(8, INITIAL_BUFFER_SIZE)
 
@@ -192,11 +207,34 @@ internal suspend fun ByteReadChannel.readToByteBuffer(
         val read = readAvailable(buffer)
         if (read == -1) break
     }
-    return buffer
+    if (buffer.limit() - buffer.position() >= PARSER_HEADROOM) return buffer
+    val newBuffer = ByteBuffer.allocateDirect(buffer.position() + PARSER_HEADROOM)
+    buffer.flip()
+    newBuffer.put(buffer)
+    return newBuffer
+}
+
+private fun HttpResponse.throwIfChallenge() {
+    if (headers["cf-mitigated"] == "challenge") throw CloudflareBypassException()
+}
+
+// An image body means the endpoint served something the parsers cannot read, which usually is a
+// ban or a login wall rather than a real page.
+private fun HttpResponse.throwIfImageBody() {
+    val contentType = headers[HttpHeaders.ContentType]?.let { runCatching { ContentType.parse(it) }.getOrNull() }
+    if (contentType != null && contentType.contentType.equals("image", ignoreCase = true)) {
+        val message = if (request.url.host == EhUrl.DOMAIN_EX) {
+            "Sad Panda\n(without panda)"
+        } else {
+            appCtx.getString(R.string.error_ip_banned)
+        }
+        throw IpBannedException(message)
+    }
 }
 
 private suspend inline fun <T> HttpStatement.fetchUsingAsText(crossinline block: suspend String.() -> T) = executeSafely { response ->
     if (response.request.url.isLogin) throw NotLoggedInException()
+    response.throwIfImageBody()
     val body = response.bodyAsUtf8Text()
     runSuspendCatching {
         block(body)
@@ -207,6 +245,7 @@ private suspend inline fun <T> HttpStatement.fetchUsingAsText(crossinline block:
 
 private suspend inline fun <T> HttpStatement.fetchUsingAsByteBuffer(crossinline block: suspend ByteBuffer.() -> T) = executeSafely { response ->
     if (response.request.url.isLogin) throw NotLoggedInException()
+    response.throwIfImageBody()
     httpContentPool.useInstance { poolBuffer ->
         val buffer = response.bodyAsChannel().readToByteBuffer(poolBuffer)
         buffer.flip()
@@ -333,10 +372,20 @@ object EhEngine {
             }
         }
     }.executeSafely { response ->
+        if (response.request.url.isLogin) throw NotLoggedInException()
+        response.throwIfChallenge()
         // Ktor does not handle POST redirect, we need to do it manually
         // https://youtrack.jetbrains.com/issue/KTOR-478
-        val location = response.headers["Location"] ?: url
-        ehRequest(location, url).fetchUsingAsByteBuffer(GalleryDetailParser::parseComments)
+        if (response.status.value in 300..399) {
+            // Only follow redirects that stay on E-Hentai.
+            val location = resolveRedirectUrl(url, response.headers[HttpHeaders.Location])
+                ?: throw EhException(R.string.error_parse_error)
+            if (Url(location).isLogin) throw NotLoggedInException()
+            ehRequest(location, url).fetchUsingAsByteBuffer(GalleryDetailParser::parseComments)
+        } else {
+            response.status.ensureSuccess()
+            ehRequest(url, url).fetchUsingAsByteBuffer(GalleryDetailParser::parseComments)
+        }
     }
 
     suspend fun modifyFavorites(gid: Long, token: String, dstCat: Int = -1, note: String = "") {
@@ -354,7 +403,18 @@ object EhEngine {
                 append("apply", "Apply Changes")
                 append("update", "1")
             }
-        }.executeSafely { }
+        }.executeSafely { response ->
+            if (response.request.url.isLogin) throw NotLoggedInException()
+            response.throwIfChallenge()
+            if (response.status.value in 300..399) {
+                // The success path of this form is a redirect back to the favorites page.
+                val location = resolveRedirectUrl(url, response.headers[HttpHeaders.Location])
+                    ?: throw EhException(R.string.error_parse_error)
+                if (Url(location).isLogin) throw NotLoggedInException()
+            } else {
+                response.status.ensureSuccess()
+            }
+        }
     }
 
     suspend fun getFavoriteNote(gid: Long, token: String) = ehRequest(EhUrl.getAddFavorites(gid, token), EhUrl.getGalleryDetailUrl(gid, token))

@@ -50,6 +50,9 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 // 评论显示模型：上传者评论置顶（组内保持原相对顺序）；折叠态最多展示 3 条
 private val URL_REGEX = Regex("""https?://[^\s<>"')\]]+""")
 
+// 评论时间展示格式：每次格式化复用同一 formatter，避免重复编译模式串
+private val COMMENT_TIME_FORMATTER = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
+
 object DesktopCommentsModel {
     fun sortForDisplay(comments: List<GalleryComment>): List<GalleryComment> = comments.sortedBy { !it.uploader }
 
@@ -60,7 +63,7 @@ object DesktopCommentsModel {
     fun formatCommentTime(epochMillis: Long): String {
         val instant = java.time.Instant.ofEpochMilli(epochMillis)
         val local = instant.atZone(java.time.ZoneId.systemDefault())
-        return java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm").format(local)
+        return COMMENT_TIME_FORMATTER.format(local)
     }
 
     fun extractUrls(text: String): List<String> = URL_REGEX

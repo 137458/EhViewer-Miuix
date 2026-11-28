@@ -27,6 +27,26 @@ class DesktopReadingProgressTest {
     }
 
     @Test
+    fun restorePageFallsBackToFirstPageWithoutRecord() {
+        assertEquals(1, DesktopReadingProgress.restorePage(null, 10))
+        // 链接还没解析出来时也不能返回 0 页
+        assertEquals(1, DesktopReadingProgress.restorePage(null, 0))
+    }
+
+    @Test
+    fun restorePageClampsPersistedPageIntoRange() {
+        assertEquals(7, DesktopReadingProgress.restorePage(7, 10))
+        // 详情页链接数变少（重新解析不全/画廊被删图）→ 钳到最后一页，而不是停在越界页导致空白
+        assertEquals(10, DesktopReadingProgress.restorePage(99, 10))
+        assertEquals(10, DesktopReadingProgress.restorePage(Int.MAX_VALUE, 10))
+        // 损坏记录（0 或负数）
+        assertEquals(1, DesktopReadingProgress.restorePage(0, 10))
+        assertEquals(1, DesktopReadingProgress.restorePage(-5, 10))
+        // 单页画廊
+        assertEquals(1, DesktopReadingProgress.restorePage(4, 1))
+    }
+
+    @Test
     fun decodeCorruptOrBlankReturnsEmpty() {
         assertTrue(DesktopReadingProgress.decode(null).isEmpty())
         assertTrue(DesktopReadingProgress.decode("").isEmpty())

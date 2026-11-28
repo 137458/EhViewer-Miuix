@@ -21,6 +21,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import arrow.core.Either
 import com.ehviewer.core.files.metadataOrNull
+import com.ehviewer.core.files.moveTo
 import com.ehviewer.core.files.read
 import com.ehviewer.core.files.write
 import com.ehviewer.core.model.TagNamespace
@@ -37,12 +38,13 @@ import kotlin.time.Duration.Companion.days
 import kotlin.time.Instant
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.io.Source
 import kotlinx.io.writeString
+import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.io.encodeToSink
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -51,7 +53,7 @@ import moe.tarsin.coroutines.runSuspendCatching
 import splitties.init.appCtx
 
 object EhTagDatabase : CoroutineScope {
-    override val coroutineContext = Dispatchers.IO + Job()
+    override val coroutineContext = Dispatchers.IO + SupervisorJob()
     private const val NAMESPACE_PREFIX = "n"
     private val PREFIXES = arrayOf(
         "-",
@@ -59,7 +61,10 @@ object EhTagDatabase : CoroutineScope {
         "tag:",
         "weak:",
     )
-    private lateinit var tagGroups: Map<String, Map<String, String>>
+
+    // Empty until the first successful load, so lookups never hit an uninitialized field.
+    @Volatile
+    private var tagGroups: Map<String, Map<String, String>> = emptyMap()
     private val updateLock = Mutex()
     var initialized by mutableStateOf(false)
 
@@ -187,14 +192,24 @@ object EhTagDatabase : CoroutineScope {
         if (newSha1 == currentSha1) return
 
         val rawData = fetch(dataUrl)
-        tagGroups = json.parseToJsonElement(rawData).jsonObject["data"]!!.jsonArray.associate { e ->
-            val data = e.jsonObject
-            val namespace = data["namespace"]!!.jsonPrimitive.content
-            val prefix = if (namespace == "rows") NAMESPACE_PREFIX else TagNamespace.from(namespace)!!.prefix!!
-            prefix to data["data"]!!.jsonObject.mapValues { it.value.jsonObject["name"]!!.jsonPrimitive.content }
-        }
+        val parsedGroups = json.parseToJsonElement(rawData).jsonObject["data"]?.jsonArray
+            ?.mapNotNull { element ->
+                val data = element.jsonObject
+                val namespace = data["namespace"]?.jsonPrimitive?.contentOrNull ?: return@mapNotNull null
+                // Namespaces this build does not know about are skipped instead of aborting the update.
+                val prefix = if (namespace == "rows") NAMESPACE_PREFIX else TagNamespace.from(namespace)?.prefix
+                val namespacePrefix = prefix ?: return@mapNotNull null
+                namespacePrefix to data["data"]?.jsonObject?.mapValues {
+                    it.value.jsonObject["name"]?.jsonPrimitive?.contentOrNull.orEmpty()
+                }.orEmpty()
+            }?.toMap()
+            ?: error("Missing data array in tag translation payload")
+        // Publish only a fully parsed table; the sha1 is written last so it authenticates the new data.
+        tagGroups = parsedGroups
         initialized = true
+        val tmpDataFile = workdir / "$dataName.tmp"
+        tmpDataFile.write { json.encodeToSink(parsedGroups, this) }
+        tmpDataFile moveTo dataFile
         sha1File.write { writeString(newSha1) }
-        dataFile.write { json.encodeToSink(tagGroups, this) }
     }
 }

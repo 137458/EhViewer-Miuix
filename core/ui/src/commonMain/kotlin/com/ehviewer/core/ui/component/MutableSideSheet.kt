@@ -50,6 +50,7 @@ import androidx.compose.ui.graphics.BlurEffect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.TileMode
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.layout
@@ -271,16 +272,11 @@ fun MutableSideSheet(
 
                 val predictiveModifier = if (drawerState.isOpen) {
                     if (predictiveState < 0) {
-                        Modifier.layout { measurable, constraints ->
-                            val placeable = measurable.measure(constraints)
-                            val multiplierX = lerp(1f, 1.05f, -predictiveState)
-                            val multiplierY = lerp(1f, 0.95f, -predictiveState)
-                            val scaledWidth = (multiplierX * placeable.width).roundToInt()
-                            val scaledHeight = (multiplierY * placeable.height).roundToInt()
-                            val reMeasured = measurable.measure(Constraints.fixed(scaledWidth, scaledHeight))
-                            layout(scaledWidth, scaledHeight) {
-                                reMeasured.placeRelative(placeable.width - scaledWidth, 0)
-                            }
+                        // 只 measure 一次：缩放与其引起的左上偏移交给绘制层，避免每帧二次 measure
+                        Modifier.graphicsLayer {
+                            scaleX = lerp(1f, 1.05f, -predictiveState)
+                            scaleY = lerp(1f, 0.95f, -predictiveState)
+                            transformOrigin = TransformOrigin(1f, 0f)
                         }
                     } else {
                         Modifier.graphicsLayer {

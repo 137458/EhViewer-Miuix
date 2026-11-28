@@ -140,6 +140,8 @@ fun BoxScope.PausableAlertDialog(
 fun Offset.safeOffset(edge: Rect): Offset {
     val (x, y) = this
     val (l, t, r, b) = edge
+    // 窗口极小时安全区可能退化成一条线或一个点，此时任何方向都无法夹取，统一回到中心
+    if (r <= l || b <= t) return edge.center
     val dl = x - l
     val dr = r - x
     val dt = y - t

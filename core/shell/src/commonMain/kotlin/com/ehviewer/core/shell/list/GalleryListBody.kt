@@ -21,9 +21,9 @@ import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
 import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -35,6 +35,7 @@ import com.ehviewer.core.ui.component.FastScrollLazyVerticalStaggeredGrid
 import com.ehviewer.core.ui.util.WindowLayout
 import dev.icerock.moko.resources.compose.stringResource
 import kotlin.math.roundToInt
+import kotlinx.coroutines.flow.first
 import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
 import top.yukonga.miuix.kmp.basic.LinearProgressIndicator
 import top.yukonga.miuix.kmp.basic.PullToRefresh
@@ -100,6 +101,7 @@ fun GalleryListBody(
                     configuredMinWidthDp = detailColumnWidthDp,
                     spacingDp = listSpacing.value.roundToInt(),
                 ).dp
+                LoadMoreEffect(detailListState, items.size, onLoadMore)
                 FastScrollLazyVerticalGrid(
                     columns = GridCells.Adaptive(columnWidth),
                     modifier = Modifier.fillMaxSize(),
@@ -108,7 +110,7 @@ fun GalleryListBody(
                     verticalArrangement = Arrangement.spacedBy(listSpacing),
                     horizontalArrangement = Arrangement.spacedBy(listSpacing),
                 ) {
-                    galleryItems(items, detailListState, onLoadMore, detailItemContent)
+                    galleryItems(items, detailItemContent)
                     if (showLoadMoreIndicator) {
                         item(span = { GridItemSpan(maxLineSpan) }) {
                             LoadMoreIndicator(
@@ -121,6 +123,7 @@ fun GalleryListBody(
                 }
             } else {
                 val thumbColumns = WindowLayout.thumbGridColumns(availableWidthDp, thumbColumnsConfigured)
+                LoadMoreEffectStaggered(thumbListState, items.size, onLoadMore)
                 FastScrollLazyVerticalStaggeredGrid(
                     columns = StaggeredGridCells.Fixed(thumbColumns),
                     modifier = Modifier.fillMaxSize(),
@@ -129,7 +132,7 @@ fun GalleryListBody(
                     verticalItemSpacing = GALLERY_GRID_INTERVAL,
                     horizontalArrangement = Arrangement.spacedBy(GALLERY_GRID_INTERVAL),
                 ) {
-                    galleryItemsStaggered(items, thumbListState, onLoadMore, thumbItemContent)
+                    galleryItemsStaggered(items, thumbItemContent)
                     if (showLoadMoreIndicator) {
                         item(span = StaggeredGridItemSpan.FullLine) {
                             LoadMoreIndicator(
@@ -159,11 +162,9 @@ fun GalleryListBody(
     }
 }
 
-// gid 作 key 的条目渲染 + 触底加载检测
+// gid 作 key 的条目渲染
 private fun LazyGridScope.galleryItems(
     items: List<BaseGalleryInfo>,
-    state: LazyGridState,
-    onLoadMore: () -> Unit,
     itemContent: @Composable LazyGridItemScope.(BaseGalleryInfo) -> Unit,
 ) {
     items(
@@ -171,14 +172,11 @@ private fun LazyGridScope.galleryItems(
         key = { index -> items[index].gid },
     ) { index ->
         itemContent(items[index])
-        MaybeLoadMore(state, items.size, index, onLoadMore)
     }
 }
 
 private fun LazyStaggeredGridScope.galleryItemsStaggered(
     items: List<BaseGalleryInfo>,
-    state: LazyStaggeredGridState,
-    onLoadMore: () -> Unit,
     itemContent: @Composable LazyStaggeredGridItemScope.(BaseGalleryInfo) -> Unit,
 ) {
     items(
@@ -186,43 +184,37 @@ private fun LazyStaggeredGridScope.galleryItemsStaggered(
         key = { index -> items[index].gid },
     ) { index ->
         itemContent(items[index])
-        MaybeLoadMoreStaggered(state, items.size, index, onLoadMore)
     }
 }
 
+// 触底加载检测：网格级一个监听（原先每个条目各起一份 derivedStateOf + LaunchedEffect）
 @Composable
-private fun androidx.compose.foundation.lazy.grid.LazyGridItemScope.MaybeLoadMore(
+private fun LoadMoreEffect(
     state: LazyGridState,
     count: Int,
-    index: Int,
     onLoadMore: () -> Unit,
 ) {
-    val shouldLoad by remember(count) {
-        derivedStateOf {
-            val lastVisible = state.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
-            lastVisible >= count - LOAD_MORE_THRESHOLD
-        }
-    }
-    if (shouldLoad && index == count - 1) {
-        LaunchedEffect(count) { onLoadMore() }
+    val loadMore by rememberUpdatedState(onLoadMore)
+    LaunchedEffect(state, count) {
+        if (count <= 0) return@LaunchedEffect
+        snapshotFlow { state.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1 }
+            .first { lastVisible -> lastVisible >= count - LOAD_MORE_THRESHOLD }
+        loadMore()
     }
 }
 
 @Composable
-private fun androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridItemScope.MaybeLoadMoreStaggered(
+private fun LoadMoreEffectStaggered(
     state: LazyStaggeredGridState,
     count: Int,
-    index: Int,
     onLoadMore: () -> Unit,
 ) {
-    val shouldLoad by remember(count) {
-        derivedStateOf {
-            val lastVisible = state.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
-            lastVisible >= count - LOAD_MORE_THRESHOLD
-        }
-    }
-    if (shouldLoad && index == count - 1) {
-        LaunchedEffect(count) { onLoadMore() }
+    val loadMore by rememberUpdatedState(onLoadMore)
+    LaunchedEffect(state, count) {
+        if (count <= 0) return@LaunchedEffect
+        snapshotFlow { state.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1 }
+            .first { lastVisible -> lastVisible >= count - LOAD_MORE_THRESHOLD }
+        loadMore()
     }
 }
 

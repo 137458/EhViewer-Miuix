@@ -20,6 +20,7 @@ import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
@@ -29,6 +30,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -83,6 +85,12 @@ import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.Close
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
+// 大画廊的详情页会分页（?p=N）：最多追这么多页，防异常页面导致无限抓取
+private const val MAX_DETAIL_PAGES = 10
+
+// 同时在飞的图片预取上限：超出即取消最早的，避免长阅读时堆积请求
+private const val MAX_PREFETCH_IN_FLIGHT = 4
+
 // 阅读窗口：详情页链接提取 → 图片页解析 → 图片显示。
 // 图片页与解析链路均走桌面网络栈（desktopGet，代理随 DesktopSettings/环境变量）。
 @Composable
@@ -107,6 +115,12 @@ fun ReaderScreen(
     // 链接加载重试通道：与图片重载（reloadKey）分离，链接失败态的重试/F5 走此键才会重新解析画廊页
     var linksReloadKey by remember { mutableIntStateOf(0) }
     var reloadKey by remember { mutableIntStateOf(0) }
+    // 进度恢复门：page 初值 1 不是用户翻页，链接加载并恢复 savedPage 之前不得回写进度
+    var progressRestored by remember(gallery.gid) { mutableStateOf(false) }
+    // 图片页地址缓存（pageUrl -> imageUrl）：已解析的页翻到即用，预取也能直接命中
+    val imageUrlCache = remember(gallery.gid) { mutableMapOf<String, String?>() }
+    // 预取请求句柄：离开阅读器时取消，避免已离开的页面继续占网络与内存
+    val prefetchDisposables = remember(gallery.gid) { mutableListOf<coil3.request.Disposable>() }
     var showJumpInput by remember { mutableStateOf(false) }
     val jumpFieldState = rememberTextFieldState()
     val jumpInput = jumpFieldState.text.toString()
@@ -122,6 +136,11 @@ fun ReaderScreen(
     val readingDirection = DesktopReadingDirection.fromPersisted(readingDirectionRaw)
     // RTL 阅读推进向左：上一页为 page+1、下一页为 page-1，边界与箭头随方向镜像（增量复用已测 pageDeltaForNav）
     val isRtl = readingDirection == DesktopReadingDirection.RTL
+    // pointerInput(Unit) 只安装一次手势：闭包里直接捕获 readingDirection/page 会永远用首帧的值
+    // （LTR→RTL 切换后点击区不翻转、滚轮翻页永远跳回第 2 页），故经 rememberUpdatedState 读最新值
+    val currentReadingDirection by rememberUpdatedState(readingDirection)
+    val currentPage by rememberUpdatedState(page)
+    val currentLinkCount by rememberUpdatedState(pageLinks.size)
     val prevDelta = readingDirection.pageDeltaForNav(DesktopReaderNav.RelativeBackward)
     val nextDelta = readingDirection.pageDeltaForNav(DesktopReaderNav.RelativeForward)
     val canPrev = canNavigateByDelta(page, prevDelta, pageLinks.size)
@@ -140,10 +159,34 @@ fun ReaderScreen(
         imageStateIsError = false
         runCatching {
             withContext(Dispatchers.IO) {
-                val detail = desktopGet(galleryWebUrl(gallery.gid, gallery.token))
-                // 错误页 HTML 不进解析器：非 2xx 直接走本地化失败通道（与主库列表链路同约定）
-                if (detail.status !in 200..299) error("HTTP ${detail.status}")
-                GalleryDetailPageLinksParser.parse(detail.body)
+                // 详情页一页只列部分图片页（大画廊分页）：按 ?p=2..N 继续抓，补齐 gallery.pages
+                // gallery.pages 未知（0）时只抓首页，避免无上限地打站点
+                val expected = gallery.pages.coerceAtLeast(0)
+                val collected = mutableListOf<GalleryDetailPageLinksParser.PageLink>()
+                var detailPage = 1
+                while (detailPage <= MAX_DETAIL_PAGES) {
+                    val url = if (detailPage == 1) {
+                        galleryWebUrl(gallery.gid, gallery.token)
+                    } else {
+                        galleryWebUrl(gallery.gid, gallery.token) + "?p=$detailPage"
+                    }
+                    val links = runCatching {
+                        val detail = desktopGet(url)
+                        // 错误页 HTML 不进解析器：非 2xx 直接走本地化失败通道（与主库列表链路同约定）
+                        if (detail.status !in 200..299) error("HTTP ${detail.status}")
+                        GalleryDetailPageLinksParser.parse(detail.body, expectedGid = gallery.gid)
+                    }.getOrElse { cause ->
+                        // 首页失败即整体失败；后续页失败只提前收尾（首页链接已够读）
+                        if (detailPage == 1) throw cause
+                        emptyList()
+                    }
+                    collected += links
+                    // 该页没有链接、或已补齐已知页数 → 收尾
+                    if (links.isEmpty()) break
+                    if (expected == 0 || collected.size >= expected) break
+                    detailPage += 1
+                }
+                collected.distinctBy { it.page }.sortedBy { it.page }
             }
         }.onSuccess { links ->
             if (links.isEmpty()) {
@@ -155,8 +198,10 @@ fun ReaderScreen(
                 linksState = null
                 linksStateIsError = false
                 // 跨会话阅读进度：从持久化 "gid:page" 记录恢复上次读到的一页（越界钳制）
-                val savedPage = DesktopReadingProgress.decode(DesktopSettings.readingProgress.value)[gallery.gid] ?: 1
-                page = savedPage.coerceIn(1, links.size)
+                val savedPage = DesktopReadingProgress.decode(DesktopSettings.readingProgress.value)[gallery.gid]
+                page = DesktopReadingProgress.restorePage(savedPage, links.size)
+                // 恢复已完成，之后 page 的变化才是用户翻页，可以回写进度
+                progressRestored = true
             }
         }.onFailure {
             linksState = it.message
@@ -168,8 +213,10 @@ fun ReaderScreen(
     }
 
     // 翻页自动重置缩放与平移，并写入跨会话阅读进度（"gid:page" 编解码经 DesktopReadingProgress）
-    LaunchedEffect(page) {
+    LaunchedEffect(page, progressRestored) {
         zoomState = DesktopReaderZoomState()
+        // 恢复完成前的 page（初值 1）不是用户翻页：此时回写会把持久化进度覆盖成第 1 页
+        if (!progressRestored) return@LaunchedEffect
         DesktopSettings.readingProgress.value = DesktopReadingProgress.encode(
             DesktopReadingProgress.update(
                 progress = DesktopReadingProgress.decode(DesktopSettings.readingProgress.value),
@@ -179,12 +226,22 @@ fun ReaderScreen(
         )
     }
     AutoExpireNotifications(notifications) { notifications = it }
+    // 重试（reloadKey 变化）时丢弃图片页地址缓存：否则点重试只会命中旧地址、不会重新解析
+    LaunchedEffect(reloadKey) {
+        if (reloadKey > 0) imageUrlCache.clear()
+    }
     val currentLink = pageLinks.getOrNull(page - 1)
     LaunchedEffect(currentLink, reloadKey) {
         val link = currentLink ?: return@LaunchedEffect
         imageState = loadingImageText
         imageStateIsError = false
         imageUrl = null
+        // 预取已解析过的页直接命中，省掉一次图片页请求
+        imageUrlCache[link.pageUrl]?.let { cached ->
+            imageState = null
+            imageUrl = cached
+            return@LaunchedEffect
+        }
         val outcome = withContext(Dispatchers.IO) {
             runCatching {
                 val pageResponse = desktopGet(link.pageUrl)
@@ -196,6 +253,7 @@ fun ReaderScreen(
             onSuccess = { url ->
                 imageState = null
                 imageUrl = url
+                if (url != null) imageUrlCache[link.pageUrl] = url
             },
             onFailure = { cause ->
                 // 解析/网络异常经本地化模板展示，原始异常文本作为占位参数
@@ -207,19 +265,32 @@ fun ReaderScreen(
         )
     }
 
-    // 预取下一页图片地址与本体：翻页时免等待（图片本体进 Coil 磁盘/内存缓存）
-    val nextLink = pageLinks.getOrNull(page)
-    LaunchedEffect(nextLink) {
-        val link = nextLink ?: return@LaunchedEffect
-        withContext(Dispatchers.IO) {
-            runCatching {
+    // 预取"下一页"图片地址与本体：翻页时免等待（本体进 Coil 磁盘/内存缓存）。
+    // 索引必须按阅读方向推进：RTL 的下一页是索引 -1，写死 +1 会预取反方向的页
+    val prefetchLink = pageLinks.getOrNull(page - 1 + nextDelta)
+    LaunchedEffect(prefetchLink) {
+        val link = prefetchLink ?: return@LaunchedEffect
+        val url = withContext(Dispatchers.IO) {
+            imageUrlCache[link.pageUrl]?.takeIf { it.isNotBlank() } ?: runCatching {
                 val pageResponse = desktopGet(link.pageUrl)
                 if (pageResponse.status !in 200..299) error("HTTP ${pageResponse.status}")
                 GalleryPageParser.parse(pageResponse.body)?.imageUrl
-            }.getOrNull()?.let { url ->
-                val request = coil3.request.ImageRequest.Builder(context).data(url).build()
-                SingletonImageLoader.get(context).enqueue(request)
-            }
+            }.getOrNull()
+        } ?: return@LaunchedEffect
+        imageUrlCache[link.pageUrl] = url
+        val request = coil3.request.ImageRequest.Builder(context).data(url).build()
+        prefetchDisposables += SingletonImageLoader.get(context).enqueue(request)
+        // 超上限即取消最早的预取：长阅读时不让请求句柄无界堆积
+        while (prefetchDisposables.size > MAX_PREFETCH_IN_FLIGHT) {
+            runCatching { prefetchDisposables.removeAt(0).dispose() }
+        }
+    }
+
+    // 离开阅读器（或换画廊）时取消仍在飞的预取请求
+    DisposableEffect(gallery.gid) {
+        onDispose {
+            prefetchDisposables.forEach { disposable -> runCatching { disposable.dispose() } }
+            prefetchDisposables.clear()
         }
     }
 
@@ -463,10 +534,10 @@ fun ReaderScreen(
                             while (true) {
                                 val event = awaitPointerEvent()
                                 val scrollY = event.changes.firstOrNull()?.scrollDelta?.y ?: 0f
-                                if (zoomState.scale <= READER_MIN_SCALE && scrollY != 0f && pageLinks.isNotEmpty()) {
+                                if (zoomState.scale <= READER_MIN_SCALE && scrollY != 0f && currentLinkCount > 0) {
                                     scrollPager.onDelta(scrollY)?.let { delta ->
-                                        val target = page + delta
-                                        if (target in 1..pageLinks.size) page = target
+                                        val target = currentPage + delta
+                                        if (target in 1..currentLinkCount) page = target
                                     }
                                     event.changes.forEach { it.consume() }
                                 }
@@ -479,9 +550,9 @@ fun ReaderScreen(
                                 // 未缩放时点击左/右半区翻页（方向随阅读方向设置）
                                 if (zoomState.scale <= READER_MIN_SCALE && size.width > 0) {
                                     val rightZone = tap.x > size.width / 2f
-                                    val delta = readingDirection.pageDeltaForZone(rightZone = rightZone)
-                                    val target = page + delta
-                                    if (target in 1..pageLinks.size) page = target
+                                    val delta = currentReadingDirection.pageDeltaForZone(rightZone = rightZone)
+                                    val target = currentPage + delta
+                                    if (target in 1..currentLinkCount) page = target
                                 }
                             },
                             onDoubleTap = {
@@ -640,17 +711,20 @@ fun ReaderScreen(
                                 },
                                 fontSize = 13.sp,
                             )
-                            DesktopHoverPill(
-                                onClick = { reloadKey += 1 },
-                                containerColor = MiuixTheme.colorScheme.surfaceContainerHighest,
-                                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
-                            ) {
-                                Text(
-                                    text = stringResource(MR.strings.action_retry),
-                                    color = MiuixTheme.colorScheme.primary,
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Medium,
-                                )
+                            // 加载中不接受重试：这里只有失败态才该出现按钮
+                            if (imageStateIsError) {
+                                DesktopHoverPill(
+                                    onClick = { reloadKey += 1 },
+                                    containerColor = MiuixTheme.colorScheme.surfaceContainerHighest,
+                                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
+                                ) {
+                                    Text(
+                                        text = retryLabel,
+                                        color = MiuixTheme.colorScheme.primary,
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Medium,
+                                    )
+                                }
                             }
                         }
                     }

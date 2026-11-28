@@ -1,6 +1,9 @@
 package com.hippo.ehviewer.ui.theme
 
+import android.app.Activity
 import android.app.WallpaperManager
+import android.content.Context
+import android.content.ContextWrapper
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.scrollbar.LocalScrollbarStyle
@@ -14,10 +17,13 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.expressiveLightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowCompat
 import com.ehviewer.core.ui.component.scrollbarStyle
 import com.ehviewer.core.ui.theme.rememberMiuixThemeController
 import com.ehviewer.core.util.isAtLeastOMR1
@@ -94,6 +100,27 @@ fun EhTheme(useDarkTheme: Boolean, content: @Composable () -> Unit) {
                 content = content,
             )
         }
+    }
+}
+
+private tailrec fun Context.findActivity(): Activity? = when (this) {
+    is Activity -> this
+    is ContextWrapper -> baseContext.findActivity()
+    else -> null
+}
+
+/**
+ * 让状态栏 / 导航栏图标亮度跟随应用内深浅色设置，而不是只跟随系统深色。
+ * 阅读器页自己用 rememberSystemUiController 接管状态栏，退出时会恢复这里写入的值。
+ */
+@Composable
+fun SyncSystemBarAppearance(useDarkTheme: Boolean) {
+    val view = LocalView.current
+    val window = LocalContext.current.findActivity()?.window ?: return
+    SideEffect {
+        val controller = WindowCompat.getInsetsController(window, view)
+        controller.isAppearanceLightStatusBars = !useDarkTheme
+        controller.isAppearanceLightNavigationBars = !useDarkTheme
     }
 }
 

@@ -52,7 +52,8 @@ data class ListUrlBuilder(
     }
 
     var page: Int
-        get() = (jumpTo?.toInt() ?: 0) + 1
+        // jumpTo holds a date string in seek mode, so it must not be parsed as a page number.
+        get() = (jumpTo?.toIntOrNull() ?: 0) + 1
         set(value) {
             jumpTo = (value - 1).takeUnless { it == 0 }?.toString()
         }

@@ -34,7 +34,6 @@ import com.ehviewer.core.ui.component.rememberBlurBackdrop
 import com.ehviewer.core.ui.util.readableWidth
 import com.ehviewer.core.ui.util.snackBarPadding
 import com.ehviewer.core.util.launch
-import com.ehviewer.core.util.launchUI
 import com.ehviewer.core.util.withIOContext
 import com.hippo.ehviewer.client.data.ListUrlBuilder
 import com.hippo.ehviewer.client.data.ListUrlBuilder.Companion.MODE_IMAGE_SEARCH
@@ -46,6 +45,7 @@ import com.hippo.ehviewer.util.sha1
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
+import moe.tarsin.coroutines.runSuspendCatching
 import moe.tarsin.navigate
 import moe.tarsin.snackbar
 import top.yukonga.miuix.kmp.basic.Card
@@ -62,6 +62,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 @Composable
 fun AnimatedVisibilityScope.ImageSearchScreen(navigator: DestinationsNavigator) = Screen(navigator) {
     val selectImageFirst = stringResource(R.string.select_image_first)
+    val imageSearchFailed = stringResource(R.string.error_something_wrong_happened)
     val marginH = dimensionResource(id = com.hippo.ehviewer.R.dimen.gallery_list_margin_h)
     val marginV = dimensionResource(id = com.hippo.ehviewer.R.dimen.gallery_list_margin_v)
     var imageUri by rememberSaveable { mutableStateOf<Uri?>(null) }
@@ -85,13 +86,15 @@ fun AnimatedVisibilityScope.ImageSearchScreen(navigator: DestinationsNavigator) 
                 onClick = {
                     val uri = imageUri
                     if (uri != null) {
-                        launchUI {
-                            navigate(
+                        launch {
+                            // 读取图片内容计算 sha1 可能因权限撤销 / 文件被删除而抛异常，不能让它逃出协程
+                            runSuspendCatching {
                                 ListUrlBuilder(
                                     mode = MODE_IMAGE_SEARCH,
                                     hash = withIOContext { uri.toOkioPath().sha1() },
-                                ).asDst(),
-                            )
+                                ).asDst()
+                            }.onSuccess { navigate(it) }
+                                .onFailure { snackbar(imageSearchFailed) }
                         }
                     } else {
                         launch { snackbar(selectImageFirst) }

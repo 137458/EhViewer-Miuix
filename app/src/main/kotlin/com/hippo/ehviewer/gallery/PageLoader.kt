@@ -16,6 +16,7 @@ import com.hippo.ehviewer.util.OSUtils
 import com.hippo.ehviewer.util.detectAds
 import com.hippo.ehviewer.util.displayString
 import java.util.concurrent.locks.ReentrantReadWriteLock
+import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.AtomicInt
 import kotlin.concurrent.read
 import kotlin.concurrent.write
@@ -45,7 +46,8 @@ abstract class PageLoader(val scope: CoroutineScope, val info: GalleryInfo?, sta
 
     private val cache = SieveCache<Int, Image>(
         maxSize = if (isAtLeastO) {
-            (OSUtils.totalMemory / 8).toInt().coerceIn(MIN_CACHE_SIZE, MAX_CACHE_SIZE)
+            // 先在 Long 上夹取再转 Int：先 toInt() 会在内存很大的设备上溢出成负数
+            (OSUtils.totalMemory / 8).coerceIn(MIN_CACHE_SIZE.toLong(), MAX_CACHE_SIZE.toLong()).toInt()
         } else {
             (OSUtils.appMaxMemory / 3 * 2).toInt()
         },
@@ -58,7 +60,10 @@ abstract class PageLoader(val scope: CoroutineScope, val info: GalleryInfo?, sta
             { openSource(index) },
             { src ->
                 withNonCancellableContext {
-                    notifyPageSucceed(index, Image.decode(src, hasAds && detectAds(index, size)))
+                    val image = Image.decode(src, hasAds && detectAds(index, size))
+                    // loader 已经 close 时不能再写缓存/状态，否则这张图永远不会被回收；
+                    // 新建的 Image 初始引用计数为 1，不进缓存就必须 unpin 让它自己释放
+                    if (closed.load()) image.unpin() else notifyPageSucceed(index, image)
                 }
             },
             { src, case -> if (case !is ExitCase.Completed) src.close() },
@@ -66,6 +71,7 @@ abstract class PageLoader(val scope: CoroutineScope, val info: GalleryInfo?, sta
     }
 
     private val lock = ReentrantReadWriteLock()
+    private val closed = AtomicBoolean(false)
 
     val pages = (0 until size).map { Page(it) }
 
@@ -111,6 +117,7 @@ abstract class PageLoader(val scope: CoroutineScope, val info: GalleryInfo?, sta
     }
 
     override fun close() {
+        closed.store(true)
         lock.write { cache.evictAll() }
         info?.run {
             progressScope.launch {
@@ -174,14 +181,18 @@ abstract class PageLoader(val scope: CoroutineScope, val info: GalleryInfo?, sta
         val current = prevIndex.load()
         if (isWithinPreDecodeWindow(index, current, windowSize = 2)) {
             val cached = lock.read { cache[index] }
-            if (cached == null && pages[index].status is PageStatus.Queued) {
+            // Loading 也要重试：任务可能已被取消而状态还停在 Loading，此时源已经就绪
+            val status = pages[index].status
+            if (cached == null && (status is PageStatus.Queued || status is PageStatus.Loading)) {
                 notifySourceReady(index)
             }
         }
     }
 
     fun cancelRequest(index: Int) {
-        jobs[index]?.cancel()
+        // jobs 也会被落盘线程读写，读取必须和 notifySourceReady 用同一把锁
+        val job = synchronized(jobs) { jobs[index] }
+        job?.cancel()
     }
 
     abstract fun save(index: Int, file: Path): Boolean

@@ -11,6 +11,8 @@ fun WebView.setDefaultSettings() = with(settings) {
     javaScriptEnabled = true
     domStorageEnabled = true
     databaseEnabled = true
+    allowFileAccess = false
+    allowContentAccess = false
 
     // Always use mobile user-agent to bypass Cloudflare
     userAgentString = CHROME_MOBILE_USER_AGENT

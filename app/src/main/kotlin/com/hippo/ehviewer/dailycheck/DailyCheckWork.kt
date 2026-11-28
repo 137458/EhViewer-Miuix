@@ -1,6 +1,7 @@
 package com.hippo.ehviewer.dailycheck
 
 import android.annotation.SuppressLint
+import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.text.style.URLSpan
@@ -25,6 +26,7 @@ import com.ehviewer.core.util.withIOContext
 import com.hippo.ehviewer.R as AppR
 import com.hippo.ehviewer.Settings
 import com.hippo.ehviewer.client.EhEngine
+import java.net.URI
 import java.time.Duration
 import java.util.concurrent.TimeUnit
 import kotlin.time.Clock
@@ -34,6 +36,7 @@ import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
+import moe.tarsin.coroutines.runSuspendCatching
 import splitties.init.appCtx
 
 private const val CHANNEL_ID = "DailyCheckNotification"
@@ -81,7 +84,7 @@ fun updateDailyCheckWork(context: Context) {
 val today
     get() = (Clock.System.now().epochSeconds / 86400).toInt()
 
-suspend fun checkDawn() = runCatching {
+suspend fun checkDawn() = runSuspendCatching {
     if (Settings.hasSignedIn.value && Settings.lastDawnDays != today) {
         EhEngine.getNews(true)?.let {
             Settings.lastDawnDays = today
@@ -91,6 +94,8 @@ suspend fun checkDawn() = runCatching {
 }.onFailure {
     logcat(WORK_NAME, it)
 }
+
+private fun isHttpUrl(url: String): Boolean = runCatching { URI(url).scheme?.lowercase() }.getOrNull() in setOf("http", "https")
 
 @SuppressLint("MissingPermission")
 fun showEventNotification(html: String) {
@@ -110,9 +115,12 @@ fun showEventNotification(html: String) {
         .setContentText(text)
         .setStyle(NotificationCompat.BigTextStyle())
     val urls = text.getSpans<URLSpan>(0, text.length)
-    if (urls.isNotEmpty()) {
-        val intent = Intent(Intent.ACTION_VIEW, urls.first().url.toUri())
-        val pi = PendingIntentCompat.getActivity(appCtx, 0, intent, 0, false)
+    // The news page is untrusted input: only hand http(s) links to an implicit ACTION_VIEW intent
+    // and refresh the existing PendingIntent instead of creating one that ignores new extras.
+    val url = urls.firstNotNullOfOrNull { it.url.takeIf(::isHttpUrl) }
+    if (url != null) {
+        val intent = Intent(Intent.ACTION_VIEW, url.toUri())
+        val pi = PendingIntentCompat.getActivity(appCtx, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT, false)
         msg.setContentIntent(pi)
     }
     runCatching {

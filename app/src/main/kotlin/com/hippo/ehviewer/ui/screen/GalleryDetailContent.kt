@@ -38,12 +38,12 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -59,6 +59,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
@@ -103,7 +104,6 @@ import com.ehviewer.core.ui.util.WindowLayout
 import com.ehviewer.core.ui.util.flattenForEach
 import com.ehviewer.core.ui.util.isExpanded
 import com.ehviewer.core.ui.util.rememberInVM
-import com.ehviewer.core.util.async
 import com.ehviewer.core.util.launch
 import com.ehviewer.core.util.launchIO
 import com.ehviewer.core.util.launchUI
@@ -120,6 +120,8 @@ import com.hippo.ehviewer.client.EhUtils
 import com.hippo.ehviewer.client.data.ListUrlBuilder
 import com.hippo.ehviewer.client.exception.EhException
 import com.hippo.ehviewer.client.exception.NoHathClientException
+import com.hippo.ehviewer.client.parser.ArchiveParser
+import com.hippo.ehviewer.client.parser.Torrent
 import com.hippo.ehviewer.coil.PrefetchAround
 import com.hippo.ehviewer.coil.justDownload
 import com.hippo.ehviewer.collectAsState
@@ -155,6 +157,7 @@ import com.hippo.ehviewer.ui.tools.foldToLoadResult
 import com.hippo.ehviewer.ui.tools.getClippedRefreshKey
 import com.hippo.ehviewer.ui.tools.getLimit
 import com.hippo.ehviewer.ui.tools.getOffset
+import com.hippo.ehviewer.ui.tools.safeResume
 import com.hippo.ehviewer.ui.tools.showNoButton
 import com.hippo.ehviewer.util.FavouriteStatusRouter
 import com.hippo.ehviewer.util.addTextToClipboard
@@ -163,12 +166,10 @@ import com.hippo.ehviewer.util.displayString
 import com.hippo.ehviewer.util.sha1
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import io.ktor.http.encodeURLParameter
-import kotlin.coroutines.resume
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.roundToInt
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.CoroutineStart
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableStateFlow
 import moe.tarsin.coroutines.runSuspendCatching
 import moe.tarsin.coroutines.runSwallowingWithUI
 import moe.tarsin.navigate
@@ -213,7 +214,7 @@ fun GalleryDetailContent(
     val readText = stringResource(R.string.read)
     val startPage by rememberInVM {
         EhDB.getReadProgressFlow(galleryInfo.gid)
-    }.collectAsState(0)
+    }.collectAsStateWithLifecycle(0)
     val readButtonText = if (startPage == 0) {
         readText
     } else {
@@ -310,7 +311,7 @@ fun GalleryDetailContent(
                                 .fillMaxWidth()
                                 .height(56.dp)
                                 .clickable(role = Role.Button) {
-                                    cont.resume(Unit)
+                                    cont.safeResume(Unit)
                                     launchIO {
                                         searchGalleryCover(galleryInfo)
                                     }
@@ -366,6 +367,8 @@ fun GalleryDetailContent(
             val verticalSpacing = dimensionResource(id = com.hippo.ehviewer.R.dimen.strip_item_padding_v)
             val density = LocalDensity.current
             val totalWidthPx = with(density) { maxWidth.toPx() }
+            // 拖拽状态只创建一次，必须在回调里读最新宽度：否则窗口尺寸变化后仍按旧宽度换算拖动比例
+            val currentTotalWidthPx by rememberUpdatedState(totalWidthPx)
             // 单侧下限借鉴 PixEz illust_row_page 的 atLeastWidth；窗口窄到放不下两个下限时段位只能退化成均分，
             // 因为「强制双栏」在这种宽度下无法按用户的偏好比例呈现。
             val minPaneFraction = if (maxWidth > AdaptiveBreakpoints.GALLERY_DUAL_PANE_MIN_WIDTH_DP.dp * 2) {
@@ -468,9 +471,9 @@ fun GalleryDetailContent(
                                 Settings.galleryDetailSplitPercent.value = (splitFraction * 100).roundToInt()
                             },
                             state = rememberDraggableState { delta ->
-                                if (totalWidthPx > 0f) {
+                                if (currentTotalWidthPx > 0f) {
                                     // 缩略图栏在分隔条右侧：拖右 = 缩略图收窄，增量取反让分隔条跟手
-                                    splitFraction = (splitFraction - delta / totalWidthPx).coerceIn(
+                                    splitFraction = (splitFraction - delta / currentTotalWidthPx).coerceIn(
                                         AdaptiveBreakpoints.GALLERY_DETAIL_SPLIT_PERCENT_RANGE.first / 100f,
                                         AdaptiveBreakpoints.GALLERY_DETAIL_SPLIT_PERCENT_RANGE.last / 100f,
                                     )
@@ -605,7 +608,7 @@ fun GalleryDetailContent(
                             modifier = Modifier.fillMaxSize(),
                             horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
-                            Spacer(modifier = modifier.height(16.dp))
+                            Spacer(modifier = Modifier.height(16.dp))
                             Button(
                                 onClick = ::onReadButtonClick,
                                 colors = ButtonDefaults.buttonColorsPrimary(),
@@ -613,7 +616,7 @@ fun GalleryDetailContent(
                             ) {
                                 Text(text = readButtonText, overflow = TextOverflow.Ellipsis, maxLines = 1)
                             }
-                            Spacer(modifier = modifier.height(24.dp))
+                            Spacer(modifier = Modifier.height(24.dp))
                             Button(
                                 onClick = ::onDownloadButtonClick,
                                 colors = ButtonDefaults.buttonColors(),
@@ -811,20 +814,18 @@ fun BelowHeader(galleryDetail: GalleryDetail, voteTag: VoteTag) {
         val noArchive = stringResource(R.string.no_archives)
         val downloadStarted = stringResource(R.string.download_archive_started)
         val downloadFailed = stringResource(R.string.download_archive_failure)
-        val archiveResult = remember(galleryDetail) {
-            async(Dispatchers.IO + Job(), CoroutineStart.LAZY) {
-                with(galleryDetail) {
-                    EhEngine.getArchiveList(gid, token)
-                }
-            }
-        }
+        // 只缓存成功结果：请求失败（断网、无 H@H 客户端等）不落缓存，用户下次点击能重试。
+        // 用 StateFlow 而非 Compose Snapshot State 承载，因为它只在 IO 协程里读写。
+        val archiveCache = remember(galleryDetail) { MutableStateFlow<ArchiveParser.Result?>(null) }
         fun showArchiveDialog() {
             launchIO {
                 if (galleryDetail.apiUid < 0) {
                     snackbar(signInFirst)
                 } else {
                     runSuspendCatching {
-                        val (archiveList, funds) = bgWork { archiveResult.await() }
+                        val (archiveList, funds) = archiveCache.value ?: bgWork {
+                            with(galleryDetail) { EhEngine.getArchiveList(gid, token) }
+                        }.also { archiveCache.value = it }
                         if (archiveList.isEmpty()) {
                             snackbar(noArchive)
                         } else {
@@ -832,7 +833,7 @@ fun BelowHeader(galleryDetail: GalleryDetail, voteTag: VoteTag) {
                                 ArchiveList(
                                     funds = funds,
                                     items = archiveList,
-                                    onItemClick = { resume(it) },
+                                    onItemClick = { safeResume(it) },
                                 )
                             }
                             EhUtils.downloadArchive(galleryDetail, selected)
@@ -858,24 +859,22 @@ fun BelowHeader(galleryDetail: GalleryDetail, voteTag: VoteTag) {
         )
         val torrentText = stringResource(R.string.torrent_count, galleryDetail.torrentCount)
         val noTorrents = stringResource(R.string.no_torrents)
-        val torrentResult = remember(galleryDetail) {
-            async(Dispatchers.IO + Job(), CoroutineStart.LAZY) {
+        val torrentCache = remember(galleryDetail) { MutableStateFlow<Pair<List<Torrent>, String?>?>(null) }
+        suspend fun showTorrentDialog() {
+            val (torrentList, key) = torrentCache.value ?: bgWork {
                 parZip(
                     { EhEngine.getTorrentList(galleryDetail.gid, galleryDetail.token) },
                     { EhEngine.getTorrentKey() },
                     { list, key -> list to key },
                 )
-            }
-        }
-        suspend fun showTorrentDialog() {
-            val (torrentList, key) = bgWork { torrentResult.await() }
+            }.also { torrentCache.value = it }
             if (torrentList.isEmpty()) {
                 snackbar(noTorrents)
             } else {
                 val selected = showNoButton(false) {
                     TorrentList(
                         items = torrentList,
-                        onItemClick = { resume(it) },
+                        onItemClick = { safeResume(it) },
                     )
                 }
                 val hash = selected.url.dropLast(8).takeLast(40)
@@ -910,7 +909,8 @@ fun BelowHeader(galleryDetail: GalleryDetail, voteTag: VoteTag) {
         rating,
         ratingCount,
     )
-    var ratingText by rememberSaveable {
+    // 评分值变了（含旋转后详情刷新）就要重算文案，否则会一直显示旧的评分/票数
+    var ratingText by rememberSaveable(galleryDetail.rating, galleryDetail.ratingCount) {
         mutableStateOf(getAllRatingText(galleryDetail.rating, galleryDetail.ratingCount))
     }
     val rateSucceed = stringResource(R.string.rate_successfully)
@@ -1047,50 +1047,56 @@ private fun List<GalleryTagGroup>.artistTag() = find { (ns, _) -> ns == TagNames
 
 @Composable
 context(_: Context)
-private fun GalleryDetail.collectPreviewItems() = rememberInVM(previewList) {
-    val pageSize = previewList.size
-    val pages = pages
-    val previewPagesMap = previewList.associateBy { it.position } as MutableMap
-    Pager(
-        PagingConfig(
-            pageSize = pageSize,
-            prefetchDistance = pageSize.coerceAtMost(100),
-            initialLoadSize = pageSize,
-            jumpThreshold = 2 * pageSize,
-        ),
-    ) {
-        object : PagingSource<Int, GalleryPreview>() {
-            override fun getRefreshKey(state: PagingState<Int, GalleryPreview>) = state.getClippedRefreshKey()
-            override suspend fun load(params: LoadParams<Int>): LoadResult<Int, GalleryPreview> = withIOContext {
-                val key = params.key ?: 0
-                val up = getOffset(params, key, pages)
-                val end = (up + getLimit(params, key) - 1).coerceAtMost(pages - 1)
-                runSuspendCatching {
-                    (up..end).filterNot { it in previewPagesMap }.map { it / pageSize }.toSet()
-                        .parMap(concurrency = Settings.multiThreadDownload.value) { page ->
-                            val url = EhUrl.getGalleryDetailUrl(gid, token, page)
-                            EhEngine.getPreviewList(url).previews
-                        }.flattenForEach {
-                            previewPagesMap[it.position] = it
-                            if (Settings.preloadThumbAggressively.value) {
-                                imageRequest(it) { justDownload() }.executeIn(viewModelScope)
+private fun GalleryDetail.collectPreviewItems(): LazyPagingItems<GalleryPreview>? {
+    // previewList 为空时既不建 Pager，也不让下游访问 .first()：空画廊详情页据此直接跳过预览区。
+    if (previewList.isEmpty()) return null
+    return rememberInVM(previewList) {
+        val pageSize = previewList.size
+        val pages = pages
+        // 分页源在 IO 线程写入、UI 线程读取，普通 HashMap 既无并发可见性保证，扩容时还可能损坏
+        val previewPagesMap = ConcurrentHashMap<Int, GalleryPreview>()
+        previewList.forEach { previewPagesMap[it.position] = it }
+        Pager(
+            PagingConfig(
+                pageSize = pageSize,
+                prefetchDistance = pageSize.coerceAtMost(100),
+                initialLoadSize = pageSize,
+                jumpThreshold = 2 * pageSize,
+            ),
+        ) {
+            object : PagingSource<Int, GalleryPreview>() {
+                override fun getRefreshKey(state: PagingState<Int, GalleryPreview>) = state.getClippedRefreshKey()
+                override suspend fun load(params: LoadParams<Int>): LoadResult<Int, GalleryPreview> = withIOContext {
+                    val key = params.key ?: 0
+                    val up = getOffset(params, key, pages)
+                    val end = (up + getLimit(params, key) - 1).coerceAtMost(pages - 1)
+                    runSuspendCatching {
+                        (up..end).filterNot { previewPagesMap.containsKey(it) }.map { it / pageSize }.toSet()
+                            .parMap(concurrency = Settings.multiThreadDownload.value) { page ->
+                                val url = EhUrl.getGalleryDetailUrl(gid, token, page)
+                                EhEngine.getPreviewList(url).previews
+                            }.flattenForEach {
+                                previewPagesMap[it.position] = it
+                                if (Settings.preloadThumbAggressively.value) {
+                                    imageRequest(it) { justDownload() }.executeIn(viewModelScope)
+                                }
                             }
-                        }
-                }.foldToLoadResult {
-                    val r = (up..end).map { requireNotNull(previewPagesMap[it]) }
-                    val prevK = if (up <= 0 || r.isEmpty()) null else up
-                    val nextK = if (end == pages - 1) null else end + 1
-                    LoadResult.Page(r, prevK, nextK, up, pages - end - 1)
+                    }.foldToLoadResult {
+                        val r = (up..end).map { requireNotNull(previewPagesMap[it]) }
+                        val prevK = if (up <= 0 || r.isEmpty()) null else up
+                        val nextK = if (end == pages - 1) null else end + 1
+                        LoadResult.Page(r, prevK, nextK, up, pages - end - 1)
+                    }
                 }
+                override val jumpingSupported = true
             }
-            override val jumpingSupported = true
-        }
-    }.flow.cachedIn(viewModelScope)
-}.collectAsLazyPagingItems()
+        }.flow.cachedIn(viewModelScope)
+    }.collectAsLazyPagingItems()
+}
 
 context(_: Context)
 private fun LazyGridScope.galleryPreview(detail: GalleryDetail, data: LazyPagingItems<GalleryPreview>, onClick: (Int) -> Unit) {
-    val isV2Thumb = detail.previewList.first() is V2GalleryPreview
+    val isV2Thumb = detail.previewList.firstOrNull() is V2GalleryPreview
     items(
         count = data.itemCount,
         key = data.itemKey(key = { item -> item.position }),

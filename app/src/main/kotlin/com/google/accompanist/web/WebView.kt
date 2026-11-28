@@ -229,7 +229,12 @@ fun WebView(
         },
         modifier = modifier,
         onRelease = {
+            // 解绑并按顺序销毁，避免 Compose 重建时旧 WebView 继续持有 Activity/渲染进程
             onDispose(it)
+            state.webView = null
+            it.stopLoading()
+            (it.parent as? ViewGroup)?.removeView(it)
+            it.destroy()
         },
     )
 }
@@ -254,7 +259,15 @@ open class AccompanistWebViewClient : WebViewClient() {
         // 渲染进程崩溃/OOM 时必须移除并销毁 WebView，否则宿主应用进程会被系统连带杀死
         (view.parent as? ViewGroup)?.removeView(view)
         view.destroy()
+        // 同步清空状态，避免上层 LaunchedEffect 继续向已销毁的 WebView 注入脚本
+        state.webView = null
         return true
+    }
+
+    override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
+        // 只允许 EH 相关的 HTTPS 页面在应用内导航；其余 scheme（file/content/intent/...）
+        // 与第三方域名一律拦截，避免远端页面把用户带向本地资源或伪造的内部流程。
+        return !WebNavigationPolicy.shouldLoadInWebView(request.url?.toString())
     }
 
     override fun onPageStarted(view: WebView, url: String?, favicon: Bitmap?) {

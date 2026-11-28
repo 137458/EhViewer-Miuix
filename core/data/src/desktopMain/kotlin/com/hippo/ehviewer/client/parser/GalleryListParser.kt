@@ -1,84 +1,144 @@
 package com.hippo.ehviewer.client.parser
 
+import com.ehviewer.core.DesktopDirs
 import com.ehviewer.core.model.BaseGalleryInfo
 import io.ktor.util.moveToByteArray
+import java.io.File
+import java.io.IOException
 import java.nio.ByteBuffer
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
+import java.security.MessageDigest
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.cbor.Cbor
 import kotlinx.serialization.decodeFromByteArray
 
 // HTML 列表解析的执行体在 Rust 库（ehviewer_rust，jvm feature），
 // JNI 符号由 ffi/jvm.rs 的 jni_fn 声明为 GalleryListParserKt——本文件类名/包名必须与之逐字一致。
-private var rustLibrariesLoaded = false
-    get() {
-        if (!field) {
-            field = ensureRustLoaded()
+private const val NATIVE_RESOURCE = "native/ehviewer_rust.dll"
+private const val NATIVE_LIBRARY_NAME = "ehviewer_rust"
+private const val DLL_OVERRIDE = "EHVIEWER_RUST_DLL"
+
+// 原生库只尝试加载一次：并发调用串行化，失败结果同样缓存，避免每次解析都重复解压/写盘
+private object RustLibraryLoader {
+    private val loaded = AtomicBoolean(false)
+
+    @Volatile
+    private var loadError: String? = null
+
+    val available: Boolean get() = loaded.get()
+
+    val error: String? get() = loadError
+
+    @Synchronized
+    fun load(): Boolean {
+        if (loaded.get()) return true
+        val errors = mutableListOf<String>()
+        val success = loadExplicitOverride(errors) || loadFromClasspath(errors) || loadFromLibraryPath(errors)
+        if (success) {
+            loadError = null
+            loaded.set(true)
+        } else {
+            loadError = errors.joinToString(" | ")
         }
-        return field
+        return success
     }
 
-private var lastLoadError: String? = null
-
-internal fun ensureRustLoaded(): Boolean {
-    val errors = mutableListOf<String>()
-    runCatching {
-        System.loadLibrary("ehviewer_rust")
-        return true
-    }.onFailure { errors += "loadLibrary: ${it.message}" }
-    runCatching {
-        // 类路径资源（Gradle 构建/分发时从 Rust 产物复制）
-        val cl = Thread.currentThread().contextClassLoader
-            ?: GalleryListParserKtProbe::class.java.classLoader
-        val stream = cl?.getResourceAsStream("native/ehviewer_rust.dll")
-            ?: GalleryListParserKtProbe::class.java.getResourceAsStream("/native/ehviewer_rust.dll")
-        if (stream != null) {
-            stream.use { input ->
-                val tmp = java.io.File.createTempFile("ehviewer_rust_", ".dll")
-                tmp.deleteOnExit()
-                tmp.outputStream().use { out ->
-                    input.copyTo(out)
-                }
-                System.load(tmp.absolutePath)
-                return true
-            }
-        } else {
-            errors += "resource: not on classpath"
+    // 显式指定的 dll（开发/自定义分发）优先；生产不依赖相对工作目录的 cargo 产物
+    private fun loadExplicitOverride(errors: MutableList<String>): Boolean {
+        val configured = System.getProperty(DLL_OVERRIDE)?.takeIf { it.isNotBlank() }
+            ?: System.getenv(DLL_OVERRIDE)?.takeIf { it.isNotBlank() }
+        if (configured == null) {
+            errors += "override: $DLL_OVERRIDE not set"
+            return false
         }
-    }.onFailure { errors += "resource: ${it.message}" }
-    runCatching {
-        // 兜底：环境变量/相对路径候选
-        val path = candidateDllPaths().firstOrNull { java.io.File(it).exists() }
-            ?: throw IllegalStateException("no candidate exists")
-        System.load(java.io.File(path).canonicalPath)
-        return true
-    }.onFailure { errors += "candidates: ${it.message}" }
-    lastLoadError = errors.joinToString(" | ")
-    return false
+        val file = File(configured)
+        if (!file.isFile) {
+            errors += "override: ${file.absolutePath} does not exist"
+            return false
+        }
+        return runCatching { System.load(file.canonicalPath) }
+            .onFailure { errors += "override: ${it.message}" }
+            .isSuccess
+    }
+
+    // 类路径资源按内容 SHA-256 命名落到用户私有目录：不落 %TEMP%，同名文件必然同内容，可直接复用
+    private fun loadFromClasspath(errors: MutableList<String>): Boolean {
+        val bytes = runCatching {
+            val loader = Thread.currentThread().contextClassLoader ?: GalleryListParserKtProbe::class.java.classLoader
+            val stream = loader?.getResourceAsStream(NATIVE_RESOURCE)
+                ?: GalleryListParserKtProbe::class.java.getResourceAsStream("/$NATIVE_RESOURCE")
+            stream?.use { it.readBytes() }
+        }.getOrElse {
+            errors += "classpath: ${it.message}"
+            null
+        }
+        if (bytes == null) {
+            errors += "classpath: $NATIVE_RESOURCE not present"
+            return false
+        }
+        return runCatching {
+            val digest = sha256(bytes)
+            val target = File(nativeDir(), "ehviewer_rust-$digest.dll")
+            if (!target.isFile || sha256(target.readBytes()) != digest) {
+                writeAtomically(target, bytes)
+            }
+            System.load(target.absolutePath)
+        }.onFailure { errors += "classpath: ${it.message}" }.isSuccess
+    }
+
+    private fun loadFromLibraryPath(errors: MutableList<String>): Boolean = runCatching { System.loadLibrary(NATIVE_LIBRARY_NAME) }
+        .onFailure { errors += "loadLibrary: ${it.message}" }
+        .isSuccess
+
+    private fun nativeDir(): File {
+        val dir = File(DesktopDirs.filesDir.toString(), "native")
+        if (!dir.isDirectory && !dir.mkdirs() && !dir.isDirectory) {
+            throw IOException("cannot create native directory: ${dir.absolutePath}")
+        }
+        return dir
+    }
+
+    private fun writeAtomically(target: File, bytes: ByteArray) {
+        val temp = File(target.parentFile, "${target.name}.${System.nanoTime()}.tmp")
+        try {
+            temp.writeBytes(bytes)
+            val source = temp.toPath()
+            val destination = target.toPath()
+            runCatching {
+                Files.move(source, destination, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
+            }.onFailure {
+                // Windows 上目标可能被已加载的旧句柄占用：删除后重试
+                target.delete()
+                Files.move(source, destination, StandardCopyOption.REPLACE_EXISTING)
+            }
+        } finally {
+            temp.delete()
+        }
+    }
+
+    private fun sha256(bytes: ByteArray): String = MessageDigest.getInstance("SHA-256")
+        .digest(bytes)
+        .joinToString("") { "%02x".format(it) }
 }
+
+internal fun ensureRustLoaded(): Boolean = RustLibraryLoader.load()
 
 // 诊断探针
 object GalleryListParserKtProbe {
     val resAvailable: Boolean
         get() = (Thread.currentThread().contextClassLoader ?: javaClass.classLoader)
-            ?.getResource("native/ehviewer_rust.dll") != null ||
-            javaClass.getResource("/native/ehviewer_rust.dll") != null
-    val loadError: String? get() = lastLoadError
+            ?.getResource(NATIVE_RESOURCE) != null ||
+            javaClass.getResource("/$NATIVE_RESOURCE") != null
+    val loadError: String? get() = RustLibraryLoader.error
 }
 
 // 供测试判断原生绑定是否可用（CI/Linux 无 dll 时跳过相关用例）
-val rustGalleryBindingsAvailable: Boolean get() = rustLibrariesLoaded
+val rustGalleryBindingsAvailable: Boolean get() = RustLibraryLoader.available
 
-// dll 候选：环境变量/系统属性显式指定 > 各工作目录下的 cargo 产物
-private fun candidateDllPaths(): List<String> = buildList {
-    System.getProperty("EHVIEWER_RUST_DLL")?.let(::add)
-    System.getenv("EHVIEWER_RUST_DLL")?.let(::add)
-    add("../../app/src/main/rust/target-desk/x86_64-pc-windows-gnu/release/ehviewer_rust.dll")
-    add("../../app/src/main/rust/target/x86_64-pc-windows-gnu/release/ehviewer_rust.dll")
-    add("../app/src/main/rust/target-desk/x86_64-pc-windows-gnu/release/ehviewer_rust.dll")
-    add("../app/src/main/rust/target/x86_64-pc-windows-gnu/release/ehviewer_rust.dll")
-    add("app/src/main/rust/target-desk/x86_64-pc-windows-gnu/release/ehviewer_rust.dll")
-    add("app/src/main/rust/target/x86_64-pc-windows-gnu/release/ehviewer_rust.dll")
-}
+// 加载失败原因（用于受控异常消息）
+internal fun rustLoadError(): String? = RustLibraryLoader.error
 
 @Serializable
 data class GalleryListResult(
@@ -90,10 +150,10 @@ data class GalleryListResult(
 external fun parseGalleryInfoList(body: ByteBuffer, size: Int = body.limit()): Int
 
 fun parseGalleryList(body: ByteBuffer): GalleryListResult {
-    check(rustGalleryBindingsAvailable) {
-        "Rust bindings unavailable: ${lastLoadError ?: "unknown error"}"
+    check(ensureRustLoaded()) {
+        "Rust bindings unavailable: ${rustLoadError() ?: "unknown error"}"
     }
-    val directBody = if (body.isDirect) {
+    val directBody = if (body.isDirect && body.position() == 0) {
         body
     } else {
         val pos = body.position()
@@ -103,10 +163,21 @@ fun parseGalleryList(body: ByteBuffer): GalleryListResult {
         direct.flip()
         direct
     }
+    check(directBody.isDirect && directBody.position() == 0) {
+        "native parser requires a direct ByteBuffer at position 0"
+    }
+    val cborSize = try {
+        parseGalleryInfoList(directBody, directBody.limit())
+    } catch (e: Exception) {
+        throw IllegalStateException("Can't parse gallery list", e)
+    }
+    // native 返回结束位置：越界或负数说明结果不可信，必须在此拦截而不是越界读取
+    check(cborSize in 0..directBody.capacity()) {
+        "native parser returned invalid CBOR size $cborSize (capacity=${directBody.capacity()})"
+    }
+    directBody.limit(cborSize)
+    val array = directBody.moveToByteArray()
     return try {
-        val cborSize = parseGalleryInfoList(directBody, directBody.limit())
-        directBody.limit(cborSize)
-        val array = directBody.moveToByteArray()
         Cbor.decodeFromByteArray<GalleryListResult>(array)
     } catch (e: Exception) {
         throw IllegalStateException("Can't parse gallery list", e)

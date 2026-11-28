@@ -3,11 +3,16 @@ package com.ehviewer.desktop
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.isSuccess
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 
-// 桌面壳当前版本（与 app versionName 对齐，发版时需同步）
-const val DESKTOP_VERSION = "1.15.0"
+// 桌面壳当前版本：唯一来源是根 gradle.properties 的 ehviewer.versionName，
+// 由 desktop/build.gradle.kts 的 generateBuildVersion 生成 BuildVersion.kt 后引用
+const val DESKTOP_VERSION: String = BuildVersion.VERSION
 
 private const val RELEASES_LATEST_URL = "https://api.github.com/repos/137458/EhViewer-Miuix/releases/latest"
 const val RELEASES_PAGE_URL = "https://github.com/137458/EhViewer-Miuix/releases/latest"
@@ -42,13 +47,32 @@ suspend fun checkLatestReleaseStatus(
     return if (isNewer(info.tag, currentVersion)) UpdateCheckResult.Available(info) else UpdateCheckResult.UpToDate
 }
 
+// GitHub release JSON 的最小 DTO：只取 tag_name，其余字段（assets/body/author…）由 ignoreUnknownKeys 忽略
+@Serializable
+internal data class GitHubLatestRelease(
+    @SerialName("tag_name") val tagName: String = "",
+)
+
+private val releaseJson = Json { ignoreUnknownKeys = true }
+
+// 纯解析：畸形 JSON、缺 tag_name、空标签一律 null（调用方按不可判定处理，不误报“已最新”）
+internal fun parseLatestReleaseTag(body: String): String? = try {
+    releaseJson.decodeFromString(GitHubLatestRelease.serializer(), body).tagName.takeIf { it.isNotBlank() }
+} catch (e: IllegalArgumentException) {
+    // SerializationException 是 IllegalArgumentException 的子类，统一按“无法解析”处理
+    null
+}
+
 // 查询最新 Release；网络不可达或响应异常返回 null（调用方按无更新处理）
 suspend fun checkLatestRelease(): UpdateInfo? = withContext(Dispatchers.IO) {
-    runCatching {
+    try {
         val response = acquireClient().get(RELEASES_LATEST_URL)
         if (!response.status.isSuccess()) return@withContext null
-        val tag = Regex("\"tag_name\"\\s*:\\s*\"([^\"]+)\"").find(response.bodyAsText())
-            ?.groupValues?.get(1) ?: return@withContext null
+        val tag = parseLatestReleaseTag(response.bodyAsText()) ?: return@withContext null
         UpdateInfo(tag, RELEASES_PAGE_URL)
-    }.getOrNull()
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        null
+    }
 }

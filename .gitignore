@@ -27,5 +27,9 @@ app/src/main/rust/target-desk/
 app/src/main/rust/target-gnudesktop/
 .goal/
 
+# 签名材料不入库：只经 RELEASE_STORE_* 属性/环境变量提供
+*.jks
+*.keystore
+
 # 内部调研与过程文档不入库（遵循 AGENTS.md 规范）
 docs/research/

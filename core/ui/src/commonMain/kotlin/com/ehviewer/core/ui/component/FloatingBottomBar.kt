@@ -91,6 +91,9 @@ val LocalTabGesturePosition = staticCompositionLocalOf<State<Float?>?> { null }
 val LocalFloatingBottomBarContentColor = staticCompositionLocalOf { Color.Unspecified }
 val LocalFloatingBottomBarTabScale = staticCompositionLocalOf { { 1f } }
 
+// alpha = 0 的录制层（只为 backdrop 供内容）不允许接收点击与焦点
+internal val LocalFloatingBottomBarInputEnabled = staticCompositionLocalOf { true }
+
 /**
  * 点击 tab 时直驱指示器弹簧动画的入口，由调用方创建并传入 [FloatingBottomBar]；
  * 组合期 FloatingBottomBar 注册内部动画器，item 点击处同步调用即零环回延迟起步。
@@ -158,13 +161,16 @@ private const val LIGHT_REF_X = 0.5f
 private const val LIGHT_REF_Y = 0.7f
 private const val GRAVITY_DIR_THRESHOLD_SQ = 0.01f // |g_xy| > 0.1, ≈ 6° tilt
 private val GRAVITY_ANGLE_STEP_RAD = (3.0 * PI / 180.0).toFloat() // 3° quantization step
+private val DEFAULT_GRAVITY_ANGLE = (-PI / 2).toFloat() // 无有效重力输入时的默认光照方向
 
 /**
  * Quantized in-plane gravity direction angle (radians).
  * Returns a [State] so that reads are deferred to the Draw phase, preventing 50Hz sensor Recompositions.
  */
 @Composable
-private fun rememberQuantizedGravityAngle(): State<Float> {
+private fun rememberQuantizedGravityAngle(active: Boolean): State<Float> {
+    // 传感器只在液态玻璃模式激活时创建（每帧 50Hz 更新，且是系统传感器订阅）
+    if (!active) return remember { mutableFloatStateOf(DEFAULT_GRAVITY_ANGLE) }
     val tiltState = rememberDeviceTilt()
     return remember(tiltState) {
         derivedStateOf {
@@ -175,7 +181,7 @@ private fun rememberQuantizedGravityAngle(): State<Float> {
             if (gMagSq > GRAVITY_DIR_THRESHOLD_SQ) {
                 (atan2(gy, gx) / GRAVITY_ANGLE_STEP_RAD).roundToInt() * GRAVITY_ANGLE_STEP_RAD
             } else {
-                (-PI / 2).toFloat()
+                DEFAULT_GRAVITY_ANGLE
             }
         }
     }
@@ -188,26 +194,24 @@ private fun rememberQuantizedGravityAngle(): State<Float> {
 @Composable
 private fun rememberGravityRotatedHighlight(
     base: Highlight,
+    gravityAngle: State<Float>,
     extraDegrees: Float = 0f,
-): State<Highlight> {
-    val gravityAngle = rememberQuantizedGravityAngle()
-    return remember(gravityAngle, base, extraDegrees) {
-        derivedStateOf {
-            val baseStyle = base.style as BloomStroke
-            val basePrimary = baseStyle.primaryLight
-            val rad = gravityAngle.value + (extraDegrees * PI / 180.0).toFloat()
-            base.copy(
-                style = baseStyle.copy(
-                    primaryLight = basePrimary.copy(
-                        position = LightPosition(
-                            x = LIGHT_REF_X + cos(rad),
-                            y = LIGHT_REF_Y + sin(rad),
-                            z = basePrimary.position.z,
-                        ),
+): State<Highlight> = remember(gravityAngle, base, extraDegrees) {
+    derivedStateOf {
+        val baseStyle = base.style as BloomStroke
+        val basePrimary = baseStyle.primaryLight
+        val rad = gravityAngle.value + (extraDegrees * PI / 180.0).toFloat()
+        base.copy(
+            style = baseStyle.copy(
+                primaryLight = basePrimary.copy(
+                    position = LightPosition(
+                        x = LIGHT_REF_X + cos(rad),
+                        y = LIGHT_REF_Y + sin(rad),
+                        z = basePrimary.position.z,
                     ),
                 ),
-            )
-        }
+            ),
+        )
     }
 }
 
@@ -231,12 +235,16 @@ fun FloatingBottomBar(
     directSelector: FloatingBottomBarDirectSelector? = null,
     content: @Composable RowScope.() -> Unit,
 ) {
+    // 无 tab 时不进入组合：后续 DampedDragAnimation 的 valueRange 会是 0f..-1f
+    if (tabsCount <= 0) return
     val isDark = MiuixTheme.colorScheme.surface.luminance() < 0.5f
     val pillShape = remember { CircleShape }
     // 主页 Pager 手势翻页的连续位置；null = 非手势滚动，滑块走 damped spring 动画值
     val gesturePosition = LocalTabGesturePosition.current
     val isLiquidGlassMode = mode == FloatingBottomBarMode.LiquidGlass && backdrop != null && isRuntimeShaderSupported()
     val isBlurMode = mode == FloatingBottomBarMode.Blur && backdrop != null
+    // 重力高光共用同一个传感器实例，且只在液态玻璃模式订阅
+    val gravityAngle = rememberQuantizedGravityAngle(isLiquidGlassMode)
     val containerColor = if (isLiquidGlassMode) colors.containerColor.copy(alpha = 0.4f) else colors.containerColor
 
     val tabsBackdrop = rememberLayerBackdrop()
@@ -368,8 +376,8 @@ fun FloatingBottomBar(
             null
         }
 
-    val baseHighlight = rememberGravityRotatedHighlight(iosIndicatorSpecular, extraDegrees = -45f)
-    val pillHighlight = rememberGravityRotatedHighlight(iosIndicatorSpecular, extraDegrees = 90f)
+    val baseHighlight = rememberGravityRotatedHighlight(iosIndicatorSpecular, gravityAngle, extraDegrees = -45f)
+    val pillHighlight = rememberGravityRotatedHighlight(iosIndicatorSpecular, gravityAngle, extraDegrees = 90f)
 
     val combinedBackdrop = backdrop?.let { rememberCombinedBackdrop(it, tabsBackdrop) }
 

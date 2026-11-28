@@ -1,3 +1,11 @@
+root = true
+
+# 编码统一由这里约束；行尾（LF）由仓库根 .gitattributes 的 "* text=auto eol=lf" 在提交时归一，
+# 不在这里写 end_of_line：工作区检出仍是 CRLF，硬写 lf 会让 ktlint 门禁对全仓文件报错。
+[*]
+charset = utf-8
+insert_final_newline = true
+
 [*.{kt,kts}]
 ij_kotlin_imports_layout = *
 ij_kotlin_line_break_after_multiline_when_entry = false

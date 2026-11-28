@@ -174,6 +174,7 @@ internal fun BottomBarActiveTabsLayer(
                 lerp(1f, 1.2f, dampedDragAnimation.pressProgress)
             },
             LocalFloatingBottomBarContentColor provides colors.activeContentColor,
+            LocalFloatingBottomBarInputEnabled provides false,
         ) {
             Row(
                 modifier = Modifier

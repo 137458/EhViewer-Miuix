@@ -1,5 +1,6 @@
 package com.hippo.ehviewer.ui.settings
 
+import android.content.ActivityNotFoundException
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.annotation.ArrayRes
@@ -19,16 +20,19 @@ import androidx.compose.ui.res.integerArrayResource
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
+import com.ehviewer.core.util.logcat
 import com.hippo.ehviewer.ui.openBrowser
+import com.hippo.ehviewer.ui.tools.safeResume
 import com.hippo.ehviewer.util.ProgressDialog
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.ramcosta.composedestinations.spec.DirectionDestinationSpec
 import kotlin.concurrent.atomics.AtomicReference
-import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.preference.ArrowPreference
@@ -160,8 +164,17 @@ fun WorkPreference(title: String, summary: String? = null, work: suspend Corouti
         title = title,
         summary = summary,
         onClick = {
-            completed = false
-            coroutineScope.launch(block = work).invokeOnCompletion { completed = true }
+            if (completed) {
+                completed = false
+                coroutineScope.launch {
+                    try {
+                        work()
+                    } finally {
+                        // completed 是 Compose 状态，只能在主线程写，不能从 IO worker 直接改
+                        withContext(NonCancellable + Dispatchers.Main.immediate) { completed = true }
+                    }
+                }
+            }
         },
     )
 }
@@ -185,14 +198,32 @@ fun <I, O> LauncherPreference(
         title = title,
         summary = summary,
         onClick = {
-            coroutineScope.launch {
-                val o = suspendCoroutine { cont ->
-                    callback.store { cont.resume(it) }
-                    launcher.launch(key)
-                }
+            // 连点保护：上一次请求还没拿到结果时再点会覆盖 callback，并使前一个等待永久挂起
+            if (completed) {
                 completed = false
-                work(o)
-            }.invokeOnCompletion { completed = true }
+                coroutineScope.launch {
+                    try {
+                        val o = suspendCancellableCoroutine { cont ->
+                            callback.store { cont.safeResume(it) }
+                            // ActivityResultLauncher.launch 只能在主线程发起，IO worker 上会抛 IllegalStateException
+                            coroutineScope.launch(Dispatchers.Main) {
+                                try {
+                                    launcher.launch(key)
+                                } catch (e: ActivityNotFoundException) {
+                                    // 没有 Activity 能处理该请求：撤掉等待，避免点击后永久转圈
+                                    callback.exchange { }
+                                    logcat(e)
+                                    cont.cancel()
+                                }
+                            }
+                        }
+                        work(o)
+                    } finally {
+                        // completed 是 Compose 状态，只能在主线程写
+                        withContext(NonCancellable + Dispatchers.Main.immediate) { completed = true }
+                    }
+                }
+            }
         },
     )
 }

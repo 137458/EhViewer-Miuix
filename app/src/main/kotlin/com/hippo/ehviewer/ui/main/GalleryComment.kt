@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.neverEqualPolicy
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
@@ -69,8 +68,11 @@ fun GalleryCommentCard(
         }
         val textColor = MiuixTheme.colorScheme.onSurface.toArgb()
         val linkTextColor = MiuixTheme.colorScheme.primary.toArgb()
-        val redrawSignal = remember { mutableStateOf(Unit, neverEqualPolicy()) }
-        val commentText = processComment(comment, CoilImageGetter { redrawSignal.value = Unit })
+        // 图片加载完成只触发重绘：若把完成事件写成 Compose 状态，每加载一张图都会重组并
+        // 重新解析一遍整段 HTML 注释
+        val viewRef = remember { arrayOfNulls<LinkifyTextView>(1) }
+        val imageGetter = remember(comment) { CoilImageGetter { viewRef[0]?.invalidate() } }
+        val commentText = processComment(comment, imageGetter)
         AndroidView(
             factory = { context ->
                 LinkifyTextView(context) { targetUrl.value = it }.apply {
@@ -82,8 +84,11 @@ fun GalleryCommentCard(
             },
             modifier = Modifier.padding(start = margin, end = margin, bottom = 8.dp),
         ) { view ->
+            // factory 只在首次创建时执行，主题/配色变化必须在这里同步到已存在的 View
+            viewRef[0] = view
+            view.setTextColor(textColor)
+            view.setLinkTextColor(linkTextColor)
             view.text = commentText
-            redrawSignal.value
         }
     }
 }

@@ -39,6 +39,7 @@ import kotlin.time.Duration.Companion.microseconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.FloatingActionButton
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -94,8 +95,13 @@ class FabLayoutState(
 private val fabSyncSchedule = Schedule.linear<Throwable>(100.microseconds)
 
 fun interface FabBuilder {
-    fun onClick(icon: ImageVector, autoClose: Boolean, that: suspend () -> Unit)
-    fun onClick(icon: ImageVector, that: suspend () -> Unit) = onClick(icon, true, that)
+    fun onClick(icon: ImageVector, autoClose: Boolean, contentDescription: String?, that: suspend () -> Unit)
+
+    fun onClick(icon: ImageVector, that: suspend () -> Unit) = onClick(icon, true, null, that)
+
+    fun onClick(icon: ImageVector, autoClose: Boolean, that: suspend () -> Unit) = onClick(icon, autoClose, null, that)
+
+    fun onClick(icon: ImageVector, contentDescription: String?, that: suspend () -> Unit) = onClick(icon, true, contentDescription, that)
 }
 
 @Composable
@@ -164,18 +170,20 @@ fun FabLayout(
         modifier = Modifier.fillMaxSize().navigationBarsPadding().snackBarPadding(),
         contentAlignment = Alignment.BottomEnd,
     ) {
-        if (!state.appearProgress.isRunning && !updatedHidden) {
+        // 收起态（progress <= 0）不进入组合：alpha=0 的 FAB 仍然可点，会吃掉背后的手势
+        if (!state.appearProgress.isRunning && !updatedHidden && animatedProgress > 0f) {
             Box(
                 modifier = Modifier.fillMaxSize().graphicsLayer { alpha = animatedProgress },
                 contentAlignment = Alignment.BottomEnd,
             ) {
                 with(secondaryFab) {
-                    forEachIndexed { index, (imageVector, autoClose, onClick) ->
+                    forEachIndexed { index, fab ->
                         FloatingActionButton(
                             onClick = {
                                 launch(Dispatchers.Default) {
-                                    onClick()
-                                    if (autoClose) onExpandChanged(false)
+                                    fab.action()
+                                    // onExpandChanged 会写 Compose state，必须回主线程
+                                    if (fab.autoClose) withContext(Dispatchers.Main.immediate) { onExpandChanged(false) }
                                 }
                             },
                             minWidth = 40.dp,
@@ -186,7 +194,7 @@ fun FabLayout(
                                 IntOffset(0, -distance)
                             },
                         ) {
-                            Icon(imageVector = imageVector, contentDescription = null)
+                            Icon(imageVector = fab.icon, contentDescription = fab.contentDescription)
                         }
                     }
                 }
@@ -214,9 +222,16 @@ fun FabLayout(
     }
 }
 
+private class SecondaryFab(
+    val icon: ImageVector,
+    val autoClose: Boolean,
+    val contentDescription: String?,
+    val action: suspend () -> Unit,
+)
+
 private fun buildFab(builder: FabBuilder.() -> Unit) = buildList {
-    builder { icon, autoClose, action ->
-        add(Triple(icon, autoClose, action))
+    builder { icon, autoClose, contentDescription, action ->
+        add(SecondaryFab(icon, autoClose, contentDescription, action))
     }
 }
 

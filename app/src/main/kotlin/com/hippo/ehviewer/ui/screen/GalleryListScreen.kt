@@ -214,10 +214,17 @@ fun AnimatedVisibilityScope.GalleryListScreen(
 
     val entries = stringArrayResource(id = com.hippo.ehviewer.R.array.toplist_entries)
     val values = stringArrayResource(id = com.hippo.ehviewer.R.array.toplist_values)
-    val toplists = remember { entries zip values }
+    val toplists = remember(entries, values) { entries zip values }
     val quickSearchName = getSuitableTitleForUrlBuilder(urlBuilder, false)
     var saveProgress by Settings.qSSaveProgress.asMutableState()
     var languageFilter by Settings.languageFilter.asMutableState()
+
+    // urlBuilder 是 PagingSource 在 IO 线程读取的共享可变对象：UI 线程不能原地改它的字段
+    // （既读不到变化，也会和分页加载竞争）。统一复制一份、改完整体写回 state，再在主线程刷新分页。
+    fun updateUrlBuilder(block: ListUrlBuilder.() -> Unit) {
+        urlBuilder = urlBuilder.copy().apply(block)
+        data.refresh()
+    }
 
     fun getFirstVisibleItemIndex() = if (listMode == 0) {
         listState.firstVisibleItemIndex
@@ -511,7 +518,7 @@ fun AnimatedVisibilityScope.GalleryListScreen(
                 delay(300)
                 withUIContext { navigate(builder.asDst()) }
             }
-            else -> {
+            else -> withUIContext {
                 urlBuilder = builder
                 data.refresh()
             }
@@ -559,9 +566,10 @@ fun AnimatedVisibilityScope.GalleryListScreen(
                     onSelectCategory = { newCat ->
                         category = newCat
                         // Category changes start a new query; discard the previous paging cursor.
-                        urlBuilder.setRange(0)
-                        urlBuilder.category = newCat
-                        data.refresh()
+                        updateUrlBuilder {
+                            setRange(0)
+                            this.category = newCat
+                        }
                     },
                 )
             }
@@ -588,13 +596,11 @@ fun AnimatedVisibilityScope.GalleryListScreen(
                 // 避让 snackbar 由宿主注入（共享组件不感知宿主布局）
                 modifier = Modifier.snackBarPadding(),
                 onRefresh = {
-                    urlBuilder.setRange(0)
-                    data.refresh()
+                    updateUrlBuilder { setRange(0) }
                 },
                 onShuffle = if (urlBuilder.mode in arrayOf(MODE_NORMAL, MODE_UPLOADER, MODE_TAG)) {
                     {
-                        urlBuilder.setRange(Random.nextInt(100))
-                        data.refresh()
+                        updateUrlBuilder { setRange(Random.nextInt(100)) }
                     }
                 } else {
                     null
@@ -602,18 +608,23 @@ fun AnimatedVisibilityScope.GalleryListScreen(
                 onGoTo = if (urlBuilder.mode != MODE_WHATS_HOT) {
                     {
                         launch {
+                            // 先在副本上改，弹窗取消时不污染正在使用的 builder
+                            val updated = urlBuilder.copy()
                             if (isTopList) {
                                 val hint = string(R.string.go_to_hint, urlBuilder.page, TOPLIST_PAGES)
                                 val text = awaitInputText(title = gotoTitle, hint = hint, isNumber = true) { oriText ->
                                     val goto = ensureNotNull(oriText.trim().toIntOrNull()) { invalidNum }
                                     ensure(goto in 1..TOPLIST_PAGES) { outOfRange }
                                 }
-                                urlBuilder.page = text.trim().toInt()
+                                updated.page = text.trim().toInt()
                             } else {
                                 val date = awaitSelectDate()
-                                urlBuilder.setSeek(date)
+                                updated.setSeek(date)
                             }
-                            data.refresh()
+                            withUIContext {
+                                urlBuilder = updated
+                                data.refresh()
+                            }
                         }
                     }
                 } else {
@@ -621,12 +632,9 @@ fun AnimatedVisibilityScope.GalleryListScreen(
                 },
                 onLastPage = if (urlBuilder.mode != MODE_WHATS_HOT) {
                     {
-                        if (isTopList) {
-                            urlBuilder.page = TOPLIST_PAGES
-                        } else {
-                            urlBuilder.setIndex("1", false)
+                        updateUrlBuilder {
+                            if (isTopList) page = TOPLIST_PAGES else setIndex("1", false)
                         }
-                        data.refresh()
                     }
                 } else {
                     null
@@ -684,8 +692,7 @@ fun AnimatedVisibilityScope.GalleryListScreen(
             },
             searchBarOffsetY = { searchBarOffsetY },
             onRefresh = {
-                urlBuilder.setRange(0)
-                data.refresh()
+                updateUrlBuilder { setRange(0) }
             },
             onLoading = { searchBarOffsetY = 0 },
         )

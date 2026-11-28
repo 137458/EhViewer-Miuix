@@ -30,7 +30,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.input.TextFieldState
@@ -330,9 +330,13 @@ fun LibrarySearchBarScaffold(
                                 filter()
                             }
                         }
-                        items(suggestionList, key = { it.keyword.hashCode() * 31 + it.canDelete.hashCode() }) {
+                        // 同关键词不同可删状态原先靠哈希拼 key，碰撞会产生重复 key；复合 key 再补索引兜底
+                        itemsIndexed(
+                            items = suggestionList,
+                            key = { index, item -> "${item.keyword}|${item.canDelete}|$index" },
+                        ) { _, suggestion ->
                             SuggestionRow(
-                                suggestion = it,
+                                suggestion = suggestion,
                                 onApply = { keyword ->
                                     searchFieldState.setTextAndPlaceCursorAtEnd(keyword)
                                 },

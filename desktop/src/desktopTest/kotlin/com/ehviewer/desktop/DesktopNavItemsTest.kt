@@ -2,6 +2,7 @@ package com.ehviewer.desktop
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class DesktopNavItemsTest {
@@ -101,5 +102,15 @@ class DesktopNavItemsTest {
         assertEquals(DesktopNavItem.Settings, DesktopNavItems.move(base, DesktopNavItem.Settings, -5).order.first())
         assertEquals(DesktopNavItem.Home, DesktopNavItems.move(base, DesktopNavItem.Home, 99).order.last())
         assertEquals(base.hidden, DesktopNavItems.move(base, DesktopNavItem.Home, 3).hidden)
+    }
+
+    @Test
+    fun moveAfterToggleHiddenKeepsVisibilityChange() {
+        // H-25 回归：先切换显隐再拖拽排序，显隐集合必须保持切换后的状态（拖拽不得用旧 config 覆盖 hidden）
+        val toggled = DesktopNavItems.toggleHidden(DesktopNavItems.defaultConfig(), DesktopNavItem.Toplist)
+        val moved = DesktopNavItems.move(toggled, DesktopNavItem.Home, toggled.order.lastIndex)
+        assertEquals(setOf(DesktopNavItem.Toplist), moved.hidden)
+        assertEquals(DesktopNavItem.Home, moved.order.last())
+        assertFalse(DesktopNavItem.Toplist in DesktopNavItems.visible(moved))
     }
 }

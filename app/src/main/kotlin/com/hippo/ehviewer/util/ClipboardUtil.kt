@@ -56,7 +56,8 @@ fun ClipboardManager.getUrlFromClipboard(context: Context): String? {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && primaryClipDescription?.classificationStatus == ClipDescription.CLASSIFICATION_COMPLETE) {
         if (primaryClipDescription?.getConfidenceScore(TextClassifier.TYPE_URL)?.let { it <= 0 } == true) return null
     }
-    val item = primaryClip?.getItemAt(0)
-    val string = item?.coerceToText(context).toString()
+    // 剪贴板可能为空或条目数为 0，coerceToText 返回 null 时 toString() 会得到字符串 "null"
+    val clip = primaryClip?.takeIf { it.itemCount > 0 } ?: return null
+    val string = clip.getItemAt(0)?.coerceToText(context)?.toString().orEmpty()
     return string.ifEmpty { null }
 }

@@ -8,14 +8,15 @@ EhViewer（E-Hentai 阅读器）的 Miuix/HyperOS 风格定制 fork，基于 Kot
 - 编译生产包：`./gradlew assembleDefaultRelease`
 - 产物：`app/build/outputs/apk/default/release/app-default-*-release.apk`
 - 完成标准 = 编译通过。
-- 原生库：预编译的 `app/src/main/jniLibs/arm64-v8a/libehviewer.so` 已入库，标准命令直接产出可运行包；`externalNativeBuild` 默认关闭（`-PbuildNative` 才注册 CMake/Rust 构建，Windows 主机需 WSL）。**修改 `app/src/main/rust/` 或 `app/src/main/cpp/` 源码后必须带 `-PbuildNative` 重编并同步提交新 .so**，否则仓库二进制与源码脱钩。构建期由 `checkNativeLibs` task 兜底：.so 缺失时 assemble 直接失败（`-PskipNativeCheck` 豁免）。
-- 版本号：`app/build.gradle.kts` 的 `versionName = "1.16.0"`、`versionCode = 180065`；不带 `-Prelease` 时为 `1.16.0-SNAPSHOT`。
+- 原生库：预编译的 `app/src/main/jniLibs/arm64-v8a/libehviewer.so` 已入库，标准命令直接产出可运行包；`externalNativeBuild` 默认关闭（`-PbuildNative` 才注册 CMake/Rust 构建，Windows 主机需 WSL）。**修改 `app/src/main/rust/` 或 `app/src/main/cpp/` 源码后必须带 `-PbuildNative` 重编并同步提交新 .so**，否则仓库二进制与源码脱钩。构建期由 `checkNativeLibs` task 兜底：.so 缺失或缺少 Kotlin 侧 `external fun` 对应的 `Java_*` 导出符号时 assemble 直接失败（仅编译验证可加 `-PskipNativeCheck` 豁免）。
+- 版本号：唯一来源为仓库根 `gradle.properties` 的 `ehviewer.versionName=1.16.0` 与 `ehviewer.versionCode=180065`，`:app`（`versionName`/`versionCode`）与 `:desktop`（`packageVersion`、生成的 `BuildVersion.kt`）都从这里取；不带 `-Prelease` 时 `:app` 为 `1.16.0-SNAPSHOT`。`BuildConfig.RAW_VERSION_NAME` 是 DSL 期版本名，不含 flavor 后缀（`default` 加 `-miuix`、`marshmallow` 加 `-M`）；面向用户的完整版本用 `BuildConfig.VERSION_NAME`。
+- 发布签名：只读 Gradle 属性/同名环境变量 `RELEASE_STORE_FILE`、`RELEASE_STORE_PASSWORD`、`RELEASE_KEY_ALIAS`、`RELEASE_KEY_PASSWORD`，四项全缺时 release 产出未签名 APK；仓库内不得再提交密钥库。
 - 桌面端（`:desktop`，Compose Desktop）：`./gradlew :desktop:run` 运行，`./gradlew :desktop:desktopFatJar` 产出 `desktop/build/libs/desktop-all.jar`；桌面端列表解析依赖 JNI 库 `ehviewer_rust`，该 dll 未入库（`desktop/src/desktopMain/resources/native/` 被忽略），需先自行构建并 `./gradlew :desktop:copyRustDll` 就位或用 `EHVIEWER_RUST_DLL` 指定，否则抛 `Rust bindings unavailable`。
 - 发版流程：本地构建手动上传 GitHub Release，不经 CI。
 
 ## 项目约定
 
-- 模块：`:app`（`namespace` 为 `com.hippo.ehviewer`，`default`/`marshmallow` 两变体）、`:core:{common,data,i18n,shell,ui}`、`:desktop`、`:benchmark`；`build-logic` 以 `includeBuild` 提供 `ehviewer.*` 约定插件。
+- 模块：`:app`（`namespace` 为 `com.hippo.ehviewer`，`default`/`marshmallow` 两变体：`default` 覆盖 `minSdk = 26`，`marshmallow` 继承 `settings.gradle.kts` 的全局 `minSdk = 24` 并依赖 core library desugaring 才能在 Android 7.x 上运行）、`:core:{common,data,i18n,shell,ui}`、`:desktop`、`:benchmark`；`build-logic` 以 `includeBuild` 提供 `ehviewer.*` 约定插件。
 - 上游同步：origin 为 `137458/EhViewer-Miuix`，上游 `FooIbar/EhViewer`（另跟踪 `xiaojieonly/Ehviewer_CN_SXJ`）；从上游合并时注意保留 Miuix/HyperOS 定制层。
 - 版本号与 CHANGELOG：条目中文，版本区块无 `v` 前缀（与既有 tag 风格一致）。
 

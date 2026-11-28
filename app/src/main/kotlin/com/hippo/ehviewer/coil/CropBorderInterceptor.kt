@@ -54,7 +54,8 @@ object CropBorderInterceptor : Interceptor {
                         else -> null
                     } ?: Bitmap.createBitmap(src, x, y, w, h)
 
-                    src.recycle()
+                    // 内存缓存仍会接管这张位图时不能回收，否则之后读缓存的视图会拿到已回收的 bitmap
+                    if (!result.request.memoryCachePolicy.writeEnabled) src.recycle()
                     return result.copy(image = image.copy(image = bitmap.asImage(), rect = image.rect.size.toIntRect()))
                 }
             }

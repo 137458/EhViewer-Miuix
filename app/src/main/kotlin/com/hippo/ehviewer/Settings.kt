@@ -116,7 +116,7 @@ object Settings : DataStorePreferences(null) {
     val enabledSecurity = boolPref("enable_secure", false)
 
     // Advanced
-    val saveParseErrorBody = boolPref("save_parse_error_body", true)
+    val saveParseErrorBody = boolPref("save_parse_error_body", false)
     val saveCrashLog = boolPref("save_crash_log", true)
     val readCacheSize = intPref("read_cache_size_2", 640)
     val enableCronet = boolPref("enable_cronet", true)

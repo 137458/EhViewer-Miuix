@@ -25,6 +25,10 @@ val dataStoreScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 val dataStore = PreferenceDataStoreFactory.create { appCtx.preferencesDataStoreFile("Remembered") }
 val dataStateFlow = dataStore.data.stateIn(dataStoreScope, SharingStarted.Eagerly, emptyPreferences())
 
+// 存储内容可能因版本升级或序列化契约变更而无法解码，此时回落到默认值而不是让界面崩溃
+@PublishedApi
+internal fun <T> decodeStoredValue(serializer: KSerializer<T>, bytes: ByteArray): T? = runCatching { Cbor.decodeFromByteArray(serializer, bytes) }.getOrNull()
+
 // Find out how make this work with any generic `Serializable` type
 @Composable
 inline fun <reified T> rememberMutableStateInDataStore(
@@ -32,9 +36,9 @@ inline fun <reified T> rememberMutableStateInDataStore(
     serializer: KSerializer<T> = serializer<T>(),
     crossinline defaultValue: @DisallowComposableCalls () -> T,
 ) = with(dataStateFlow) {
-    remember {
+    remember(key) {
         val keyObj = byteArrayPreferencesKey(key)
-        val r = value[keyObj]?.let { bytes -> Cbor.decodeFromByteArray(serializer, bytes) } ?: defaultValue()
+        val r = value[keyObj]?.let { bytes -> decodeStoredValue(serializer, bytes) } ?: defaultValue()
         mutableStateOf(r)
     }.also { mutableState ->
         LifecycleResumeEffect(key) {

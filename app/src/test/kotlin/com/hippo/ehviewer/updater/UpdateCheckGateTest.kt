@@ -40,6 +40,18 @@ class UpdateCheckGateTest {
     }
 
     @Test
+    fun `negative interval blocks automatic checks`() {
+        assertFalse(UpdateCheckGate.shouldCheck(false, 0L, -1, 365 * day))
+    }
+
+    @Test
+    fun `clock rollback does not trigger automatic checks`() {
+        val last = 100 * day
+
+        assertFalse(UpdateCheckGate.shouldCheck(false, last, 7, last - 10 * day))
+    }
+
+    @Test
     fun `checks once the interval elapsed`() {
         val now = 10 * day
 

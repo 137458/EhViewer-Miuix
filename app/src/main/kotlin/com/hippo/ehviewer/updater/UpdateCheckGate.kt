@@ -14,7 +14,10 @@ internal object UpdateCheckGate {
         nowEpochSeconds: Long,
     ): Boolean {
         if (forceCheck) return true
-        if (intervalDays == 0) return false
+        // 0 表示关闭自动检查，负数（脏配置）同样不能放大成"每次都检查"
+        if (intervalDays <= 0) return false
+        // 时钟回拨（现在早于上次检查）时不做自动检查，否则时间跳变会反复触发网络请求
+        if (nowEpochSeconds < lastCheckEpochSeconds) return false
         return nowEpochSeconds > lastCheckEpochSeconds + intervalDays * SECONDS_PER_DAY
     }
 }

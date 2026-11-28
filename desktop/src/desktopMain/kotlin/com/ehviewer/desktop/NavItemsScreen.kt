@@ -19,9 +19,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -127,37 +129,41 @@ fun NavItemsScreen(onBack: () -> Unit) {
                             .padding(horizontal = 12.dp, vertical = 4.dp),
                     ) {
                         config.order.forEachIndexed { index, item ->
-                            val isDragging = draggingIndex == index
-                            NavItemConfigRow(
-                                item = item,
-                                visible = item !in config.hidden,
-                                dragging = isDragging,
-                                rowHeight = rowHeight,
-                                onToggle = { persist(DesktopNavItems.toggleHidden(config, item)) },
-                                onDragStart = {
-                                    draggingIndex = index
-                                    dragOffset = 0f
-                                },
-                                onDrag = { dragOffset += it },
-                                onDragEnd = {
-                                    val target = (index + (dragOffset / rowHeightPx).roundToInt())
-                                        .coerceIn(0, config.order.lastIndex)
-                                    persist(DesktopNavItems.move(config, item, target))
-                                    draggingIndex = null
-                                    dragOffset = 0f
-                                },
-                                onDragCancel = {
-                                    draggingIndex = null
-                                    dragOffset = 0f
-                                },
-                                modifier = Modifier
-                                    .zIndex(if (isDragging) 1f else 0f)
-                                    .graphicsLayer {
-                                        translationY = if (isDragging) dragOffset else 0f
-                                        scaleX = if (isDragging) 1.02f else 1f
-                                        scaleY = if (isDragging) 1.02f else 1f
+                            // 以 item 为 key：显隐切换会让 order 重排，无 key 时行状态（含拖拽手势闭包）会串到相邻项
+                            key(item) {
+                                val isDragging = draggingIndex == index
+                                NavItemConfigRow(
+                                    item = item,
+                                    visible = item !in config.hidden,
+                                    dragging = isDragging,
+                                    rowHeight = rowHeight,
+                                    onToggle = { persist(DesktopNavItems.toggleHidden(config, item)) },
+                                    // 拖拽终点用「最新」的 config 计算，避免用切换显隐前的旧 config 覆盖掉 hidden
+                                    onDragStart = {
+                                        draggingIndex = index
+                                        dragOffset = 0f
                                     },
-                            )
+                                    onDrag = { dragOffset += it },
+                                    onDragEnd = {
+                                        val target = (index + (dragOffset / rowHeightPx).roundToInt())
+                                            .coerceIn(0, config.order.lastIndex)
+                                        persist(DesktopNavItems.move(config, item, target))
+                                        draggingIndex = null
+                                        dragOffset = 0f
+                                    },
+                                    onDragCancel = {
+                                        draggingIndex = null
+                                        dragOffset = 0f
+                                    },
+                                    modifier = Modifier
+                                        .zIndex(if (isDragging) 1f else 0f)
+                                        .graphicsLayer {
+                                            translationY = if (isDragging) dragOffset else 0f
+                                            scaleX = if (isDragging) 1.02f else 1f
+                                            scaleY = if (isDragging) 1.02f else 1f
+                                        },
+                                )
+                            }
                         }
                     }
                     Text(
@@ -186,6 +192,12 @@ private fun NavItemConfigRow(
     onDragCancel: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // 拖拽回调经 rememberUpdatedState 取最新闭包：pointerInput 只在 item 变化时重启，
+    // 直接捕获入参 lambda 会让「切换显隐后立刻拖拽」仍写入旧 config，把显隐改动回滚掉。
+    val currentOnDragStart by rememberUpdatedState(onDragStart)
+    val currentOnDrag by rememberUpdatedState(onDrag)
+    val currentOnDragEnd by rememberUpdatedState(onDragEnd)
+    val currentOnDragCancel by rememberUpdatedState(onDragCancel)
     val interactionSource = remember { MutableInteractionSource() }
     val hovered by interactionSource.collectIsHoveredAsState()
     val background = when {
@@ -217,12 +229,12 @@ private fun NavItemConfigRow(
                 .pointerHoverIcon(PointerIcon.Hand)
                 .pointerInput(item) {
                     detectDragGestures(
-                        onDragStart = { onDragStart() },
-                        onDragEnd = { onDragEnd() },
-                        onDragCancel = { onDragCancel() },
+                        onDragStart = { currentOnDragStart() },
+                        onDragEnd = { currentOnDragEnd() },
+                        onDragCancel = { currentOnDragCancel() },
                         onDrag = { change, dragAmount ->
                             change.consume()
-                            onDrag(dragAmount.y)
+                            currentOnDrag(dragAmount.y)
                         },
                     )
                 },

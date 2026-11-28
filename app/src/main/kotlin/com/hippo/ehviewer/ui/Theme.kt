@@ -18,6 +18,7 @@ import com.ehviewer.core.ui.util.ProvideVectorPainterCache
 import com.hippo.ehviewer.Settings
 import com.hippo.ehviewer.collectAsState
 import com.hippo.ehviewer.ui.theme.EhTheme
+import com.hippo.ehviewer.ui.theme.SyncSystemBarAppearance
 import com.hippo.ehviewer.ui.theme.resolveUseDarkTheme
 import com.hippo.ehviewer.ui.tools.DialogState
 import com.hippo.ehviewer.ui.tools.LocalGlobalDialogState
@@ -30,7 +31,10 @@ inline fun ComponentActivity.setMiuixContent(crossinline content: @Composable Di
     // 应用内深色设置（theme_2：-1 跟随系统 / 1 浅色 / 2 深色）实时驱动主题，
     // Android 12+ 不经 AppCompatDelegate，必须在此显式解析
     val theme by Settings.theme.collectAsState()
-    EhTheme(useDarkTheme = resolveUseDarkTheme(theme, isSystemInDarkTheme())) {
+    val useDarkTheme = resolveUseDarkTheme(theme, isSystemInDarkTheme())
+    // 系统栏图标亮度必须跟随应用内深浅色，否则浅色主题下仍是白图标
+    SyncSystemBarAppearance(useDarkTheme)
+    EhTheme(useDarkTheme = useDarkTheme) {
         ProvideVectorPainterCache {
             val dialogState = remember { DialogState() }
             CompositionLocalProvider(LocalGlobalDialogState provides dialogState) {

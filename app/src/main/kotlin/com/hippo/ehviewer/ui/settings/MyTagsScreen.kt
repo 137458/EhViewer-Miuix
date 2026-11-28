@@ -37,14 +37,8 @@ fun AnimatedVisibilityScope.MyTagsScreen(navigator: DestinationsNavigator) = Scr
     WebViewScaffold(
         title = stringResource(id = R.string.my_tags),
         state = state,
-        onCreated = {
-            it.setDefaultSettings()
-            it.evaluateJavascript(WebInjectionHelper.VIEWPORT_META_INJECTION_SCRIPT, null)
-            it.evaluateJavascript(
-                WebInjectionHelper.buildCssInjectionScript(WebInjectionHelper.RESPONSIVE_TABLE_CSS),
-                null,
-            )
-        },
+        // onCreated 时 WebView 尚无文档，注入必须放到页面加载完成后（见上方 LaunchedEffect）
+        onCreated = { it.setDefaultSettings() },
         navigationIcon = { NavigationIcon() },
     ) {
         if (state.isLoading) {

@@ -44,14 +44,20 @@ class AndroidFileSystem(context: Context) : FileSystem() {
             return physicalFileSystem.atomicMove(source, target)
         }
 
-        source.runCatching {
-            DocumentsContract.renameDocument(contentResolver, toUri(), target.name)
-        }.onFailure {
+        // renameDocument 只能在同一父目录内改名，跨目录必须先复制再删除
+        if (!isSameParentDirectory(source, target)) {
+            copy(source, target)
+            delete(source)
+            return
+        }
+
+        val renamed = runCatching {
+            DocumentsContract.renameDocument(contentResolver, source.toUri(), target.name)
+        }.getOrNull()
+        if (renamed == null && Build.VERSION.SDK_INT != Build.VERSION_CODES.P) {
             // ExternalStorageProvider always throw exception when renameDocument on API 28
             // https://android.googlesource.com/platform/frameworks/base/+/7bf90408e36613a84dc2a665905fde2c83cfa797
-            if (Build.VERSION.SDK_INT != Build.VERSION_CODES.P) {
-                throw FileNotFoundException("Failed to move $source to $target")
-            }
+            throw FileNotFoundException("Failed to move $source to $target")
         }
     }
 
@@ -61,10 +67,17 @@ class AndroidFileSystem(context: Context) : FileSystem() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             source.openFileDescriptor("r").use { src ->
                 target.openFileDescriptor("wt").use { dst ->
-                    try {
-                        Os.sendfile(dst.fileDescriptor, src.fileDescriptor, Int64Ref(0), Long.MAX_VALUE)
-                        return
-                    } catch (_: ErrnoException) {}
+                    val offset = Int64Ref(0)
+                    val sent = try {
+                        // sendfile 单次上限 0x7ffff000 字节，一次传 Long.MAX_VALUE 会在更大输入上截断
+                        transferInChunks(Long.MAX_VALUE, MAX_TRANSFER_CHUNK) { _, size ->
+                            Os.sendfile(dst.fileDescriptor, src.fileDescriptor, offset, size)
+                        }
+                        true
+                    } catch (_: ErrnoException) {
+                        false
+                    }
+                    if (sent) return
                 }
             }
         }
@@ -72,7 +85,9 @@ class AndroidFileSystem(context: Context) : FileSystem() {
         // Fallback to transferTo if sendfile is not available or fails
         source.inputStream().use { src ->
             target.outputStream().use { dst ->
-                src.channel.transferTo(0, Long.MAX_VALUE, dst.channel)
+                transferInChunks(Long.MAX_VALUE, MAX_TRANSFER_CHUNK) { offset, size ->
+                    src.channel.transferTo(offset, size, dst.channel)
+                }
             }
         }
     }
@@ -171,10 +186,13 @@ class AndroidFileSystem(context: Context) : FileSystem() {
             val childrenUri = DocumentsContract.buildChildDocumentsUriUsingTree(uri, documentId)
 
             contentResolver.query(childrenUri, arrayOf(Document.COLUMN_DISPLAY_NAME), null, null, null)?.use { c ->
-                List(c.count) {
-                    c.moveToNext()
-                    val displayName = c.getString(0)
-                    dir / displayName
+                buildList {
+                    // 按 moveToNext() 的结果迭代：部分提供器给出的 count 与实际游标行数并不一致
+                    while (c.moveToNext()) {
+                        val displayName = c.getString(0) ?: continue
+                        if (!isSafeChildName(displayName)) continue
+                        add(dir / displayName)
+                    }
                 }
             }
         }.getOrElse { if (throwOnFailure) throw FileNotFoundException("Failed to list $dir") else null }

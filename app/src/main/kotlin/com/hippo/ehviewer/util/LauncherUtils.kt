@@ -29,7 +29,8 @@ import java.io.File
 import kotlin.concurrent.atomics.AtomicInt
 import kotlin.concurrent.atomics.fetchAndIncrement
 import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
+import kotlinx.coroutines.CancellableContinuation
+import kotlinx.coroutines.suspendCancellableCoroutine
 
 // Fuck off the silly Android launcher and callback :)
 
@@ -48,29 +49,50 @@ private val lifecycle: Lifecycle
         }
     }
 
+// 已注销过再注销会抛 IllegalStateException，清理路径只关心别打断回调链
+private fun ActivityResultLauncher<*>?.unregisterQuietly() {
+    runCatching { this?.unregister() }
+}
+
 context(_: Context)
 suspend fun <I, O> awaitActivityResult(contract: ActivityResultContract<I, O>, input: I): O {
     val key = "activity_rq#${atomicInteger.fetchAndIncrement()}"
     var launcher: ActivityResultLauncher<I>? = null
-    var observer: LifecycleEventObserver? = null
+    var continuation: CancellableContinuation<O>? = null
+    lateinit var observer: LifecycleEventObserver
     observer = LifecycleEventObserver { _, event ->
         if (Lifecycle.Event.ON_DESTROY == event) {
-            launcher?.unregister()
-            if (observer != null) {
-                lifecycle.removeObserver(observer!!)
-            }
+            launcher.unregisterQuietly()
+            lifecycle.removeObserver(observer)
+            // Activity 销毁后结果永远不会回来，取消挂起的协程而不是让它一直等
+            continuation?.cancel()
         }
     }
     return withUIContext {
         lifecycle.addObserver(observer)
-        suspendCoroutine { cont ->
-            // No cancellation support here since we cannot cancel a launched Intent
+        suspendCancellableCoroutine { cont ->
+            continuation = cont
             val activity = findActivity<ComponentActivity>()
             launcher = activity.activityResultRegistry.register(key, contract) {
-                launcher?.unregister()
+                launcher.unregisterQuietly()
                 lifecycle.removeObserver(observer)
-                cont.resume(it)
-            }.apply { launch(input) }
+                if (cont.isActive) cont.resume(it)
+            }.apply {
+                try {
+                    launch(input)
+                } catch (t: Throwable) {
+                    // 没有 Activity 能处理该 Intent 时会抛 ActivityNotFoundException，
+                    // 这时必须撤掉刚注册的 launcher 与观察者，否则回调链会一直挂着
+                    unregisterQuietly()
+                    lifecycle.removeObserver(observer)
+                    throw t
+                }
+            }
+            cont.invokeOnCancellation {
+                // 调用方取消（超时/页面退出）时同样要注销，否则 registry 里会残留条目
+                launcher.unregisterQuietly()
+                lifecycle.removeObserver(observer)
+            }
         }
     }
 }

@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -46,6 +47,8 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 fun AnimatedVisibilityScope.PrivacyScreen(navigator: DestinationsNavigator) = Screen(navigator) {
     val scrollBehavior = MiuixScrollBehavior()
     val backdrop = rememberBlurBackdrop()
+    // 生物识别能力在整个进程内不会变化，避免每次重组都查询一次 BiometricManager
+    val authenticationSupported = remember { isAuthenticationSupported() }
     fun launchSnackbar(message: String) = launch { snackbar(message) }
     Scaffold(
         topBar = {
@@ -83,7 +86,7 @@ fun AnimatedVisibilityScope.PrivacyScreen(navigator: DestinationsNavigator) = Sc
                     SwitchPreference(
                         title = stringResource(id = R.string.settings_privacy_require_unlock),
                         state = security,
-                        enabled = isAuthenticationSupported(),
+                        enabled = authenticationSupported,
                     )
                     AnimatedVisibility(visible = security.value) {
                         val securityDelay = Settings.securityDelay.asMutableState()
@@ -97,7 +100,7 @@ fun AnimatedVisibilityScope.PrivacyScreen(navigator: DestinationsNavigator) = Sc
                             title = stringResource(id = R.string.settings_privacy_require_unlock_delay),
                             summary = summary,
                             state = securityDelay,
-                            enabled = isAuthenticationSupported(),
+                            enabled = authenticationSupported,
                         )
                     }
                     SwitchPreference(

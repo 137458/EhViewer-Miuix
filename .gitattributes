@@ -1,0 +1,21 @@
+# Normalize to LF in the repository, independent of host checkout settings
+* text=auto eol=lf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.gif binary
+*.ttf binary
+*.otf binary
+*.jar binary
+*.jks binary
+*.keystore binary
+*.so binary
+*.dll binary
+*.dylib binary
+*.zip binary
+*.apk binary
+*.aar binary

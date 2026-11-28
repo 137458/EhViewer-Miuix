@@ -44,6 +44,7 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.isCtrlPressed
+import androidx.compose.ui.input.key.isMetaPressed
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.PointerIcon
@@ -139,6 +140,8 @@ fun main() {
         logcat("SingleInstance", LogPriority.WARN) { "ALREADY_RUNNING exit" }
         return
     }
+    // 锁在进程退出时释放：application {} 阻塞直到进程结束，其后语句与收尾块都不会执行，只能挂 shutdown hook
+    Runtime.getRuntime().addShutdownHook(Thread({ DesktopSingleInstance.release() }, "instance-lock-release"))
     DesktopImageLoader.init()
     application {
         // 页面栈：库页为根，详情/阅读/设置逐层推入（miuix-nav NavBackStack 承载，NavDisplay 渲染转场）
@@ -265,10 +268,14 @@ fun main() {
                         isCtrlPressed = event.isCtrlPressed,
                         key = event.key,
                         hasSelection = false,
+                        // macOS 习惯用 Command(⌘) 而非 Ctrl
+                        isMetaPressed = event.isMetaPressed,
                         canCloseOnEscape = showShortcutsHelp ||
                             showOpenGalleryDialog ||
                             showAbout ||
-                            windowState.placement == WindowPlacement.Fullscreen,
+                            windowState.placement == WindowPlacement.Fullscreen ||
+                            // 页面栈深于根页时 Esc 应能逐级返回（此前只有全屏态可消费 Esc）
+                            pages.size > 1,
                     )
                     when (action) {
                         DesktopKeyAction.ClosePage -> {
@@ -664,8 +671,9 @@ private fun rememberedWindowPosition(): androidx.compose.ui.window.WindowPositio
 }
 
 // 目标屏幕工作区的 dp 尺寸：坐标命中哪块屏就取哪块（未记忆位置取主屏）。
-// aware AWT 上报物理像素（defaultTransform=缩放），非 aware 上报逻辑像素（transform=1），
-// 两种情形「上报值 / transform」均为 dp；枚举失败（headless 等异常环境）返回 null 由调用方跳过钳制
+// Compose Desktop 的窗口 dp 直接用 AWT 逻辑像素（GraphicsConfiguration.bounds 已是逻辑像素），
+// 故不能再除 defaultTransform.scaleX：175% 缩放屏上会把它算成 1/1.75，窗口被钳到过小尺寸。
+// 枚举失败（headless 等异常环境）返回 null 由调用方跳过钳制。
 private fun screenWorkAreaDp(x: Int, y: Int): DesktopWindowPlacement.WorkArea? = runCatching {
     val ge = java.awt.GraphicsEnvironment.getLocalGraphicsEnvironment()
     val gc = ge.screenDevices
@@ -674,10 +682,9 @@ private fun screenWorkAreaDp(x: Int, y: Int): DesktopWindowPlacement.WorkArea? =
         ?: ge.defaultScreenDevice.defaultConfiguration
     val b = gc.bounds
     val insets = java.awt.Toolkit.getDefaultToolkit().getScreenInsets(gc)
-    val scale = gc.defaultTransform.scaleX.takeIf { it > 0.0 } ?: 1.0
     DesktopWindowPlacement.WorkArea(
-        width = ((b.width - insets.left - insets.right) / scale).roundToInt(),
-        height = ((b.height - insets.top - insets.bottom) / scale).roundToInt(),
+        width = b.width - insets.left - insets.right,
+        height = b.height - insets.top - insets.bottom,
     )
 }.getOrNull()
 
@@ -891,6 +898,7 @@ private fun GalleryDetailPageContent(
     val clipboard = LocalClipboardManager.current
     var previewCoverUrl by remember { mutableStateOf<String?>(null) }
     var previewUrls by remember { mutableStateOf<List<String>>(emptyList()) }
+    var previewIndex by remember { mutableIntStateOf(0) }
     var isFavorite by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
     // Ctrl+O 打开时是仅有 gid/token 的占位信息，hydrate 成功后整体替换触发重组。
@@ -1105,6 +1113,7 @@ private fun GalleryDetailPageContent(
                 onPreviewCover = { url, list ->
                     previewCoverUrl = url
                     previewUrls = list
+                    previewIndex = list.indexOf(url).coerceAtLeast(0)
                 },
                 onOpenReader = onOpenReader?.let { opener -> { opener(currentGallery) } },
             )
@@ -1128,22 +1137,31 @@ private fun GalleryDetailPageContent(
             }
 
             previewCoverUrl?.let { coverUrl ->
-                val currentIndex = previewUrls.indexOf(coverUrl)
+                // 缩略图可能重复（同一 sprite 页、同一张图出现在多行）：用记住的索引作游标，
+                // 而不是每次 indexOf(coverUrl)——重复 URL 会永远定位到第一条，前后翻被打回原处
+                val currentIndex = previewIndex.coerceIn(0, (previewUrls.size - 1).coerceAtLeast(0))
                 val hasPrev = currentIndex > 0
-                val hasNext = currentIndex in 0 until (previewUrls.size - 1)
+                val hasNext = currentIndex < previewUrls.lastIndex
                 CoverPreviewDialog(
                     imageUrl = coverUrl,
                     onDismiss = {
                         previewCoverUrl = null
                         previewUrls = emptyList()
+                        previewIndex = 0
                     },
                     onPrevious = if (hasPrev) {
-                        { previewCoverUrl = previewUrls[currentIndex - 1] }
+                        {
+                            previewIndex = currentIndex - 1
+                            previewCoverUrl = previewUrls[currentIndex - 1]
+                        }
                     } else {
                         null
                     },
                     onNext = if (hasNext) {
-                        { previewCoverUrl = previewUrls[currentIndex + 1] }
+                        {
+                            previewIndex = currentIndex + 1
+                            previewCoverUrl = previewUrls[currentIndex + 1]
+                        }
                     } else {
                         null
                     },

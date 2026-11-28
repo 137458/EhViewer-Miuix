@@ -105,7 +105,14 @@ private fun dumplog(uri: Uri): Unit = with(ctx) {
             val logcatEntry = ZipEntry("logcat-" + ReadableTime.getFilenamableTime() + ".txt")
             zipOs.putNextEntry(logcatEntry)
             CrashHandler.collectInfo(zipOs.writer())
-            Runtime.getRuntime().exec("logcat -d").inputStream.use { it.copyTo(zipOs) }
+            // 子进程必须回收，否则 logcat 会残留到进程退出
+            val logcatProcess = Runtime.getRuntime().exec("logcat -d")
+            try {
+                logcatProcess.inputStream.use { it.copyTo(zipOs) }
+            } finally {
+                logcatProcess.destroy()
+                logcatProcess.waitFor()
+            }
         }
     }
 }
@@ -318,7 +325,8 @@ fun AnimatedVisibilityScope.AdvancedScreen(navigator: DestinationsNavigator) = S
                         key = ReadableTime.getFilenamableTime() + ".db",
                     ) { uri ->
                         uri?.let {
-                            runCatching {
+                            // runCatching 会吞掉 CancellationException，挂起调用必须用 runSuspendCatching
+                            runSuspendCatching {
                                 exportDatabase(uri)
                                 launchSnackbar(string(R.string.settings_advanced_export_data_to, uri.displayPath))
                             }.onFailure {
@@ -336,7 +344,7 @@ fun AnimatedVisibilityScope.AdvancedScreen(navigator: DestinationsNavigator) = S
                         key = "application/octet-stream",
                     ) { uri ->
                         uri?.let {
-                            runCatching {
+                            runSuspendCatching {
                                 importDatabase(uri)
                                 launchSnackbar(importSucceed)
                             }.onFailure {
@@ -357,28 +365,26 @@ fun AnimatedVisibilityScope.AdvancedScreen(navigator: DestinationsNavigator) = S
                             val favListUrlBuilder = FavListUrlBuilder()
                             var favTotal = 0
                             var favIndex = 0
-                            tailrec suspend fun doBackup() {
+
+                            // 返回是否真的写入过条目：空列表不能当成备份成功
+                            tailrec suspend fun doBackup(): Boolean {
                                 val result = EhEngine.getFavorites(favListUrlBuilder.build())
-                                if (result.galleryInfoList.isEmpty()) {
-                                    launchSnackbar(backupNothing)
-                                } else {
-                                    if (favTotal == 0) favTotal = result.countArray.sum()
-                                    favIndex += result.galleryInfoList.size
-                                    val status = "($favIndex/$favTotal)"
-                                    EhDB.putLocalFavorites(result.galleryInfoList)
-                                    launchSnackbar(string(R.string.settings_advanced_backup_favorite_start, status))
-                                    if (result.next != null) {
-                                        delay(Settings.downloadDelay.value.toLong())
-                                        favListUrlBuilder.setIndex(result.next, true)
-                                        doBackup()
-                                    }
-                                }
+                                if (result.galleryInfoList.isEmpty()) return false
+                                if (favTotal == 0) favTotal = result.countArray.sum()
+                                favIndex += result.galleryInfoList.size
+                                val status = "($favIndex/$favTotal)"
+                                EhDB.putLocalFavorites(result.galleryInfoList)
+                                launchSnackbar(string(R.string.settings_advanced_backup_favorite_start, status))
+                                if (result.next == null) return true
+                                delay(Settings.downloadDelay.value.toLong())
+                                favListUrlBuilder.setIndex(result.next, true)
+                                return doBackup()
                             }
                             launch {
                                 runSuspendCatching {
                                     doBackup()
-                                }.onSuccess {
-                                    launchSnackbar(backupSucceed)
+                                }.onSuccess { backedUp ->
+                                    launchSnackbar(if (backedUp) backupSucceed else backupNothing)
                                 }.onFailure {
                                     logcat(it)
                                     launchSnackbar(backupFailed)

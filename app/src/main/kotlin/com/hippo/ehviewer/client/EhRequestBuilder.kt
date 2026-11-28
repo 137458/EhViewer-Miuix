@@ -60,7 +60,7 @@ fun HttpRequestBuilder.applyEhConfig(referer: String?, origin: String?) {
     header("Origin", origin)
 }
 
-suspend inline fun ehRequest(
+suspend fun ehRequest(
     url: String,
     referer: String? = null,
     origin: String? = null,
@@ -69,9 +69,9 @@ suspend inline fun ehRequest(
 ) = ktorClient.prepareRequest(url) {
     applyEhConfig(referer, origin)
     apply(builder)
-}.also { if (verbose) logcat("EhRequest") { url } }
+}.also { if (verbose) logcat("EhRequest") { redactUrlForLog(url) } }
 
-suspend inline fun noRedirectEhRequest(
+suspend fun noRedirectEhRequest(
     url: String,
     referer: String? = null,
     origin: String? = null,
@@ -79,7 +79,7 @@ suspend inline fun noRedirectEhRequest(
 ) = noRedirectKtorClient.prepareRequest(url) {
     applyEhConfig(referer, origin)
     apply(builder)
-}.also { logcat("EhRequest") { url } }
+}.also { logcat("EhRequest") { redactUrlForLog(url) } }
 
 suspend inline fun <T> HttpStatement.executeSafely(
     crossinline block: suspend (response: HttpResponse) -> T,

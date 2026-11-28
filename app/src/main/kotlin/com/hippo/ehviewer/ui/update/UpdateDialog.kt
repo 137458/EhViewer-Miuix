@@ -36,6 +36,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ehviewer.core.i18n.R
 import com.ehviewer.core.util.isAtLeastO
 import com.hippo.ehviewer.BuildConfig
@@ -72,19 +73,13 @@ fun UpdateDialog(
         UpdateDownloadManager.discardStaleResult(release.version)
     }
 
+    // 单一快照来源：下载状态由管理器以 StateFlow 发布，弹窗只做 collect，天然拿到一致的一组字段
+    val download by UpdateDownloadManager.snapshot.collectAsStateWithLifecycle()
+
     val plan = buildUpdateDialogPlan(
         currentVersion = BuildConfig.RAW_VERSION_NAME,
         release = release,
-        download = UpdateDownloadSnapshot(
-            releaseVersion = UpdateDownloadManager.releaseVersion,
-            isDownloading = UpdateDownloadManager.isDownloading,
-            progress = UpdateDownloadManager.downloadProgress,
-            downloadedBytes = UpdateDownloadManager.downloadedBytes,
-            totalBytes = UpdateDownloadManager.totalBytes,
-            speedBytesPerSec = UpdateDownloadManager.downloadSpeed,
-            doneFile = UpdateDownloadManager.downloadedFile,
-            error = UpdateDownloadManager.downloadError,
-        ),
+        download = download,
         canIgnore = onIgnore != null,
     )
 

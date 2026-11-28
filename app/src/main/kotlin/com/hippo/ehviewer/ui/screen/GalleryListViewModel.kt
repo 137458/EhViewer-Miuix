@@ -1,5 +1,6 @@
 package com.hippo.ehviewer.ui.screen
 
+import androidx.collection.MutableLongSet
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -10,6 +11,7 @@ import androidx.paging.PagingConfig
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
 import androidx.paging.cachedIn
+import androidx.paging.filter
 import androidx.savedstate.compose.serialization.serializers.MutableStateSerializer
 import com.ehviewer.core.model.BaseGalleryInfo
 import com.ehviewer.core.util.withIOContext
@@ -17,6 +19,7 @@ import com.hippo.ehviewer.client.EhEngine
 import com.hippo.ehviewer.client.data.ListUrlBuilder
 import com.hippo.ehviewer.client.data.ListUrlBuilder.Companion.MODE_TOPLIST
 import com.hippo.ehviewer.ui.tools.foldToLoadResult
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import moe.tarsin.coroutines.runSuspendCatching
@@ -29,7 +32,7 @@ class GalleryListViewModel(lub: ListUrlBuilder, savedStateHandle: SavedStateHand
     }
 
     // Use a smaller prefetch distance to avoid prepending an additional page after jumping
-    val data = Pager(PagingConfig(25, prefetchDistance = 20)) {
+    val data = Pager(PagingConfig(PAGE_SIZE, prefetchDistance = 20)) {
         object : PagingSource<String, BaseGalleryInfo>() {
             override fun getRefreshKey(state: PagingState<String, BaseGalleryInfo>): String? = null
             override suspend fun load(params: LoadParams<String>) = withIOContext {
@@ -70,5 +73,11 @@ class GalleryListViewModel(lub: ListUrlBuilder, savedStateHandle: SavedStateHand
                 }
             }
         }
-    }.flow.cachedIn(viewModelScope)
+    }.flow.map { data ->
+        // 搜索排序下同一画廊可能跨页重复出现（见 FooIbar/EhViewer#1190），按 gid 去重再交给列表
+        val gidSet = MutableLongSet(PAGE_SIZE)
+        data.filter { gidSet.add(it.gid) }
+    }.cachedIn(viewModelScope)
 }
+
+private const val PAGE_SIZE = 25

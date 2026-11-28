@@ -77,7 +77,6 @@ import com.ehviewer.core.ui.util.ifTrueThen
 import com.hippo.ehviewer.client.EhTagDatabase
 import com.hippo.ehviewer.client.EhTagDatabase.suggestion
 import eu.kanade.tachiyomi.util.view.setSecureScreen
-import kotlin.coroutines.Continuation
 import kotlin.coroutines.resume
 import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.flow.collectLatest
@@ -101,6 +100,14 @@ import top.yukonga.miuix.kmp.icon.extended.Ok
 import top.yukonga.miuix.kmp.layout.DialogDefaults as MiuixDialogDefaults
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.window.WindowDialog
+
+/**
+ * 安全恢复协程：弹层可能在点击回调执行前被外部取消（如返回键、导航切换），
+ * 未判活的 resume 会抛 IllegalStateException 并让调用链崩溃。
+ */
+internal fun <T> CancellableContinuation<T>.safeResume(value: T) {
+    if (isActive) resume(value)
+}
 
 fun interface ActionScope {
     fun onSelect(action: String, that: suspend () -> Unit)
@@ -184,9 +191,10 @@ suspend fun <R> awaitResult(
                 Spacer(Modifier.width(16.dp))
                 MiuixTextButton(
                     text = stringResource(id = android.R.string.ok),
+                    enabled = invalidator == null || errorMsg == null,
                     onClick = {
                         if (invalidator == null || errorMsg == null) {
-                            cont.resume(state.value)
+                            cont.safeResume(state.value)
                         }
                     },
                     modifier = Modifier.weight(1f),
@@ -206,7 +214,7 @@ suspend fun awaitSelectTags(): List<String> = dialog { cont ->
         confirmButton = {
             MiuixTextButton(
                 text = stringResource(id = android.R.string.ok),
-                onClick = { cont.resume(selected.toList()) },
+                onClick = { cont.safeResume(selected.toList()) },
             )
         },
         dismissButton = {
@@ -354,6 +362,7 @@ suspend fun awaitInputText(
     val coroutineScope = rememberCoroutineScope()
     var text by remember(cont) { mutableStateOf(initial) }
     var error by remember(cont) { mutableStateOf<String?>(null) }
+    var validating by remember(cont) { mutableStateOf(false) }
     WindowDialog(
         show = true,
         onDismissRequest = {
@@ -402,13 +411,19 @@ suspend fun awaitInputText(
                 Spacer(Modifier.width(16.dp))
                 MiuixTextButton(
                     text = stringResource(id = confirmText),
+                    enabled = !validating,
                     onClick = {
                         if (invalidator == null) {
-                            cont.resume(text)
-                        } else {
+                            cont.safeResume(text)
+                        } else if (!validating) {
+                            validating = true
                             coroutineScope.launch {
-                                error = either { invalidator(text) }.leftOrNull()
-                                if (error == null) cont.resume(text)
+                                try {
+                                    error = either { invalidator(text) }.leftOrNull()
+                                    if (error == null) cont.safeResume(text)
+                                } finally {
+                                    validating = false
+                                }
                             }
                         }
                     },
@@ -433,6 +448,7 @@ suspend fun awaitInputTextWithCheckBox(
     val coroutineScope = rememberCoroutineScope()
     var text by remember(cont) { mutableStateOf(initial) }
     var error by remember(cont) { mutableStateOf<String?>(null) }
+    var validating by remember(cont) { mutableStateOf(false) }
     var checkedState by remember { mutableStateOf(checked) }
     WindowDialog(
         show = true,
@@ -482,13 +498,19 @@ suspend fun awaitInputTextWithCheckBox(
                 Spacer(Modifier.width(16.dp))
                 MiuixTextButton(
                     text = stringResource(id = android.R.string.ok),
+                    enabled = !validating,
                     onClick = {
                         if (invalidator == null) {
-                            cont.resume(text to checkedState)
-                        } else {
+                            cont.safeResume(text to checkedState)
+                        } else if (!validating) {
+                            validating = true
                             coroutineScope.launch {
-                                error = either { invalidator(text, checkedState) }.leftOrNull()
-                                if (error == null) cont.resume(text to checkedState)
+                                try {
+                                    error = either { invalidator(text, checkedState) }.leftOrNull()
+                                    if (error == null) cont.safeResume(text to checkedState)
+                                } finally {
+                                    validating = false
+                                }
                             }
                         }
                     },
@@ -545,7 +567,7 @@ suspend fun awaitConfirmationOrCancel(
                 if (showConfirmButton) {
                     MiuixTextButton(
                         text = stringResource(id = confirmText),
-                        onClick = { cont.resume(Unit) },
+                        onClick = { cont.safeResume(Unit) },
                         modifier = Modifier.weight(1f),
                         colors = MiuixButtonDefaults.textButtonColorsPrimary(),
                     )
@@ -603,7 +625,7 @@ suspend fun awaitSelectDate(
                 Spacer(modifier = Modifier.width(8.dp))
                 MiuixTextButton(
                     text = stringResource(id = android.R.string.ok),
-                    onClick = { state.selectedDateMillis?.let { cont.resume(it) } ?: cont.cancel() },
+                    onClick = { state.selectedDateMillis?.let { cont.safeResume(it) } ?: cont.cancel() },
                 )
             }
         }
@@ -611,7 +633,7 @@ suspend fun awaitSelectDate(
 }
 
 context(_: DialogState)
-suspend fun <R> showNoButton(respectDefaultWidth: Boolean = true, block: @Composable Continuation<R>.() -> Unit): R = dialog { cont ->
+suspend fun <R> showNoButton(respectDefaultWidth: Boolean = true, block: @Composable CancellableContinuation<R>.() -> Unit): R = dialog { cont ->
     WindowDialog(
         show = true,
         onDismissRequest = { cont.cancel() },
@@ -659,7 +681,7 @@ suspend fun awaitSelectTime(
                 Spacer(modifier = Modifier.width(8.dp))
                 MiuixTextButton(
                     text = stringResource(id = android.R.string.ok),
-                    onClick = { cont.resume(state.hour to state.minute) },
+                    onClick = { cont.safeResume(state.hour to state.minute) },
                 )
             }
         }
@@ -685,7 +707,7 @@ suspend fun awaitSingleChoice(
                 startAction = {
                     MiuixRadioButton(selected = index == selected, onClick = null)
                 },
-                onClick = { resume(index) },
+                onClick = { safeResume(index) },
                 role = Role.RadioButton,
                 holdDownState = index == selected,
             ) {
@@ -721,7 +743,7 @@ suspend fun awaitSelectItem(
         FastScrollLazyColumn {
             itemsIndexed(items) { index, text ->
                 BasicComponent(
-                    onClick = { resume(index) },
+                    onClick = { safeResume(index) },
                     role = Role.RadioButton,
                     holdDownState = index == selected,
                 ) {
@@ -765,7 +787,7 @@ suspend fun awaitSelectItemWithCheckBox(
         FastScrollLazyColumn {
             itemsIndexed(items) { index, text ->
                 BasicComponent(
-                    onClick = { resume(index to checked) },
+                    onClick = { safeResume(index to checked) },
                     role = Role.RadioButton,
                     holdDownState = index == selected,
                 ) {
@@ -809,7 +831,7 @@ suspend fun awaitSelectItemWithIcon(
                         tint = MiuixTheme.colorScheme.onSurface,
                     )
                 },
-                onClick = { resume(index) },
+                onClick = { safeResume(index) },
                 role = Role.Button,
                 holdDownState = false,
             ) {
@@ -863,7 +885,7 @@ suspend fun awaitSelectItemWithIconAndTextField(
                 Column(
                     modifier = Modifier
                         .clip(IconWithTextCorner)
-                        .clickable(role = Role.Button) { resume(index to note.text.toString()) }
+                        .clickable(role = Role.Button) { safeResume(index to note.text.toString()) }
                         .fillMaxWidth(0.2F),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {

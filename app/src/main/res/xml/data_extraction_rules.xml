@@ -22,8 +22,14 @@
         <include
             domain="file"
             path="datastore" />
-        <include
+        <!-- WebView cookies carry the login session, they must never leave the device. -->
+        <exclude
             domain="root"
             path="app_webview/Default/Cookies" />
     </cloud-backup>
+    <device-transfer>
+        <exclude
+            domain="root"
+            path="app_webview/Default/Cookies" />
+    </device-transfer>
 </data-extraction-rules>

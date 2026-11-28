@@ -177,20 +177,22 @@ fun AnimatedVisibilityScope.WebViewSignInScreen(navigator: DestinationsNavigator
             onCreated = {
                 EhUtils.signOut()
                 it.setDefaultSettings()
-                it.evaluateJavascript(WebInjectionHelper.VIEWPORT_META_INJECTION_SCRIPT, null)
+                // 页面尚未加载完成时注入 viewport 脚本是死代码，注入统一由上方 LaunchedEffect 负责
             },
         )
         Box(
             modifier = Modifier
                 .statusBarsPadding()
-                .padding(start = 12.dp, top = 8.dp)
-                .size(40.dp)
+                .padding(start = 8.dp, top = 4.dp)
+                // 触摸区域 48dp 满足最小可点尺寸，视觉圆仍为 40dp
+                .size(48.dp)
                 .onGloballyPositioned {
                     buttonCenter = it.positionInRoot() + Offset(it.size.width / 2f, it.size.height / 2f)
                 }
+                .clickable { navigator.popBackStack() }
+                .padding(4.dp)
                 .background(surfaceContainer.copy(alpha = 0.5f), CircleShape)
-                .border(1.dp, GLASS_RIM, CircleShape)
-                .clickable { navigator.popBackStack() },
+                .border(1.dp, GLASS_RIM, CircleShape),
             contentAlignment = Alignment.Center,
         ) {
             Icon(imageVector = MiuixIcons.Back, contentDescription = null, tint = MiuixTheme.colorScheme.onSurface)

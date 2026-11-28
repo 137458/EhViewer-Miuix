@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <plurals name="page_count">
-        <item quantity="one">%d páginas</item>
+        <item quantity="one">%d página</item>
         <item quantity="other">%d páginas</item>
     </plurals>
     <plurals name="some_minutes_ago">

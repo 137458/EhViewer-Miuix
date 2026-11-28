@@ -17,8 +17,10 @@ package com.hippo.ehviewer.download
 
 import android.Manifest
 import android.app.ForegroundServiceStartNotAllowedException
+import android.app.Notification
 import android.app.PendingIntent
 import android.app.Service
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -47,6 +49,7 @@ import com.hippo.ehviewer.client.exception.IpBannedException
 import com.hippo.ehviewer.client.exception.QuotaExceededException
 import com.hippo.ehviewer.ui.MainActivity
 import com.hippo.ehviewer.util.FileUtils
+import com.hippo.ehviewer.util.InternalIntentGuard
 import com.hippo.ehviewer.util.ReadableTime
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -56,6 +59,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 
 class DownloadService :
     Service(),
@@ -96,7 +100,7 @@ class DownloadService :
     override fun onDestroy() {
         val scope = this
         launch {
-            deferredMgr.await().setDownloadListener(null)
+            deferredMgr.await().clearDownloadListener(this@DownloadService)
             // Wait for the last notification to be posted
             delay(DELAY)
             scope.cancel()
@@ -112,8 +116,14 @@ class DownloadService :
     // 必须尽快 stopSelf，否则按 ANR 处理。下载进度已持久化，用户可稍后手动恢复。
     override fun onTimeout(startId: Int, fgsType: Int) {
         launch {
-            deferredMgr.await().stopAllDownload()
-            stopSelf()
+            try {
+                // 超时后系统随时可能按 ANR 处理：最多等 2 秒让下载任务收尾，之后无论如何都要停服务
+                withTimeoutOrNull(2000L) {
+                    deferredMgr.await().stopAllDownload()
+                }
+            } finally {
+                stopSelf()
+            }
         }
     }
 
@@ -160,14 +170,16 @@ class DownloadService :
     }
 
     private fun initDownloadedNotification(): NotificationHandler {
-        val clearIntent = Intent(this, DownloadService::class.java)
+        val clearIntent = Intent(this, ClearReceiver::class.java)
         clearIntent.action = ACTION_CLEAR
-        val piClear = PendingIntent.getService(this, 0, clearIntent, PendingIntent.FLAG_IMMUTABLE)
+        // 只有清空通知这一件事，用广播接收器即可，不必再拉起服务
+        val piClear = PendingIntent.getBroadcast(this, 0, clearIntent, PendingIntent.FLAG_IMMUTABLE)
         val bundle = Bundle()
         bundle.putString(KEY_ACTION, ACTION_CLEAR_DOWNLOAD_SERVICE)
         val activityIntent = Intent(this, MainActivity::class.java)
         activityIntent.action = ACTION_START_DOWNLOADSCENE
         activityIntent.putExtra(ACTION_START_DOWNLOADSCENE_ARGS, bundle)
+        activityIntent.putExtra(InternalIntentGuard.EXTRA_TOKEN, InternalIntentGuard.token)
         val piActivity = PendingIntent.getActivity(
             this,
             0,
@@ -216,6 +228,7 @@ class DownloadService :
         val activityIntent = Intent(this, MainActivity::class.java)
         activityIntent.action = ACTION_START_DOWNLOADSCENE
         activityIntent.putExtra(ACTION_START_DOWNLOADSCENE_ARGS, bundle)
+        activityIntent.putExtra(InternalIntentGuard.EXTRA_TOKEN, InternalIntentGuard.token)
         val piActivity = PendingIntent.getActivity(
             this,
             0,
@@ -254,100 +267,103 @@ class DownloadService :
 
     override fun onFinish(info: DownloadInfo) {
         downloadingNotification.cancel()
-        val finish = info.state == DownloadInfo.STATE_FINISH
-        val gid = info.gid
-        val index = sItemStateArray.indexOfKey(gid)
-        if (index < 0) { // Not contain
-            sItemStateArray.put(gid, finish)
-            sItemTitleArray.put(gid, EhUtils.getSuitableTitle(info))
-            sDownloadedCount++
-            if (finish) {
-                sFinishedCount++
-            } else {
-                sFailedCount++
-            }
-        } else { // Contain
-            val oldFinish = sItemStateArray.valueAt(index)
-            sItemStateArray.put(gid, finish)
-            sItemTitleArray.put(gid, EhUtils.getSuitableTitle(info))
-            if (oldFinish && !finish) {
-                sFinishedCount--
-                sFailedCount++
-            } else if (!oldFinish && finish) {
-                sFinishedCount++
-                sFailedCount--
-            }
-        }
-        val text: String
-        val needStyle: Boolean
-        if (sFinishedCount != 0 && sFailedCount == 0) {
-            if (sFinishedCount == 1) {
-                text = if (sItemTitleArray.size() >= 1) {
-                    getString(
-                        R.string.stat_download_done_line_succeeded,
-                        sItemTitleArray.valueAt(0),
-                    )
+        // 计数器与两个 LongSparseArray 会被 onFinish / clear() 在不同线程上读写，整段加锁
+        synchronized(sStateLock) {
+            val finish = info.state == DownloadInfo.STATE_FINISH
+            val gid = info.gid
+            val index = sItemStateArray.indexOfKey(gid)
+            if (index < 0) { // Not contain
+                sItemStateArray.put(gid, finish)
+                sItemTitleArray.put(gid, EhUtils.getSuitableTitle(info))
+                sDownloadedCount++
+                if (finish) {
+                    sFinishedCount++
                 } else {
-                    logcat { "WTF, sItemTitleArray is null" }
-                    getString(R.string.error_unknown)
+                    sFailedCount++
                 }
-                needStyle = false
+            } else { // Contain
+                val oldFinish = sItemStateArray.valueAt(index)
+                sItemStateArray.put(gid, finish)
+                sItemTitleArray.put(gid, EhUtils.getSuitableTitle(info))
+                if (oldFinish && !finish) {
+                    sFinishedCount--
+                    sFailedCount++
+                } else if (!oldFinish && finish) {
+                    sFinishedCount++
+                    sFailedCount--
+                }
+            }
+            val text: String
+            val needStyle: Boolean
+            if (sFinishedCount != 0 && sFailedCount == 0) {
+                if (sFinishedCount == 1) {
+                    text = if (sItemTitleArray.size() >= 1) {
+                        getString(
+                            R.string.stat_download_done_line_succeeded,
+                            sItemTitleArray.valueAt(0),
+                        )
+                    } else {
+                        logcat { "WTF, sItemTitleArray is null" }
+                        getString(R.string.error_unknown)
+                    }
+                    needStyle = false
+                } else {
+                    text = getString(R.string.stat_download_done_text_succeeded, sFinishedCount)
+                    needStyle = true
+                }
+            } else if (sFinishedCount == 0 && sFailedCount != 0) {
+                if (sFailedCount == 1) {
+                    text = if (sItemTitleArray.size() >= 1) {
+                        getString(
+                            R.string.stat_download_done_line_failed,
+                            sItemTitleArray.valueAt(0),
+                        )
+                    } else {
+                        logcat { "WTF, sItemTitleArray is null" }
+                        getString(R.string.error_unknown)
+                    }
+                    needStyle = false
+                } else {
+                    text = getString(R.string.stat_download_done_text_failed, sFailedCount)
+                    needStyle = true
+                }
             } else {
-                text = getString(R.string.stat_download_done_text_succeeded, sFinishedCount)
+                text = getString(R.string.stat_download_done_text_mix, sFinishedCount, sFailedCount)
                 needStyle = true
             }
-        } else if (sFinishedCount == 0 && sFailedCount != 0) {
-            if (sFailedCount == 1) {
-                text = if (sItemTitleArray.size() >= 1) {
-                    getString(
-                        R.string.stat_download_done_line_failed,
-                        sItemTitleArray.valueAt(0),
+            val style: NotificationCompat.InboxStyle?
+            if (needStyle) {
+                style = NotificationCompat.InboxStyle()
+                style.setBigContentTitle(getString(R.string.stat_download_done_title))
+                val stateArray = sItemStateArray
+                var i = 0
+                val n = stateArray.size()
+                while (i < n) {
+                    val id = stateArray.keyAt(i)
+                    val fin = stateArray.valueAt(i)
+                    val title = sItemTitleArray[id]
+                    if (title == null) {
+                        i++
+                        continue
+                    }
+                    style.addLine(
+                        getString(
+                            if (fin) R.string.stat_download_done_line_succeeded else R.string.stat_download_done_line_failed,
+                            title,
+                        ),
                     )
-                } else {
-                    logcat { "WTF, sItemTitleArray is null" }
-                    getString(R.string.error_unknown)
-                }
-                needStyle = false
-            } else {
-                text = getString(R.string.stat_download_done_text_failed, sFailedCount)
-                needStyle = true
-            }
-        } else {
-            text = getString(R.string.stat_download_done_text_mix, sFinishedCount, sFailedCount)
-            needStyle = true
-        }
-        val style: NotificationCompat.InboxStyle?
-        if (needStyle) {
-            style = NotificationCompat.InboxStyle()
-            style.setBigContentTitle(getString(R.string.stat_download_done_title))
-            val stateArray = sItemStateArray
-            var i = 0
-            val n = stateArray.size()
-            while (i < n) {
-                val id = stateArray.keyAt(i)
-                val fin = stateArray.valueAt(i)
-                val title = sItemTitleArray[id]
-                if (title == null) {
                     i++
-                    continue
                 }
-                style.addLine(
-                    getString(
-                        if (fin) R.string.stat_download_done_line_succeeded else R.string.stat_download_done_line_failed,
-                        title,
-                    ),
-                )
-                i++
+            } else {
+                style = null
             }
-        } else {
-            style = null
-        }
-        downloadedNotification.run {
-            builder.setContentText(text)
-                .setStyle(style)
-                .setWhen(System.currentTimeMillis())
-                .setNumber(sDownloadedCount)
-            show()
+            downloadedNotification.run {
+                builder.setContentText(text)
+                    .setStyle(style)
+                    .setWhen(System.currentTimeMillis())
+                    .setNumber(sDownloadedCount)
+                show()
+            }
         }
         checkStopSelf()
     }
@@ -371,38 +387,40 @@ class DownloadService :
         val builder: NotificationCompat.Builder,
         private val id: Int,
     ) {
-        private val channel = Channel<Ops>(Channel.CONFLATED)
+        private val channel = Channel<Op>(Channel.CONFLATED)
 
+        // 快照在调用线程（主线程）上构建，IO 线程只负责投递：
+        // 旧实现让 IO 线程直接 build() 共享 Builder，会和主线程的 setXxx 相互踩踏
         fun show() {
-            channel.trySend(Ops.Notify)
+            channel.trySend(Op.Notify(builder.build()))
         }
 
         fun cancel() {
-            channel.trySend(Ops.Cancel)
+            channel.trySend(Op.Cancel)
         }
 
         fun startForeground() {
-            channel.trySend(Ops.StartForeground)
+            channel.trySend(Op.StartForeground(builder.build()))
         }
 
         suspend fun run() {
             while (true) {
-                when (channel.receive()) {
-                    Ops.Notify -> {
+                when (val op = channel.receive()) {
+                    is Op.Notify -> {
                         if (ActivityCompat.checkSelfPermission(
                                 service,
                                 Manifest.permission.POST_NOTIFICATIONS,
                             ) == PackageManager.PERMISSION_GRANTED
                         ) {
-                            notifyManager.notify(id, builder.build())
+                            notifyManager.notify(id, op.notification)
                         }
                     }
-                    Ops.Cancel -> notifyManager.cancel(id)
-                    Ops.StartForeground -> {
+                    Op.Cancel -> notifyManager.cancel(id)
+                    is Op.StartForeground -> {
                         // 只吞掉系统禁止前台服务这一种预期失败，其他异常必须暴露出来
                         try {
                             val fgType = if (isAtLeastU) ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC else 0
-                            ServiceCompat.startForeground(service, id, builder.build(), fgType)
+                            ServiceCompat.startForeground(service, id, op.notification, fgType)
                         } catch (e: Exception) {
                             if (isAtLeastS && e is ForegroundServiceStartNotAllowedException) {
                                 logcat(e)
@@ -416,10 +434,17 @@ class DownloadService :
             }
         }
 
-        private enum class Ops {
-            Notify,
-            Cancel,
-            StartForeground,
+        private sealed interface Op {
+            class Notify(val notification: Notification) : Op
+            data object Cancel : Op
+            class StartForeground(val notification: Notification) : Op
+        }
+    }
+
+    // CONTRACT-3：通知上的“清空”只需要清状态，用 exported=false 的广播接收器承载，不必为此拉起服务
+    class ClearReceiver : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            clear()
         }
     }
 
@@ -442,6 +467,9 @@ class DownloadService :
         private const val ID_DOWNLOADED = 2
         private const val ID_FATAL = 3
         private const val DELAY = 1000L // 1s
+
+        // onFinish 与 clear() 会在不同线程上读写下面几个计数器/数组，统一用这把锁串起来
+        private val sStateLock = Any()
         private val sItemStateArray = LongSparseArray<Boolean>()
         private val sItemTitleArray = LongSparseArray<String>()
         private var sFailedCount = 0
@@ -466,11 +494,13 @@ class DownloadService :
         }
 
         fun clear() {
-            sFailedCount = 0
-            sFinishedCount = 0
-            sDownloadedCount = 0
-            sItemStateArray.clear()
-            sItemTitleArray.clear()
+            synchronized(sStateLock) {
+                sFailedCount = 0
+                sFinishedCount = 0
+                sDownloadedCount = 0
+                sItemStateArray.clear()
+                sItemTitleArray.clear()
+            }
         }
     }
 }

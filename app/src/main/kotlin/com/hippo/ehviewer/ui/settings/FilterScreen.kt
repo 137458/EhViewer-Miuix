@@ -58,10 +58,10 @@ import com.hippo.ehviewer.ui.Screen
 import com.hippo.ehviewer.ui.main.NavigationIcon
 import com.hippo.ehviewer.ui.tools.awaitConfirmationOrCancel
 import com.hippo.ehviewer.ui.tools.dialog
+import com.hippo.ehviewer.ui.tools.safeResume
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
-import kotlin.coroutines.resume
 import moe.tarsin.coroutines.groupByToObserved
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Checkbox
@@ -110,7 +110,7 @@ fun AnimatedVisibilityScope.FilterScreen(navigator: DestinationsNavigator) = Scr
                     val filter = Filter(mode, state.text.toString())
                     filter.remember {
                         if (it) {
-                            cont.resume(Unit)
+                            cont.safeResume(Unit)
                             requireNotNull(allFilterMap.getCompleted()[mode]).add(filter)
                         } else {
                             error = labelExist

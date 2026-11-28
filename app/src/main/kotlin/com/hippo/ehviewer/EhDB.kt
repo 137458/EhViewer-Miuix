@@ -15,10 +15,11 @@
  */
 package com.hippo.ehviewer
 
+import androidx.paging.PagingSource
+import androidx.paging.PagingState
 import androidx.room.execSQL
+import androidx.room.immediateTransaction
 import androidx.room.useWriterConnection
-import arrow.fx.coroutines.resource
-import arrow.fx.coroutines.resourceScope
 import com.ehviewer.core.data.model.asEntity
 import com.ehviewer.core.database.EhDatabase
 import com.ehviewer.core.database.Schema17to18
@@ -35,10 +36,14 @@ import com.ehviewer.core.database.model.ProgressInfo
 import com.ehviewer.core.database.model.QuickSearch
 import com.ehviewer.core.database.roomDb
 import com.ehviewer.core.files.delete
+import com.ehviewer.core.files.read
 import com.ehviewer.core.files.sendTo
 import com.ehviewer.core.model.GalleryInfo
+import com.ehviewer.core.util.logcat
 import com.hippo.ehviewer.download.DownloadManager
 import kotlinx.coroutines.flow.Flow
+import kotlinx.io.readByteArray
+import moe.tarsin.coroutines.runSuspendCatching
 import okio.Path
 
 object EhDB {
@@ -56,7 +61,7 @@ object EhDB {
         val inLocalFav = db.localFavoritesDao().contains(gid)
         val inHistory = db.historyDao().contains(gid)
         if (shouldDeleteGallery(inDownloads, inLocalFav, inHistory)) {
-            runCatching { db.galleryDao().deleteByKey(gid) }
+            db.galleryDao().deleteByKey(gid)
         }
     }
 
@@ -70,7 +75,15 @@ object EhDB {
 
     fun getReadProgressFlow(gid: Long) = db.progressDao().getPageFlow(gid)
     suspend fun getReadProgress(gid: Long) = db.progressDao().getPage(gid)
-    suspend fun putReadProgress(gid: Long, page: Int) = db.progressDao().upsert(ProgressInfo(gid, page))
+    suspend fun putReadProgress(gid: Long, page: Int) {
+        // PROGRESS has a foreign key to GALLERIES, so progress for a gallery that is no longer
+        // stored would abort with a constraint violation. Skip it instead of failing the write.
+        if (db.galleryDao().load(gid) == null) {
+            logcat("EhDB") { "Skip read progress for unknown gallery $gid" }
+            return
+        }
+        db.progressDao().upsert(ProgressInfo(gid, page))
+    }
     suspend fun clearProgressInfo() = db.progressDao().deleteAll()
 
     suspend fun getAllDownloadInfo() = db.downloadsDao().joinList().onEach {
@@ -85,28 +98,34 @@ object EhDB {
     }
 
     suspend fun putDownloadInfo(downloadInfo: DownloadInfo) {
-        db.useWriterConnection {
-            putGalleryInfo(downloadInfo.galleryInfo)
-            db.downloadsDao().upsert(downloadInfo.downloadInfo)
+        db.useWriterConnection { conn ->
+            conn.immediateTransaction {
+                putGalleryInfo(downloadInfo.galleryInfo)
+                db.downloadsDao().upsert(downloadInfo.downloadInfo)
+            }
         }
     }
 
     suspend fun removeDownloadInfo(downloadInfo: DownloadInfo) {
-        db.useWriterConnection {
-            val dao = db.downloadsDao()
-            dao.delete(downloadInfo.downloadInfo)
-            deleteGalleryInfo(downloadInfo.galleryInfo)
+        db.useWriterConnection { conn ->
+            conn.immediateTransaction {
+                val dao = db.downloadsDao()
+                dao.delete(downloadInfo.downloadInfo)
+                deleteGalleryInfo(downloadInfo.galleryInfo)
+            }
         }
     }
 
     suspend fun randomLocalFav() = db.localFavoritesDao().random()
 
     suspend fun removeDownloadInfo(downloadInfo: List<DownloadInfo>) {
-        db.useWriterConnection {
-            val dao = db.downloadsDao()
-            downloadInfo.forEach {
-                dao.delete(it.downloadInfo)
-                deleteGalleryInfo(it.galleryInfo)
+        db.useWriterConnection { conn ->
+            conn.immediateTransaction {
+                val dao = db.downloadsDao()
+                downloadInfo.forEach {
+                    dao.delete(it.downloadInfo)
+                    deleteGalleryInfo(it.galleryInfo)
+                }
             }
         }
     }
@@ -159,18 +178,25 @@ object EhDB {
     }
 
     suspend fun removeDownloadLabel(raw: DownloadLabel) {
-        val dao = db.downloadLabelDao()
-        dao.delete(raw)
-        dao.fill(raw.position)
+        db.useWriterConnection { conn ->
+            conn.immediateTransaction {
+                val dao = db.downloadLabelDao()
+                dao.delete(raw)
+                dao.fill(raw.position)
+            }
+        }
     }
 
     suspend fun searchDownloadLabel(keyword: String, limit: Int) = db.downloadLabelDao().search("%$keyword%", limit)
 
     suspend fun putDownloadArtist(gid: Long, artists: List<DownloadArtist>) {
-        if (artists.isNotEmpty()) {
-            val dao = db.downloadArtistDao()
-            dao.deleteByGid(gid)
-            dao.insertOrIgnore(artists)
+        db.useWriterConnection { conn ->
+            conn.immediateTransaction {
+                val dao = db.downloadArtistDao()
+                // Drop the old rows even when the new list is empty, otherwise stale artists survive.
+                dao.deleteByGid(gid)
+                if (artists.isNotEmpty()) dao.insertOrIgnore(artists)
+            }
         }
     }
 
@@ -191,8 +217,12 @@ object EhDB {
     }
 
     suspend fun putLocalFavorites(galleryInfo: GalleryInfo) {
-        putGalleryInfo(galleryInfo.asEntity())
-        db.localFavoritesDao().upsert(LocalFavoriteInfo(galleryInfo.gid))
+        db.useWriterConnection { conn ->
+            conn.immediateTransaction {
+                putGalleryInfo(galleryInfo.asEntity())
+                db.localFavoritesDao().upsert(LocalFavoriteInfo(galleryInfo.gid))
+            }
+        }
     }
 
     suspend fun putLocalFavorites(galleryInfoList: Collection<GalleryInfo>) {
@@ -218,9 +248,13 @@ object EhDB {
     }
 
     suspend fun deleteQuickSearch(quickSearch: QuickSearch) {
-        val dao = db.quickSearchDao()
-        dao.delete(quickSearch)
-        dao.fill(quickSearch.position)
+        db.useWriterConnection { conn ->
+            conn.immediateTransaction {
+                val dao = db.quickSearchDao()
+                dao.delete(quickSearch)
+                dao.fill(quickSearch.position)
+            }
+        }
     }
 
     suspend fun updateQuickSearch(quickSearchList: List<QuickSearch>) {
@@ -231,7 +265,7 @@ object EhDB {
     val historyLazyList
         get() = db.historyDao().joinListLazy()
 
-    fun searchHistory(keyword: String) = db.historyDao().joinListLazy("*$keyword*")
+    fun searchHistory(keyword: String): PagingSource<Int, GalleryEntity> = buildFtsQuery(keyword)?.let { db.historyDao().joinListLazy(it) } ?: emptySearchResult()
 
     val localFavLazyList
         get() = db.localFavoritesDao().joinListLazy()
@@ -239,11 +273,15 @@ object EhDB {
     val localFavCount: Flow<Int>
         get() = db.localFavoritesDao().count()
 
-    fun searchLocalFav(keyword: String) = db.localFavoritesDao().joinListLazy("*$keyword*")
+    fun searchLocalFav(keyword: String): PagingSource<Int, GalleryEntity> = buildFtsQuery(keyword)?.let { db.localFavoritesDao().joinListLazy(it) } ?: emptySearchResult()
 
     suspend fun putHistoryInfo(galleryInfo: GalleryInfo) {
-        putGalleryInfo(galleryInfo.asEntity())
-        db.historyDao().upsert(HistoryInfo(galleryInfo.gid))
+        db.useWriterConnection { conn ->
+            conn.immediateTransaction {
+                putGalleryInfo(galleryInfo.asEntity())
+                db.historyDao().upsert(HistoryInfo(galleryInfo.gid))
+            }
+        }
     }
 
     suspend fun updateFavoriteSlot(gid: Long, slot: Int) {
@@ -260,24 +298,30 @@ object EhDB {
     }
 
     suspend fun deleteHistoryInfo(galleryInfo: GalleryEntity) {
-        db.useWriterConnection {
-            val dao = db.historyDao()
-            dao.deleteByKey(galleryInfo.gid)
-            deleteGalleryInfo(galleryInfo)
+        db.useWriterConnection { conn ->
+            conn.immediateTransaction {
+                val dao = db.historyDao()
+                dao.deleteByKey(galleryInfo.gid)
+                deleteGalleryInfo(galleryInfo)
+            }
         }
     }
 
     suspend fun clearHistoryInfo() {
-        val dao = db.historyDao()
-        val historyList = dao.list()
-        dao.deleteAll()
-        historyList.forEach { cleanOrphanGallery(it.gid) }
+        db.useWriterConnection { conn ->
+            conn.immediateTransaction {
+                val dao = db.historyDao()
+                val historyList = dao.list()
+                dao.deleteAll()
+                historyList.forEach { cleanOrphanGallery(it.gid) }
+            }
+        }
     }
 
     suspend fun getAllFilter() = db.filterDao().list()
 
     suspend fun addFilter(filter: Filter): Boolean {
-        val existFilter = runCatching { db.filterDao().load(filter.text, filter.mode.field) }.getOrNull()
+        val existFilter = runSuspendCatching { db.filterDao().load(filter.text, filter.mode.field) }.getOrNull()
         return if (existFilter == null) {
             filter.id = null
             filter.id = db.filterDao().insert(filter)
@@ -304,59 +348,76 @@ object EhDB {
 
     suspend fun exportDB(file: Path) {
         db.useWriterConnection { conn ->
-            conn.execSQL("PRAGMA wal_checkpoint(FULL)")
+            // TRUNCATE instead of FULL: without it the newest pages could still sit in the -wal file,
+            // which is not part of the exported copy.
+            conn.execSQL("PRAGMA wal_checkpoint(TRUNCATE)")
             conn.execSQL("VACUUM")
+            // Copy while the writer connection is held so no write can land in between.
+            getDatabasePath(DB_NAME) sendTo file
         }
-        val dbFile = getDatabasePath(DB_NAME)
-        dbFile sendTo file
     }
 
-    suspend fun importDB(file: Path) = resourceScope {
-        val tempDBName = "tmp.db"
+    suspend fun importDB(file: Path) {
+        // Unique name: two imports must never share a stale temp database.
+        val tempDBName = "import-${System.currentTimeMillis()}.db"
         val dbFile = getDatabasePath(tempDBName)
-        file sendTo dbFile
-        val oldDB = resource {
-            roomDb<EhDatabase>(tempDBName) {
+        try {
+            file sendTo dbFile
+            verifySqliteFile(dbFile)
+            val oldDB = roomDb<EhDatabase>(tempDBName) {
                 addMigrations(Schema17to18())
             }
-        } release { db ->
-            db.close()
+            try {
+                db.useWriterConnection { conn ->
+                    conn.immediateTransaction {
+                        db.galleryDao().insertOrIgnore(oldDB.galleryDao().list())
+                        db.progressDao().insertOrIgnore(oldDB.progressDao().list())
+                        importDownloadDirname(oldDB.downloadDirnameDao().list())
+                        importHistoryInfo(oldDB.historyDao().list())
+                        importQuickSearch(importableQuickSearch(oldDB.quickSearchDao().list()))
+                        importLocalFavorites(oldDB.localFavoritesDao().list())
+                    }
+                }
+
+                // DownloadManager caches download rows outside the database, so these merges run in
+                // their own transactions instead of one big write transaction.
+                DownloadManager.addDownloadLabel(oldDB.downloadLabelDao().list())
+                DownloadManager.addDownload(oldDB.downloadsDao().joinList().asReversed())
+                oldDB.filterDao().list().forEach {
+                    addFilter(it)
+                }
+            } finally {
+                oldDB.close()
+            }
+        } finally {
+            // Room keeps -wal/-shm siblings; leaving them behind would poison the next import.
             dbFile.delete()
+            getDatabasePath("$tempDBName-wal").delete()
+            getDatabasePath("$tempDBName-shm").delete()
         }
+    }
 
-        db.galleryDao().insertOrIgnore(oldDB.galleryDao().list())
-        db.progressDao().insertOrIgnore(oldDB.progressDao().list())
+    // A blank or punctuation only keyword cannot be turned into a MATCH expression, so an empty page
+    // keeps the UI consistent instead of failing the query.
+    private fun emptySearchResult(): PagingSource<Int, GalleryEntity> = object : PagingSource<Int, GalleryEntity>() {
+        override fun getRefreshKey(state: PagingState<Int, GalleryEntity>): Int? = null
+        override suspend fun load(params: LoadParams<Int>): LoadResult<Int, GalleryEntity> = LoadResult.Page(emptyList(), null, null)
+    }
 
-        val downloadLabelList = oldDB.downloadLabelDao().list()
-        DownloadManager.addDownloadLabel(downloadLabelList)
+    private fun verifySqliteFile(file: Path) {
+        val magic = "SQLite format 3\u0000".toByteArray()
+        val header = runCatching { file.read { readByteArray(magic.size) } }.getOrNull()
+        require(header != null && header.contentEquals(magic)) { "Not a SQLite database: ${file.name}" }
+    }
 
-        oldDB.downloadDirnameDao().list().let {
-            importDownloadDirname(it)
-        }
-
-        val downloadInfoList = oldDB.downloadsDao().joinList().asReversed()
-        DownloadManager.addDownload(downloadInfoList)
-
-        val historyInfoList = oldDB.historyDao().list()
-        importHistoryInfo(historyInfoList)
-
-        val quickSearchList = oldDB.quickSearchDao().list()
+    private suspend fun importableQuickSearch(quickSearchList: List<QuickSearch>): List<QuickSearch> {
         val currentQuickSearchList = db.quickSearchDao().list()
         val offset = currentQuickSearchList.size
-        val importList = quickSearchList.filter { newQS ->
+        return quickSearchList.filter { newQS ->
             currentQuickSearchList.none { it.name == newQS.name }
         }.onEachIndexed { index, q ->
             q.id = null
             q.position = index + offset
-        }
-        importQuickSearch(importList)
-
-        oldDB.localFavoritesDao().list().let {
-            importLocalFavorites(it)
-        }
-
-        oldDB.filterDao().list().forEach {
-            addFilter(it)
         }
     }
 }

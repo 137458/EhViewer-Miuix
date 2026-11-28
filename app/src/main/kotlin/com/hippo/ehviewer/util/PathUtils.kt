@@ -31,7 +31,8 @@ val Uri.displayPath: String?
                 }
             }
 
-            context.externalCacheDirs.forEach {
+            // externalCacheDirs 的元素可能为 null（存储卷未挂载/被拔出）
+            context.externalCacheDirs?.filterNotNull().orEmpty().forEach {
                 val cachePath = it.path
                 val index = cachePath.indexOf(type)
                 if (index != -1) {
@@ -51,7 +52,8 @@ val Path.displayName: String
             Either.catch {
                 val proj = arrayOf(DocumentsContract.Document.COLUMN_DISPLAY_NAME)
                 appCtx.contentResolver.query(uri, proj, null, null, null)?.use { c ->
-                    if (c.moveToNext()) return c.getString(0)
+                    // 查询成功但行为空/列为 null 时继续回落到 name
+                    if (c.moveToNext()) c.getString(0)?.let { return it }
                 }
             }
         }

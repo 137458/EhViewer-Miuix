@@ -35,7 +35,6 @@ import androidx.compose.material3.fork.SwipeToDismissBox
 import androidx.compose.material3.fork.SwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -60,6 +59,7 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import arrow.core.partially1
 import com.ehviewer.core.database.model.DownloadInfo
 import com.ehviewer.core.i18n.R
@@ -197,15 +197,17 @@ fun AnimatedVisibilityScope.DownloadsScreen(navigator: DestinationsNavigator) = 
         remember(filterState, invalidateKey) {
             DownloadManager.downloadInfoList.filterTo(mutableStateListOf()) { info ->
                 filterState.take(info)
-            }.also {
-                launch {
-                    delay(200)
-                    isLoading = false
-                }
             }
         }
     } else {
         remember { mutableStateListOf() }
+    }
+    // 加载态计时不再塞进 remember：remember 内启动协程会在重组被丢弃时留下野协程
+    LaunchedEffect(filterState, invalidateKey) {
+        if (DownloadManager.isInitialized) {
+            delay(200)
+            isLoading = false
+        }
     }
 
     val newLabel = stringResource(R.string.new_label_title)
@@ -214,8 +216,8 @@ fun AnimatedVisibilityScope.DownloadsScreen(navigator: DestinationsNavigator) = 
     val labelEmpty = stringResource(R.string.label_text_is_empty)
     val defaultInvalid = stringResource(R.string.label_text_is_invalid)
     val labelExists = stringResource(R.string.label_text_exist)
-    val downloadsCountGroupByArtist by rememberInVM { EhDB.downloadsCountByArtist }.collectAsState(emptyMap())
-    val downloadsCountGroupByLabel by rememberInVM { EhDB.downloadsCountByLabel }.collectAsState(emptyMap())
+    val downloadsCountGroupByArtist by rememberInVM { EhDB.downloadsCountByArtist }.collectAsStateWithLifecycle(emptyMap())
+    val downloadsCountGroupByLabel by rememberInVM { EhDB.downloadsCountByLabel }.collectAsStateWithLifecycle(emptyMap())
     val downloadsCount = when (filterMode) {
         DownloadsFilterMode.CUSTOM -> downloadsCountGroupByLabel
         DownloadsFilterMode.ARTIST -> downloadsCountGroupByArtist

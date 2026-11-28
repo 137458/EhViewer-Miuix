@@ -8,10 +8,12 @@ import com.hippo.ehviewer.Settings
 import java.io.File
 import java.io.PrintWriter
 import java.io.Writer
+import java.lang.reflect.Modifier
 
 private fun joinIfStringArray(any: Any?): String = if (any is Array<*>) any.joinToString() else any.toString()
 
-private fun collectClassStaticInfo(clazz: Class<*>): String = clazz.fields.joinToString("\n") {
+// 只读静态字段：实例字段用 get(null) 读会抛 NullPointerException，整份崩溃日志就写不出来了
+private fun collectClassStaticInfo(clazz: Class<*>): String = clazz.fields.filter { Modifier.isStatic(it.modifiers) }.joinToString("\n") {
     "${it.name}=${joinIfStringArray(it.get(null))}"
 }
 
@@ -57,12 +59,8 @@ object CrashHandler {
     }
 
     private fun getThrowableInfo(t: Throwable, writer: PrintWriter) {
+        // printStackTrace 自己就会把 Caused by 链打全，再手动遍历会重复整条链
         t.printStackTrace(writer)
-        var cause = t.cause
-        while (cause != null) {
-            cause.printStackTrace(writer)
-            cause = cause.cause
-        }
     }
 
     private fun saveCrashLog(t: Throwable) {

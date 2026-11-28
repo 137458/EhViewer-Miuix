@@ -85,6 +85,7 @@ import logcat.AndroidLogcatLogger
 import logcat.LogPriority as LibLogPriority
 import logcat.LogcatLogger
 import logcat.asLog
+import moe.tarsin.coroutines.runSuspendCatching
 import okio.Path.Companion.toOkioPath
 import splitties.init.appCtx
 
@@ -102,7 +103,7 @@ class EhApplication : Application(), SingletonImageLoader.Factory {
                     AppCompatDelegate.setDefaultNightMode(mode)
                 }
             }
-            LogcatLogger.loggers += AndroidLogcatLogger(LibLogPriority.VERBOSE)
+            LogcatLogger.loggers += AndroidLogcatLogger(if (BuildConfig.DEBUG) LibLogPriority.VERBOSE else LibLogPriority.WARN)
             Settings.saveCrashLog.valueFlow().collect {
                 if (it) {
                     LogcatLogger.install()
@@ -160,12 +161,12 @@ class EhApplication : Application(), SingletonImageLoader.Factory {
     }
 
     private suspend fun cleanupDownload() {
-        runCatching {
+        runSuspendCatching {
             keepNoMediaFileStatus()
         }.onFailure {
             logcat(it)
         }
-        runCatching {
+        runSuspendCatching {
             clearTempDir()
         }.onFailure {
             logcat(it)

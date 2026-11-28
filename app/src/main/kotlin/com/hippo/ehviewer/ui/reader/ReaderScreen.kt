@@ -87,6 +87,7 @@ import com.hippo.ehviewer.ui.theme.EhTheme
 import com.hippo.ehviewer.ui.tools.DialogState
 import com.hippo.ehviewer.ui.tools.awaitInputText
 import com.hippo.ehviewer.ui.tools.dialog
+import com.hippo.ehviewer.ui.tools.safeResume
 import com.hippo.ehviewer.util.displayString
 import com.hippo.ehviewer.util.hasAds
 import com.ramcosta.composedestinations.annotation.Destination
@@ -97,7 +98,6 @@ import eu.kanade.tachiyomi.ui.reader.ReaderAppBars
 import eu.kanade.tachiyomi.ui.reader.ReaderContentOverlay
 import eu.kanade.tachiyomi.ui.reader.ReaderPageSheetMeta
 import eu.kanade.tachiyomi.ui.reader.setting.ReadingModeType
-import kotlin.coroutines.resume
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.merge
@@ -145,23 +145,25 @@ fun AnimatedVisibilityScope.ReaderScreen(args: ReaderScreenArgs, navigator: Dest
     }
 
     var retryTrigger by remember { mutableIntStateOf(0) }
-    Await(
-        block = asyncInVM(args to retryTrigger) { alive ->
-            suspendCancellableCoroutine { cont ->
-                with(alive) {
-                    launchIO {
-                        catch {
-                            usePageLoader(args) { loader ->
-                                cont.resume(loader.right())
-                                awaitCancellation()
-                            }
-                        }.let { left -> cont.resume(left) }
-                    }
+    val loadDeferred = asyncInVM(args to retryTrigger) { alive ->
+        suspendCancellableCoroutine { cont ->
+            with(alive) {
+                launchIO {
+                    catch {
+                        usePageLoader(args) { loader ->
+                            cont.safeResume(loader.right())
+                            awaitCancellation()
+                        }
+                    }.let { left -> if (cont.isActive) cont.safeResume(left) }
                 }
             }
-        }.value.run {
-            { await() }
-        },
+        }
+    }.value
+    // 记忆化 await lambda：否则每次重组都产生新实例，Await 内部 remember(block) 会被重置，
+    // 页面被反复打回占位符（闪烁 + 重新加载）
+    val loadBlock = remember(loadDeferred) { suspend { loadDeferred.await() } }
+    Await(
+        block = loadBlock,
         placeholder = {
             Background(readerBackground) {
                 InfiniteProgressIndicator()
@@ -267,7 +269,7 @@ fun ReaderScreen(pageLoader: PageLoader, info: BaseGalleryInfo?) {
             }
             syncState.Sync(isWebtoon) { appbarVisible = false }
             val readerBackground by collectReaderBackgroundAsState()
-            LaunchedEffect(readerBackground) {
+            LaunchedEffect(readerBackground, fullscreen) {
                 snapshotFlow { appbarVisible }.collect {
                     uiController.isSystemBarsVisible = it || !fullscreen
                     uiController.statusBarDarkContentEnabled = readerBackground.isLight
@@ -283,7 +285,7 @@ fun ReaderScreen(pageLoader: PageLoader, info: BaseGalleryInfo?) {
                     launch {
                         val blocked = page.status is PageStatus.Blocked
                         dialog { cont ->
-                            fun dispose() = cont.resume(Unit)
+                            fun dispose() = cont.safeResume(Unit)
                             WindowBottomSheet(
                                 show = true,
                                 onDismissRequest = { dispose() },
@@ -405,7 +407,7 @@ fun ReaderScreen(pageLoader: PageLoader, info: BaseGalleryInfo?) {
                 onClickSettings = {
                     launch {
                         dialog { cont ->
-                            fun dispose() = cont.resume(Unit)
+                            fun dispose() = cont.safeResume(Unit)
                             var isColorFilter by remember { mutableStateOf(false) }
                             WindowBottomSheet(
                                 show = true,

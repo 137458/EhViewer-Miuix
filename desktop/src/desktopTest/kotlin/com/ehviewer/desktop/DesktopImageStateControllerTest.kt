@@ -1,5 +1,7 @@
 package com.ehviewer.desktop
 
+import androidx.compose.runtime.State
+import androidx.compose.runtime.snapshots.Snapshot
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -72,5 +74,33 @@ class DesktopImageStateControllerTest {
         assertFalse(controller.retry())
         assertEquals(0, controller.retryCount)
         assertEquals(DesktopImageLoadState.Success, controller.state)
+    }
+
+    @Test
+    fun mutationsArePublishedThroughComposeSnapshots() {
+        // H-36 回归：state/retryCount 必须是 Compose Snapshot State。
+        // 判别法：Snapshot State 的写入会被记录进 apply observer 的变更集，普通 var 永远不会被记录。
+        val controller = DesktopImageStateController()
+        val changeSets = mutableListOf<Set<Any>>()
+        val handle = Snapshot.registerApplyObserver { objects, _ -> changeSets += objects }
+        try {
+            controller.onError("boom")
+            Snapshot.sendApplyNotifications()
+            assertTrue(changeSets.isNotEmpty(), "onError 必须通知快照观察者（普通 var 不会）")
+            assertTrue(
+                changeSets.any { objects -> objects.any { it is State<*> } },
+                "变更集里应包含 Snapshot State 本体",
+            )
+            assertEquals(DesktopImageLoadState.Error("boom"), controller.state)
+
+            changeSets.clear()
+            controller.retry()
+            Snapshot.sendApplyNotifications()
+            assertTrue(changeSets.isNotEmpty(), "retryCount 的变更也必须进入快照通知")
+            assertEquals(1, controller.retryCount)
+            assertEquals(DesktopImageLoadState.Loading, controller.state)
+        } finally {
+            handle.dispose()
+        }
     }
 }

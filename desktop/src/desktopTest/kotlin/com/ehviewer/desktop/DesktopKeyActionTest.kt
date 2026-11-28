@@ -4,6 +4,7 @@ import androidx.compose.ui.input.key.Key
 import com.ehviewer.core.i18n.MR
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
@@ -407,5 +408,62 @@ class DesktopKeyActionTest {
         val entry = DesktopShortcuts.defaultEntries().firstOrNull { it.keyCombination == "Ctrl + 1 / 2 / 3" }
         assertTrue(entry != null)
         assertSame(MR.strings.shortcut_switch_tabs, entry.descriptionRes)
+    }
+
+    @Test
+    fun metaActsAsCommandOnMacOs() {
+        // macOS 用 Command(⌘) 而非 Ctrl：Meta 在 macOS 上必须等价于 Ctrl
+        assertEquals(
+            DesktopKeyAction.ClosePage,
+            resolveKeyAction(isKeyDown = true, isCtrlPressed = false, isMetaPressed = true, key = Key.W, platformAcceptsMeta = true),
+        )
+        assertEquals(
+            DesktopKeyAction.ExitApp,
+            resolveKeyAction(isKeyDown = true, isCtrlPressed = false, isMetaPressed = true, key = Key.Q, platformAcceptsMeta = true),
+        )
+        assertEquals(
+            DesktopKeyAction.Refresh,
+            resolveKeyAction(isKeyDown = true, isCtrlPressed = false, isMetaPressed = true, key = Key.R, platformAcceptsMeta = true),
+        )
+        assertEquals(
+            DesktopKeyAction.FocusSearch,
+            resolveKeyAction(isKeyDown = true, isCtrlPressed = false, isMetaPressed = true, key = Key.F, platformAcceptsMeta = true),
+        )
+        assertEquals(
+            DesktopKeyAction.SwitchTabHistory,
+            resolveKeyAction(isKeyDown = true, isCtrlPressed = false, isMetaPressed = true, key = Key.One, platformAcceptsMeta = true),
+        )
+    }
+
+    @Test
+    fun metaIgnoredOnNonMacPlatforms() {
+        // Windows 的 Win 键 / Linux 的 Super 键不参与命令判定，避免系统键误触
+        assertEquals(
+            DesktopKeyAction.None,
+            resolveKeyAction(isKeyDown = true, isCtrlPressed = false, isMetaPressed = true, key = Key.W, platformAcceptsMeta = false),
+        )
+        assertEquals(
+            DesktopKeyAction.None,
+            resolveKeyAction(isKeyDown = true, isCtrlPressed = false, isMetaPressed = true, key = Key.Q, platformAcceptsMeta = false),
+        )
+        // 非命令键不受影响
+        assertEquals(
+            DesktopKeyAction.SelectNext,
+            resolveKeyAction(isKeyDown = true, isCtrlPressed = false, isMetaPressed = true, key = Key.DirectionDown, platformAcceptsMeta = false),
+        )
+        // Ctrl 仍然有效
+        assertEquals(
+            DesktopKeyAction.ClosePage,
+            resolveKeyAction(isKeyDown = true, isCtrlPressed = true, isMetaPressed = false, key = Key.W, platformAcceptsMeta = false),
+        )
+    }
+
+    @Test
+    fun isMacOsPlatformMatchesOsName() {
+        assertTrue(isMacOsPlatform("Mac OS X"))
+        assertTrue(isMacOsPlatform("macOS 15.0"))
+        assertFalse(isMacOsPlatform("Windows 11"))
+        assertFalse(isMacOsPlatform("Linux"))
+        assertFalse(isMacOsPlatform(""))
     }
 }

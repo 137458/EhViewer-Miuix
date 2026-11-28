@@ -220,7 +220,7 @@ abstract class RangeSet<T : Comparable<T>> :
      * @param elements ranges of values to add
      * @return whether any values were added
      */
-    override fun addAll(elements: Collection<ClosedRange<T>>): Boolean = elements.map { add(it) }.any()
+    override fun addAll(elements: Collection<ClosedRange<T>>): Boolean = elements.map { add(it) }.any { it }
 
     /**
      * Removes all values from the set.

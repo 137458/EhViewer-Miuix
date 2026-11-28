@@ -58,6 +58,7 @@ import io.ktor.client.statement.request
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
 import kotlin.concurrent.write
+import moe.tarsin.coroutines.runSuspendCatching
 import okio.Path
 import okio.Path.Companion.toOkioPath
 import splitties.init.appCtx
@@ -75,6 +76,9 @@ class SpiderDen(val info: GalleryInfo) {
 
     // Search in both directories to maintain compatibility
     private val fileCache = mutableMapOf<String, Path>()
+
+    // 读写都在 lock 内，但初次置位的可见性由 volatile 保证，避免双重检查读到旧值重复扫描目录
+    @Volatile
     private var fileCacheInitialized = false
 
     private fun ensureFileCacheInitialized() {
@@ -148,8 +152,16 @@ class SpiderDen(val info: GalleryInfo) {
         return runCatching {
             sCache.read(key) {
                 val extension = metadata.toFile().readText()
+                // 先写临时文件再改名：直接在最终文件名上写，中途失败会留下截断的图片被当成已下载
+                val tempFile = dir.findDownloadFileForIndex(index, "$extension$TEMP_SUFFIX")
                 val file = dir.findDownloadFileForIndex(index, extension)
-                data sendTo file
+                data sendTo tempFile
+                file.delete()
+                tempFile moveTo file
+                lock.write {
+                    fileCache.remove(tempFile.name)
+                    fileCache[file.name] = file
+                }
             } != null
         }.onFailure {
             logcat(it)
@@ -214,6 +226,14 @@ class SpiderDen(val info: GalleryInfo) {
             fops(tempFile)
             val file = resolve(tempFile.name.removeSuffix(TEMP_SUFFIX))
             file.delete()
+            // 同一页之前可能以别的扩展名存过（jpg/png 混用），残留文件会让 getExtension 读到旧扩展名
+            val head = perFilename(index)
+            val staleFiles = lock.write {
+                fileCache.keys
+                    .filter { it.startsWith(head) && !it.endsWith(TEMP_SUFFIX) && it != file.name }
+                    .also { names -> names.forEach(fileCache::remove) }
+            }
+            staleFiles.forEach { resolve(it).delete() }
             lock.write { fileCache.remove(file.name) }
             tempFile moveTo file
             lock.write {
@@ -305,7 +325,8 @@ class SpiderDen(val info: GalleryInfo) {
 
     suspend fun archive() = saveAsCbz && downloadDir?.run {
         resolve(archiveName).let { file ->
-            runCatching {
+            // 取消必须传播给上层，不能被当成「归档失败」吞掉
+            runSuspendCatching {
                 archiveTo(file)
             }.onFailure {
                 file.delete()
@@ -333,16 +354,20 @@ class SpiderDen(val info: GalleryInfo) {
     suspend fun exportAsCbz(file: Path) = downloadDir!!.find(archiveName)?.sendTo(file) ?: archiveTo(file)
 
     private suspend fun archiveTo(file: Path) = resourceScope {
+        val dir = requireNotNull(downloadDir) { "Download dir is not initialized" }
         val comicInfo = closeable {
-            val f = downloadDir!! / COMIC_INFO_FILE
+            val f = dir / COMIC_INFO_FILE
             if (!f.exists()) {
                 writeComicInfo()
             } else if (info.pages == 0) {
-                info.pages = readComicInfo(f)!!.pageCount
+                // ComicInfo 读不出来时给出明确错误，而不是 !! 崩掉
+                info.pages = requireNotNull(readComicInfo(f)) { "Failed to read $COMIC_INFO_FILE" }.pageCount
             }
             f.openFileDescriptor("r")
         }
         val pages = info.pages
+        // 目标文件可能是上次失败留下的，先删除再创建，否则旧归档的尾部会残留在新文件里
+        file.delete()
         val arcFd = closeable { file.openFileDescriptor("rw") }
         val handle = archiveWriteOpen(arcFd.fd)
         check(handle != 0L) { "Failed to open archive writer" }

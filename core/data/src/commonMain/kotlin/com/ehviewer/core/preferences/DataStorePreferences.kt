@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.byteArrayPreferencesKey
 import androidx.datastore.preferences.core.doublePreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
@@ -32,7 +33,12 @@ abstract class DataStorePreferences(private val dataStore: DataStore<Preferences
             dataStore.data
                 // 偏好文件损坏或不可读时 DataStore 会抛异常。收集器一旦崩掉，cachedSnapshot
                 // 会永远停留在旧值，之后所有读取都会拿到过期数据。
-                .catch { logcat("DataStorePreferences", it) }
+                .catch {
+                    // 收集器不能就此停摆：否则 cachedSnapshot 会永远停在旧值。
+                    // 以空偏好继续，读取退化为默认值
+                    logcat("DataStorePreferences", it)
+                    emit(emptyPreferences())
+                }
                 .collect {
                     cachedSnapshot = Snapshot(it)
                 }
@@ -47,9 +53,12 @@ abstract class DataStorePreferences(private val dataStore: DataStore<Preferences
     fun currentSnapshot(): Snapshot? = cachedSnapshot
 
     suspend fun withMutableSnapshot(block: (MutableSnapshot) -> Unit) {
-        dataStore.edit {
+        val updated = dataStore.edit {
             block(MutableSnapshot(it))
         }
+        // edit 返回的就是本次写入后的完整状态：立即刷新快照缓存，
+        // 消除「写入已完成、currentSnapshot() 仍是旧值」的观察窗口
+        cachedSnapshot = Snapshot(updated)
     }
 
     protected fun boolPref(

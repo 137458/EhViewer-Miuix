@@ -54,6 +54,7 @@ import com.hippo.ehviewer.jni.rewriteGifSource
 import com.hippo.ehviewer.ktbuilder.execute
 import com.hippo.ehviewer.ktbuilder.imageRequest
 import java.nio.ByteBuffer
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.concurrent.atomics.AtomicInt
 import kotlin.concurrent.atomics.decrementAndFetch
 import kotlin.concurrent.atomics.updateAndFetch
@@ -122,13 +123,18 @@ class Image private constructor(image: CoilImage, private val src: ImageSource) 
             val image = when (src) {
                 is PathSource -> {
                     if (isAtLeastP && !isAtLeastU) {
-                        src.source.openFileDescriptor("rw").use {
+                        // 解码只需要读权限：旧实现用 "rw" 会在只读挂载或受限目录上直接失败
+                        src.source.openFileDescriptor("r").use {
                             val fd = it.fd
                             if (isGif(fd)) {
+                                // byteBufferSource 的 release 与 bracketCase 的 release 都会 munmap，
+                                // 用一次性标记保证同一块映射不会被 native 侧重复释放
+                                val released = AtomicBoolean(false)
+                                val unmap = { buffer: ByteBuffer -> if (released.compareAndSet(false, true)) munmap(buffer) }
                                 return bracketCase(
                                     { mmap(fd)!! },
-                                    { buffer -> decode(byteBufferSource(buffer) { munmap(buffer).also { src.close() } }, checkExtraneousAds) },
-                                    { buffer, case -> if (case !is ExitCase.Completed) munmap(buffer) },
+                                    { buffer -> decode(byteBufferSource(buffer) { unmap(buffer).also { src.close() } }, checkExtraneousAds) },
+                                    { buffer, case -> if (case !is ExitCase.Completed) unmap(buffer) },
                                 )
                             }
                         }
@@ -143,7 +149,8 @@ class Image private constructor(image: CoilImage, private val src: ImageSource) 
                 }
             }
             return Image(image, src).apply {
-                if (innerImage is BitmapImage) src.close()
+                // DrawableImage 仍要靠 buffer 懒解码，不能提前关掉 source
+                if (innerImage !is DrawableImage) src.close()
             }
         }
     }

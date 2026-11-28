@@ -75,17 +75,6 @@ object EhUtils {
     private const val BG_COLOR_MISC = 0xfff06292u
     private const val BG_COLOR_UNKNOWN = 0xff000000u
 
-    // Remove [XXX], (XXX), {XXX}, ~XXX~ stuff
-    private val PATTERN_TITLE_PREFIX = Regex(
-        """^(?:\([^)]*\)|\[[^]]*]|\{[^}]*\}|~[^~]*~|\s+)*""",
-    )
-
-    // Remove [XXX], (XXX), {XXX}, ~XXX~ stuff and something like ch. 1-23
-    private val PATTERN_TITLE_SUFFIX = Regex(
-        """(?:\s+ch.[\s\d-]+)?(?:\([^)]*\)|\[[^]]*]|\{[^}]*\}|~[^~]*~|\s+)*$""",
-        RegexOption.IGNORE_CASE,
-    )
-
     private val CATEGORY_VALUES = hashMapOf(
         MISC to arrayOf("misc"),
         DOUJINSHI to arrayOf("doujinshi"),
@@ -169,6 +158,7 @@ object EhUtils {
     fun signOut() {
         EhCookieStore.removeAllCookies()
         Settings.displayName.value = null
+        Settings.avatar.value = null
         Settings.hasSignedIn.value = false
         Settings.gallerySite.value = EhUrl.SITE_E
         Settings.needSignIn.value = true
@@ -181,9 +171,11 @@ object EhUtils {
     }.orEmpty()
 
     fun extractTitle(fullTitle: String?): String? {
-        var title: String = fullTitle ?: return null
-        title = PATTERN_TITLE_PREFIX.replaceFirst(title, "")
-        title = PATTERN_TITLE_SUFFIX.replaceFirst(title, "")
+        // Remove [XXX], (XXX), {XXX}, ~XXX~ stuff and something like ch. 1-23.
+        // The old implementation used two nested-quantifier regexes here; a title padded with a long
+        // whitespace run made the regex engine recurse once per character and overflow the stack,
+        // so the same transformation is now a linear scan (see EhTitleUtils).
+        val title = EhTitleUtils.stripDecorations(fullTitle ?: return null)
         // Sometimes title is combined by romaji and english translation.
         // Only need romaji.
         // TODO But not sure every '|' means that

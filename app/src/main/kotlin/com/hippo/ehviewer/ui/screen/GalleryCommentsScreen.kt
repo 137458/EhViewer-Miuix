@@ -39,7 +39,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -62,7 +61,6 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.fromHtml
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.max
 import androidx.compose.ui.util.lerp
@@ -111,6 +109,7 @@ import com.hippo.ehviewer.util.displayString
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.roundToInt
 import moe.tarsin.coroutines.runSuspendCatching
 import moe.tarsin.navigate
@@ -229,7 +228,7 @@ fun AnimatedVisibilityScope.GalleryCommentsScreen(
     LaunchedEffect(commentsState, fetchAttempt) {
         if (commentsState is GalleryCommentsState.NeedsFetch) {
             fetchError = null
-            runCatching {
+            runSuspendCatching {
                 val url = EhUrl.getGalleryDetailUrl(commentsState.gid, commentsState.token)
                 val fetched = EhEngine.getGalleryDetail(url)
                 detailCache.put(fetched.gid, fetched)
@@ -284,9 +283,10 @@ fun AnimatedVisibilityScope.GalleryCommentsScreen(
             }
         }
     } else {
-        val userCommentBackField = remember { mutableStateOf(TextFieldValue()) }
+        // 旋转/配置变更后不能丢失草稿与正在编辑的评论 ID
+        val userCommentBackField = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue()) }
         var userComment by userCommentBackField
-        var commentId by remember { mutableLongStateOf(-1) }
+        var commentId by rememberSaveable { mutableStateOf(-1L) }
         var comments by remember(galleryDetail) { mutableStateOf(galleryDetail.comments) }
         LaunchedEffect(comments) {
             galleryDetail.comments = comments
@@ -315,23 +315,30 @@ fun AnimatedVisibilityScope.GalleryCommentsScreen(
 
         val focusManager = LocalFocusManager.current
 
+        // 连点发送会重复提交同一条评论，用原子标志做在途保护（跨 IO 线程，不能用 Compose 状态）
+        val sending = remember { AtomicBoolean(false) }
         suspend fun sendComment() {
-            commenting = false
-            withUIContext { focusManager.clearFocus() }
-            val url = EhUrl.getGalleryDetailUrl(galleryDetail.gid, galleryDetail.token)
-            userComment.runSuspendCatching {
-                val bbcode = annotatedString.normalizeSpan().toBBCode()
-                logcat("sendComment") { bbcode }
-                EhEngine.commentGallery(url, bbcode, commentId)
-            }.onSuccess {
-                val msg = if (commentId != -1L) editCommentSuccess else commentSuccess
-                userComment = TextFieldValue()
-                commentId = -1L
-                comments = it
-                snackbar(msg)
-            }.onFailure {
-                val text = if (commentId != -1L) editCommentFail else commentFail
-                snackbar(text + "\n" + it.displayString())
+            if (!sending.compareAndSet(false, true)) return
+            try {
+                commenting = false
+                withUIContext { focusManager.clearFocus() }
+                val url = EhUrl.getGalleryDetailUrl(galleryDetail.gid, galleryDetail.token)
+                userComment.runSuspendCatching {
+                    val bbcode = annotatedString.normalizeSpan().toBBCode()
+                    logcat("sendComment") { bbcode }
+                    EhEngine.commentGallery(url, bbcode, commentId)
+                }.onSuccess {
+                    val msg = if (commentId != -1L) editCommentSuccess else commentSuccess
+                    userComment = TextFieldValue()
+                    commentId = -1L
+                    comments = it
+                    snackbar(msg)
+                }.onFailure {
+                    val text = if (commentId != -1L) editCommentFail else commentFail
+                    snackbar(text + "\n" + it.displayString())
+                }
+            } finally {
+                sending.set(false)
             }
         }
 
@@ -583,10 +590,11 @@ fun AnimatedVisibilityScope.GalleryCommentsScreen(
                     }
                     Surface(
                         modifier = Modifier.align(Alignment.BottomCenter).layout { measurable, constraints ->
-                            val origin = measurable.measure(constraints)
-                            val width = lerp(origin.width, 0, animationProgress)
-                            val height = lerp(origin.height, 0, animationProgress)
-                            val placeable = measurable.measure(Constraints.fixed(width, height))
+                            // 一个 Measurable 只能 measure 一次：先按原始约束测量，再用裁剪（graphicsLayer.clip）
+                            // 隐藏收缩过程中多出的部分
+                            val placeable = measurable.measure(constraints)
+                            val width = lerp(placeable.width, 0, animationProgress)
+                            val height = lerp(placeable.height, 0, animationProgress)
                             layout(width, height) {
                                 placeable.placeRelative(0, 0)
                             }

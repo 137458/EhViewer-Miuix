@@ -85,7 +85,7 @@ fun GalleryInfoBottomSheet(detail: GalleryDetail) {
                             addTextToClipboard(content, true)
                             if (index == INDEX_URL) {
                                 // Save it to avoid detect the gallery
-                                Settings.clipboardTextHashCode = data[index].hashCode()
+                                Settings.clipboardTextHashCode = content?.hashCode() ?: 0
                             }
                         }
                     }.fillMaxWidth(),

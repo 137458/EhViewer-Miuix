@@ -125,4 +125,15 @@ class Schema20to21 : AutoMigrationSpec {
 
 // Virtual tables can't be altered, so we use rename to recreate it
 @RenameTable(fromTableName = "GalleryFts", toTableName = "GALLERIES_FTS")
-class Schema21to22 : AutoMigrationSpec
+class Schema21to22 : AutoMigrationSpec {
+    override fun onPostMigrate(connection: SQLiteConnection) {
+        connection.execSQL("INSERT INTO GALLERIES_FTS(GALLERIES_FTS) VALUES('rebuild')")
+    }
+}
+
+// FTS4 内容表的索引不会随重命名/重建自动回填，历史用户升级后索引可能为空，迁移末尾统一重建
+class Schema23to24 : AutoMigrationSpec {
+    override fun onPostMigrate(connection: SQLiteConnection) {
+        connection.execSQL("INSERT INTO GALLERIES_FTS(GALLERIES_FTS) VALUES('rebuild')")
+    }
+}

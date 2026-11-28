@@ -12,6 +12,7 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import com.ehviewer.core.i18n.R
 import com.hippo.ehviewer.ui.MainActivity
+import com.hippo.ehviewer.util.InternalIntentGuard
 
 /**
  * 进程内的前台标记。下载完成时据此决定「直接拉起安装」还是「发通知」，
@@ -68,7 +69,11 @@ internal object UpdateNotifications {
 
         val openApp = Intent(context, MainActivity::class.java).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-            if (installAction) action = ACTION_INSTALL_UPDATE
+            if (installAction) {
+                action = ACTION_INSTALL_UPDATE
+                // CONTRACT-6: 进程内 nonce，MainActivity 据此区分自建 intent 与外部伪造
+                putExtra(InternalIntentGuard.EXTRA_TOKEN, InternalIntentGuard.token)
+            }
         }
         val contentIntent = PendingIntent.getActivity(
             context,

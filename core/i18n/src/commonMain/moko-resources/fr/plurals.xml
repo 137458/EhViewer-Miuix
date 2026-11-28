@@ -13,23 +13,23 @@
         <item quantity="other">Il y a %d heures</item>
     </plurals>
     <plurals name="second">
-        <item quantity="one">%d sec</item>
+        <item quantity="one">sec</item>
         <item quantity="other">secs</item>
     </plurals>
     <plurals name="minute">
-        <item quantity="one">%d min</item>
+        <item quantity="one">min</item>
         <item quantity="other">mins</item>
     </plurals>
     <plurals name="hour">
-        <item quantity="one">%d heure</item>
+        <item quantity="one">heure</item>
         <item quantity="other">heures</item>
     </plurals>
     <plurals name="day">
-        <item quantity="one">%d jour</item>
+        <item quantity="one">jour</item>
         <item quantity="other">jours</item>
     </plurals>
     <plurals name="year">
-        <item quantity="one">%d an</item>
+        <item quantity="one">an</item>
         <item quantity="other">ans</item>
     </plurals>
 </resources>

@@ -85,7 +85,9 @@ fun AnimatedVisibilityScope.HistoryScreen(navigator: DestinationsNavigator) = Sc
     DrawerHandle(!searchBarExpanded)
 
     val density = LocalDensity.current
-    val historyData = rememberInVM {
+    // keyword 必须作为 key：rememberInVM 缓存在 ViewModel 里，若只闭包捕获 keyword，
+    // 旋转屏幕复用旧 Pager 后搜索词与结果就对不上了（key 变化时重新建 Pager）。
+    val historyData = rememberInVM(keyword) {
         Pager(config = PagingConfig(pageSize = 20, jumpThreshold = 40)) {
             if (keyword.isNotEmpty()) {
                 EhDB.searchHistory(keyword)
@@ -102,8 +104,8 @@ fun AnimatedVisibilityScope.HistoryScreen(navigator: DestinationsNavigator) = Sc
     FavouriteStatusRouter.Observe(historyData)
     SearchBarScreen(
         onApplySearch = {
-            keyword = it
-            historyData.refresh()
+            // 关键词变了由 key 重建 Pager；关键词没变时显式 refresh 才能重新查一次
+            if (keyword == it) historyData.refresh() else keyword = it
         },
         expanded = searchBarExpanded,
         onExpandedChange = { searchBarExpanded = it },

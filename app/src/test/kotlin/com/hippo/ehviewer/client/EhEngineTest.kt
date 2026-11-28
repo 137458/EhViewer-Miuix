@@ -7,6 +7,7 @@ import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertTrue
 import kotlinx.coroutines.runBlocking
 
 class EhEngineTest {
@@ -60,6 +61,27 @@ class EhEngineTest {
             assertFailsWith<IllegalStateException> {
                 channel.readToByteBuffer(initialBuffer, maxSize = 1024 * 1024)
             }
+        }
+    }
+
+    @Test
+    fun readToByteBuffer_leavesHeadroomForParser() {
+        runBlocking {
+            // 2016 = 2048 - 32 bytes: after reading, the buffer holds less than PARSER_HEADROOM of
+            // spare capacity, so readToByteBuffer must grow it before the parser sees the buffer.
+            val size = 2048 - 32
+            val data = ByteArray(size) { it.toByte() }
+            val channel = ByteReadChannel(data)
+            val initialBuffer = ByteBuffer.allocateDirect(1024)
+
+            val result = channel.readToByteBuffer(initialBuffer)
+
+            assertTrue(result.capacity() - result.position() >= PARSER_HEADROOM)
+            result.flip()
+            assertEquals(size, result.remaining())
+            val output = ByteArray(result.remaining())
+            result.get(output)
+            assertContentEquals(data, output)
         }
     }
 }

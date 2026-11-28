@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
@@ -28,6 +27,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.ehviewer.core.model.GalleryInfo
 import com.ehviewer.core.model.GalleryInfo.Companion.NOT_FAVORITED
@@ -137,7 +137,7 @@ fun GalleryInfoListItem(
                 }
                 if (info.pages != 0 && showPages) {
                     val readProgress = if (showProgress) {
-                        remember { EhDB.getReadProgressFlow(info.gid) }.collectAsState(0).value
+                        remember(info.gid) { EhDB.getReadProgressFlow(info.gid) }.collectAsStateWithLifecycle(0).value
                     } else {
                         0
                     }
@@ -254,7 +254,7 @@ fun GalleryInfoGridItem(
             val textColor = EhUtils.getCategoryTextColor(categoryColor)
             if (showPages && info.pages > 0) {
                 val readProgress = if (showProgress) {
-                    remember { EhDB.getReadProgressFlow(info.gid) }.collectAsState(0).value
+                    remember(info.gid) { EhDB.getReadProgressFlow(info.gid) }.collectAsStateWithLifecycle(0).value
                 } else {
                     0
                 }

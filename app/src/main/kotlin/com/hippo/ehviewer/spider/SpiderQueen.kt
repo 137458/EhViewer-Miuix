@@ -71,6 +71,13 @@ class SpiderQueen private constructor(val galleryInfo: GalleryInfo) : CoroutineS
     private val mPageStateLock = Any()
     private val mDownloadedPages = AtomicInt(0)
     private val mFinishedPages = AtomicInt(0)
+    private var mAllFailedNotified = false
+
+    private enum class Completion {
+        NONE,
+        ALL_FINISHED,
+        ALL_FAILED,
+    }
     private val mSpiderListeners: MutableList<OnSpiderListener> = ArrayList()
 
     private var mReadReference = 0
@@ -226,6 +233,8 @@ class SpiderQueen private constructor(val galleryInfo: GalleryInfo) : CoroutineS
         try {
             spiderInfo = readSpiderInfoFromLocal() ?: readSpiderInfoFromInternet()
         } catch (t: Throwable) {
+            // 取消不是失败，不能被当成普通错误吞掉
+            if (t is CancellationException) throw t
             logcat(t)
             if (galleryInfo.pages > 0) {
                 spiderInfo = SpiderInfo(galleryInfo.gid, galleryInfo.token, galleryInfo.pages)
@@ -250,13 +259,13 @@ class SpiderQueen private constructor(val galleryInfo: GalleryInfo) : CoroutineS
             }
             if (!spiderDen.postArchive()) {
                 if (mWorkerScope.isDownloadMode) {
-                    runCatching {
+                    runSuspendCatching {
                         spiderDen.writeComicInfo()
                     }.onFailure {
                         logcat(it)
                     }
                 }
-                runCatching {
+                runSuspendCatching {
                     writeSpiderInfoToLocal()
                 }.onFailure {
                     logcat(it)
@@ -329,7 +338,8 @@ class SpiderQueen private constructor(val galleryInfo: GalleryInfo) : CoroutineS
         if (index == 0) {
             spiderInfo.previewPerPage = previews.size
         } else {
-            spiderInfo.previewPerPage = previews[0].position / index
+            // 预览列表可能为空（被限流或接口变更），不能直接取 [0]
+            previews.firstOrNull()?.let { spiderInfo.previewPerPage = it.position / index }
         }
         previews.forEach {
             if (it.pToken.isNotEmpty()) {
@@ -389,7 +399,9 @@ class SpiderQueen private constructor(val galleryInfo: GalleryInfo) : CoroutineS
     private fun isStateDone(state: Int): Boolean = state == STATE_FINISHED || state == STATE_FAILED
 
     fun updatePageState(index: Int, @State state: Int, error: String? = null) {
-        synchronized<Unit>(mPageStateLock) {
+        // 完成判定必须和计数在同一把锁里算准，否则并发线程会各自看到半成品状态，
+        // 把「全部结束」重复通告出去
+        val completion = synchronized(mPageStateLock) {
             val oldState = pageStates[index]
             pageStates[index] = state
             if (!isStateDone(oldState) && isStateDone(state)) {
@@ -402,6 +414,19 @@ class SpiderQueen private constructor(val galleryInfo: GalleryInfo) : CoroutineS
             } else if (oldState == STATE_FINISHED && state != STATE_FINISHED) {
                 mFinishedPages.decrementAndFetch()
             }
+            if (mDownloadedPages.load() == pageStates.size) {
+                if (mFinishedPages.load() == pageStates.size) {
+                    Completion.ALL_FINISHED
+                } else if (!mAllFailedNotified) {
+                    // 只通告一次全部失败
+                    mAllFailedNotified = true
+                    Completion.ALL_FAILED
+                } else {
+                    Completion.NONE
+                }
+            } else {
+                Completion.NONE
+            }
         }
 
         // Notify listeners
@@ -410,12 +435,11 @@ class SpiderQueen private constructor(val galleryInfo: GalleryInfo) : CoroutineS
         } else if (state == STATE_FINISHED) {
             notifyPageSuccess(index)
         }
-        if (mDownloadedPages.load() == size) {
-            if (mFinishedPages.load() == size) {
-                archiveJob.start()
-            } else {
-                notifyAllPageDownloaded(failed = true)
-            }
+        when (completion) {
+            // archiveJob 是 LAZY 任务，start() 幂等
+            Completion.ALL_FINISHED -> archiveJob.start()
+            Completion.ALL_FAILED -> notifyAllPageDownloaded(failed = true)
+            Completion.NONE -> Unit
         }
     }
 
@@ -450,14 +474,17 @@ class SpiderQueen private constructor(val galleryInfo: GalleryInfo) : CoroutineS
             val gid = galleryInfo.gid
             val queen = synchronized(sQueenMap) {
                 val existing = sQueenMap[gid]
-                if (existing != null && existing.isActive) {
+                val queen = if (existing != null && existing.isActive) {
                     existing
                 } else {
                     SpiderQueen(galleryInfo).also { sQueenMap[gid] = it }
                 }
+                // 引用计数必须和 map 的查找在同一把锁里完成，
+                // 否则 release 可能先看到 0 引用把 queen 摘掉，obtain 又拿到被摘掉的实例
+                queen.setMode(mode)
+                queen
             }
             return queen.apply {
-                setMode(mode)
                 launch { updateMode() }
             }
         }
@@ -557,7 +584,9 @@ class SpiderQueen private constructor(val galleryInfo: GalleryInfo) : CoroutineS
                 synchronized(jobs) { doLaunchDownloadJob(index, force, orgImg, isPreload = false) }
             }
             launch {
-                jobs[index]?.join()
+                // jobs 由多个线程增删，读取必须在锁内拿到引用后再 join
+                val job = synchronized(jobs) { jobs[index] }
+                job?.join()
                 if (pageStates[index] == STATE_FINISHED) notifyPageReady(index)
             }
         }

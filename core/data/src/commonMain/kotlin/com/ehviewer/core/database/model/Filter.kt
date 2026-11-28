@@ -34,6 +34,7 @@ class FilterModeConverter {
     @TypeConverter
     fun fromFilterMode(mode: FilterMode) = mode.field
 
+    // 历史/未来版本写入的越界值降级为 TITLE，避免整张 FILTER 表读取失败
     @TypeConverter
-    fun toFilterMode(mode: Int) = FilterMode.entries[mode]
+    fun toFilterMode(mode: Int) = FilterMode.entries.getOrNull(mode) ?: FilterMode.TITLE
 }

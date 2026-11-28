@@ -26,4 +26,7 @@ object DesktopReadingProgress {
 
     // LRU 语义：更新/新增的条目移到最前，配合 decode 的 take(MAX_ENTRIES) 淘汰最旧——否则写满后新画廊进度会被截断丢弃
     fun update(progress: Map<Long, Int>, gid: Long, page: Int): Map<Long, Int> = mapOf(gid to page.coerceAtLeast(1)) + (progress - gid)
+
+    // 恢复页码：无记录→第 1 页；记录的页码越界（详情页链接数变少/解析不全）→钳到有效区间
+    fun restorePage(savedPage: Int?, pageCount: Int): Int = (savedPage ?: 1).coerceIn(1, maxOf(1, pageCount))
 }

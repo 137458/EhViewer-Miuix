@@ -58,15 +58,18 @@ import com.hippo.ehviewer.spider.toSimpleTags
 import com.hippo.ehviewer.util.AppConfig
 import com.hippo.ehviewer.util.insertWith
 import com.hippo.ehviewer.util.runAssertingNotMainThread
+import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.transform
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import moe.tarsin.coroutines.runSuspendCatching
 import okio.Path
 import okio.Path.Companion.toOkioPath
 import okio.Path.Companion.toPath
@@ -77,11 +80,15 @@ object DownloadManager : OnSpiderListener, CoroutineScope {
     // All download info list
     private val allInfoList = runAssertingNotMainThread { EhDB.getAllDownloadInfo() as MutableList }
 
+    // 对外只暴露不可变快照，避免调用方绕过锁直接改内部表
     val downloadInfoList: List<DownloadInfo>
-        get() = allInfoList
+        get() = allInfoList.toList()
 
     // All download info map
-    private val mAllInfoMap = allInfoList.associateBy { it.gid } as MutableMap<Long, DownloadInfo>
+    // 被下载线程与 UI 线程同时读写，必须用并发实现
+    private val mAllInfoMap = ConcurrentHashMap<Long, DownloadInfo>(allInfoList.size).apply {
+        allInfoList.forEach { put(it.gid, it) }
+    }
 
     // All labels without default label
     // Create the SnapshotStateList first in case the database query is time-consuming
@@ -91,6 +98,17 @@ object DownloadManager : OnSpiderListener, CoroutineScope {
 
     // Store download info wait to start
     private val mWaitList = ArrayDeque<DownloadInfo>()
+
+    // onPageDownload 是每 chunk 都会走的热路径：只投递样本，由单个消费者协程提交给 mSpeedReminder
+    private val speedUpdates = Channel<SpeedUpdate>(Channel.UNLIMITED)
+
+    private class SpeedUpdate(
+        val index: Int,
+        val contentLength: Long,
+        val receivedSize: Long,
+        val bytesRead: Int,
+    )
+
     private var mDownloadListener: DownloadListener? = null
     private var mCurrentTask: DownloadInfo? = null
     private var mCurrentSpider: SpiderQueen? = null
@@ -101,6 +119,9 @@ object DownloadManager : OnSpiderListener, CoroutineScope {
     private val mutex = Mutex()
 
     private val sortMutex = Mutex()
+
+    // labelList 的位次维护（新增/改名/删除）统一用这把锁串起来，避免插入位次撞车
+    private val labelMutex = Mutex()
     private val sortMode
         get() = SortMode.from(Settings.downloadSortMode.value)
 
@@ -112,6 +133,11 @@ object DownloadManager : OnSpiderListener, CoroutineScope {
             val mode = sortMode
             if (mode != SortMode.Default) sortDownloads(mode)
             isInitialized = true
+        }
+        launch {
+            for (update in speedUpdates) {
+                mSpeedReminder.onDownload(update.index, update.contentLength, update.receivedSize, update.bytesRead)
+            }
         }
     }
 
@@ -133,6 +159,13 @@ object DownloadManager : OnSpiderListener, CoroutineScope {
 
     fun setDownloadListener(listener: DownloadListener?) {
         mDownloadListener = listener
+    }
+
+    // 服务销毁时只清掉自己注册的监听器，避免把后来者的监听器一起抹掉
+    fun clearDownloadListener(listener: DownloadListener) {
+        if (mDownloadListener === listener) {
+            mDownloadListener = null
+        }
     }
 
     private suspend fun ensureDownload() {
@@ -222,20 +255,25 @@ object DownloadManager : OnSpiderListener, CoroutineScope {
     }
 
     suspend fun startRangeDownload(gidList: LongArray) {
-        val updateList = gidList.mapNotNull { mAllInfoMap[it] }
-            .filter {
-                when (it.state) {
-                    DownloadInfo.STATE_NONE, DownloadInfo.STATE_FAILED, DownloadInfo.STATE_FINISH -> true
-                    else -> false
+        // 状态切换与入队必须在 mutex 内一起完成，否则会和 ensureDownload 抢走同一个 info
+        val updateList = mutex.withLock {
+            gidList.mapNotNull { mAllInfoMap[it] }
+                .filter {
+                    when (it.state) {
+                        DownloadInfo.STATE_NONE, DownloadInfo.STATE_FAILED, DownloadInfo.STATE_FINISH -> true
+                        else -> false
+                    }
                 }
-            }
+                .onEach {
+                    it.state = DownloadInfo.STATE_WAIT
+                    mWaitList.add(it)
+                }
+        }
         if (updateList.isNotEmpty()) {
             updateList.onEach {
-                it.state = DownloadInfo.STATE_WAIT
                 EhDB.putDownloadInfo(it)
                 mutableNotifyFlow.emit(it)
             }
-            mWaitList.addAll(updateList)
             ensureDownload()
         }
     }
@@ -259,21 +297,24 @@ object DownloadManager : OnSpiderListener, CoroutineScope {
     }.collectAsState(transform(info)).value
 
     suspend fun startAllDownload() {
-        val updateList = sortMutex.withLock {
-            allInfoList.filter {
-                when (it.state) {
-                    DownloadInfo.STATE_NONE, DownloadInfo.STATE_FAILED -> true
-                    else -> false
+        val updateList = mutex.withLock {
+            sortMutex.withLock {
+                allInfoList.filter {
+                    when (it.state) {
+                        DownloadInfo.STATE_NONE, DownloadInfo.STATE_FAILED -> true
+                        else -> false
+                    }
                 }
+            }.onEach {
+                it.state = DownloadInfo.STATE_WAIT
+                mWaitList.add(it)
             }
         }
         if (updateList.isNotEmpty()) {
             updateList.onEach {
-                it.state = DownloadInfo.STATE_WAIT
                 EhDB.putDownloadInfo(it)
                 mutableNotifyFlow.emit(it)
             }
-            mWaitList.addAll(updateList)
             ensureDownload()
         }
     }
@@ -298,11 +339,11 @@ object DownloadManager : OnSpiderListener, CoroutineScope {
         }
     }
 
-    suspend fun addDownloadLabel(downloadLabelList: List<DownloadLabel>) {
-        val offset = downloadLabelList.size
-        downloadLabelList.forEachIndexed { index, label ->
+    suspend fun addDownloadLabel(downloadLabelList: List<DownloadLabel>) = labelMutex.withLock {
+        // 位次要接在已有标签之后（而不是本批次的长度），否则第二次导入会和第一次撞位次
+        downloadLabelList.forEach { label ->
             if (!containLabel(label.label)) {
-                label.position = index + offset
+                label.position = labelList.size
                 labelList.add(EhDB.addDownloadLabel(label))
             }
         }
@@ -414,7 +455,7 @@ object DownloadManager : OnSpiderListener, CoroutineScope {
         allInfoList.sortWith(mode.comparator())
     }
 
-    suspend fun resetAllReadingProgress() = runCatching {
+    suspend fun resetAllReadingProgress() = runSuspendCatching {
         EhDB.clearProgressInfo()
     }.onFailure { logcat(it) }
 
@@ -519,14 +560,14 @@ object DownloadManager : OnSpiderListener, CoroutineScope {
         EhDB.updateDownloadInfo(list)
     }
 
-    suspend fun addLabel(label: String?) {
+    suspend fun addLabel(label: String?) = labelMutex.withLock {
         if (label == null || containLabel(label)) {
-            return
+            return@withLock
         }
         labelList.add(EhDB.addDownloadLabel(DownloadLabel(label, labelList.size)))
     }
 
-    suspend fun renameLabel(from: String, to: String) {
+    suspend fun renameLabel(from: String, to: String) = labelMutex.withLock {
         val index = labelList.indexOfFirst { it.label == from }
         if (index != -1) {
             val exist = labelList.removeAt(index)
@@ -544,7 +585,7 @@ object DownloadManager : OnSpiderListener, CoroutineScope {
     }
 
     suspend fun deleteLabel(label: String) {
-        val (removed, shifted) = synchronized(labelList) {
+        val (removed, shifted) = labelMutex.withLock {
             removeLabelAndShiftPositions(labelList, label)
         }
         if (removed != null) {
@@ -648,9 +689,7 @@ object DownloadManager : OnSpiderListener, CoroutineScope {
         receivedSize: Long,
         bytesRead: Int,
     ) {
-        launch {
-            mSpeedReminder.onDownload(index, contentLength, receivedSize, bytesRead)
-        }
+        speedUpdates.trySend(SpeedUpdate(index, contentLength, receivedSize, bytesRead))
     }
 
     override fun onPageSuccess(index: Int, finished: Int, downloaded: Int, total: Int) {
@@ -805,9 +844,12 @@ object DownloadManager : OnSpiderListener, CoroutineScope {
                         for (i in 0..<contentLengthMap.size) {
                             val contentLength = contentLengthMap.valueAt(i)
                             val receivedSize = receivedSizeMap.valueAt(i)
-                            downloadingCount++
-                            downloadingContentLengthSum += contentLength
-                            totalSize += contentLength - receivedSize
+                            // 长度未知（-1）的分块不能参与剩余时间估算，否则分母被污染
+                            if (contentLength > 0) {
+                                downloadingCount++
+                                downloadingContentLengthSum += contentLength
+                                totalSize += contentLength - receivedSize
+                            }
                         }
                     }
                     if (downloadingCount != 0) {
@@ -848,7 +890,11 @@ var downloadLocation: Path
         }
     }
 
-val DownloadInfo.downloadDir get() = dirname?.let { downloadLocation / it }
+// dirname 可能来自旧版本数据库：含路径分隔符或 .. 时会跑出下载目录，这类值按"没有目录"处理
+internal fun isSafeDownloadDirname(dirname: String?): Boolean = !dirname.isNullOrEmpty() && dirname != "." && dirname != ".." &&
+    !dirname.contains('/') && !dirname.contains('\\')
+
+val DownloadInfo.downloadDir get() = dirname?.takeIf(::isSafeDownloadDirname)?.let { downloadLocation / it }
 val DownloadInfo.archiveFile get() = downloadDir?.run { find("$gid.cbz") ?: find("$gid.zip") }
 val GalleryInfo.tempDownloadDir get() = AppConfig.externalTempPersistDir?.let { it / "$gid" }
 

@@ -65,6 +65,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.isCtrlPressed
+import androidx.compose.ui.input.key.isMetaPressed
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
@@ -116,6 +117,7 @@ import dev.icerock.moko.resources.compose.stringResource
 import java.nio.ByteBuffer
 import java.util.concurrent.atomic.AtomicLong
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -129,9 +131,11 @@ fun galleryWebUrl(gid: Long, token: String): String = "https://e-hentai.org/g/$g
 fun galleryDisplayTitle(title: String?, gid: Long): String = title?.trim()?.takeIf { it.isNotEmpty() } ?: gid.toString()
 
 // 本地浏览时间（历史/收藏行右侧）展示格式
+private val BROWSE_TIME_FORMATTER = java.time.format.DateTimeFormatter.ofPattern("MM-dd HH:mm")
+
 private fun formatBrowseTime(epochMillis: Long): String = java.time.Instant.ofEpochMilli(epochMillis)
     .atZone(java.time.ZoneId.systemDefault())
-    .format(java.time.format.DateTimeFormatter.ofPattern("MM-dd HH:mm"))
+    .format(BROWSE_TIME_FORMATTER)
 
 fun formatGalleryTags(tags: List<String>?): String = tags?.joinToString(", ") ?: ""
 
@@ -160,9 +164,6 @@ fun LibraryScreen(
     onShowAbout: () -> Unit = {},
     onExit: () -> Unit = {},
 ) {
-    val downloadLabels by DesktopDatabase.eh.downloadsDao()
-        .countByLabel()
-        .collectAsState(initial = emptyMap())
     val favoriteCount by DesktopDatabase.eh.localFavoritesDao()
         .count()
         .collectAsState(initial = 0)
@@ -226,6 +227,7 @@ fun LibraryScreen(
     }
     var previewCoverUrl by remember { mutableStateOf<String?>(null) }
     var previewUrls by remember { mutableStateOf<List<String>>(emptyList()) }
+    var previewIndex by remember { mutableIntStateOf(0) }
     var notifications by remember { mutableStateOf<List<DesktopNotification>>(emptyList()) }
     val nextNotificationId = remember { AtomicLong(1L) }
     // 一键清空历史前的确认对话框（毁灭性操作防误触）
@@ -292,48 +294,67 @@ fun LibraryScreen(
         DesktopSettings.quickSearch.value = DesktopQuickSearch.encode(DesktopQuickSearch.remove(quickSearchList, item.id))
     }
 
-    // 远程搜索防重入：连按 Enter 时忽略后续触发，避免慢请求完成后覆盖新请求结果（数据错位）
+    // 远程搜索：可取消 Job 取代「正在搜索就丢弃新请求」的丢弃门（丢弃会让连按 Enter、
+    // 快速翻页的后续点击静默无效）；游标栈只在请求成功后推进，失败请求不会占掉一页回退位
     var remoteSearching by remember { mutableStateOf(false) }
+    var remoteSearchJob by remember { mutableStateOf<Job?>(null) }
+    var remoteSearchGeneration by remember { mutableIntStateOf(0) }
     fun remoteSearch(
         query: String,
         nextGid: Long? = null,
         pushCursor: Boolean = true,
+        popCursor: Boolean = false,
         filters: DesktopSearchFilters = searchFilters,
     ) {
-        if (remoteSearching) return
-        val url = DesktopSearchUrl.build(query, nextGid = nextGid, filters = filters) ?: return
+        // 分页 URL 与刷新共用 buildForTab：Toplist/Subscription/Popular 的翻页参数各不相同
+        val url = DesktopSearchUrl.buildForTab(currentTab, query, nextGid = nextGid, filters = filters)
         remoteSearchQuery = query
-        if (pushCursor) {
-            // 新方向搜索：截断回退分支后压入本次游标
-            while (cursorStack.size > cursorIndex + 1) cursorStack.removeAt(cursorStack.size - 1)
-            cursorStack.add(nextGid)
-            cursorIndex += 1
-        }
         // 列表即将被新页替换，清除跨页残留的选中态
         selected = null
         remoteSearching = true
-        coroutineScope.launch {
+        val generation = ++remoteSearchGeneration
+        remoteSearchJob?.cancel()
+        remoteSearchJob = coroutineScope.launch {
             try {
                 online = emptyList()
                 connectionStatus = DesktopConnectionStatus.Checking
                 runCatching {
-                    withContext(Dispatchers.IO) { desktopGet(url) }
-                }.onSuccess { response ->
+                    withContext(Dispatchers.IO) {
+                        val response = desktopGet(url)
+                        // 解析与网络同处 IO：整页 HTML 在主线程解析会明显掉帧
+                        val list = if (response.status in 200..299) {
+                            runCatching {
+                                parseGalleryList(response.toByteBuffer() ?: error("HTTP ${response.status}"))
+                                    .galleryInfoList.toList()
+                            }.onFailure { e ->
+                                logcat("Library", LogPriority.WARN) { "ONLINE_SEARCH parse failed: $e" }
+                            }.getOrNull()
+                        } else {
+                            null
+                        }
+                        response.status to list
+                    }
+                }.onSuccess { (status, list) ->
                     // 与 refreshGalleries 同约定：拿到响应即定状态，避免非 2xx/解析失败时卡在 Checking 且无重试入口
-                    connectionStatus = DesktopConnectionStatus.Online(response.status)
-                    if (response.status in 200..299) {
-                        runCatching {
-                            parseGalleryList(response.toByteBuffer() ?: error("HTTP ${response.status}")).galleryInfoList.toList()
-                        }.onSuccess { list ->
-                            online = list
-                            logcat("Library", LogPriority.INFO) { "ONLINE_SEARCH parsed=${list.size} q=$query next=$nextGid" }
-                        }.onFailure { e ->
-                            logcat("Library", LogPriority.WARN) { "ONLINE_SEARCH parse failed: $e" }
-                            // 与 refreshGalleries 同约定：解析失败静默会让徽章显示在线但列表已被清空且不更新，补可见反馈
+                    connectionStatus = DesktopConnectionStatus.Online(status)
+                    when {
+                        status !in 200..299 -> logcat("Library", LogPriority.WARN) { "ONLINE_SEARCH status=$status" }
+                        list == null -> {
+                            // 解析失败静默会让徽章显示在线但列表已被清空且不更新，补可见反馈
                             showNotification(onlineParseFailedText)
                         }
-                    } else {
-                        logcat("Library", LogPriority.WARN) { "ONLINE_SEARCH status=${response.status}" }
+                        else -> {
+                            online = list
+                            // 成功后推进/回退游标：失败时不改栈
+                            if (pushCursor) {
+                                while (cursorStack.size > cursorIndex + 1) cursorStack.removeAt(cursorStack.size - 1)
+                                cursorStack.add(nextGid)
+                                cursorIndex = cursorStack.lastIndex
+                            } else if (popCursor) {
+                                cursorIndex = (cursorIndex - 1).coerceAtLeast(0)
+                            }
+                            logcat("Library", LogPriority.INFO) { "ONLINE_SEARCH parsed=${list.size} q=$query next=$nextGid" }
+                        }
                     }
                 }.onFailure { e ->
                     val cleaned = DesktopConnectionState.cleanErrorMessage(e.message ?: e::class.simpleName, connectionErrorLabels)
@@ -341,7 +362,7 @@ fun LibraryScreen(
                     logcat("Library", LogPriority.WARN) { "ONLINE_SEARCH failed: $cleaned" }
                 }
             } finally {
-                remoteSearching = false
+                if (generation == remoteSearchGeneration) remoteSearching = false
             }
         }
     }
@@ -358,7 +379,8 @@ fun LibraryScreen(
     suspend fun loadMoreOnline() {
         if (!currentTab.isOnline || loadingMoreOnline || remoteSearching) return
         val lastGid = online.lastOrNull()?.gid ?: return
-        val url = DesktopSearchUrl.build(remoteSearchQuery, nextGid = lastGid, filters = searchFilters) ?: return
+        // 与翻页胶囊/刷新共用同一 URL 构造入口，避免各 Tab 的翻页参数不一致
+        val url = DesktopSearchUrl.buildForTab(currentTab, remoteSearchQuery, nextGid = lastGid, filters = searchFilters)
         loadingMoreOnline = true
         loadMoreErrorText = null
         try {
@@ -392,49 +414,55 @@ fun LibraryScreen(
 
     AutoExpireNotifications(notifications) { notifications = it }
 
-    // 刷新防重入：连按 F5/重试时忽略后续触发，避免并发 EH_HOME 请求交错污染连接状态
+    // 刷新：新请求直接取消旧请求（丢弃门会让连按 F5/重试的后续触发静默失效）
     var refreshing by remember { mutableStateOf(false) }
-    suspend fun refreshGalleries(filters: DesktopSearchFilters = searchFilters) {
-        if (refreshing) return
+    var refreshJob by remember { mutableStateOf<Job?>(null) }
+    var refreshGeneration by remember { mutableIntStateOf(0) }
+    fun refreshGalleries(filters: DesktopSearchFilters = searchFilters) {
+        val generation = ++refreshGeneration
+        refreshJob?.cancel()
         refreshing = true
-        try {
-            connectionStatus = DesktopConnectionStatus.Checking
-            val url = if (currentTab.isOnline) {
-                DesktopSearchUrl.buildForTab(currentTab, remoteSearchQuery, filters = filters)
-            } else {
-                "https://e-hentai.org/"
-            }
-            runCatching {
-                withContext(Dispatchers.IO) {
-                    desktopGet(url)
+        refreshJob = coroutineScope.launch {
+            try {
+                connectionStatus = DesktopConnectionStatus.Checking
+                val url = if (currentTab.isOnline) {
+                    DesktopSearchUrl.buildForTab(currentTab, remoteSearchQuery, filters = filters)
+                } else {
+                    "https://e-hentai.org/"
                 }
-            }.onSuccess { response ->
-                val status = response.status
-                connectionStatus = DesktopConnectionStatus.Online(status)
-                logcat("Connection", LogPriority.INFO) { "EH_REFRESH status=$status url=$url" }
-                if (response.status in 200..299) {
-                    runCatching {
-                        withContext(Dispatchers.IO) {
-                            parseGalleryList(response.toByteBuffer() ?: error("HTTP ${response.status}")).galleryInfoList.toList()
-                        }
-                    }.onSuccess { list ->
-                        online = list
-                        logcat("Library", LogPriority.INFO) { "ONLINE_LIST parsed=${list.size} tab=$currentTab" }
-                    }.onFailure { e ->
-                        logcat("Library", LogPriority.WARN) {
-                            "ONLINE_LIST parse failed: $e | loadErr=${GalleryListParserKtProbe.loadError} | " +
-                                "res=${GalleryListParserKtProbe.resAvailable} | cwd=${java.io.File(".").absolutePath}"
-                        }
-                        showNotification(onlineParseFailedText)
+                runCatching {
+                    withContext(Dispatchers.IO) {
+                        desktopGet(url)
                     }
+                }.onSuccess { response ->
+                    val status = response.status
+                    connectionStatus = DesktopConnectionStatus.Online(status)
+                    logcat("Connection", LogPriority.INFO) { "EH_REFRESH status=$status url=$url" }
+                    if (response.status in 200..299) {
+                        runCatching {
+                            withContext(Dispatchers.IO) {
+                                parseGalleryList(response.toByteBuffer() ?: error("HTTP ${response.status}")).galleryInfoList.toList()
+                            }
+                        }.onSuccess { list ->
+                            online = list
+                            logcat("Library", LogPriority.INFO) { "ONLINE_LIST parsed=${list.size} tab=$currentTab" }
+                        }.onFailure { e ->
+                            logcat("Library", LogPriority.WARN) {
+                                "ONLINE_LIST parse failed: $e | loadErr=${GalleryListParserKtProbe.loadError} | " +
+                                    "res=${GalleryListParserKtProbe.resAvailable} | cwd=${java.io.File(".").absolutePath}"
+                            }
+                            showNotification(onlineParseFailedText)
+                        }
+                    }
+                }.onFailure { e ->
+                    val cleaned = DesktopConnectionState.cleanErrorMessage(e.message ?: e::class.simpleName, connectionErrorLabels)
+                    connectionStatus = DesktopConnectionStatus.Offline(cleaned)
+                    logcat("Connection", LogPriority.WARN) { "EH_REFRESH failed: $cleaned (raw: ${e.message})" }
                 }
-            }.onFailure { e ->
-                val cleaned = DesktopConnectionState.cleanErrorMessage(e.message ?: e::class.simpleName, connectionErrorLabels)
-                connectionStatus = DesktopConnectionStatus.Offline(cleaned)
-                logcat("Connection", LogPriority.WARN) { "EH_REFRESH failed: $cleaned (raw: ${e.message})" }
+            } finally {
+                // 只有最新一轮刷新才清标记：被取消的旧请求不能把新一轮的 refreshing 抹掉
+                if (generation == refreshGeneration) refreshing = false
             }
-        } finally {
-            refreshing = false
         }
     }
 
@@ -528,6 +556,16 @@ fun LibraryScreen(
     }
 
     LaunchedEffect(currentTab) {
+        // 切 Tab 必须重置搜索态与游标栈：残留的查询词/游标会把上一个 Tab 的分页位置带进新列表（翻页错页），
+        // 在飞请求也要取消，否则旧 Tab 的响应会覆盖新 Tab 的列表
+        remoteSearchJob?.cancel()
+        remoteSearchGeneration += 1
+        remoteSearching = false
+        remoteSearchQuery = ""
+        cursorStack.clear()
+        cursorStack.add(null)
+        cursorIndex = 0
+        loadMoreErrorText = null
         if (currentTab.isOnline) {
             refreshGalleries()
         }
@@ -584,6 +622,8 @@ fun LibraryScreen(
                             isKeyDown = event.type == KeyEventType.KeyDown,
                             isCtrlPressed = event.isCtrlPressed,
                             key = event.key,
+                            // macOS 习惯用 Command(⌘) 而非 Ctrl
+                            isMetaPressed = event.isMetaPressed,
                             hasSelection = selected != null || multiSelection.isActive || searchQuery.isNotEmpty() || previewCoverUrl != null,
                         )
                         when (action) {
@@ -873,8 +913,13 @@ fun LibraryScreen(
                             val canGoPrev = DesktopOnlinePagination.canNavigatePrev(cursorIndex)
                             DesktopHoverPill(
                                 onClick = {
-                                    cursorIndex -= 1
-                                    remoteSearch(remoteSearchQuery, nextGid = cursorStack[cursorIndex], pushCursor = false)
+                                    val target = (cursorIndex - 1).coerceAtLeast(0)
+                                    remoteSearch(
+                                        remoteSearchQuery,
+                                        nextGid = cursorStack.getOrNull(target),
+                                        pushCursor = false,
+                                        popCursor = true,
+                                    )
                                 },
                                 enabled = canGoPrev,
                                 containerColor = if (canGoPrev) {
@@ -915,10 +960,8 @@ fun LibraryScreen(
                                 onClick = {
                                     val lastGid = online.lastOrNull()?.gid
                                     if (lastGid != null) {
-                                        while (cursorStack.size > cursorIndex + 1) cursorStack.removeAt(cursorStack.size - 1)
-                                        cursorStack.add(lastGid)
-                                        cursorIndex += 1
-                                        remoteSearch(remoteSearchQuery, nextGid = lastGid, pushCursor = false)
+                                        // 游标由 remoteSearch 在请求成功后压栈，失败时栈不动
+                                        remoteSearch(remoteSearchQuery, nextGid = lastGid)
                                     }
                                 },
                                 enabled = canGoNext,
@@ -1000,7 +1043,7 @@ fun LibraryScreen(
                                             verticalArrangement = Arrangement.spacedBy(10.dp),
                                         ) {
                                             Text(
-                                                text = stringResource(MR.strings.desktop_download_dir_default, ""),
+                                                text = stringResource(MR.strings.no_download_info),
                                                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                             )
                                             EmptyTabBrowseOnlineButton(text = browseOnlineText) { switchTab(LibraryTab.Home) }
@@ -1381,22 +1424,31 @@ fun LibraryScreen(
                 }
 
                 previewCoverUrl?.let { coverUrl ->
-                    val currentIndex = previewUrls.indexOf(coverUrl)
+                    // 缩略图可能重复（同一 sprite 页、同一张图出现在多行）：用记住的索引作游标，
+                    // 而不是每次 indexOf(coverUrl)——重复 URL 会永远定位到第一条，前后翻被打回原处
+                    val currentIndex = previewIndex.coerceIn(0, (previewUrls.size - 1).coerceAtLeast(0))
                     val hasPrev = currentIndex > 0
-                    val hasNext = currentIndex in 0 until (previewUrls.size - 1)
+                    val hasNext = currentIndex < previewUrls.lastIndex
                     CoverPreviewDialog(
                         imageUrl = coverUrl,
                         onDismiss = {
                             previewCoverUrl = null
                             previewUrls = emptyList()
+                            previewIndex = 0
                         },
                         onPrevious = if (hasPrev) {
-                            { previewCoverUrl = previewUrls[currentIndex - 1] }
+                            {
+                                previewIndex = currentIndex - 1
+                                previewCoverUrl = previewUrls[currentIndex - 1]
+                            }
                         } else {
                             null
                         },
                         onNext = if (hasNext) {
-                            { previewCoverUrl = previewUrls[currentIndex + 1] }
+                            {
+                                previewIndex = currentIndex + 1
+                                previewCoverUrl = previewUrls[currentIndex + 1]
+                            }
                         } else {
                             null
                         },

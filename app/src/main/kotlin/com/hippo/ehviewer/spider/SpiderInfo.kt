@@ -7,6 +7,7 @@ import com.hippo.ehviewer.coil.edit
 import com.hippo.ehviewer.coil.read
 import com.hippo.ehviewer.ktbuilder.diskCache
 import com.hippo.ehviewer.legacy.readLegacySpiderInfo
+import java.util.concurrent.ConcurrentHashMap
 import kotlinx.io.readByteArray
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.cbor.Cbor
@@ -25,7 +26,8 @@ class SpiderInfo(
 
     val pages: Int,
 
-    val pTokenMap: MutableMap<Int, String> = hashMapOf(),
+    // 多个下载线程会并发写入，序列化（CBOR 写盘）也在读它，必须是并发容器
+    val pTokenMap: MutableMap<Int, String> = ConcurrentHashMap(),
 
     var previewPerPage: Int = -1,
 )

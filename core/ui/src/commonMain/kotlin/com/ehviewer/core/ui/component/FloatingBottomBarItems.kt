@@ -53,28 +53,38 @@ internal fun RowScope.FloatingBottomBarItem(
 ) {
     val scale = LocalFloatingBottomBarTabScale.current
     val contentColor = LocalFloatingBottomBarContentColor.current
+    val inputEnabled = LocalFloatingBottomBarInputEnabled.current
+    val interactionSource = remember { MutableInteractionSource() }
 
     Column(
         modifier = modifier
             .clip(CircleShape)
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-                role = Role.Tab,
-                onClick = onClick,
-            )
-            .onKeyEvent { event ->
-                val isActivationKey = event.key == Key.Enter ||
-                    event.key == Key.NumPadEnter ||
-                    event.key == Key.Spacebar
-                if (isActivationKey) {
-                    if (event.type == KeyEventType.KeyUp) onClick()
-                    true
+            .then(
+                // 录制层（alpha = 0）不参与交互：否则会和真实层叠出重复的点击/焦点目标
+                if (inputEnabled) {
+                    Modifier
+                        .clickable(
+                            interactionSource = interactionSource,
+                            indication = null,
+                            role = Role.Tab,
+                            onClick = onClick,
+                        )
+                        .onKeyEvent { event ->
+                            val isActivationKey = event.key == Key.Enter ||
+                                event.key == Key.NumPadEnter ||
+                                event.key == Key.Spacebar
+                            if (isActivationKey) {
+                                if (event.type == KeyEventType.KeyUp) onClick()
+                                true
+                            } else {
+                                false
+                            }
+                        }
+                        .focusable()
                 } else {
-                    false
-                }
-            }
-            .focusable()
+                    Modifier
+                },
+            )
             .fillMaxHeight()
             .weight(1f)
             .graphicsLayer {
